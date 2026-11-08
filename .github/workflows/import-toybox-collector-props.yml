@@ -1,0 +1,80 @@
+name: Import Toy Box collector props 01–08 (one-time)
+on:
+  push:
+    branches:
+      - art/toybox-props-collector-01-08
+    paths:
+      - .github/workflows/import-toybox-collector-props.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import and QA eight independently numbered antique collector prop PNGs
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import json, urllib.request, concurrent.futures, time
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          SOURCES=json.loads(r'''{"01":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/d19638a1-2ff4-4dbb-9f5e-228ff38fbc42.png","02":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/ea424c90-05b5-473f-bff1-facd8ad40510.png","03":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/46dd73b9-b4fd-4192-8a8a-87e424f9807d.png","04":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/2b9d946c-8bf8-4cf2-8e33-43a7b080d321.png","05":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/e2b5901a-1db0-4132-87f2-bc73f0f89c9f.png","06":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/63ffa1a6-9fba-45c3-8927-fc13cd7f4784.png","07":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/44ac4806-3540-4f14-bcf1-2247c976308b.png","08":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/9ff72c50-8454-45b5-a01e-4059474b2f30.png"}''')
+          assert sorted(SOURCES)==[f'{n:02d}' for n in range(1,9)]
+          DEST=Path('assets/raw')
+          DEST.mkdir(parents=True,exist_ok=True)
+          def import_one(pair):
+              ident,url=pair
+              data=None
+              for attempt in range(3):
+                  try:
+                      req=urllib.request.Request(url,headers={'User-Agent':'MarbleRushAssetImporter/1.0'})
+                      with urllib.request.urlopen(req,timeout=65) as res:
+                          data=res.read(16000000)
+                      break
+                  except Exception:
+                      if attempt==2: raise
+                      time.sleep(2*(attempt+1))
+              if not data or not data.startswith(b'\x89PNG\r\n\x1a\n') or not 10000<len(data)<15000000:
+                  raise RuntimeError(f'{ident} is not a reasonable PNG')
+              raw=Image.open(BytesIO(data));raw.load()
+              if raw.size!=(1024,1024):
+                  raise RuntimeError(f'{ident}: image dimensions {raw.size}, expected 1024x1024')
+              img=raw.convert('RGBA')
+              a=img.getchannel('A')
+              if a.getextrema()[0]==255: raise RuntimeError(f'{ident}: image is opaque')
+              box=a.point(lambda v:255 if v>10 else 0).getbbox()
+              if not box: raise RuntimeError(f'{ident}: image invisible')
+              sprite=img.crop(box)
+              w,h=sprite.size
+              factor=min(860/w,860/h,1.0)
+              w2,h2=round(w*factor),round(h*factor)
+              if (w2,h2)!=(w,h): sprite=sprite.resize((w2,h2),Image.Resampling.LANCZOS)
+              output=Image.new('RGBA',(1024,1024),(0,0,0,0))
+              output.alpha_composite(sprite,((1024-w2)//2,(1024-h2)//2))
+              bbox=output.getchannel('A').getbbox()
+              margin=min(bbox[0],bbox[1],1024-bbox[2],1024-bbox[3])
+              if margin<79:raise RuntimeError(f'{ident}: margin too small: {margin}')
+              dest=DEST/f'prop_toybox_{ident}.png'
+              output.save(dest,format='PNG',optimize=True)
+              checked=Image.open(dest);checked.load()
+              if checked.size!=(1024,1024) or checked.mode!='RGBA':
+                  raise RuntimeError(f'{ident}: invalid saved image')
+              print(f'PASS: prop_toybox_{ident}.png, 1024x1024 RGBA; alpha min-max {a.getextrema()}; safe margin {margin}px, {dest.stat().st_size} bytes',flush=True)
+              return ident
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+              outputs=list(executor.map(import_one,SOURCES.items()))
+          if sorted(outputs)!=[f'{n:02d}' for n in range(1,9)]:
+              raise SystemExit('Not all eight props generated')
+          print('PASS: All 8 distinct individually numbered prop PNG files validated',flush=True)
+          PY
+      - name: Commit numbered artwork and remove one-time workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/prop_toybox_*.png
+          git rm .github/workflows/import-toybox-collector-props.yml
+          git commit -m "art: add eight premium collector-style Toy Box props"
+          git push
