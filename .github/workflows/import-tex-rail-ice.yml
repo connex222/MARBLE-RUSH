@@ -1,0 +1,76 @@
+name: Import seamless Frosty Freefall ice rail texture (one-time)
+on:
+  push:
+    branches:
+      - art/tex-rail-ice
+    paths:
+      - .github/workflows/import-tex-rail-ice.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import, seam-blend and QA Frosty Freefall rail texture
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/f7fd732e-3122-4815-8961-58173f360745.png
+        run: |
+          python -m pip -q install Pillow numpy
+          python - <<'PY'
+          import os, urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image
+          req=urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushTextureImporter/1.0'})
+          with urllib.request.urlopen(req,timeout=60) as response:
+              data=response.read(18000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 15000<len(data)<17000000:
+              raise SystemExit('FAIL: invalid or unexpected PNG')
+          im=Image.open(BytesIO(data)); im.load()
+          if im.size!=(1024,1024):
+              raise SystemExit(f'FAIL: expected 1024x1024, got {im.size}')
+          source=im.convert('RGB')
+          a=np.asarray(source,dtype=np.float32).copy()
+          if float(a.std())<5.0:
+              raise SystemExit('FAIL: material lacks texture detail')
+          band=64
+          for x in range(band):
+              w=.5*(1.0-x/(band-1))
+              near=a[:,x,:].copy()
+              far=a[:,-1-x,:].copy()
+              a[:,x,:]=(1-w)*near+w*far
+              a[:,-1-x,:]=(1-w)*far+w*near
+          for y in range(band):
+              w=.5*(1.0-y/(band-1))
+              near=a[y,:,:].copy()
+              far=a[-1-y,:,:].copy()
+              a[y,:,:]=(1-w)*near+w*far
+              a[-1-y,:,:]=(1-w)*far+w*near
+          out=Image.fromarray(np.clip(np.rint(a),0,255).astype('uint8'),'RGB')
+          pix=np.asarray(out,dtype=np.int16)
+          lr=int(np.max(np.abs(pix[:,0,:]-pix[:,-1,:])))
+          tb=int(np.max(np.abs(pix[0,:,:]-pix[-1,:,:])))
+          if lr>1 or tb>1:
+              raise SystemExit(f'FAIL: seamless repeat edges mismatch: LR {lr}, TB {tb}')
+          dst=Path('assets/raw/tex_rail_ice.png')
+          dst.parent.mkdir(parents=True,exist_ok=True)
+          out.save(dst,format='PNG',optimize=True)
+          verify=Image.open(dst);verify.load()
+          if verify.mode!='RGB' or verify.size!=(1024,1024):
+              raise SystemExit('FAIL: incorrect saved RGB PNG')
+          print('SOURCE: 1024x1024',im.mode,'STD:',round(float(np.asarray(source).std()),2))
+          print('SEAM MAX DIFF: left-right',lr,'top-bottom',tb)
+          print('PASS: Frosty Freefall 1024x1024 opaque full-bleed seamless RGB ice material PNG')
+          print('BYTES:',dst.stat().st_size)
+          PY
+      - name: Commit validated texture and remove one-time importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/tex_rail_ice.png
+          git rm .github/workflows/import-tex-rail-ice.yml
+          git commit -m "art: add seamless frosted ice rail texture candidate"
+          git push
