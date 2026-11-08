@@ -1,4 +1,21 @@
 {
- "images": [],
+ "images": [
+  {
+   "k": "bg_lobby",
+   "f": "bg_lobby.webp"
+  },
+  {
+   "k": "bg_phone",
+   "f": "bg_phone.webp"
+  },
+  {
+   "k": "bg_results",
+   "f": "bg_results.webp"
+  },
+  {
+   "k": "logo_marblerush",
+   "f": "logo_marblerush.webp"
+  }
+ ],
  "audio": []
 }
