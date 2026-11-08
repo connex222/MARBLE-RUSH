@@ -1,0 +1,68 @@
+name: Import Captain Clatter gasp pose (one-time)
+on:
+  push:
+    branches:
+      - art/clatter-gasp
+    paths:
+      - .github/workflows/import-clatter-gasp.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import gasp pose and validate transparent PNG
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/5d316880-bb99-4b8a-926d-0be244701af7.png
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import os, urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          req = urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(req,timeout=45) as response:
+              data=response.read(16000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 10000<len(data)<15000000:
+              raise SystemExit('FAIL: invalid source PNG')
+          raw=Image.open(BytesIO(data))
+          raw.load()
+          if raw.size != (1024,1024):
+              raise SystemExit(f'FAIL: expected 1024x1024, got {raw.size}')
+          img=raw.convert('RGBA')
+          alpha=img.getchannel('A')
+          if alpha.getextrema()[0]==255:
+              raise SystemExit('FAIL: no true alpha transparency')
+          box=alpha.getbbox()
+          if not box:
+              raise SystemExit('FAIL: asset is empty')
+          subject=img.crop(box)
+          sw,sh=subject.size
+          scale=min(860/sw,860/sh,1.0)
+          nw,nh=round(sw*scale),round(sh*scale)
+          if (nw,nh)!=(sw,sh):
+              subject=subject.resize((nw,nh),Image.Resampling.LANCZOS)
+          out=Image.new('RGBA',(1024,1024),(0,0,0,0))
+          out.alpha_composite(subject,((1024-nw)//2,(1024-nh)//2))
+          final=out.getchannel('A').getbbox()
+          margin=min(final[0],final[1],1024-final[2],1024-final[3])
+          print('SOURCE:',raw.size,raw.mode,'alpha:',alpha.getextrema(),'bbox:',box)
+          print('NORMALIZED:',out.size,out.mode,'bbox:',final,'margin:',margin)
+          if margin < 79:
+              raise SystemExit('FAIL: must have 8 percent transparent border')
+          dst=Path('assets/raw/clatter_gasp.png')
+          dst.parent.mkdir(parents=True, exist_ok=True)
+          out.save(dst,format='PNG',optimize=True)
+          print('PASS: one 1024x1024 transparent PNG and 8-percent safe margin')
+          PY
+      - name: Commit verified artwork and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/clatter_gasp.png
+          git rm .github/workflows/import-clatter-gasp.yml
+          git commit -m "art: add Captain Clatter surprised gasp pose"
+          git push
