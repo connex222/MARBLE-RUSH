@@ -1,0 +1,44 @@
+name: Import Captain Clatter reference image (one-time)
+on:
+  push:
+    branches:
+      - art/captain-clatter-reference
+    paths:
+      - .github/workflows/import-clatter-reference.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out this art branch
+        uses: actions/checkout@v4
+      - name: Download and check the generated PNG
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/210b23df-75ee-4d06-bf43-a7ef99afed8b.png
+        run: |
+          mkdir -p assets/raw
+          python - <<'PY'
+          import os, struct, urllib.request
+          source = os.environ['IMAGE_URL']
+          request = urllib.request.Request(source, headers={'User-Agent': 'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(request, timeout=45) as response:
+              data = response.read(16000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or len(data) < 10000 or len(data) > 15000000:
+              raise SystemExit('Refusing to commit: source is not a valid-sized PNG')
+          width, height = struct.unpack('>II', data[16:24])
+          if width != height or not (900 <= width <= 2200):
+              raise SystemExit(f'Unexpected dimensions: {width}x{height}')
+          with open('assets/raw/clatter_reference.png', 'wb') as fp:
+              fp.write(data)
+          print(f'Validated PNG: {width}x{height}, {len(data)} bytes')
+          PY
+      - name: Commit image to this branch and remove temporary importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/clatter_reference.png
+          git rm .github/workflows/import-clatter-reference.yml
+          git commit -m "art: add draft Captain Clatter master reference PNG"
+          git push
