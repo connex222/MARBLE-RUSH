@@ -1,0 +1,64 @@
+name: Import Captain Clatter wince pose (one-time)
+on:
+  push:
+    branches:
+      - art/clatter-wince
+    paths:
+      - .github/workflows/import-clatter-wince.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import and verify the final Captain Clatter pose
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/899b1aa4-0cb6-4a78-be3a-14bae4d73004.png
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import os, urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          req=urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(req,timeout=45) as response:
+              data=response.read(16000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 10000<len(data)<15000000:
+              raise SystemExit('FAIL: file is not a valid source PNG')
+          raw=Image.open(BytesIO(data));raw.load()
+          if raw.size != (1024,1024):
+              raise SystemExit(f'FAIL: expected 1024x1024, got {raw.size}')
+          image=raw.convert('RGBA')
+          alpha=image.getchannel('A')
+          if alpha.getextrema()[0]==255: raise SystemExit('FAIL: source PNG lacks real transparency')
+          box=alpha.getbbox()
+          if not box: raise SystemExit('FAIL: empty image')
+          subject=image.crop(box)
+          w,h=subject.size
+          scale=min(860/w,860/h,1)
+          nw,nh=round(w*scale),round(h*scale)
+          if (nw,nh)!=(w,h):
+              subject=subject.resize((nw,nh),Image.Resampling.LANCZOS)
+          canvas=Image.new('RGBA',(1024,1024),(0,0,0,0))
+          canvas.alpha_composite(subject,((1024-nw)//2,(1024-nh)//2))
+          outbox=canvas.getchannel('A').getbbox()
+          margin=min(outbox[0],outbox[1],1024-outbox[2],1024-outbox[3])
+          print('SOURCE:',raw.size,raw.mode,'alpha range:',alpha.getextrema(),'bbox:',box)
+          print('OUTPUT:',canvas.size,canvas.mode,'bbox:',outbox,'min margin:',margin)
+          if margin < 79: raise SystemExit('FAIL: need at least 8 percent transparent margins')
+          dst=Path('assets/raw/clatter_wince.png')
+          dst.parent.mkdir(parents=True,exist_ok=True)
+          canvas.save(dst,format='PNG',optimize=True)
+          print('PASS: one 1024x1024 RGBA PNG with at least 8 percent transparent padding')
+          PY
+      - name: Commit checked artwork and remove temporary importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/clatter_wince.png
+          git rm .github/workflows/import-clatter-wince.yml
+          git commit -m "art: add Captain Clatter wince pose"
+          git push
