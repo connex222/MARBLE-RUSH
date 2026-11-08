@@ -352,7 +352,7 @@ const MR = (() => {
       meta, segs: [], way: [], bumpers: [], pads: [], gems: [], loops: [],
       hazards: [], stairs: [], jumps: [], bowls: [], arches: [], walls: [],
       startSlots: [], gateX: 0, gateY: 0, finishWay: -1,
-      conveyors: [], seesaws: [], zones: [],
+      conveyors: [], seesaws: [], zones: [], forks: [], alts: [],
     };
     let x = 0, y = 0, phi = 0, MATDEF = 'wood', zoneStart = -1;
     function setMat(m) { MATDEF = m; }
@@ -512,7 +512,7 @@ const MR = (() => {
       T.bowls.push({ cx, cy, r: Rb, hole, h });
       x = cx - h * 46; y = cy + Rb + 120;
       // backstop: marbles that drop through still rolling backwards bounce onto the exit rail
-      T.walls.push(seg(x - h * 4, y - 150, x - h * 4, y + 4, 'wall', { kind: 'wall' }));
+      T.walls.push(seg(x - h * 4, y - 96, x - h * 4, y + 4, 'wall', { kind: 'wall' }));
       face(h, 10);
       way(x + h * 20, y - C.R);
     }
@@ -548,6 +548,43 @@ const MR = (() => {
       T.zones.push({ x0: x0 - 60, y0: y0 - 420, x1: x1 + 60, y1: y1 + 20, g });
       zoneStart = -1;
     }
+    /** Fork: boost to jump the gap onto a shortcut; slower marbles drop to the long way round.
+        kind 'shortcut' = plain long route; kind 'gems' = long route lined with gems and a boost pad. */
+    function fork(kind = 'shortcut', o = {}) {
+      const G = o.gap || 230, Ls = o.short || 420, L1 = o.long || 820;
+      aim(7); line(o.approach || 520);
+      T.hazards.push({ x: x - H() * 80, y: y + 12 * 0, fork: true, h: H() });
+      bend(90, -12); line(20);
+      const h = H(), X = x, Y = y;
+      const forkIdx = T.way.length - 1;
+      const pts = [];
+      // shortcut: flight over the gap, landing rail, chute wall
+      const sx = X + h * G, sy = Y + 10, a8 = rad(8);
+      const x2 = sx + h * Ls * Math.cos(a8), y2 = sy + Ls * Math.sin(a8);
+      seg(sx, sy, x2, y2, MATDEF, { kind: 'short' });
+      for (let k = 1; k <= 10; k++) pts.push({ x: sx + (x2 - sx) * k / 10, y: sy + (y2 - sy) * k / 10 - C.R });
+      const xw = x2 + h * 50;
+      // long way: drop through the gap onto B1, heading back
+      way(X + h * G * 0.5, Y + 30); way(X + h * G * 0.6, Y + 110);
+      x = X + h * (G + 20); y = Y + 170; face(-h, 7);
+      if (kind === 'gems') { line(L1 * 0.25); gems(4); line(L1 * 0.4); gems(4); line(L1 * 0.35); }
+      else line(L1);
+      uturn(160, 150, 7);
+      const L2 = Math.abs(X + h * (G + 20) - x) / Math.cos(rad(7));
+      if (kind === 'gems') { line(L2 * 0.3); pad(Math.min(220, L2 * 0.3)); line(L2 - L2 * 0.3 - Math.min(220, L2 * 0.3)); }
+      else line(L2);
+      const bx = x, by = y;
+      way(bx + h * 30, by + 70);
+      // merge rail M: below the long route's end, starting at the shortcut chute
+      const My0 = by + 150 - Math.abs(xw - bx) * Math.tan(rad(7));
+      T.walls.push(seg(xw, y2 - 260, xw, My0 + 8, 'wall', { kind: 'wall' }));
+      for (let k = 1; k <= 6; k++) pts.push({ x: xw - h * (C.R + 6), y: y2 - C.R + (My0 - y2) * k / 6 });
+      const mergeIdx = T.way.length;
+      T.alts.push({ pts, forkIdx, mergeIdx });
+      T.forks.push({ x: X, y: Y, h, kind, sx: x2, sy: y2, signX: X - h * 140, signY: Y - 30 });
+      T.hazards.pop();
+      x = xw; y = My0; face(-h, 7);
+    }
     function start(slots = 8) {
       x = 0; y = 0; phi = 0;
       T.walls.push(seg(-26, -220, -26, 4, 'wall', { kind: 'wall' }));
@@ -581,6 +618,12 @@ const MR = (() => {
       }
       T.length = T.cum[w.length - 1];
       T.finishDist = T.finishWay >= 0 ? T.cum[T.finishWay] : Infinity;
+      for (const A of T.alts) {
+        const c0 = T.cum[A.forkIdx], c1 = T.cum[Math.min(A.mergeIdx, w.length - 1)];
+        let L = 0; const d = [0];
+        for (let i = 1; i < A.pts.length; i++) { L += Math.hypot(A.pts[i].x - A.pts[i - 1].x, A.pts[i].y - A.pts[i - 1].y); d.push(L); }
+        A.cum = d.map(v => c0 + (c1 - c0) * v / (L || 1));
+      }
       // checkpoints every ~600px of route
       T.checkpoints = [0];
       let next = 600;
@@ -617,7 +660,7 @@ const MR = (() => {
 
     return {
       T, line, bend, aim, face, uturn, dangerTurn, loop, jump, bumpers, pad, gems, stairs, bowl,
-      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, get x() { return x; }, get y() { return y; }, get h() { return H(); },
+      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, fork, get x() { return x; }, get y() { return y; }, get h() { return H(); },
     };
   }
   const EMPTY = [];
@@ -812,11 +855,94 @@ const MR = (() => {
     return B.done();
   };
 
+  /** Jungle Jumble — bamboo rails, mud pits, rope-bridge jumps, two daredevil shortcuts. */
+  TRACKS.jungle = () => {
+    const B = Builder({ id: 'jungle', name: 'Jungle Jumble', theme: 'jungle' });
+    B.start(8);
+    B.aim(9); B.line(300); B.gems(4); B.line(420); B.bend(300, -12); B.bend(300, 18); B.line(260);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut');
+    B.line(500); B.aim(4); B.slow(360); B.aim(10); B.line(300);
+    B.uturn(170, 150, 9);
+    B.line(300); B.aim(16); B.line(280); B.jump(230, 70, 16, 18); B.line(300); B.aim(8); B.line(200);
+    B.uturn(170, 150, 24);
+    B.line(260); B.bumpers(480, 3); B.aim(9); B.line(200);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('gems');
+    B.line(420); B.bend(240, -18); B.bend(240, 26); B.line(320);
+    B.uturn(170, 150, 28);
+    B.line(680); B.bend(260, -28); B.line(60); B.loop(116); B.aim(4); B.line(320);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut', { long: 760 });
+    B.line(420); B.bowl(210, 76); B.line(360);
+    B.uturn(170, 150, 9);
+    B.line(260); B.stairs(8, 100, 42); B.aim(9); B.line(260); B.gems(4); B.line(240);
+    B.uturn(170, 150, 9);
+    B.line(300); B.pad(200); B.line(420); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
+  /** Seaside Sprint — boardwalk pier, sand traps, beach-ball bumpers, gem alley. */
+  TRACKS.seaside = () => {
+    const B = Builder({ id: 'seaside', name: 'Seaside Sprint', theme: 'seaside' });
+    B.start(8);
+    B.aim(8); B.line(320); B.pad(180); B.line(380); B.gems(4); B.line(300);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('gems');
+    B.line(420); B.aim(4); B.slow(320); B.aim(10); B.line(300);
+    B.dangerTurn(170, 9);
+    B.line(260); B.stairs(8, 100, 42); B.aim(9); B.line(300);
+    B.uturn(160, 150, 9);
+    B.line(80); B.fork('shortcut');
+    B.line(320); B.aim(22); B.bumpers(520, 4); B.aim(9); B.line(260);
+    B.uturn(170, 150, 26);
+    B.line(700); B.bend(260, -26); B.line(60); B.loop(114); B.aim(4); B.line(320);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('gems', { long: 760 });
+    B.line(360); B.aim(14); B.line(260); B.jump(240, 80, 16, 18); B.line(280); B.aim(8); B.line(200);
+    B.uturn(170, 150, 9);
+    B.line(240); B.bowl(210, 76); B.line(320);
+    B.dangerTurn(170, 9);
+    B.line(300); B.pad(200); B.line(420); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
+  /** Clockwork Chaos — brass rails, cog conveyors, see-saw levers, three forks. */
+  TRACKS.clockwork = () => {
+    const B = Builder({ id: 'clockwork', name: 'Clockwork Chaos', theme: 'clockwork' });
+    B.start(8); B.setMat('metal');
+    B.aim(8); B.line(260); B.conveyor(360, 820); B.line(300); B.gems(4); B.line(260);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut');
+    B.line(320); B.seesaw(300); B.line(360);
+    B.uturn(170, 150, 9);
+    B.line(300); B.gems(4); B.line(280); B.conveyor(300, 820);
+    B.dangerTurn(170, 9);
+    B.line(80); B.fork('gems');
+    B.line(400); B.bowl(210, 76); B.line(360);
+    B.uturn(170, 150, 26);
+    B.line(680); B.bend(260, -26); B.line(60); B.loop(114); B.aim(4); B.line(300);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut', { long: 760 });
+    B.line(300); B.seesaw(280); B.line(300); B.pad(180);
+    B.dangerTurn(170, 9);
+    B.line(260); B.aim(22); B.bumpers(460, 3); B.aim(9); B.line(240); B.gems(4); B.line(240);
+    B.uturn(170, 150, 9);
+    B.line(300); B.conveyor(300, 900); B.line(400); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
   const TRACK_INFO = [
     { id: 'toybox', name: 'Toy Box Tumble', blurb: 'Xylophone stairs, two loops, whirlpools', theme: 'toybox' },
     { id: 'candy', name: 'Candy Cascade', blurb: 'Conveyor belts, chocolate river, gumball whirlpool', theme: 'candy' },
     { id: 'ice', name: 'Frosty Freefall', blurb: 'Slippery ice, snowflake seesaws, ski jumps', theme: 'ice' },
     { id: 'space', name: 'Orbit Drop', blurb: 'Low gravity, rocket pads, asteroid field', theme: 'space' },
+    { id: 'jungle', name: 'Jungle Jumble', blurb: 'Boost to jump the shortcuts, mud pits, rope-bridge jumps', theme: 'jungle' },
+    { id: 'seaside', name: 'Seaside Sprint', blurb: 'Shortcut or gem alley? Sand traps and beach-ball bumpers', theme: 'seaside' },
+    { id: 'clockwork', name: 'Clockwork Chaos', blurb: 'Three forks, cog conveyors and see-saw levers', theme: 'clockwork' },
   ];
 
   /** Lobby playground bowl — practise boost & grip while players join. */
@@ -874,7 +1000,7 @@ const MR = (() => {
         boost: 100, cd: 0, item: null,
         fx: { jelly: 0, big: 0, bubble: 0, slip: 0, hold: 0 },
         down: false, downAt: 0, startUsed: false, pendingPerfect: false,
-        wayIdx: 0, prog: 0, routeD: 0,
+        wayIdx: 0, prog: 0, routeD: 0, alt: -1, altIdx: 0,
         finished: false, finishTime: 0, place: 0, rank: slot + 1,
         respawnT: 0, respawnCP: 0, stuckT: 0, stuckProg: 0, behindT: 0, gust: false,
         padCD: 0, puddleCD: 0, slipstream: false,
@@ -949,6 +1075,11 @@ const MR = (() => {
     }
 
     routeDir(m) {
+      if (m.alt >= 0) {
+        const P = this.t.alts[m.alt].pts, i = Math.min(m.altIdx, P.length - 2);
+        const dx = P[i + 1].x - P[i].x, dy = P[i + 1].y - P[i].y, l = Math.hypot(dx, dy) || 1;
+        return { x: dx / l, y: dy / l };
+      }
       const w = this.t.way, i = Math.min(m.wayIdx, w.length - 2);
       if (i < 0) return { x: 1, y: 0 };
       const dx = w[i + 1].x - w[i].x, dy = w[i + 1].y - w[i].y, l = Math.hypot(dx, dy) || 1;
@@ -1285,6 +1416,22 @@ const MR = (() => {
         p = cum[j] + Math.sqrt(l2) * u;
       }
       if (this.phase === 'free') { m.prog = 0; m.routeD = 0; return; }
+      m.alt = -1;
+      for (let a = 0; a < this.t.alts.length; a++) {
+        const A = this.t.alts[a];
+        if (init || best < A.forkIdx - 14 || best > A.mergeIdx + 6) continue;
+        let ai = -1, ad = Infinity;
+        for (let i = 0; i < A.pts.length; i++) { const dx = m.x - A.pts[i].x, dy = m.y - A.pts[i].y, d = dx * dx + dy * dy; if (d < ad) { ad = d; ai = i; } }
+        if (ad < bd) {
+          bd = ad; m.alt = a; m.altIdx = ai; p = A.cum[ai];
+          let k = A.forkIdx; while (k < A.mergeIdx && cum[k + 1] <= p) k++;
+          m.wayIdx = k;
+        }
+      }
+      if (m.alt >= 0 && m.altIdx >= 3 && m.altIdx <= 9) {
+        m.cuts = m.cuts || {};
+        if (!m.cuts[m.alt]) { m.cuts[m.alt] = true; m.stats.cuts = (m.stats.cuts || 0) + 1; this.emit('shortcut', { id: m.id, x: m.x, y: m.y }); }
+      }
       m.prog = p;
       m.routeD = Math.sqrt(bd);
     }
@@ -1617,6 +1764,15 @@ if (typeof module !== 'undefined') module.exports = QR;
     space: { card: '#7048D8', bg: ['#160c38', '#0a0820', '#04030f'], glow: 'rgba(139,92,246,0.25)', bokeh: ['#8B5CF6', '#4CC9F0', '#FF5FA2', '#ffffff'],
       main: '#9aa5b8', hi: '#e6ecf5', strip: '#4CC9F0', wall: ['#FF8A3D', '#FFD0A8'], bowl: ['#3b3f63', '#8f95c0'], post: ['#454b6b', '#6b7296'],
       slow: ['#2a2450', '#5a4f9a'], deco: 'planets', bump: ['#b8aa9a', '#857767', '#4a4038'], plank: ['#9aa5b8', '#e6ecf5'], icon: '🪐' },
+    jungle: { card: '#2E9D5B', bg: ['#123f2c', '#0b2a20', '#061a14'], glow: 'rgba(190,255,140,0.18)', bokeh: ['#A3E635', '#3DDC97', '#FFD23F', '#ffffff'],
+      main: '#9bbf4a', hi: '#e6f7a8', wall: ['#7a5230', '#b07a4a'], bowl: ['#5b7a2a', '#a6c46a'], post: ['#4a3420', '#6d4c2e'],
+      slow: ['#5a3d22', '#8a6040'], deco: 'leaves', bump: ['#ffe2a0', '#FF8A3D', '#a8481a'], plank: ['#9bbf4a', '#e6f7a8'], icon: '🌴' },
+    seaside: { card: '#2F9CC4', bg: ['#2c2466', '#8a3f6e', '#1b1440'], glow: 'rgba(255,170,90,0.32)', bokeh: ['#FFD23F', '#FF8A3D', '#4CC9F0', '#ffffff'],
+      main: '#d9b07a', hi: '#fff0d0', wall: ['#2F9CC4', '#a8e6ff'], bowl: ['#e2bf80', '#fff3d4'], post: ['#7a5a3a', '#a07a52'],
+      slow: ['#e8c98a', '#fff3d4'], deco: 'balls', bump: ['#ffffff', '#FF3B5C', '#b8122e'], plank: ['#d9b07a', '#fff0d0'], icon: '🏖️' },
+    clockwork: { card: '#B8862E', bg: ['#2e1d10', '#1c120a', '#0e0905'], glow: 'rgba(255,190,90,0.26)', bokeh: ['#FFC83D', '#FF8A3D', '#e6ecf5', '#c9963a'],
+      main: '#c9963a', hi: '#ffe3a0', wall: ['#7a4a2a', '#c48a5a'], bowl: ['#8a6a3a', '#d9b878'], post: ['#4a3a2a', '#6a5440'],
+      slow: ['#3a2a1e', '#6a5038'], deco: 'gears', bump: ['#e6ecf5', '#9aa5b8', '#4a5268'], plank: ['#c9963a', '#ffe3a0'], icon: '⚙️' },
   };
   const theme = () => THEMES[(world && world.t.meta.theme) || 'toybox'] || THEMES.toybox;
   const NOTE_COLORS = ['#FF3B5C', '#FF8A3D', '#FFD23F', '#3DDC97', '#4CC9F0', '#5B7CFA', '#8B5CF6', '#FF5FA2'];
@@ -2024,7 +2180,7 @@ if (typeof module !== 'undefined') module.exports = QR;
      ====================================================================== */
   let art = null;
   function buildArt(T) {
-    const paths = { main: new Path2D(), wall: new Path2D(), bowl: new Path2D(), pad: new Path2D(), gate: new Path2D(), slow: new Path2D(), conveyor: new Path2D() };
+    const paths = { short: new Path2D(), main: new Path2D(), wall: new Path2D(), bowl: new Path2D(), pad: new Path2D(), gate: new Path2D(), slow: new Path2D(), conveyor: new Path2D() };
     const MAP = { wood: 'main', candy: 'main', ice: 'main', metal: 'main', choc: 'slow' };
     const posts = [];
     const r = rng(77);
@@ -2032,6 +2188,7 @@ if (typeof module !== 'undefined') module.exports = QR;
       if (s.mat === 'plate') continue;
       const p = paths[MAP[s.mat] || s.mat] || paths.main;
       p.moveTo(s.x1, s.y1); p.lineTo(s.x2, s.y2);
+      if (s.kind === 'short') { paths.short.moveTo(s.x1, s.y1); paths.short.lineTo(s.x2, s.y2); }
       const len = Math.sqrt(s.len2);
       if (s.mat !== 'wall' && s.mat !== 'gate' && s.mat !== 'bowl' && s.kind !== 'loop' && len > 120) {
         for (let d = 60; d < len - 30; d += 240) {
@@ -2108,6 +2265,24 @@ if (typeof module !== 'undefined') module.exports = QR;
         for (let i = 0; i < 6; i++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, d.w / 2); ctx.moveTo(0, d.w / 4); ctx.lineTo(d.w / 8, d.w / 3); ctx.moveTo(0, d.w / 4); ctx.lineTo(-d.w / 8, d.w / 3); ctx.stroke(); }
         ctx.restore(); continue;
       }
+      if (dk === 'leaves') {
+        for (let i = 0; i < 5; i++) { ctx.rotate(Math.PI * 2 / 5); ctx.beginPath(); ctx.ellipse(0, d.w * 0.32, d.w * 0.14, d.w * 0.34, 0, 0, 6.283); ctx.fill(); }
+        ctx.restore(); continue;
+      }
+      if (dk === 'balls') {
+        const cols = ['#FF3B5C', '#FFD23F', '#4CC9F0', '#ffffff'];
+        for (let i = 0; i < 4; i++) { ctx.fillStyle = cols[i]; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, d.w / 2, i * Math.PI / 2, (i + 1) * Math.PI / 2); ctx.closePath(); ctx.fill(); }
+        ctx.restore(); continue;
+      }
+      if (dk === 'gears') {
+        ctx.rotate(performance.now() / 4000 * (d.kind % 2 ? 1 : -1));
+        const R = d.w / 2;
+        ctx.beginPath();
+        for (let i = 0; i < 24; i++) { const a = i * Math.PI / 12, rr = (i % 2) ? R * 0.82 : R; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+        ctx.closePath(); ctx.fill();
+        ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(0, 0, R * 0.35, 0, 6.283); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+        ctx.restore(); continue;
+      }
       if (dk === 'planets') {
         ctx.beginPath(); ctx.arc(0, 0, d.w / 2, 0, 6.283); ctx.fill();
         if (d.kind % 2 === 0) { ctx.strokeStyle = d.c; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(0, 0, d.w * 0.9, d.w * 0.22, -0.3, 0, 6.283); ctx.stroke(); }
@@ -2174,6 +2349,29 @@ if (typeof module !== 'undefined') module.exports = QR;
     strokePath(P.pad, 6, '#7FE8FF', 0, -4);
     strokePath(P.slow, 6, th.slow[1], 0, -5);
     strokePath(P.main, 2, 'rgba(255,255,255,0.45)', 0, -6);
+    // shortcut rails glow gold
+    ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(time * 4); strokePath(P.short, 26, 'rgba(255,200,61,0.35)'); ctx.restore();
+    strokePath(P.short, 4, '#FFC83D', 0, -5);
+    // fork signposts
+    for (const F of T.forks) {
+      ctx.save(); ctx.translate(F.signX, F.signY);
+      ctx.fillStyle = '#4a3020'; ctx.fillRect(-5, -150, 10, 150);
+      const board = (y, text, col, dir) => {
+        ctx.save(); ctx.translate(0, y);
+        ctx.fillStyle = col; ctx.strokeStyle = '#14163A'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        const w = 190, hh = 40, tip = 26;
+        if (dir > 0) { ctx.moveTo(-w / 2, -hh / 2); ctx.lineTo(w / 2, -hh / 2); ctx.lineTo(w / 2 + tip, 0); ctx.lineTo(w / 2, hh / 2); ctx.lineTo(-w / 2, hh / 2); }
+        else { ctx.moveTo(w / 2, -hh / 2); ctx.lineTo(-w / 2, -hh / 2); ctx.lineTo(-w / 2 - tip, 0); ctx.lineTo(-w / 2, hh / 2); ctx.lineTo(w / 2, hh / 2); }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#14163A'; ctx.font = '700 22px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, 0, 1);
+        ctx.restore();
+      };
+      board(-130, 'BOOST: SHORTCUT', '#FFC83D', F.h);
+      board(-80, F.kind === 'gems' ? 'GEM ALLEY' : 'LONG WAY', F.kind === 'gems' ? '#FF5FA2' : '#e6ebf5', -F.h);
+      ctx.restore();
+    }
     if (T.meta.theme === 'ice') { ctx.save(); ctx.globalAlpha = 0.35 + 0.15 * Math.sin(time * 2); strokePath(P.main, 26, 'rgba(160,220,255,0.25)'); ctx.restore(); }
     // seesaws
     for (const ss of T.seesaws) {
@@ -2847,6 +3045,12 @@ if (typeof module !== 'undefined') module.exports = QR;
           if (e.t > 0.95) slowMo();
           if (Math.random() < 0.4) Clatter.say('air', 'Look at the air on that!');
           break;
+        case 'shortcut':
+          Audio_.play('sfx_perfect_start', { gap: 0.3 });
+          emit('star', e.x, e.y, 14, { speed: 300, life: 0.6, size: 10, colors: ['#FFC83D', '#fff'] });
+          pop('SHORTCUT!', e.x, e.y - 40, '#FFC83D', 30);
+          Clatter.say('shortcut', `${name} takes the shortcut!`, 2);
+          break;
         case 'looptop':
           if (Math.random() < 0.25) Clatter.say('loop', 'Round the loop they go!');
           break;
@@ -2992,7 +3196,7 @@ if (typeof module !== 'undefined') module.exports = QR;
       const k = b.dataset.set;
       b.setAttribute('aria-pressed', k === 'fx' || k === 'cup' ? 'true' : String(!!settings[k]));
       if (k === 'fx') b.querySelector('em').textContent = settings.fx === 'lite' ? 'Lite' : settings.fx === 'full' ? 'Full' : 'Auto';
-      if (k === 'cup') b.querySelector('em').textContent = settings.cup === 1 ? '1 race' : settings.cup + ' races';
+      if (k === 'cup') b.querySelector('em').textContent = settings.cup === 1 ? '1 race' : settings.cup === 7 ? 'Grand Prix (7)' : settings.cup + ' races';
     }
   }
   function renderVote() {
@@ -3235,7 +3439,7 @@ if (typeof module !== 'undefined') module.exports = QR;
     b.onclick = () => {
       const k = b.dataset.set;
       if (k === 'fx') settings.fx = settings.fx === 'auto' ? 'full' : settings.fx === 'full' ? 'lite' : 'auto';
-      else if (k === 'cup') settings.cup = settings.cup === 4 ? 1 : settings.cup === 1 ? 2 : 4;
+      else if (k === 'cup') settings.cup = { 1: 2, 2: 4, 4: 7, 7: 1 }[settings.cup] || 4;
       else settings[k] = !settings[k];
       if (k === 'music') Audio_.setMusic(settings.music);
       if (k === 'sfx') Audio_.setSfx(settings.sfx);

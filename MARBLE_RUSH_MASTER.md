@@ -234,6 +234,8 @@ The server gives each player a different award where possible.
 | **Conveyor** | Rail adds 200 px/s along its direction | Free speed, or a slow uphill one |
 | **Low-gravity zone** | Gravity × 0.4 inside the zone | Floaty, huge jumps |
 | **Slow zone** (chocolate, snow) | Rolling resistance × 4 | Boost through it |
+| **Fork (daredevil shortcut)** | The rail ends at a 230 px gap after a standard run-up. Fast marbles jump onto a gold-edged shortcut rail that skips a whole zigzag; slower ones drop through to the long way round. Ranking stays fair because both routes map onto the same race distance | Boost 1–2 times on the run-up to take it (no-input marbles make it about 1 in 10) |
+| **Fork (gem alley)** | Same as above, but the long way is lined with gem rows and a boost pad | Time saved vs. power-ups |
 | **Finish gate** | Timing line, then a run-off funnel | — |
 
 ### 5.6 Camera
@@ -316,6 +318,11 @@ Tracks are **data files** (`content/tracks/*.json`): a chain of track pieces wit
 | **Candy Cascade** | Sweet factory | Conveyor belts, candy-cane loop, gumball whirlpool bowl, chocolate river slow zone |
 | **Frosty Freefall** | Ice palace | Slippery ice sections (grip matters), giant snowflake seesaw, ski-jump, icicle bumpers |
 | **Orbit Drop** | Space station | Low-gravity zones, rocket boost pads, asteroid bumpers, huge floaty jumps |
+| **Jungle Jumble** | Jungle canopy | Two daredevil shortcuts + a gem alley, bamboo rails, mud pits, rope-bridge jump, xylophone stairs |
+| **Seaside Sprint** | Seaside pier at sunset | Two gem alleys + a shortcut, boardwalk rails, sand traps, beach-ball bumpers |
+| **Clockwork Chaos** | Clockmaker's workshop | Three forks, brass rails, cog conveyors, see-saw levers |
+
+A Cup can be 1, 2, 4 races or a 7-race **Grand Prix**. Players vote between 3 tracks before each race; tracks already played that Cup are left out where possible.
 
 ### 6.3 Rail materials (one per theme)
 
@@ -582,7 +589,7 @@ Each theme needs **1 far background, 1 rail texture, 8 props**.
 | `tex_rail_[theme]` | 1024×1024 → 512×512 | **TEXTURE**, fills the whole square, seamless tiling, flat-lit |
 | `prop_[theme]_01` … `_08` | 1024×1024 → 512×512 | Transparent decorative objects placed around the track |
 
-Theme keys: `toybox`, `candy`, `ice`, `space`.
+Theme keys: `toybox`, `candy`, `ice`, `space`, `jungle`, `seaside`, `clockwork`.
 
 **Toy Box Tumble (`toybox`)**
 - `bg_far_toybox`: *BACKGROUND, wide 3:2. A child's cosy bedroom at dusk seen from floor level as a giant: blurred bookshelf, warm bedside lamp glow, starry night through a window, soft toy shapes in shadow. Warm and magical. Calm middle band.*
@@ -603,6 +610,21 @@ Theme keys: `toybox`, `candy`, `ice`, `space`.
 - `bg_far_space`: *BACKGROUND, wide 3:2. Deep space seen from a cosy toy-like space station: a big ringed planet, colourful nebula in grape and sky, tiny twinkling stars, warm window lights. Calm middle band.*
 - `tex_rail_space`: *TEXTURE, seamless tiling: brushed chrome metal with fine horizontal grain and subtle panel lines, flat lighting.*
 - Props: `01` cute satellite · `02` small ringed planet · `03` friendly toy rocket · `04` asteroid with craters · `05` space station module with glowing windows · `06` friendly little alien (cute, not scary) · `07` UFO with lights · `08` astronaut helmet.
+
+**Jungle Jumble (`jungle`)**
+- `bg_far_jungle`: *BACKGROUND, wide 3:2. A lush jungle canopy at dusk: giant leaves, hanging vines, a distant waterfall, fireflies, warm golden light shafts through the trees. Calm middle band.*
+- `tex_rail_jungle`: *TEXTURE, seamless tiling: green bamboo with natural joints and subtle stripes, flat lighting.*
+- Props: `01` friendly toucan on a branch · `02` giant tropical flower · `03` carved tiki totem (smiling) · `04` banana bunch · `05` rope bridge section · `06` monkey hanging from a vine (cute) · `07` waterfall rock · `08` jungle explorer's hat on a crate.
+
+**Seaside Sprint (`seaside`)**
+- `bg_far_seaside`: *BACKGROUND, wide 3:2. A cheerful British seaside pier at sunset: Ferris wheel lights, striped beach huts, calm sea reflecting pink and gold sky, gulls in the distance. Calm middle band.*
+- `tex_rail_seaside`: *TEXTURE, seamless tiling: sun-bleached boardwalk planks with soft wood grain, flat lighting.*
+- Props: `01` sandcastle with a little flag (no text) · `02` striped beach hut · `03` bucket and spade · `04` beach ball · `05` friendly seagull · `06` ice-cream cone · `07` deckchair · `08` lighthouse.
+
+**Clockwork Chaos (`clockwork`)**
+- `bg_far_clockwork`: *BACKGROUND, wide 3:2. A cosy clockmaker's workshop at night: huge brass gears turning in the shadows, a giant clock face (no numbers), warm lamp glow, shelves of tiny tools. Calm middle band.*
+- `tex_rail_clockwork`: *TEXTURE, seamless tiling: polished brass with fine brushed grain and tiny rivets, flat lighting.*
+- Props: `01` big brass cog · `02` pocket watch (no numbers) · `03` wind-up key · `04` cuckoo clock (cheerful) · `05` spring coil · `06` oil can · `07` brass telescope · `08` tiny clockwork robot.
 
 ### 9.5 Items and track objects (transparent)
 
@@ -834,6 +856,7 @@ Built after Marble Rush, reusing the same **Party Core**: lobby and room codes, 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 8 Nov 2026 | First master document |
+| 1.3 | 8 Nov 2026 | Build v0.3: three branched tracks (Jungle Jumble, Seaside Sprint, Clockwork Chaos) with daredevil shortcuts and gem alleys; fork piece added to 5.5; Grand Prix (7 races) Cup option; Clatter calls out shortcuts; art prompts for the three new themes in 9.4 |
 | 1.2 | 8 Nov 2026 | Build v0.2: all four launch tracks playable (Candy Cascade, Frosty Freefall, Orbit Drop added); Cup of 1, 2 or 4 races chosen in the lobby; track vote before each race (phones vote; TV can click a card or Decide now); new track pieces built: conveyor, slow zone, seesaw, low-gravity zone; each theme has its own code-drawn look until its art pack arrives |
 | 1.1 | 8 Nov 2026 | Build v0.1: Toy Box Tumble playable end to end; TV lobby has a QR code; local test mode (open tv.html, keyboard + CPU racers); manifest now lists each asset's file, so sounds can be MP3, OGG, M4A or WAV; music and sound are code-generated until real files arrive |
 

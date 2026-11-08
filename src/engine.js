@@ -58,7 +58,7 @@ const MR = (() => {
       meta, segs: [], way: [], bumpers: [], pads: [], gems: [], loops: [],
       hazards: [], stairs: [], jumps: [], bowls: [], arches: [], walls: [],
       startSlots: [], gateX: 0, gateY: 0, finishWay: -1,
-      conveyors: [], seesaws: [], zones: [],
+      conveyors: [], seesaws: [], zones: [], forks: [], alts: [],
     };
     let x = 0, y = 0, phi = 0, MATDEF = 'wood', zoneStart = -1;
     function setMat(m) { MATDEF = m; }
@@ -218,7 +218,7 @@ const MR = (() => {
       T.bowls.push({ cx, cy, r: Rb, hole, h });
       x = cx - h * 46; y = cy + Rb + 120;
       // backstop: marbles that drop through still rolling backwards bounce onto the exit rail
-      T.walls.push(seg(x - h * 4, y - 150, x - h * 4, y + 4, 'wall', { kind: 'wall' }));
+      T.walls.push(seg(x - h * 4, y - 96, x - h * 4, y + 4, 'wall', { kind: 'wall' }));
       face(h, 10);
       way(x + h * 20, y - C.R);
     }
@@ -254,6 +254,43 @@ const MR = (() => {
       T.zones.push({ x0: x0 - 60, y0: y0 - 420, x1: x1 + 60, y1: y1 + 20, g });
       zoneStart = -1;
     }
+    /** Fork: boost to jump the gap onto a shortcut; slower marbles drop to the long way round.
+        kind 'shortcut' = plain long route; kind 'gems' = long route lined with gems and a boost pad. */
+    function fork(kind = 'shortcut', o = {}) {
+      const G = o.gap || 230, Ls = o.short || 420, L1 = o.long || 820;
+      aim(7); line(o.approach || 520);
+      T.hazards.push({ x: x - H() * 80, y: y + 12 * 0, fork: true, h: H() });
+      bend(90, -12); line(20);
+      const h = H(), X = x, Y = y;
+      const forkIdx = T.way.length - 1;
+      const pts = [];
+      // shortcut: flight over the gap, landing rail, chute wall
+      const sx = X + h * G, sy = Y + 10, a8 = rad(8);
+      const x2 = sx + h * Ls * Math.cos(a8), y2 = sy + Ls * Math.sin(a8);
+      seg(sx, sy, x2, y2, MATDEF, { kind: 'short' });
+      for (let k = 1; k <= 10; k++) pts.push({ x: sx + (x2 - sx) * k / 10, y: sy + (y2 - sy) * k / 10 - C.R });
+      const xw = x2 + h * 50;
+      // long way: drop through the gap onto B1, heading back
+      way(X + h * G * 0.5, Y + 30); way(X + h * G * 0.6, Y + 110);
+      x = X + h * (G + 20); y = Y + 170; face(-h, 7);
+      if (kind === 'gems') { line(L1 * 0.25); gems(4); line(L1 * 0.4); gems(4); line(L1 * 0.35); }
+      else line(L1);
+      uturn(160, 150, 7);
+      const L2 = Math.abs(X + h * (G + 20) - x) / Math.cos(rad(7));
+      if (kind === 'gems') { line(L2 * 0.3); pad(Math.min(220, L2 * 0.3)); line(L2 - L2 * 0.3 - Math.min(220, L2 * 0.3)); }
+      else line(L2);
+      const bx = x, by = y;
+      way(bx + h * 30, by + 70);
+      // merge rail M: below the long route's end, starting at the shortcut chute
+      const My0 = by + 150 - Math.abs(xw - bx) * Math.tan(rad(7));
+      T.walls.push(seg(xw, y2 - 260, xw, My0 + 8, 'wall', { kind: 'wall' }));
+      for (let k = 1; k <= 6; k++) pts.push({ x: xw - h * (C.R + 6), y: y2 - C.R + (My0 - y2) * k / 6 });
+      const mergeIdx = T.way.length;
+      T.alts.push({ pts, forkIdx, mergeIdx });
+      T.forks.push({ x: X, y: Y, h, kind, sx: x2, sy: y2, signX: X - h * 140, signY: Y - 30 });
+      T.hazards.pop();
+      x = xw; y = My0; face(-h, 7);
+    }
     function start(slots = 8) {
       x = 0; y = 0; phi = 0;
       T.walls.push(seg(-26, -220, -26, 4, 'wall', { kind: 'wall' }));
@@ -287,6 +324,12 @@ const MR = (() => {
       }
       T.length = T.cum[w.length - 1];
       T.finishDist = T.finishWay >= 0 ? T.cum[T.finishWay] : Infinity;
+      for (const A of T.alts) {
+        const c0 = T.cum[A.forkIdx], c1 = T.cum[Math.min(A.mergeIdx, w.length - 1)];
+        let L = 0; const d = [0];
+        for (let i = 1; i < A.pts.length; i++) { L += Math.hypot(A.pts[i].x - A.pts[i - 1].x, A.pts[i].y - A.pts[i - 1].y); d.push(L); }
+        A.cum = d.map(v => c0 + (c1 - c0) * v / (L || 1));
+      }
       // checkpoints every ~600px of route
       T.checkpoints = [0];
       let next = 600;
@@ -323,7 +366,7 @@ const MR = (() => {
 
     return {
       T, line, bend, aim, face, uturn, dangerTurn, loop, jump, bumpers, pad, gems, stairs, bowl,
-      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, get x() { return x; }, get y() { return y; }, get h() { return H(); },
+      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, fork, get x() { return x; }, get y() { return y; }, get h() { return H(); },
     };
   }
   const EMPTY = [];
@@ -518,11 +561,94 @@ const MR = (() => {
     return B.done();
   };
 
+  /** Jungle Jumble — bamboo rails, mud pits, rope-bridge jumps, two daredevil shortcuts. */
+  TRACKS.jungle = () => {
+    const B = Builder({ id: 'jungle', name: 'Jungle Jumble', theme: 'jungle' });
+    B.start(8);
+    B.aim(9); B.line(300); B.gems(4); B.line(420); B.bend(300, -12); B.bend(300, 18); B.line(260);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut');
+    B.line(500); B.aim(4); B.slow(360); B.aim(10); B.line(300);
+    B.uturn(170, 150, 9);
+    B.line(300); B.aim(16); B.line(280); B.jump(230, 70, 16, 18); B.line(300); B.aim(8); B.line(200);
+    B.uturn(170, 150, 24);
+    B.line(260); B.bumpers(480, 3); B.aim(9); B.line(200);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('gems');
+    B.line(420); B.bend(240, -18); B.bend(240, 26); B.line(320);
+    B.uturn(170, 150, 28);
+    B.line(680); B.bend(260, -28); B.line(60); B.loop(116); B.aim(4); B.line(320);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut', { long: 760 });
+    B.line(420); B.bowl(210, 76); B.line(360);
+    B.uturn(170, 150, 9);
+    B.line(260); B.stairs(8, 100, 42); B.aim(9); B.line(260); B.gems(4); B.line(240);
+    B.uturn(170, 150, 9);
+    B.line(300); B.pad(200); B.line(420); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
+  /** Seaside Sprint — boardwalk pier, sand traps, beach-ball bumpers, gem alley. */
+  TRACKS.seaside = () => {
+    const B = Builder({ id: 'seaside', name: 'Seaside Sprint', theme: 'seaside' });
+    B.start(8);
+    B.aim(8); B.line(320); B.pad(180); B.line(380); B.gems(4); B.line(300);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('gems');
+    B.line(420); B.aim(4); B.slow(320); B.aim(10); B.line(300);
+    B.dangerTurn(170, 9);
+    B.line(260); B.stairs(8, 100, 42); B.aim(9); B.line(300);
+    B.uturn(160, 150, 9);
+    B.line(80); B.fork('shortcut');
+    B.line(320); B.aim(22); B.bumpers(520, 4); B.aim(9); B.line(260);
+    B.uturn(170, 150, 26);
+    B.line(700); B.bend(260, -26); B.line(60); B.loop(114); B.aim(4); B.line(320);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('gems', { long: 760 });
+    B.line(360); B.aim(14); B.line(260); B.jump(240, 80, 16, 18); B.line(280); B.aim(8); B.line(200);
+    B.uturn(170, 150, 9);
+    B.line(240); B.bowl(210, 76); B.line(320);
+    B.dangerTurn(170, 9);
+    B.line(300); B.pad(200); B.line(420); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
+  /** Clockwork Chaos — brass rails, cog conveyors, see-saw levers, three forks. */
+  TRACKS.clockwork = () => {
+    const B = Builder({ id: 'clockwork', name: 'Clockwork Chaos', theme: 'clockwork' });
+    B.start(8); B.setMat('metal');
+    B.aim(8); B.line(260); B.conveyor(360, 820); B.line(300); B.gems(4); B.line(260);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut');
+    B.line(320); B.seesaw(300); B.line(360);
+    B.uturn(170, 150, 9);
+    B.line(300); B.gems(4); B.line(280); B.conveyor(300, 820);
+    B.dangerTurn(170, 9);
+    B.line(80); B.fork('gems');
+    B.line(400); B.bowl(210, 76); B.line(360);
+    B.uturn(170, 150, 26);
+    B.line(680); B.bend(260, -26); B.line(60); B.loop(114); B.aim(4); B.line(300);
+    B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut', { long: 760 });
+    B.line(300); B.seesaw(280); B.line(300); B.pad(180);
+    B.dangerTurn(170, 9);
+    B.line(260); B.aim(22); B.bumpers(460, 3); B.aim(9); B.line(240); B.gems(4); B.line(240);
+    B.uturn(170, 150, 9);
+    B.line(300); B.conveyor(300, 900); B.line(400); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
   const TRACK_INFO = [
     { id: 'toybox', name: 'Toy Box Tumble', blurb: 'Xylophone stairs, two loops, whirlpools', theme: 'toybox' },
     { id: 'candy', name: 'Candy Cascade', blurb: 'Conveyor belts, chocolate river, gumball whirlpool', theme: 'candy' },
     { id: 'ice', name: 'Frosty Freefall', blurb: 'Slippery ice, snowflake seesaws, ski jumps', theme: 'ice' },
     { id: 'space', name: 'Orbit Drop', blurb: 'Low gravity, rocket pads, asteroid field', theme: 'space' },
+    { id: 'jungle', name: 'Jungle Jumble', blurb: 'Boost to jump the shortcuts, mud pits, rope-bridge jumps', theme: 'jungle' },
+    { id: 'seaside', name: 'Seaside Sprint', blurb: 'Shortcut or gem alley? Sand traps and beach-ball bumpers', theme: 'seaside' },
+    { id: 'clockwork', name: 'Clockwork Chaos', blurb: 'Three forks, cog conveyors and see-saw levers', theme: 'clockwork' },
   ];
 
   /** Lobby playground bowl — practise boost & grip while players join. */
@@ -580,7 +706,7 @@ const MR = (() => {
         boost: 100, cd: 0, item: null,
         fx: { jelly: 0, big: 0, bubble: 0, slip: 0, hold: 0 },
         down: false, downAt: 0, startUsed: false, pendingPerfect: false,
-        wayIdx: 0, prog: 0, routeD: 0,
+        wayIdx: 0, prog: 0, routeD: 0, alt: -1, altIdx: 0,
         finished: false, finishTime: 0, place: 0, rank: slot + 1,
         respawnT: 0, respawnCP: 0, stuckT: 0, stuckProg: 0, behindT: 0, gust: false,
         padCD: 0, puddleCD: 0, slipstream: false,
@@ -655,6 +781,11 @@ const MR = (() => {
     }
 
     routeDir(m) {
+      if (m.alt >= 0) {
+        const P = this.t.alts[m.alt].pts, i = Math.min(m.altIdx, P.length - 2);
+        const dx = P[i + 1].x - P[i].x, dy = P[i + 1].y - P[i].y, l = Math.hypot(dx, dy) || 1;
+        return { x: dx / l, y: dy / l };
+      }
       const w = this.t.way, i = Math.min(m.wayIdx, w.length - 2);
       if (i < 0) return { x: 1, y: 0 };
       const dx = w[i + 1].x - w[i].x, dy = w[i + 1].y - w[i].y, l = Math.hypot(dx, dy) || 1;
@@ -991,6 +1122,22 @@ const MR = (() => {
         p = cum[j] + Math.sqrt(l2) * u;
       }
       if (this.phase === 'free') { m.prog = 0; m.routeD = 0; return; }
+      m.alt = -1;
+      for (let a = 0; a < this.t.alts.length; a++) {
+        const A = this.t.alts[a];
+        if (init || best < A.forkIdx - 14 || best > A.mergeIdx + 6) continue;
+        let ai = -1, ad = Infinity;
+        for (let i = 0; i < A.pts.length; i++) { const dx = m.x - A.pts[i].x, dy = m.y - A.pts[i].y, d = dx * dx + dy * dy; if (d < ad) { ad = d; ai = i; } }
+        if (ad < bd) {
+          bd = ad; m.alt = a; m.altIdx = ai; p = A.cum[ai];
+          let k = A.forkIdx; while (k < A.mergeIdx && cum[k + 1] <= p) k++;
+          m.wayIdx = k;
+        }
+      }
+      if (m.alt >= 0 && m.altIdx >= 3 && m.altIdx <= 9) {
+        m.cuts = m.cuts || {};
+        if (!m.cuts[m.alt]) { m.cuts[m.alt] = true; m.stats.cuts = (m.stats.cuts || 0) + 1; this.emit('shortcut', { id: m.id, x: m.x, y: m.y }); }
+      }
       m.prog = p;
       m.routeD = Math.sqrt(bd);
     }

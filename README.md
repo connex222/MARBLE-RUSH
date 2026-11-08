@@ -1,4 +1,4 @@
-# Marble Rush — v0.2
+# Marble Rush — v0.3
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 

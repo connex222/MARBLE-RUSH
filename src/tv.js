@@ -31,6 +31,15 @@
     space: { card: '#7048D8', bg: ['#160c38', '#0a0820', '#04030f'], glow: 'rgba(139,92,246,0.25)', bokeh: ['#8B5CF6', '#4CC9F0', '#FF5FA2', '#ffffff'],
       main: '#9aa5b8', hi: '#e6ecf5', strip: '#4CC9F0', wall: ['#FF8A3D', '#FFD0A8'], bowl: ['#3b3f63', '#8f95c0'], post: ['#454b6b', '#6b7296'],
       slow: ['#2a2450', '#5a4f9a'], deco: 'planets', bump: ['#b8aa9a', '#857767', '#4a4038'], plank: ['#9aa5b8', '#e6ecf5'], icon: '🪐' },
+    jungle: { card: '#2E9D5B', bg: ['#123f2c', '#0b2a20', '#061a14'], glow: 'rgba(190,255,140,0.18)', bokeh: ['#A3E635', '#3DDC97', '#FFD23F', '#ffffff'],
+      main: '#9bbf4a', hi: '#e6f7a8', wall: ['#7a5230', '#b07a4a'], bowl: ['#5b7a2a', '#a6c46a'], post: ['#4a3420', '#6d4c2e'],
+      slow: ['#5a3d22', '#8a6040'], deco: 'leaves', bump: ['#ffe2a0', '#FF8A3D', '#a8481a'], plank: ['#9bbf4a', '#e6f7a8'], icon: '🌴' },
+    seaside: { card: '#2F9CC4', bg: ['#2c2466', '#8a3f6e', '#1b1440'], glow: 'rgba(255,170,90,0.32)', bokeh: ['#FFD23F', '#FF8A3D', '#4CC9F0', '#ffffff'],
+      main: '#d9b07a', hi: '#fff0d0', wall: ['#2F9CC4', '#a8e6ff'], bowl: ['#e2bf80', '#fff3d4'], post: ['#7a5a3a', '#a07a52'],
+      slow: ['#e8c98a', '#fff3d4'], deco: 'balls', bump: ['#ffffff', '#FF3B5C', '#b8122e'], plank: ['#d9b07a', '#fff0d0'], icon: '🏖️' },
+    clockwork: { card: '#B8862E', bg: ['#2e1d10', '#1c120a', '#0e0905'], glow: 'rgba(255,190,90,0.26)', bokeh: ['#FFC83D', '#FF8A3D', '#e6ecf5', '#c9963a'],
+      main: '#c9963a', hi: '#ffe3a0', wall: ['#7a4a2a', '#c48a5a'], bowl: ['#8a6a3a', '#d9b878'], post: ['#4a3a2a', '#6a5440'],
+      slow: ['#3a2a1e', '#6a5038'], deco: 'gears', bump: ['#e6ecf5', '#9aa5b8', '#4a5268'], plank: ['#c9963a', '#ffe3a0'], icon: '⚙️' },
   };
   const theme = () => THEMES[(world && world.t.meta.theme) || 'toybox'] || THEMES.toybox;
   const NOTE_COLORS = ['#FF3B5C', '#FF8A3D', '#FFD23F', '#3DDC97', '#4CC9F0', '#5B7CFA', '#8B5CF6', '#FF5FA2'];
@@ -438,7 +447,7 @@
      ====================================================================== */
   let art = null;
   function buildArt(T) {
-    const paths = { main: new Path2D(), wall: new Path2D(), bowl: new Path2D(), pad: new Path2D(), gate: new Path2D(), slow: new Path2D(), conveyor: new Path2D() };
+    const paths = { short: new Path2D(), main: new Path2D(), wall: new Path2D(), bowl: new Path2D(), pad: new Path2D(), gate: new Path2D(), slow: new Path2D(), conveyor: new Path2D() };
     const MAP = { wood: 'main', candy: 'main', ice: 'main', metal: 'main', choc: 'slow' };
     const posts = [];
     const r = rng(77);
@@ -446,6 +455,7 @@
       if (s.mat === 'plate') continue;
       const p = paths[MAP[s.mat] || s.mat] || paths.main;
       p.moveTo(s.x1, s.y1); p.lineTo(s.x2, s.y2);
+      if (s.kind === 'short') { paths.short.moveTo(s.x1, s.y1); paths.short.lineTo(s.x2, s.y2); }
       const len = Math.sqrt(s.len2);
       if (s.mat !== 'wall' && s.mat !== 'gate' && s.mat !== 'bowl' && s.kind !== 'loop' && len > 120) {
         for (let d = 60; d < len - 30; d += 240) {
@@ -522,6 +532,24 @@
         for (let i = 0; i < 6; i++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, d.w / 2); ctx.moveTo(0, d.w / 4); ctx.lineTo(d.w / 8, d.w / 3); ctx.moveTo(0, d.w / 4); ctx.lineTo(-d.w / 8, d.w / 3); ctx.stroke(); }
         ctx.restore(); continue;
       }
+      if (dk === 'leaves') {
+        for (let i = 0; i < 5; i++) { ctx.rotate(Math.PI * 2 / 5); ctx.beginPath(); ctx.ellipse(0, d.w * 0.32, d.w * 0.14, d.w * 0.34, 0, 0, 6.283); ctx.fill(); }
+        ctx.restore(); continue;
+      }
+      if (dk === 'balls') {
+        const cols = ['#FF3B5C', '#FFD23F', '#4CC9F0', '#ffffff'];
+        for (let i = 0; i < 4; i++) { ctx.fillStyle = cols[i]; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, d.w / 2, i * Math.PI / 2, (i + 1) * Math.PI / 2); ctx.closePath(); ctx.fill(); }
+        ctx.restore(); continue;
+      }
+      if (dk === 'gears') {
+        ctx.rotate(performance.now() / 4000 * (d.kind % 2 ? 1 : -1));
+        const R = d.w / 2;
+        ctx.beginPath();
+        for (let i = 0; i < 24; i++) { const a = i * Math.PI / 12, rr = (i % 2) ? R * 0.82 : R; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+        ctx.closePath(); ctx.fill();
+        ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(0, 0, R * 0.35, 0, 6.283); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+        ctx.restore(); continue;
+      }
       if (dk === 'planets') {
         ctx.beginPath(); ctx.arc(0, 0, d.w / 2, 0, 6.283); ctx.fill();
         if (d.kind % 2 === 0) { ctx.strokeStyle = d.c; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(0, 0, d.w * 0.9, d.w * 0.22, -0.3, 0, 6.283); ctx.stroke(); }
@@ -588,6 +616,29 @@
     strokePath(P.pad, 6, '#7FE8FF', 0, -4);
     strokePath(P.slow, 6, th.slow[1], 0, -5);
     strokePath(P.main, 2, 'rgba(255,255,255,0.45)', 0, -6);
+    // shortcut rails glow gold
+    ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(time * 4); strokePath(P.short, 26, 'rgba(255,200,61,0.35)'); ctx.restore();
+    strokePath(P.short, 4, '#FFC83D', 0, -5);
+    // fork signposts
+    for (const F of T.forks) {
+      ctx.save(); ctx.translate(F.signX, F.signY);
+      ctx.fillStyle = '#4a3020'; ctx.fillRect(-5, -150, 10, 150);
+      const board = (y, text, col, dir) => {
+        ctx.save(); ctx.translate(0, y);
+        ctx.fillStyle = col; ctx.strokeStyle = '#14163A'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        const w = 190, hh = 40, tip = 26;
+        if (dir > 0) { ctx.moveTo(-w / 2, -hh / 2); ctx.lineTo(w / 2, -hh / 2); ctx.lineTo(w / 2 + tip, 0); ctx.lineTo(w / 2, hh / 2); ctx.lineTo(-w / 2, hh / 2); }
+        else { ctx.moveTo(w / 2, -hh / 2); ctx.lineTo(-w / 2, -hh / 2); ctx.lineTo(-w / 2 - tip, 0); ctx.lineTo(-w / 2, hh / 2); ctx.lineTo(w / 2, hh / 2); }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#14163A'; ctx.font = '700 22px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, 0, 1);
+        ctx.restore();
+      };
+      board(-130, 'BOOST: SHORTCUT', '#FFC83D', F.h);
+      board(-80, F.kind === 'gems' ? 'GEM ALLEY' : 'LONG WAY', F.kind === 'gems' ? '#FF5FA2' : '#e6ebf5', -F.h);
+      ctx.restore();
+    }
     if (T.meta.theme === 'ice') { ctx.save(); ctx.globalAlpha = 0.35 + 0.15 * Math.sin(time * 2); strokePath(P.main, 26, 'rgba(160,220,255,0.25)'); ctx.restore(); }
     // seesaws
     for (const ss of T.seesaws) {
@@ -1261,6 +1312,12 @@
           if (e.t > 0.95) slowMo();
           if (Math.random() < 0.4) Clatter.say('air', 'Look at the air on that!');
           break;
+        case 'shortcut':
+          Audio_.play('sfx_perfect_start', { gap: 0.3 });
+          emit('star', e.x, e.y, 14, { speed: 300, life: 0.6, size: 10, colors: ['#FFC83D', '#fff'] });
+          pop('SHORTCUT!', e.x, e.y - 40, '#FFC83D', 30);
+          Clatter.say('shortcut', `${name} takes the shortcut!`, 2);
+          break;
         case 'looptop':
           if (Math.random() < 0.25) Clatter.say('loop', 'Round the loop they go!');
           break;
@@ -1406,7 +1463,7 @@
       const k = b.dataset.set;
       b.setAttribute('aria-pressed', k === 'fx' || k === 'cup' ? 'true' : String(!!settings[k]));
       if (k === 'fx') b.querySelector('em').textContent = settings.fx === 'lite' ? 'Lite' : settings.fx === 'full' ? 'Full' : 'Auto';
-      if (k === 'cup') b.querySelector('em').textContent = settings.cup === 1 ? '1 race' : settings.cup + ' races';
+      if (k === 'cup') b.querySelector('em').textContent = settings.cup === 1 ? '1 race' : settings.cup === 7 ? 'Grand Prix (7)' : settings.cup + ' races';
     }
   }
   function renderVote() {
@@ -1649,7 +1706,7 @@
     b.onclick = () => {
       const k = b.dataset.set;
       if (k === 'fx') settings.fx = settings.fx === 'auto' ? 'full' : settings.fx === 'full' ? 'lite' : 'auto';
-      else if (k === 'cup') settings.cup = settings.cup === 4 ? 1 : settings.cup === 1 ? 2 : 4;
+      else if (k === 'cup') settings.cup = { 1: 2, 2: 4, 4: 7, 7: 1 }[settings.cup] || 4;
       else settings[k] = !settings[k];
       if (k === 'music') Audio_.setMusic(settings.music);
       if (k === 'sfx') Audio_.setSfx(settings.sfx);
