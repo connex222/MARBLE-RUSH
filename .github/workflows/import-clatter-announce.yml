@@ -1,0 +1,62 @@
+name: Import clatter_announce art (one-time)
+on:
+  push:
+    branches:
+      - art/clatter-announce
+    paths:
+      - .github/workflows/import-clatter-announce.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import and validate character PNG
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/b2e05627-6c1f-44de-9309-05d4c047e6c6.png
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import os, urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          req=urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(req, timeout=45) as response:
+              data=response.read(16000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not (10000<len(data)<15000000):
+              raise SystemExit('FAIL: invalid PNG source')
+          im=Image.open(BytesIO(data)).convert('RGBA')
+          im.load()
+          if im.size != (1024,1024): raise SystemExit(f'FAIL: expected 1024x1024, got {im.size}')
+          a=im.getchannel('A')
+          if a.getextrema()[0]==255: raise SystemExit('FAIL: no transparent alpha in supplied PNG')
+          bbox=a.getbbox()
+          if not bbox: raise SystemExit('FAIL: no visible character')
+          subject=im.crop(bbox)
+          w,h=subject.size
+          scale=min(860/w,860/h,1.0)
+          newsize=(round(w*scale),round(h*scale))
+          if newsize != subject.size: subject=subject.resize(newsize,Image.Resampling.LANCZOS)
+          out=Image.new('RGBA',(1024,1024),(0,0,0,0))
+          out.alpha_composite(subject,((1024-newsize[0])//2,(1024-newsize[1])//2))
+          final_bbox=out.getchannel('A').getbbox()
+          print('QA: source mode',im.mode,'alpha',a.getextrema(),'bbox',bbox)
+          print('QA: output bbox',final_bbox,'pixel size',out.size)
+          margin=min(final_bbox[0],final_bbox[1],1024-final_bbox[2],1024-final_bbox[3])
+          if margin < 79: raise SystemExit(f'FAIL: insufficient margin {margin}px')
+          dest=Path('assets/raw/clatter_announce.png')
+          dest.parent.mkdir(parents=True,exist_ok=True)
+          out.save(dest, format='PNG', optimize=True)
+          print('PASS: one 1024x1024 RGBA character PNG with >=8% transparent safe margin')
+          PY
+      - name: Commit image to art branch, remove temporary importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/clatter_announce.png
+          git rm .github/workflows/import-clatter-announce.yml
+          git commit -m "art: add Captain Clatter announcing pose PNG"
+          git push
