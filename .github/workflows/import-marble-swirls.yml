@@ -21,20 +21,7 @@ jobs:
           from io import BytesIO
           from pathlib import Path
           from PIL import Image, ImageDraw, ImageChops
-          SOURCES=json.loads(r'''{
-  "10": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/e3d4fcc0-09ff-4a1c-9f2a-61fbeb4a10cb.png",
-  "11": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/6c4153cd-ccd0-4114-8aa0-df81a21226e5.png",
-  "12": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/2aadc349-bc61-4178-8cb9-862c938566c3.png",
-  "01": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/7848dccf-ebbd-4ac5-9dc3-733914a9069c.png",
-  "02": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/a611bdb8-2447-4fb5-8646-19de1cade5e0.png",
-  "03": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/6fa33313-3737-4a51-8506-e50df13cde06.png",
-  "04": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/81c76df5-a5ec-43b8-933d-ffd21763d8f4.png",
-  "05": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/39fad502-291f-4e74-ab3c-4906ff51b922.png",
-  "06": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/c3088a4f-b28a-4598-a32c-95f1d23652b8.png",
-  "07": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/0521cb0b-4e03-410b-a2fc-1f9592a043bb.png",
-  "08": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/4d3cfe31-c104-4aad-a84b-8eba42bae96c.png",
-  "09": "https://cdn.creativeclaw.co/u/f3e7a3b1/images/f3d1a643-30e0-4c54-bbe7-e010f866d675.png"
-}''')
+          SOURCES=json.loads(r'''{"10":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/e3d4fcc0-09ff-4a1c-9f2a-61fbeb4a10cb.png","11":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/6c4153cd-ccd0-4114-8aa0-df81a21226e5.png","12":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/2aadc349-bc61-4178-8cb9-862c938566c3.png","01":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/7848dccf-ebbd-4ac5-9dc3-733914a9069c.png","02":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/a611bdb8-2447-4fb5-8646-19de1cade5e0.png","03":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/6fa33313-3737-4a51-8506-e50df13cde06.png","04":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/81c76df5-a5ec-43b8-933d-ffd21763d8f4.png","05":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/39fad502-291f-4e74-ab3c-4906ff51b922.png","06":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/c3088a4f-b28a-4598-a32c-95f1d23652b8.png","07":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/0521cb0b-4e03-410b-a2fc-1f9592a043bb.png","08":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/4d3cfe31-c104-4aad-a84b-8eba42bae96c.png","09":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/f3d1a643-30e0-4c54-bbe7-e010f866d675.png"}''')
           assert len(SOURCES)==12 and sorted(SOURCES)==[f'{i:02d}' for i in range(1,13)]
           DEST=Path('assets/raw')
           DEST.mkdir(parents=True,exist_ok=True)
