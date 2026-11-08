@@ -1,0 +1,67 @@
+name: Import Captain Clatter flag pose (one-time)
+on:
+  push:
+    branches:
+      - art/clatter-flag
+    paths:
+      - .github/workflows/import-clatter-flag.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import and validate flag-pose artwork
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/65532286-cb8a-4581-9194-3f01ec0f90ff.png
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import os, urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          request=urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(request,timeout=45) as response:
+              data=response.read(16000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 10000<len(data)<15000000:
+              raise SystemExit('FAIL: invalid PNG source or unexpected file size')
+          raw=Image.open(BytesIO(data));raw.load()
+          if raw.size != (1024,1024):
+              raise SystemExit(f'FAIL: expected 1024 x 1024, got {raw.size}')
+          image=raw.convert('RGBA')
+          alpha=image.getchannel('A')
+          if alpha.getextrema()[0]==255:
+              raise SystemExit('FAIL: background is opaque, not transparent')
+          bounds=alpha.getbbox()
+          if not bounds:
+              raise SystemExit('FAIL: image is entirely transparent')
+          subject=image.crop(bounds)
+          width,height=subject.size
+          scale=min(860/width,860/height,1)
+          w,h=round(width*scale),round(height*scale)
+          if (w,h)!=(width,height):
+              subject=subject.resize((w,h), Image.Resampling.LANCZOS)
+          canvas=Image.new('RGBA',(1024,1024),(0,0,0,0))
+          canvas.alpha_composite(subject,((1024-w)//2,(1024-h)//2))
+          out_bounds=canvas.getchannel('A').getbbox()
+          margin=min(out_bounds[0],out_bounds[1],1024-out_bounds[2],1024-out_bounds[3])
+          print('SOURCE:',raw.size,raw.mode,'alpha range:',alpha.getextrema(),'bounding box:',bounds)
+          print('OUTPUT:',canvas.size,canvas.mode,'bounding box:',out_bounds,'minimum margin:',margin)
+          if margin < 79:
+              raise SystemExit('FAIL: artwork margin below 8%')
+          target=Path('assets/raw/clatter_flag.png')
+          target.parent.mkdir(parents=True,exist_ok=True)
+          canvas.save(target,format='PNG',optimize=True)
+          print('PASS: single 1024x1024 transparent PNG, 8% safe margin')
+          PY
+      - name: Commit verified artwork and remove one-time importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/clatter_flag.png
+          git rm .github/workflows/import-clatter-flag.yml
+          git commit -m "art: add Captain Clatter chequered flag pose"
+          git push
