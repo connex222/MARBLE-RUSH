@@ -1,0 +1,60 @@
+name: Import Toy Box Tumble far background (one-time)
+on:
+  push:
+    branches:
+      - art/bg-far-toybox
+    paths:
+      - .github/workflows/import-bg-far-toybox.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import and QA 3-to-2 scene background
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/c26db444-3acb-40a1-80f2-4dfa50457760.png
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import os, urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          req=urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(req,timeout=50) as response:
+              data=response.read(18000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 20000<len(data)<17000000:
+              raise SystemExit('FAIL: source image is not a valid PNG')
+          im=Image.open(BytesIO(data))
+          im.load()
+          if im.size!=(1536,1024):
+              raise SystemExit(f'FAIL: Bible expects 1536x1024; received {im.size}')
+          # This artwork is a complete, edge-to-edge background, not a transparent sprite.
+          alpha=im.getchannel('A') if im.mode=='RGBA' else None
+          if alpha is not None:
+              print('source alpha extrema:',alpha.getextrema())
+          out=im.convert('RGB')
+          if out.getbbox() is None:
+              raise SystemExit('FAIL: image is blank')
+          # Preserve full scene without trimming: intended to sit behind the track.
+          dst=Path('assets/raw/bg_far_toybox.png')
+          dst.parent.mkdir(parents=True,exist_ok=True)
+          out.save(dst,format='PNG',optimize=True)
+          verify=Image.open(dst)
+          verify.load()
+          if verify.size!=(1536,1024) or verify.mode!='RGB':
+              raise SystemExit('FAIL: invalid output')
+          print('PASS: 1536x1024 full-bleed RGB PNG scene background')
+          print('bytes:',dst.stat().st_size)
+          PY
+      - name: Commit artwork, remove temporary importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/bg_far_toybox.png
+          git rm .github/workflows/import-bg-far-toybox.yml
+          git commit -m "art: add Toy Box Tumble far background candidate"
+          git push
