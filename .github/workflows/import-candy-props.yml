@@ -1,0 +1,84 @@
+name: Import eight Candy Cascade props (one-time)
+on:
+  push:
+    branches:
+      - art/candy-props-01-08
+    paths:
+      - .github/workflows/import-candy-props.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import eight numbered PNGs and verify transparency and safe margins
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import json, urllib.request, concurrent.futures, time
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          sources=json.loads(r'''{"01":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/5312161b-3d24-451f-88b3-019869859e52.png","02":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/938273a7-1b05-4fdc-a95e-04cab0171894.png","03":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/726b4ef9-e984-414b-8a94-0779f7f4b776.png","04":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/f0184c4d-da11-4974-a66e-c7adf84e4772.png","05":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/479ee2e1-2791-4000-b6c4-1c178758e1f9.png","06":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/eac09548-335f-4826-8393-de1ef8c962ee.png","07":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/5a0a850e-1407-40df-8ee6-ddde4490affe.png","08":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/39b24011-62cf-4ecb-957f-edaa1da3d70a.png"}''')
+          expected=[f'{i:02d}' for i in range(1,9)]
+          assert sorted(sources)==expected
+          destdir=Path('assets/raw')
+          destdir.mkdir(parents=True,exist_ok=True)
+          def import_prop(pair):
+              ident,url=pair
+              data=None
+              for attempt in range(3):
+                  try:
+                      req=urllib.request.Request(url,headers={'User-Agent':'MarbleRushAssetsImporter/1.0'})
+                      with urllib.request.urlopen(req, timeout=75) as resp:
+                          data=resp.read(16000000)
+                      break
+                  except Exception:
+                      if attempt==2: raise
+                      time.sleep(2*(attempt+1))
+              if not data or not data.startswith(b'\x89PNG\r\n\x1a\n') or not 10000<len(data)<15000000:
+                  raise RuntimeError(f'{ident}: not a valid PNG or unexpected size')
+              source=Image.open(BytesIO(data))
+              source.load()
+              if source.size!=(1024,1024):
+                  raise RuntimeError(f'{ident}: expected 1024x1024, received {source.size}')
+              rgba=source.convert('RGBA')
+              alpha=rgba.getchannel('A')
+              if alpha.getextrema()[0]==255:
+                  raise RuntimeError(f'{ident}: source is opaque (not transparent)')
+              # Ignore negligible edge alpha when locating primary asset.
+              bbox=alpha.point(lambda a:255 if a>10 else 0).getbbox()
+              if not bbox: raise RuntimeError(f'{ident}: image is transparent/blank')
+              subject=rgba.crop(bbox)
+              w,h=subject.size
+              factor=min(860/w,860/h,1.0)
+              sw,sh=round(w*factor),round(h*factor)
+              if (sw,sh)!=(w,h):
+                  subject=subject.resize((sw,sh),Image.Resampling.LANCZOS)
+              out=Image.new('RGBA',(1024,1024),(0,0,0,0))
+              out.alpha_composite(subject,((1024-sw)//2,(1024-sh)//2))
+              bb=out.getchannel('A').getbbox()
+              margin=min(bb[0],bb[1],1024-bb[2],1024-bb[3])
+              if margin<79: raise RuntimeError(f'{ident}: margin {margin} below 8%')
+              target=destdir/f'prop_candy_{ident}.png'
+              out.save(target,format='PNG',optimize=True)
+              check=Image.open(target);check.load()
+              if check.mode!='RGBA' or check.size!=(1024,1024):
+                  raise RuntimeError(f'{ident}: output format invalid')
+              print(f'PASS: prop_candy_{ident}.png, 1024x1024 RGBA, margin={margin}px, alpha={alpha.getextrema()}, bytes={target.stat().st_size}',flush=True)
+              return ident
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              imported=list(pool.map(import_prop, sources.items()))
+          if sorted(imported)!=expected: raise SystemExit('Missing prop PNGs')
+          print('PASS: all eight Candy Cascade props imported, numbered and validated',flush=True)
+          PY
+      - name: Commit verified images and remove temporary importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/prop_candy_*.png
+          git rm .github/workflows/import-candy-props.yml
+          git commit -m "art: add eight sophisticated Candy Cascade prop candidates"
+          git push
