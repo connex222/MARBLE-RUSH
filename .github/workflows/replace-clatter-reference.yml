@@ -1,0 +1,56 @@
+name: Replace Captain Clatter with transparent artwork (one-time)
+on:
+  push:
+    branches:
+      - art/captain-clatter-reference
+    paths:
+      - .github/workflows/replace-clatter-reference.yml
+permissions:
+  contents: write
+jobs:
+  replace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and validate alpha PNG
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/fa84fa8d-76f6-49b7-bbc8-f32ea299d3dd.png
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import os, urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          req = urllib.request.Request(os.environ['IMAGE_URL'], headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(req, timeout=45) as response:
+              data = response.read(16000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 10000 < len(data) < 15000000:
+              raise SystemExit('FAIL: invalid image format or size')
+          im=Image.open(BytesIO(data))
+          im.load()
+          a=im.convert('RGBA').getchannel('A')
+          bbox=a.getbbox()
+          print('Dimensions',im.size,'mode',im.mode,'alpha',a.getextrema(),'bbox',bbox)
+          if im.size != (1024,1024):
+              raise SystemExit('FAIL: expected 1024x1024 PNG')
+          if a.getextrema()[0] >= 255:
+              raise SystemExit('FAIL: image has no transparent pixels')
+          if not bbox:
+              raise SystemExit('FAIL: empty image')
+          if bbox[0] < 35 or bbox[1] < 35 or bbox[2] > 989 or bbox[3] > 989:
+              print('WARNING: subject close to image boundary, check margin')
+          path=Path('assets/raw/clatter_reference.png')
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_bytes(data)
+          print('PASS: production PNG has real alpha')
+          PY
+      - name: Commit validated replacement and remove importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/clatter_reference.png
+          git rm .github/workflows/replace-clatter-reference.yml
+          git commit -m "art: replace Captain Clatter with transparent master-reference candidate"
+          git push
