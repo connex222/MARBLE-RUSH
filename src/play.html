@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14163A">
+<title>Marble Rush — Controller</title>
+<style>
+/*FONTS*/
+:root{
+  --bg:#14163A; --bg2:#0F1130; --card:#1E2257; --ink:#FFF4E0; --dim:rgba(255,244,224,.68);
+  --red:#FF3B5C; --gold:#FFC83D; --sky:#4CC9F0; --mint:#3DDC97; --line:rgba(255,244,224,.16);
+  --pc:#FF3B5C;
+  --display:'Fredoka','Arial Rounded MT Bold',system-ui,sans-serif; --body:'Nunito',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: light){
+  :root{--bg:#FFF6E6; --bg2:#FFE9C7; --card:#ffffff; --ink:#14163A; --dim:rgba(20,22,58,.7); --line:rgba(20,22,58,.18)}
+}
+body.hc{--bg:#000; --bg2:#000; --card:#000; --ink:#fff; --dim:#fff; --line:#fff}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;overscroll-behavior:none}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+[hidden]{display:none!important}
+button{font-family:var(--display);cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* ---------- join ---------- */
+#join{flex:1;display:flex;flex-direction:column;padding:22px 20px 18px;gap:14px;overflow:auto}
+.logo{font-family:var(--display);font-weight:700;line-height:.86;transform:skewX(-8deg);margin:6px 0 4px}
+.logo span{display:block;font-size:54px;color:var(--red);-webkit-text-stroke:2px var(--gold);paint-order:stroke fill;text-shadow:0 4px 0 #8f1029}
+.logo span+span{color:#FFF4E0;-webkit-text-stroke-color:var(--red)}
+label{font-weight:800;font-size:16px;color:var(--dim)}
+input{width:100%;font-family:var(--display);font-weight:600;font-size:30px;color:var(--ink);background:var(--card);border:3px solid var(--line);
+  border-radius:18px;padding:12px 16px;margin-top:6px}
+#inCode{letter-spacing:.3em;text-transform:uppercase;font-size:40px;text-align:center}
+#swirls{display:flex;gap:10px;overflow-x:auto;padding:8px 2px 10px;margin-top:4px;scrollbar-width:none}
+.sw{flex:none;width:54px;height:54px;border-radius:50%;border:0;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0 8%,transparent 20%),conic-gradient(from 20deg,var(--a),var(--b),var(--c),var(--a),var(--b),var(--a));
+  box-shadow:inset -5px -7px 12px rgba(10,10,40,.5)}
+.sw[aria-pressed="true"]{box-shadow:inset -5px -7px 12px rgba(10,10,40,.5),0 0 0 4px var(--gold);transform:scale(1.08)}
+.big{width:100%;font-weight:600;font-size:32px;color:#fff;border:0;border-radius:22px;padding:18px;
+  background:linear-gradient(180deg,#ff5a77,#e02447);box-shadow:0 7px 0 #8f1029}
+.big:active{transform:translateY(4px);box-shadow:0 3px 0 #8f1029}
+.big:disabled{opacity:.45}
+.err{min-height:22px;font-weight:800;color:#ff8a75;font-size:17px}
+
+/* ---------- controller ---------- */
+#ctl{flex:1;display:flex;flex-direction:column;min-height:0}
+#top{padding:14px 18px 6px;display:flex;align-items:center;gap:12px}
+#me{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+#meMarble{flex:none;width:44px;height:44px;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0 8%,transparent 20%),conic-gradient(from 20deg,var(--a,#fff),var(--b,#f00),var(--c,#fff),var(--a,#fff),var(--b,#f00),var(--a,#fff));
+  box-shadow:inset -4px -6px 10px rgba(10,10,40,.5),0 0 0 3px var(--pc)}
+#meName{font-family:var(--display);font-weight:600;font-size:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#vipBadge{font-size:20px}
+#hcBtn{flex:none;height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--line);background:transparent;color:var(--ink);font-family:var(--body);font-weight:800;font-size:15px}
+
+#look{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 20px}
+#place{font-family:var(--display);font-weight:700;font-size:96px;line-height:.9;color:var(--pc);-webkit-text-stroke:3px var(--bg2);paint-order:stroke fill}
+#place small{font-size:36px;color:var(--dim);-webkit-text-stroke:0}
+#msg{font-family:var(--display);font-weight:600;font-size:26px;line-height:1.15;margin-top:6px}
+#sub{font-size:18px;color:var(--dim);margin-top:6px;font-weight:700}
+#prog{width:82%;height:12px;background:var(--line);border-radius:99px;margin-top:14px;overflow:hidden}
+#progFill{height:100%;width:0;background:var(--pc);border-radius:99px;transition:width .2s linear}
+
+#vip{display:flex;gap:10px;padding:0 18px 10px;flex-wrap:wrap;justify-content:center}
+#vip button{flex:1 1 40%;font-weight:600;font-size:22px;color:var(--ink);background:var(--card);border:3px solid var(--line);border-radius:18px;padding:14px 10px}
+#vip button.primary{color:#fff;background:linear-gradient(180deg,#ff5a77,#e02447);border-color:#ffd0d8;box-shadow:0 5px 0 #8f1029}
+
+/* the pad: bottom 60% (Section 7.1) */
+#padZone{position:relative;flex:0 0 60%;min-height:0;transition:flex-basis .3s;display:flex;align-items:center;justify-content:center;padding:20px 18px 30px}
+body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
+#pad{position:relative;height:min(100%,80vw);width:auto;aspect-ratio:1/1;aspect-ratio:1;border-radius:50%;border:0;touch-action:none;
+  background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--pc) 55%,#fff) 0%,var(--pc) 45%,color-mix(in srgb,var(--pc) 60%,#000) 100%);
+  box-shadow:0 14px 0 color-mix(in srgb,var(--pc) 45%,#000),0 24px 40px rgba(0,0,0,.4),inset 0 -14px 30px rgba(0,0,0,.25);
+  transition:transform .08s, box-shadow .08s, filter .2s}
+#pad.down{transform:translateY(8px) scale(.97);box-shadow:0 6px 0 color-mix(in srgb,var(--pc) 45%,#000),0 12px 24px rgba(0,0,0,.4),inset 0 -8px 20px rgba(0,0,0,.25)}
+#pad.grip{filter:saturate(1.3) brightness(1.08)}
+#pad.grip::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:6px solid var(--mint);animation:gripPulse .5s ease-in-out infinite alternate}
+@keyframes gripPulse{to{inset:-20px;opacity:.5}}
+#pad.empty{filter:grayscale(.85) brightness(.8)}
+#pad.burst{animation:burst .35s ease-out}
+@keyframes burst{0%{transform:scale(1.06)}100%{transform:scale(1)}}
+#ring{position:absolute;inset:-12px;pointer-events:none;transform:rotate(-90deg)}
+#ring circle{fill:none;stroke-width:4;stroke-linecap:round}
+#ringBg{stroke:var(--line)} #ringFg{stroke:var(--gold);transition:stroke-dashoffset .12s linear}
+#padText{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;color:#fff;
+  font-family:var(--display);text-shadow:0 3px 0 rgba(0,0,0,.25)}
+#padText b{font-weight:700;font-size:min(13vw,8vh);line-height:1}
+#padText span{font-weight:600;font-size:min(5.4vw,3.2vh);opacity:.95;margin-top:6px}
+#item{position:absolute;right:16px;top:-6px;width:88px;height:88px;border-radius:50%;border:4px solid var(--gold);background:var(--card);
+  font-size:42px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(0,0,0,.35);touch-action:none;color:var(--ink)}
+#item:disabled{display:none}
+#item.ready{animation:itemPulse .9s ease-in-out infinite}
+@keyframes itemPulse{50%{transform:scale(1.08)}}
+#banner{position:fixed;left:0;right:0;top:0;padding:10px;text-align:center;font-weight:800;background:#e02447;color:#fff;font-size:17px;z-index:9}
+#flash{position:fixed;inset:0;pointer-events:none;background:var(--pc);opacity:0}
+#flash.on{animation:fl .4s ease-out}
+@keyframes fl{0%{opacity:.35}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="banner" hidden>Reconnecting…</div>
+
+<section id="join">
+  <div class="logo"><span>MARBLE</span><span>RUSH</span></div>
+  <div><label for="inCode">Room code (on the TV)</label><input id="inCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text"></div>
+  <div><label for="inName">Your name</label><input id="inName" maxlength="10" autocomplete="nickname" spellcheck="false"></div>
+  <div><label>Pick your marble</label><div id="swirls"></div></div>
+  <div class="err" id="joinErr" role="alert"></div>
+  <button class="big" id="btnJoin">Join the race</button>
+</section>
+
+<section id="ctl" hidden>
+  <div id="top">
+    <div id="me"><div id="meMarble"></div><div id="meName"></div><span id="vipBadge" hidden>👑</span></div>
+    <button id="hcBtn" aria-label="Toggle high contrast">Contrast</button>
+  </div>
+  <div id="look">
+    <div id="place" hidden></div>
+    <div id="msg">You're in!</div>
+    <div id="sub"></div>
+    <div id="prog" hidden><div id="progFill"></div></div>
+  </div>
+  <div id="vip" hidden></div>
+  <div id="padZone">
+    <button id="pad" aria-label="Tap to boost, hold to grip">
+      <svg id="ring" viewBox="0 0 100 100"><circle id="ringBg" cx="50" cy="50" r="46"/><circle id="ringFg" cx="50" cy="50" r="46"/></svg>
+      <div id="padText"><b>TAP</b><span>boost · hold to grip</span></div>
+    </button>
+    <button id="item" disabled aria-label="Use item"></button>
+  </div>
+</section>
+<div id="flash"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const SWIRLS = [
+    ['#f4eefc','#FF3B5C','#ffffff'],['#0b3d91','#ffffff','#4CC9F0'],['#e9a100','#ffe08a','#fff4c2'],
+    ['#d9fbe9','#3DDC97','#FFF4E0'],['#2a145e','#8B5CF6','#ffffff'],['#ffd0e6','#FF5FA2','#ffffff'],
+    ['#ff8a3d','#ffd23f','#ff3b5c'],['#30366e','#4CC9F0','#FF5FA2'],['#d8f1ff','#4CC9F0','#ffffff'],
+    ['#ffd23f','#ff8a3d','#fff4c2'],['#e6f4ff','#8fd0ff','#ffffff'],['#16161f','#FFC83D','#7b6630'],
+  ];
+  const ITEM_ICON = { turbo:'🌪️', jelly:'🟢', oil:'🛢️', big:'⚫', bubble:'🫧' };
+  const ITEM_NAME = { turbo:'Turbo Tornado', jelly:'Sticky Jelly', oil:'Oil Slick', big:'Big Bertha', bubble:'Bubble Shield' };
+  const ORD = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+  const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+
+  let pid = store.get('mr_pid');
+  if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 10); store.set('mr_pid', pid); }
+  let swirl = +(store.get('mr_swirl') || Math.floor(Math.random() * 12));
+  const params = new URLSearchParams(location.search);
+  $('#inCode').value = (params.get('room') || store.get('mr_room') || '').toUpperCase();
+  $('#inName').value = store.get('mr_name') || '';
+  if (store.get('mr_hc') === '1') document.body.classList.add('hc');
+
+  // swirl picker
+  SWIRLS.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'sw'; b.setAttribute('aria-label', 'Marble ' + (i + 1));
+    b.style.cssText = `--a:${p[0]};--b:${p[1]};--c:${p[2]}`;
+    b.onclick = () => { swirl = i; store.set('mr_swirl', i); markSwirl(); if (joined) send({ t:'act', a:'swirl', v:i }); };
+    $('#swirls').appendChild(b);
+  });
+  function markSwirl() { [...$('#swirls').children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === swirl))); }
+  markSwirl();
+
+  /* ---------- tiny synth for instant feedback ---------- */
+  let ac = null;
+  function audio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} } if (ac && ac.state === 'suspended') ac.resume(); }
+  function tone(f, d, type, v, f2) {
+    if (!ac) return;
+    const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + 0.02);
+  }
+  const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} };
+
+  /* ---------- network ---------- */
+  let ws = null, open = false, joined = false, retry = 0, hud = null;
+  function connect() {
+    ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+    ws.onopen = () => { open = true; retry = 0; $('#banner').hidden = true; if (joined) doJoin(true); };
+    ws.onclose = () => { open = false; if (joined) $('#banner').hidden = false; setTimeout(connect, Math.min(6000, 600 * ++retry)); };
+    ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch(x){ return; } onMsg(m); };
+  }
+  function send(m) { if (open) ws.send(JSON.stringify(m)); }
+  connect();
+
+  function doJoin(silent) {
+    const code = $('#inCode').value.trim().toUpperCase();
+    const name = $('#inName').value.trim() || 'Racer';
+    if (code.length !== 4) { $('#joinErr').textContent = 'Enter the 4-letter code from the TV.'; return; }
+    store.set('mr_room', code); store.set('mr_name', name);
+    if (!open) { $('#joinErr').textContent = 'Still connecting — try again in a moment.'; return; }
+    send({ t:'join', code, pid, name, swirl });
+    if (!silent) $('#btnJoin').disabled = true;
+  }
+  $('#btnJoin').onclick = () => { audio(); doJoin(false); };
+  $('#inCode').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ''); });
+
+  function onMsg(m) {
+    if (m.t === 'err') {
+      $('#btnJoin').disabled = false;
+      $('#joinErr').textContent = m.e === 'noroom' ? 'No race with that code. Check the code on the TV.' : 'Could not join.';
+      if (joined) { joined = false; $('#ctl').hidden = true; $('#join').hidden = false; }
+      return;
+    }
+    if (m.t === 'full') { $('#btnJoin').disabled = false; $('#joinErr').textContent = 'This race is full (8 racers). Wait for the next one.'; return; }
+    if (m.t === 'wait') { showCtl(); setText('', 'Waiting for the TV…', 'Keep this page open.'); return; }
+    if (m.t === 'hud') { showCtl(); hud = m; render(); }
+  }
+  function showCtl() {
+    if (joined) return;
+    joined = true;
+    $('#join').hidden = true; $('#ctl').hidden = false; $('#btnJoin').disabled = false;
+    try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch(e){}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && joined) { try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch(e){} }
+  });
+
+  /* ---------- render HUD ---------- */
+  const RING = 2 * Math.PI * 46;
+  $('#ringFg').style.strokeDasharray = RING;
+  function setText(place, msg, sub) {
+    $('#place').hidden = !place; if (place) $('#place').innerHTML = place;
+    $('#msg').textContent = msg; $('#sub').textContent = sub || '';
+  }
+  function vipButtons(list) {
+    const box = $('#vip');
+    const key = list.map(b => b[0]).join();
+    if (box.dataset.key === key) return;
+    box.dataset.key = key; box.innerHTML = '';
+    for (const [a, label, primary] of list) {
+      const b = document.createElement('button'); b.textContent = label; if (primary) b.className = 'primary';
+      b.onclick = () => { audio(); tone(900, 0.05, 'sine', 0.15); send({ t:'act', a }); };
+      box.appendChild(b);
+    }
+    box.hidden = !list.length;
+  }
+  function render() {
+    let h = hud;
+    document.documentElement.style.setProperty('--pc', h.color);
+    const pal = SWIRLS[h.swirl % 12];
+    $('#meMarble').style.cssText = `--a:${pal[0]};--b:${pal[1]};--c:${pal[2]}`;
+    $('#meName').textContent = h.name;
+    $('#vipBadge').hidden = !h.vip;
+    $('#ringFg').style.strokeDashoffset = RING * (1 - h.boost / 100);
+    $('#pad').classList.toggle('empty', h.boost < 25 && (h.s === 'race'));
+    document.body.dataset.s = h.s;
+    const it = $('#item');
+    if (h.s !== 'race') h = Object.assign({}, h, { item: null });
+    it.disabled = !h.item; it.textContent = h.item ? ITEM_ICON[h.item] : '';
+    it.classList.toggle('ready', !!h.item);
+    it.setAttribute('aria-label', h.item ? 'Use ' + ITEM_NAME[h.item] : 'No item');
+    $('#prog').hidden = h.s !== 'race';
+    $('#progFill').style.width = (h.prog * 100) + '%';
+    let vip = [];
+    switch (h.s) {
+      case 'lobby':
+        setText('', "You're in!", h.vip ? 'You are the host. Start when everyone has joined.' : 'Practise in the bowl while everyone joins.');
+        if (h.vip) vip = [['cpu', 'Add CPU racer'], ['start', 'Start race', true]];
+        break;
+      case 'countdown':
+        setText(h.cd ? `<span>${h.cd}</span>` : '', h.inRace ? 'Tap right on ROLL!' : 'You join the next race', h.inRace ? 'for a perfect start' : '');
+        break;
+      case 'race':
+        if (!h.inRace) { setText('', 'Watch the TV!', 'You join the next race'); break; }
+        if (h.fin) setText(`${ORD(h.place)}`, 'Finished!', 'Watch the others come home');
+        else if (h.off) setText(`${ORD(h.place)}<small>/${h.n}</small>`, 'Whoops!', 'Back on the track in a moment');
+        else setText(`${ORD(h.place)}<small>/${h.n}</small>`, h.item ? ITEM_NAME[h.item] + ' ready' : '', h.item ? 'Tap the item button to use it' : '');
+        break;
+      case 'results':
+        setText(h.lastPlace ? ORD(h.lastPlace) : '', h.lastPlace ? `+${h.pts} points` : 'Watch the TV!', `Tonight: ${h.total} points`);
+        if (h.vip) vip = [['lobby', 'Lobby'], ['finale', 'End night'], ['again', 'Race again', true]];
+        break;
+      case 'finale':
+        setText('🏆', h.award || 'Good Sport', `${h.total} points tonight`);
+        if (h.vip) vip = [['newnight', 'New night', true]];
+        break;
+      default: setText('', 'Watch the TV!', '');
+    }
+    vipButtons(vip);
+    $('#padText b').textContent = h.s === 'race' && h.boost < 25 ? 'GRIP' : 'TAP';
+  }
+
+  /* ---------- pad input (Section 7.2) ---------- */
+  const pad = $('#pad');
+  let downId = null, downAt = 0, gripT = null;
+  pad.addEventListener('pointerdown', e => {
+    e.preventDefault(); audio();
+    if (downId !== null) return;
+    downId = e.pointerId; downAt = performance.now();
+    try { pad.setPointerCapture(e.pointerId); } catch(x){}
+    pad.classList.add('down');
+    send({ t:'in', k:'p' });
+    gripT = setTimeout(() => { pad.classList.add('grip'); tone(160, 0.25, 'sine', 0.08); }, 120);
+  });
+  function up(e) {
+    if (downId === null || (e && e.pointerId !== downId)) return;
+    downId = null; clearTimeout(gripT);
+    pad.classList.remove('down', 'grip');
+    send({ t:'in', k:'r' });
+    const held = performance.now() - downAt;
+    if (held <= 180) {
+      const canBoost = !hud || hud.s !== 'race' || hud.boost >= 25;
+      if (canBoost) {
+        tone(320, 0.18, 'triangle', 0.16, 980); buzz(15);
+        pad.classList.remove('burst'); void pad.offsetWidth; pad.classList.add('burst');
+        $('#flash').classList.remove('on'); void $('#flash').offsetWidth; $('#flash').classList.add('on');
+      } else { tone(110, 0.15, 'square', 0.08, 70); }
+    }
+  }
+  pad.addEventListener('pointerup', up);
+  pad.addEventListener('pointercancel', up);
+  pad.addEventListener('lostpointercapture', up);
+  pad.addEventListener('contextmenu', e => e.preventDefault());
+  $('#item').addEventListener('pointerdown', e => {
+    e.preventDefault(); audio();
+    if (!hud || !hud.item) return;
+    send({ t:'in', k:'i' }); tone(700, 0.3, 'sine', 0.14, 1500); buzz([10, 30, 10]);
+  });
+  $('#hcBtn').onclick = () => { document.body.classList.toggle('hc'); store.set('mr_hc', document.body.classList.contains('hc') ? '1' : '0'); };
+  document.addEventListener('gesturestart', e => e.preventDefault());
+})();
+</script>
+</body>
+</html>
