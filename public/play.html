@@ -69,6 +69,13 @@ input{width:100%;font-family:var(--display);font-weight:600;font-size:30px;color
 #vip button{flex:1 1 40%;font-weight:600;font-size:22px;color:var(--ink);background:var(--card);border:3px solid var(--line);border-radius:18px;padding:14px 10px}
 #vip button.primary{color:#fff;background:linear-gradient(180deg,#ff5a77,#e02447);border-color:#ffd0d8;box-shadow:0 5px 0 #8f1029}
 
+#votes{display:flex;flex-direction:column;gap:10px;padding:0 18px 12px}
+#votes button{display:flex;align-items:center;gap:12px;font-weight:600;font-size:24px;color:#fff;border:3px solid transparent;border-radius:20px;padding:14px 16px;
+  background:var(--vc);box-shadow:0 5px 0 rgba(0,0,0,.3);text-align:left;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+#votes button span{font-size:30px}
+#votes button[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 4px rgba(255,200,61,.4),0 5px 0 rgba(0,0,0,.3)}
+#votes button.lost{opacity:.35}
+body[data-s="vote"] #padZone{flex-basis:30%}
 /* the pad: bottom 60% (Section 7.1) */
 #padZone{position:relative;flex:0 0 60%;min-height:0;transition:flex-basis .3s;display:flex;align-items:center;justify-content:center;padding:20px 18px 30px}
 body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
@@ -125,6 +132,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     <div id="sub"></div>
     <div id="prog" hidden><div id="progFill"></div></div>
   </div>
+  <div id="votes" hidden></div>
   <div id="vip" hidden></div>
   <div id="padZone">
     <button id="pad" aria-label="Tap to boost, hold to grip">
@@ -263,6 +271,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     $('#prog').hidden = h.s !== 'race';
     $('#progFill').style.width = (h.prog * 100) + '%';
     let vip = [];
+    renderVotes(h);
     switch (h.s) {
       case 'lobby':
         setText('', "You're in!", h.vip ? 'You are the host. Start when everyone has joined.' : 'Practise in the bowl while everyone joins.');
@@ -277,9 +286,13 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         else if (h.off) setText(`${ORD(h.place)}<small>/${h.n}</small>`, 'Whoops!', 'Back on the track in a moment');
         else setText(`${ORD(h.place)}<small>/${h.n}</small>`, h.item ? ITEM_NAME[h.item] + ' ready' : '', h.item ? 'Tap the item button to use it' : '');
         break;
+      case 'vote':
+        setText('', h.picked >= 0 ? 'Track chosen!' : h.myVote >= 0 ? 'Vote in — change it any time' : 'Pick the next track', `Race ${h.cupRace + 1} of ${h.cupN}`);
+        if (h.vip && h.picked < 0) vip = [['skip', 'Decide now']];
+        break;
       case 'results':
-        setText(h.lastPlace ? ORD(h.lastPlace) : '', h.lastPlace ? `+${h.pts} points` : 'Watch the TV!', `Tonight: ${h.total} points`);
-        if (h.vip) vip = [['lobby', 'Lobby'], ['finale', 'End night'], ['again', 'Race again', true]];
+        setText(h.lastPlace ? ORD(h.lastPlace) : '', h.lastPlace ? `+${h.pts} points` : 'Watch the TV!', `Cup: ${h.total} points · race ${h.cupRace} of ${h.cupN}`);
+        if (h.vip) vip = h.cupDone ? [['lobby', 'Lobby'], ['next', 'Crown the champion', true]] : [['lobby', 'Lobby'], ['finale', 'End early'], ['next', 'Next race', true]];
         break;
       case 'finale':
         setText('🏆', h.award || 'Good Sport', `${h.total} points tonight`);
@@ -291,6 +304,23 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     $('#padText b').textContent = h.s === 'race' && h.boost < 25 ? 'GRIP' : 'TAP';
   }
 
+  function renderVotes(h) {
+    const box = $('#votes');
+    if (h.s !== 'vote' || !h.opts) { box.hidden = true; box.dataset.key = ''; return; }
+    box.hidden = false;
+    const key = h.opts.map(o => o.name).join() + '|' + h.myVote + '|' + h.picked;
+    if (box.dataset.key === key) return;
+    box.dataset.key = key; box.innerHTML = '';
+    h.opts.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.style.setProperty('--vc', `linear-gradient(135deg, ${o.c}, color-mix(in srgb, ${o.c} 45%, #14163A))`);
+      b.innerHTML = `<span>${o.icon}</span>`; b.appendChild(document.createTextNode(o.name));
+      b.setAttribute('aria-pressed', String(h.myVote === i));
+      if (h.picked >= 0 && h.picked !== i) b.className = 'lost';
+      b.onclick = () => { audio(); tone(900, 0.06, 'sine', 0.15); buzz(10); send({ t:'act', a:'vote', v:i }); };
+      box.appendChild(b);
+    });
+  }
   /* ---------- pad input (Section 7.2) ---------- */
   const pad = $('#pad');
   let downId = null, downAt = 0, gripT = null;

@@ -1,4 +1,4 @@
-# Marble Rush — v0.1
+# Marble Rush — v0.2
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
@@ -7,7 +7,7 @@ The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 1. Open `public/tv.html` in Chrome on your laptop (double-click it).
 2. Click **Open the track**.
 3. Click **Add keyboard racer** (you race with **Space**; **X** uses an item) and **Add CPU racer** a few times.
-4. Click **Start race**.
+4. Click **Start the Cup**, then click a track card to vote (or **Decide now**).
 
 Phones don't work in this mode — that needs the server below.
 

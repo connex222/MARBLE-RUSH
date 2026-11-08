@@ -834,6 +834,7 @@ Built after Marble Rush, reusing the same **Party Core**: lobby and room codes, 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 8 Nov 2026 | First master document |
+| 1.2 | 8 Nov 2026 | Build v0.2: all four launch tracks playable (Candy Cascade, Frosty Freefall, Orbit Drop added); Cup of 1, 2 or 4 races chosen in the lobby; track vote before each race (phones vote; TV can click a card or Decide now); new track pieces built: conveyor, slow zone, seesaw, low-gravity zone; each theme has its own code-drawn look until its art pack arrives |
 | 1.1 | 8 Nov 2026 | Build v0.1: Toy Box Tumble playable end to end; TV lobby has a QR code; local test mode (open tv.html, keyboard + CPU racers); manifest now lists each asset's file, so sounds can be MP3, OGG, M4A or WAV; music and sound are code-generated until real files arrive |
 
 *Rule: any change to filenames, sizes, rules or scoring gets a new line here. Both AIs work from the latest version only.*

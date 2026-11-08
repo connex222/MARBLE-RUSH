@@ -26,6 +26,12 @@ const MR = (() => {
     bowl:  { e: 0.20, crr: 0.22 },
     pad:   { e: 0.25, crr: 0.006 },
     gate:  { e: 0.10, crr: 0.012 },
+    candy: { e: 0.22, crr: 0.016 },
+    choc:  { e: 0.10, crr: 0.075 },
+    ice:   { e: 0.25, crr: 0.003 },
+    metal: { e: 0.20, crr: 0.009 },
+    conveyor: { e: 0.20, crr: 0.010 },
+    seesaw: { e: 0.25, crr: 0.012 },
   };
 
   const ITEMS = ['turbo', 'jelly', 'oil', 'big', 'bubble'];
@@ -52,8 +58,10 @@ const MR = (() => {
       meta, segs: [], way: [], bumpers: [], pads: [], gems: [], loops: [],
       hazards: [], stairs: [], jumps: [], bowls: [], arches: [], walls: [],
       startSlots: [], gateX: 0, gateY: 0, finishWay: -1,
+      conveyors: [], seesaws: [], zones: [],
     };
-    let x = 0, y = 0, phi = 0;
+    let x = 0, y = 0, phi = 0, MATDEF = 'wood', zoneStart = -1;
+    function setMat(m) { MATDEF = m; }
 
     const H = () => (Math.cos(rad(phi)) >= 0 ? 1 : -1);
 
@@ -77,7 +85,7 @@ const MR = (() => {
     function aim(slope) { phi = H() > 0 ? slope : 180 - slope; }
     function face(h, slope = 0) { phi = h > 0 ? slope : 180 - slope; }
 
-    function line(len, mat = 'wood', o = {}) {
+    function line(len, mat = MATDEF, o = {}) {
       const a = rad(phi);
       const x2 = x + Math.cos(a) * len, y2 = y + Math.sin(a) * len;
       const s = seg(x, y, x2, y2, mat, o);
@@ -87,7 +95,7 @@ const MR = (() => {
       return s;
     }
     /** Bend: dSlope > 0 noses down, < 0 noses up, whichever way we head. */
-    function bend(radius, dSlope, mat = 'wood') {
+    function bend(radius, dSlope, mat = MATDEF) {
       const dphi = H() > 0 ? dSlope : -dSlope;
       const steps = Math.max(3, Math.ceil(Math.abs(dphi) / 6));
       const d = dphi / steps;
@@ -124,7 +132,7 @@ const MR = (() => {
         const nx = cx + h * Rl * Math.sin(th), ny = cy + Rl * Math.cos(th);
         const mid = (i - 0.5) / steps * Math.PI * 2;
         const layer = mid < Math.PI / 2 ? `L${id}a` : mid > 1.5 * Math.PI ? `L${id}b` : null;
-        seg(px, py, nx, ny, 'wood', { layer, kind: 'loop' });
+        seg(px, py, nx, ny, MATDEF, { layer, kind: 'loop' });
         way(nx + (cx - nx) / Rl * C.R, ny + (cy - ny) / Rl * C.R);
         px = nx; py = ny;
       }
@@ -209,8 +217,42 @@ const MR = (() => {
       way(cx, cy + Rb + 60);
       T.bowls.push({ cx, cy, r: Rb, hole, h });
       x = cx - h * 46; y = cy + Rb + 120;
+      // backstop: marbles that drop through still rolling backwards bounce onto the exit rail
+      T.walls.push(seg(x - h * 4, y - 150, x - h * 4, y + 4, 'wall', { kind: 'wall' }));
       face(h, 10);
       way(x + h * 20, y - C.R);
+    }
+    /** Conveyor belt: keeps pushing marbles along at belt speed. */
+    function conveyor(len, speed = 760) {
+      const a = rad(phi);
+      const s0 = line(len, 'conveyor', { kind: 'conveyor' });
+      T.conveyors.push({ s: s0, dx: Math.cos(a), dy: Math.sin(a), speed });
+    }
+    /** Slow zone (chocolate river, deep snow): boost through it. */
+    function slow(len, mat = 'choc') { line(len, mat, { kind: 'slow' }); }
+    /** Seesaw plank on a hinge — tips under marble weight. */
+    function seesaw(L = 300, drop = 34) {
+      const h = H();
+      face(h, 0);
+      const px = x + h * L / 2, py = y + 4;
+      const ss = { px, py, L, a: h * 0.08, w: 0, rest: h * 0.08, load: 0, h,
+        seg: { x1: 0, y1: 0, x2: 0, y2: 0, mat: 'seesaw', kind: 'seesaw' } };
+      T.seesaws.push(ss);
+      for (let k = 0; k <= 6; k++) way(x + h * L * k / 6, y - C.R + 6 * k / 6);
+      x += h * (L + 16); y += drop;
+      face(h, 6);
+    }
+    /** Low-gravity zone: everything between lowStart() and lowEnd(). */
+    function lowStart() { zoneStart = T.segs.length; }
+    function lowEnd(g = 0.42) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (let i = zoneStart; i < T.segs.length; i++) {
+        const q = T.segs[i];
+        x0 = Math.min(x0, q.x1, q.x2); x1 = Math.max(x1, q.x1, q.x2);
+        y0 = Math.min(y0, q.y1, q.y2); y1 = Math.max(y1, q.y1, q.y2);
+      }
+      T.zones.push({ x0: x0 - 60, y0: y0 - 420, x1: x1 + 60, y1: y1 + 20, g });
+      zoneStart = -1;
     }
     function start(slots = 8) {
       x = 0; y = 0; phi = 0;
@@ -258,6 +300,10 @@ const MR = (() => {
         minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
         minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
       }
+      for (const ss of T.seesaws) {
+        minX = Math.min(minX, ss.px - ss.L); maxX = Math.max(maxX, ss.px + ss.L);
+        placeSeesaw(ss);
+      }
       T.bounds = { minX, minY, maxX, maxY };
       // spatial hash
       const CELL = 128, grid = new Map();
@@ -277,10 +323,15 @@ const MR = (() => {
 
     return {
       T, line, bend, aim, face, uturn, dangerTurn, loop, jump, bumpers, pad, gems, stairs, bowl,
-      start, finish, runoff, done, get x() { return x; }, get y() { return y; }, get h() { return H(); },
+      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, get x() { return x; }, get y() { return y; }, get h() { return H(); },
     };
   }
   const EMPTY = [];
+  function placeSeesaw(ss) {
+    const c = Math.cos(ss.a), n = Math.sin(ss.a), hl = ss.L / 2, g = ss.seg;
+    g.x1 = ss.px - c * hl; g.y1 = ss.py - n * hl; g.x2 = ss.px + c * hl; g.y2 = ss.py + n * hl;
+    g.dx = g.x2 - g.x1; g.dy = g.y2 - g.y1; g.len2 = g.dx * g.dx + g.dy * g.dy;
+  }
 
   /* ======================================================================
      TRACKS
@@ -341,6 +392,138 @@ const MR = (() => {
     B.runoff(520);
     return B.done();
   };
+
+  /** Candy Cascade — sweet factory: conveyors, candy-cane loop, gumball whirlpool, chocolate river. */
+  TRACKS.candy = () => {
+    const B = Builder({ id: 'candy', name: 'Candy Cascade', theme: 'candy' });
+    B.start(8); B.setMat('candy');
+    // 1 → conveyor run + gems
+    B.aim(8); B.line(240); B.conveyor(420); B.gems(4); B.line(420); B.bend(300, -12); B.bend(300, 18); B.line(260);
+    B.uturn(170, 150, 9);
+    // 2 ← chocolate river (boost through it)
+    B.line(320); B.aim(4); B.slow(420); B.aim(12); B.line(360);
+    B.uturn(160, 150, 26);
+    // 3 → steep drop into candy-cane loop
+    B.line(760); B.bend(260, -26); B.line(60); B.loop(116); B.aim(4); B.line(320);
+    B.uturn(170, 150, 9);
+    // 4 ← bumper field (gobstoppers)
+    B.line(220); B.aim(24); B.bumpers(520, 4); B.aim(9); B.line(260); B.gems(4); B.line(300);
+    B.dangerTurn(170, 9);
+    // 5 → gumball whirlpool
+    B.line(300); B.conveyor(300); B.line(260); B.bowl(220, 76); B.line(420);
+    B.uturn(170, 150, 9);
+    // 6 ← jump over the chocolate
+    B.line(380); B.aim(16); B.line(320); B.jump(220, 70, 16, 18); B.line(300); B.aim(8); B.line(200);
+    B.uturn(160, 150, 9);
+    // 7 → double hills + conveyor
+    B.line(240); B.bend(240, -18); B.bend(240, 26); B.line(200); B.conveyor(320); B.gems(4); B.line(260);
+    B.bend(240, -18); B.bend(240, 26); B.line(240);
+    B.uturn(170, 150, 8);
+    // 8 ← chocolate river 2 + danger
+    B.line(260); B.aim(4); B.slow(360); B.aim(12); B.line(340); B.pad(160);
+    B.dangerTurn(180, 9);
+    // 9 → second whirlpool
+    B.line(320); B.bowl(200, 76); B.line(380);
+    B.uturn(170, 150, 9);
+    // 10 ← xylo-sweet stairs (sugar-glass plates)
+    B.line(260); B.stairs(8, 96, 40); B.aim(10); B.line(300); B.gems(4); B.line(260);
+    B.uturn(160, 150, 26);
+    // 11 → steep drop, conveyor, loop
+    B.line(620); B.bend(240, -26); B.conveyor(200, 900); B.loop(112); B.aim(4); B.line(320);
+    B.uturn(170, 150, 9);
+    // 12 ← final sprint
+    B.line(300); B.pad(200); B.line(440); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
+  /** Frosty Freefall — ice palace: slippery ice, snowflake seesaws, ski jumps, icicle bumpers. */
+  TRACKS.ice = () => {
+    const B = Builder({ id: 'ice', name: 'Frosty Freefall', theme: 'ice' });
+    B.start(8); B.setMat('ice');
+    // 1 → slippery opener
+    B.aim(6); B.line(300); B.gems(4); B.line(520); B.bend(320, -12); B.bend(320, 18); B.line(300);
+    B.dangerTurn(170, 7);
+    // 2 ← snowflake seesaw
+    B.line(340); B.seesaw(320); B.line(380);
+    B.uturn(160, 150, 8);
+    // 3 → ski jump
+    B.line(420); B.aim(20); B.line(360); B.jump(260, 90, 22, 20); B.line(300); B.aim(6); B.line(220);
+    B.uturn(170, 150, 9);
+    // 4 ← icicle bumpers
+    B.line(220); B.aim(22); B.bumpers(520, 4); B.aim(8); B.line(260); B.gems(4); B.line(300);
+    B.uturn(170, 150, 28);
+    // 5 → steep ice drop into loop
+    B.line(700); B.bend(260, -28); B.line(60); B.loop(118); B.aim(4); B.line(340);
+    B.dangerTurn(170, 8);
+    // 6 ← deep snow + seesaw
+    B.line(260); B.aim(4); B.slow(300, 'choc'); B.aim(10); B.line(220); B.seesaw(300); B.line(320);
+    B.uturn(170, 150, 9);
+    // 7 → crests on ice (grip matters)
+    B.line(260); B.bend(240, -18); B.bend(240, 26); B.line(220); B.gems(4); B.line(240);
+    B.bend(240, -18); B.bend(240, 26); B.line(260);
+    B.dangerTurn(180, 8);
+    // 8 ← big ski jump
+    B.line(600); B.pad(160); B.jump(280, 100, 20, 22); B.line(300); B.aim(7); B.line(200);
+    B.uturn(170, 150, 9);
+    // 9 → icy whirlpool
+    B.line(300); B.bowl(210, 76); B.line(380);
+    B.uturn(170, 150, 9);
+    // 10 ← icicle chimes (ice-plate stairs) + seesaw
+    B.line(260); B.stairs(8, 96, 40); B.aim(10); B.line(220); B.seesaw(300); B.line(300);
+    B.dangerTurn(170, 9);
+    // 11 → final stretch
+    B.line(300); B.gems(4); B.line(260); B.pad(200); B.line(420); B.aim(4); B.line(180);
+    B.finish(); B.runoff(560);
+    return B.done();
+  };
+
+  /** Orbit Drop — space station: low gravity, rocket pads, asteroid bumpers, floaty jumps. */
+  TRACKS.space = () => {
+    const B = Builder({ id: 'space', name: 'Orbit Drop', theme: 'space' });
+    B.start(8); B.setMat('metal');
+    // 1 → rocket pad run
+    B.aim(8); B.line(300); B.pad(200); B.gems(4); B.line(460); B.bend(300, -12); B.bend(300, 18); B.line(260);
+    B.uturn(170, 150, 9);
+    // 2 ← low-gravity floaty jumps
+    B.line(300); B.lowStart(); B.aim(12); B.line(220); B.jump(300, 40, 20, 14); B.line(220); B.jump(300, 40, 20, 14); B.line(200); B.lowEnd(0.42);
+    B.uturn(170, 150, 9);
+    // 3 → asteroid field
+    B.line(240); B.aim(24); B.bumpers(560, 4); B.aim(9); B.line(260); B.gems(4); B.line(300);
+    B.dangerTurn(170, 9);
+    // 4 ← steep drop into loop
+    B.line(240); B.aim(28); B.line(560); B.bend(260, -28); B.line(60); B.loop(116); B.aim(4); B.line(300);
+    B.uturn(170, 150, 9);
+    // 5 → low-gravity crests (huge air)
+    B.line(260); B.lowStart(); B.bend(240, -18); B.bend(240, 26); B.line(240); B.bend(240, -18); B.bend(240, 26); B.line(260); B.lowEnd(0.45);
+    B.uturn(170, 150, 9);
+    // 6 ← conveyor tube + rocket pad
+    B.line(260); B.conveyor(380, 820); B.gems(4); B.line(300); B.pad(160);
+    B.dangerTurn(180, 8);
+    // 7 → big low-gravity jump
+    B.line(420); B.lowStart(); B.jump(320, 110, 18, 20); B.line(660); B.lowEnd(0.45); B.aim(7); B.line(160);
+    B.uturn(170, 260, 9);
+    // 8 ← black-hole whirlpool
+    B.line(300); B.bowl(210, 76); B.line(400);
+    B.uturn(170, 150, 9);
+    // 9 → asteroid field 2 + gems
+    B.line(260); B.aim(22); B.bumpers(480, 3); B.aim(8); B.line(240); B.gems(4); B.line(300);
+    B.uturn(170, 150, 9);
+    // 10 ← low-gravity hill run
+    B.line(240); B.lowStart(); B.bend(240, -16); B.bend(240, 24); B.line(260); B.lowEnd(0.45); B.line(200); B.pad(160);
+    B.dangerTurn(170, 9);
+    // 11 → final sprint
+    B.line(300); B.conveyor(260, 900); B.line(300); B.pad(200); B.line(380); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
+  const TRACK_INFO = [
+    { id: 'toybox', name: 'Toy Box Tumble', blurb: 'Xylophone stairs, two loops, whirlpools', theme: 'toybox' },
+    { id: 'candy', name: 'Candy Cascade', blurb: 'Conveyor belts, chocolate river, gumball whirlpool', theme: 'candy' },
+    { id: 'ice', name: 'Frosty Freefall', blurb: 'Slippery ice, snowflake seesaws, ski jumps', theme: 'ice' },
+    { id: 'space', name: 'Orbit Drop', blurb: 'Low gravity, rocket pads, asteroid field', theme: 'space' },
+  ];
 
   /** Lobby playground bowl — practise boost & grip while players join. */
   TRACKS.lobby = () => {
@@ -549,7 +732,9 @@ const MR = (() => {
       m.r += (tr - m.r) * Math.min(1, dt * 12);
       m.mass = big ? 3 : fx.bubble > 0 ? 2 : 1;
 
-      const g = C.G;
+      let g = C.G;
+      for (const z of this.t.zones) if (m.x > z.x0 && m.x < z.x1 && m.y > z.y0 && m.y < z.y1) { g = C.G * z.g; break; }
+      m.lowG = g < C.G;
       let ax = 0, ay = g;
       const grounded = m.gTime < 0.05;
       const canInput = this.phase !== 'pen' && fx.slip <= 0 && fx.hold <= 0;
@@ -590,7 +775,7 @@ const MR = (() => {
         const tl = Math.hypot(tx, ty);
         let crr = m.crr;
         if (fx.slip > 0) crr *= 0.15;
-        const dec = crr * g * dt;
+        const dec = crr * C.G * dt;
         if (tl > dec) { m.vx -= tx / tl * dec; m.vy -= ty / tl * dec; }
         else if (tl > 0) { m.vx -= tx; m.vy -= ty; }
         // roll: angular velocity from tangential speed
@@ -611,6 +796,11 @@ const MR = (() => {
     }
 
     collideTrack(m) {
+      for (const ss of this.t.seesaws) {
+        if (Math.abs(m.x - ss.px) > ss.L * 0.6 + m.r || Math.abs(m.y - ss.py) > ss.L * 0.4 + m.r) continue;
+        const u = this.hit(m, ss.seg);
+        if (u !== null) ss.load += (u - 0.5) * m.mass;
+      }
       const segs = this.t.segs, st = ++this.stamp;
       for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
         const list = this.t.query(m.x + ox * 64, m.y + oy * 64);
@@ -636,6 +826,26 @@ const MR = (() => {
           m.gTime = 0; m.nx = nx; m.ny = ny; m.crr = mat.crr;
         }
       }
+    }
+
+    /** Circle vs one segment; returns contact position along it (0–1) or null. */
+    hit(m, s) {
+      let t = ((m.x - s.x1) * s.dx + (m.y - s.y1) * s.dy) / s.len2;
+      t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const px = s.x1 + s.dx * t, py = s.y1 + s.dy * t;
+      const ddx = m.x - px, ddy = m.y - py, d2 = ddx * ddx + ddy * ddy;
+      if (d2 >= m.r * m.r || d2 < 1e-9) return null;
+      const d = Math.sqrt(d2), nx = ddx / d, ny = ddy / d;
+      m.x += nx * (m.r - d); m.y += ny * (m.r - d);
+      const vn = m.vx * nx + m.vy * ny;
+      const mat = MAT[s.mat] || MAT.wood;
+      if (vn < 0) {
+        const e = -vn < 90 ? 0 : mat.e;
+        m.vx -= (1 + e) * vn * nx; m.vy -= (1 + e) * vn * ny;
+        if (-vn > 140) this.emit('impact', { id: m.id, mat: s.mat, v: -vn, x: px, y: py });
+      }
+      m.gTime = 0; m.nx = nx; m.ny = ny; m.crr = mat.crr;
+      return t;
     }
 
     marbleCollisions() {
@@ -673,8 +883,29 @@ const MR = (() => {
       for (const b of t.bumpers) if (b.flash > 0) b.flash -= dt;
       for (const p of t.pads) if (p.glow > 0) p.glow -= dt;
       for (const g of t.gems) if (g.cd > 0) g.cd -= dt;
+      for (const ss of t.seesaws) {
+        const acc = ss.load * 14 - (ss.a - ss.rest) * 9 - ss.w * 3.2;
+        ss.w += acc * dt; ss.a += ss.w * dt;
+        if (ss.a > 0.3) { ss.a = 0.3; ss.w = Math.min(0, ss.w); }
+        if (ss.a < -0.3) { ss.a = -0.3; ss.w = Math.max(0, ss.w); }
+        if (Math.abs(ss.w) > 1.2 && !ss.tick) { ss.tick = true; this.emit('seesaw', { x: ss.px, y: ss.py }); }
+        if (Math.abs(ss.w) < 0.3) ss.tick = false;
+        ss.load = 0;
+        placeSeesaw(ss);
+      }
       for (const m of this.marbles) {
         if (m.respawnT > 0) continue;
+        if (m.gTime < 0.05) {
+          for (const cv of t.conveyors) {
+            const s = cv.s;
+            const u = ((m.x - s.x1) * s.dx + (m.y - s.y1) * s.dy) / s.len2;
+            if (u < 0 || u > 1) continue;
+            if (Math.hypot(m.x - (s.x1 + s.dx * u), m.y - (s.y1 + s.dy * u)) > m.r + 4) continue;
+            const along = m.vx * cv.dx + m.vy * cv.dy;
+            if (along < cv.speed) { const k = Math.min(cv.speed - along, 1400 * dt); m.vx += cv.dx * k; m.vy += cv.dy * k; }
+            break;
+          }
+        }
         // loops: switch collision layers as the marble passes the top
         for (const L of t.loops) {
           const dx = m.x - L.cx, dy = m.y - L.cy;
@@ -897,6 +1128,6 @@ const MR = (() => {
 
   const POINTS = [10, 8, 6, 5, 4, 3, 2, 1];
 
-  return { C, MAT, ITEMS, POINTS, rng, Builder, TRACKS, World, giveAwards };
+  return { C, MAT, ITEMS, POINTS, rng, Builder, TRACKS, TRACK_INFO, World, giveAwards };
 })();
 if (typeof module !== 'undefined') module.exports = MR;

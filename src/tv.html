@@ -170,6 +170,29 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 .aaward{font-size:calc(22*var(--u));color:var(--gold);font-weight:800}
 .apts{text-align:right;font-family:var(--display);font-weight:600;font-size:calc(24*var(--u))}
 
+/* ---------- vote ---------- */
+.voteWrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(1500*var(--u));text-align:center}
+.voteTitle{font-family:var(--display);font-weight:700;font-size:calc(76*var(--u));color:var(--cream);text-shadow:0 calc(6*var(--u)) 0 rgba(0,0,0,.35)}
+.voteSub{font-size:calc(26*var(--u));font-weight:800;color:var(--gold);margin:calc(4*var(--u)) 0 calc(30*var(--u))}
+#voteCards{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(28*var(--u))}
+.vcard{position:relative;display:flex;flex-direction:column;align-items:center;gap:calc(10*var(--u));min-height:calc(440*var(--u));padding:calc(34*var(--u)) calc(24*var(--u));
+  border-radius:calc(34*var(--u));border:calc(4*var(--u)) solid rgba(255,244,224,.25);color:var(--cream);font-family:var(--body);cursor:pointer;pointer-events:auto;
+  background:radial-gradient(circle at 50% 20%,var(--g2) 0%,transparent 55%),radial-gradient(circle at 80% 90%,var(--g3) 0%,transparent 45%),var(--g1);
+  box-shadow:0 calc(20*var(--u)) calc(50*var(--u)) rgba(0,0,0,.45);transition:transform .35s cubic-bezier(.3,1.5,.5,1),opacity .3s,filter .3s;animation:cardIn .5s cubic-bezier(.3,1.5,.5,1) backwards}
+.vcard:nth-child(2){animation-delay:.08s}.vcard:nth-child(3){animation-delay:.16s}
+.vcard.won{transform:scale(1.07);border-color:var(--gold);box-shadow:0 0 0 calc(6*var(--u)) rgba(255,200,61,.35),0 calc(24*var(--u)) calc(60*var(--u)) rgba(0,0,0,.5)}
+.vcard.lost{opacity:.35;filter:grayscale(.6);transform:scale(.94)}
+.vnum{position:absolute;left:calc(22*var(--u));top:calc(18*var(--u));font-family:var(--display);font-weight:700;font-size:calc(34*var(--u));color:var(--gold)}
+.vicon{font-size:calc(110*var(--u));line-height:1.1;filter:drop-shadow(0 calc(8*var(--u)) calc(10*var(--u)) rgba(0,0,0,.35))}
+.vname{font-family:var(--display);font-weight:700;font-size:calc(46*var(--u));line-height:1.05;text-shadow:0 calc(4*var(--u)) 0 rgba(0,0,0,.3)}
+.vblurb{font-size:calc(22*var(--u));font-weight:700;opacity:.9;max-width:calc(380*var(--u))}
+.vvoters{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(6*var(--u));margin-top:auto;min-height:calc(44*var(--u))}
+.vvoters img{width:calc(40*var(--u));height:calc(40*var(--u));animation:cardIn .35s cubic-bezier(.3,1.8,.5,1)}
+.voteTimer{height:calc(10*var(--u));background:rgba(255,244,224,.15);border-radius:99px;margin:calc(30*var(--u)) auto 0;width:60%;overflow:hidden}
+#voteBar{height:100%;background:var(--gold);transform-origin:left;border-radius:99px}
+.voteFoot{display:flex;align-items:center;justify-content:center;gap:calc(20*var(--u));margin-top:calc(22*var(--u));font-size:calc(24*var(--u));font-weight:800;opacity:.9}
+.voteFoot .btn{font-size:calc(22*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
+
 @media (prefers-reduced-motion: reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
 </style>
 </head>
@@ -210,6 +233,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
       <div id="lobbyPlayers"></div>
     </div>
     <div id="lobbySettings">
+      <button class="chip" data-set="cup">Cup<em>4 races</em></button>
       <button class="chip" data-set="items">Items</button>
       <button class="chip" data-set="catchup">Catch-up</button>
       <button class="chip" data-set="music">Music</button>
@@ -219,8 +243,18 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
     </div>
     <div id="lobbyBottom">
       <button class="btn" id="btnKb">Add keyboard racer</button>
-      <button class="btn go" id="btnStart" disabled>Start race</button>
+      <button class="btn go" id="btnStart" disabled>Start the Cup</button>
       <button class="btn" id="btnCpu">Add CPU racer</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="vote" hidden>
+    <div class="voteWrap">
+      <h2 class="voteTitle">Pick the next track</h2>
+      <div class="voteSub" id="voteSub"></div>
+      <div id="voteCards"></div>
+      <div class="voteTimer"><div id="voteBar"></div></div>
+      <div class="voteFoot">Vote on your phone<button class="btn" id="btnSkipVote">Decide now</button></div>
     </div>
   </section>
 
