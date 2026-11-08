@@ -1,0 +1,55 @@
+name: Import Candy Cascade cinematic background (one-time)
+on:
+  push:
+    branches:
+      - art/bg-far-candy
+    paths:
+      - .github/workflows/import-bg-far-candy.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import and QA Candy Cascade opaque background
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/7429b8ac-c942-4bbc-aee1-6e1f00909d9b.png
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import os, urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image, ImageStat
+          request=urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(request,timeout=55) as response:
+              data=response.read(18000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 20000<len(data)<17000000:
+              raise SystemExit('FAIL: source is not a valid PNG')
+          raw=Image.open(BytesIO(data))
+          raw.load()
+          if raw.size!=(1536,1024):
+              raise SystemExit(f'FAIL: expected 1536x1024, received {raw.size}')
+          scene=raw.convert('RGB')
+          if max(ImageStat.Stat(scene).stddev)<3:
+              raise SystemExit('FAIL: background is nearly flat colour')
+          target=Path('assets/raw/bg_far_candy.png')
+          target.parent.mkdir(parents=True,exist_ok=True)
+          scene.save(target,format='PNG',optimize=True)
+          verify=Image.open(target)
+          verify.load()
+          if verify.size!=(1536,1024) or verify.mode!='RGB':
+              raise SystemExit('FAIL: output must be 1536x1024 RGB PNG')
+          print('PASS: Candy Cascade full-bleed 1536x1024 opaque cinematic background')
+          print('BYTES:',target.stat().st_size)
+          PY
+      - name: Commit checked artwork and remove temporary importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/bg_far_candy.png
+          git rm .github/workflows/import-bg-far-candy.yml
+          git commit -m "art: add sophisticated Candy Cascade background candidate"
+          git push
