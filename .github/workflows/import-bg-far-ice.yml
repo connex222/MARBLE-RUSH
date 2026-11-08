@@ -1,0 +1,55 @@
+name: Import Frosty Freefall ice palace background (one-time)
+on:
+  push:
+    branches:
+      - art/bg-far-ice
+    paths:
+      - .github/workflows/import-bg-far-ice.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download, validate and save 1536x1024 ice palace PNG
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/2b2e47f4-5c31-48d5-a7ca-79858b778b1d.png
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import os,urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image,ImageStat
+          request=urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+          with urllib.request.urlopen(request,timeout=60) as response:
+              data=response.read(18000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 20000<len(data)<17000000:
+              raise SystemExit('FAIL: missing/invalid PNG')
+          raw=Image.open(BytesIO(data))
+          raw.load()
+          if raw.size!=(1536,1024):
+              raise SystemExit(f'FAIL: dimensions {raw.size}; expected 1536x1024')
+          background=raw.convert('RGB')
+          if max(ImageStat.Stat(background).stddev)<3:
+              raise SystemExit('FAIL: almost flat-colour image')
+          target=Path('assets/raw/bg_far_ice.png')
+          target.parent.mkdir(parents=True,exist_ok=True)
+          background.save(target,format='PNG',optimize=True)
+          verified=Image.open(target)
+          verified.load()
+          if verified.size!=(1536,1024) or verified.mode!='RGB':
+              raise SystemExit('FAIL: saved PNG dimensions or mode mismatch')
+          print('PASS: full-bleed opaque Frosty Freefall background, 1536x1024 RGB PNG')
+          print('BYTES:',target.stat().st_size)
+          PY
+      - name: Commit background only and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/bg_far_ice.png
+          git rm .github/workflows/import-bg-far-ice.yml
+          git commit -m "art: add Frosty Freefall cinematic background candidate"
+          git push
