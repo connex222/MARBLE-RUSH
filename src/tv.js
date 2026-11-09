@@ -424,7 +424,13 @@
       ctx.globalAlpha = Math.min(1, k * 1.4);
       // Use the accepted VFX sprites at the original particle coordinates.
       // Keep their procedural fallbacks when textures have not loaded.
-      const artKey = { spark: 'fx_spark', dust: 'fx_dust', star: 'fx_sparkle', blob: 'fx_poof' }[p.kind];
+      const activeTheme = world?.t?.meta?.theme;
+      const artKey = {
+        spark: 'fx_spark', dust: activeTheme === 'ice' ? 'fx_frost' : 'fx_dust',
+        star: 'fx_sparkle', blob: 'fx_poof', poof: 'fx_poof',
+        burst: 'fx_star_burst', chocolate: 'fx_splash',
+        confetti: activeTheme === 'candy' ? 'fx_sprinkle' : null,
+      }[p.kind];
       if (artKey && IMG[artKey] && !lite()) {
         ctx.save();
         ctx.translate(p.x, p.y);
@@ -848,6 +854,10 @@
       const a = Math.atan2(m.ny, m.nx), k = m.squash * 0.16;
       ctx.rotate(a); ctx.scale(1 - k, 1 + k); ctx.rotate(-a);
     }
+    // Premium, soft highlight behind a temporarily enlarged marble.
+    if (m.fx && m.fx.big > 0) {
+      artImage('fx_glow', -r * 1.7, -r * 1.7, r * 3.4, r * 3.4, 0.35);
+    }
     // glow for big/bubble/jelly
     if (m.fx && m.fx.jelly > 0 && !IMG.fx_jelly_coat) {
       ctx.fillStyle = 'rgba(61,220,151,0.35)';
@@ -915,7 +925,14 @@
       if (m.respawnT > 0) continue;
       const sp = Math.hypot(m.vx, m.vy);
       const p = players.get(m.id); if (!p) continue;
-      if (m.slipstream) {
+      if (m.slipstream && sp > 1 && IMG.fx_wind) {
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        ctx.rotate(Math.atan2(m.vy, m.vx));
+        artImage('fx_wind', -m.r * 6, -m.r * 1.3, m.r * 5, m.r * 2.6, 0.42);
+        ctx.restore();
+      }
+      if (m.slipstream && sp > 1) {
         ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
           const o = ((time * 9 + i * 0.33) % 1) * 60;
@@ -1314,6 +1331,9 @@
             if (s) s.flash = 0.3;
             emit('star', e.x, e.y - 10, 3, { speed: 160, life: 0.5, size: 8, colors: [NOTE_COLORS[e.note], '#fff'], g: 300 });
           } else if (e.v > 520) {
+            if (world.t.meta.theme === 'candy' && e.mat === 'choc') {
+              emit('chocolate', e.x, e.y, 1, { speed: 0, life: 0.44, size: 67 });
+            }
             Audio_.play('land_hard', { vol: Math.min(1, e.v / 1200), gap: 0.05 });
             emit('dust', e.x, e.y, 6, { speed: 120, life: 0.6, size: 7, color: '#E7C9A0', dir: -Math.PI / 2, spread: 2.4 });
             if (m) m.squash = 1;
@@ -1366,6 +1386,7 @@
           if (e.reason === 'off') { Audio_.play('sfx_offtrack'); Clatter.say(Math.random() < 0.5 ? 'offtrack' : 'offtrack_2', Math.random() < 0.5 ? 'Whoops! Off the rails!' : "And they're airborne! …And they're gone!"); }
           else Audio_.play('sfx_respawn');
           emit('dust', e.x, e.y, 10, { speed: 160, life: 0.7, size: 12, color: '#FFF4E0' });
+          emit('poof', e.x, e.y, 1, { speed: 0, life: 0.5, size: 65 });
           emit('star', e.x, e.y, 6, { speed: 220, life: 0.6, size: 8, color: '#FFC83D' });
           if (e.reason === 'off' && p) pop('WHOOPS!', e.x, e.y - 20, '#FF8A75', 32);
           break;
@@ -1406,6 +1427,7 @@
         case 'finish': {
           Audio_.play('sfx_finish');
           emit('confetti', e.x, e.y - 60, 40, { speed: 500, g: 900, life: 1.8, size: 12, colors: [p ? p.color : '#fff', '#FFD23F', '#fff'] });
+          if (e.place === 1) emit('burst', e.x, e.y - 70, 1, { speed: 0, life: 0.85, size: 83 });
           const ord = ['1st', '2nd', '3rd'][e.place - 1] || e.place + 'th';
           toast(`${ord}  ${name}  ${e.t.toFixed(2)}s`, p ? p.color : '#fff');
           if (e.place === 1) Clatter.say('winner', `${name} wins it!`, 3);
