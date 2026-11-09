@@ -99,6 +99,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
 #item{position:absolute;right:16px;top:-6px;width:88px;height:88px;border-radius:50%;border:4px solid var(--gold);background:var(--card);
   font-size:42px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(0,0,0,.35);touch-action:none;color:var(--ink)}
 #item:disabled{display:none}
+#item .itemArt{display:block;width:70%;height:70%;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.32));pointer-events:none}
 #item.ready{animation:itemPulse .9s ease-in-out infinite}
 @keyframes itemPulse{50%{transform:scale(1.08)}}
 #banner{position:fixed;left:0;right:0;top:0;padding:10px;text-align:center;font-weight:800;background:#e02447;color:#fff;font-size:17px;z-index:9}
@@ -264,7 +265,22 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     document.body.dataset.s = h.s;
     const it = $('#item');
     if (h.s !== 'race') h = Object.assign({}, h, { item: null });
-    it.disabled = !h.item; it.textContent = h.item ? ITEM_ICON[h.item] : '';
+    it.disabled = !h.item;
+    // Native phone controller uses the same approved collectible icons as the TV.
+    // Only replace the image when item state changes (HUD updates 10 times/sec).
+    if (it.dataset.visualItem !== (h.item || '')) {
+      it.dataset.visualItem = h.item || '';
+      it.textContent = h.item ? (ITEM_ICON[h.item] || '✦') : '';
+      if (h.item && Object.prototype.hasOwnProperty.call(ITEM_ICON, h.item)) {
+        const img = document.createElement('img');
+        img.className = 'itemArt';
+        img.alt = '';
+        img.src = 'assets/img/item_' + h.item + '.webp';
+        img.onerror = () => img.remove();
+        it.textContent = '';
+        it.appendChild(img);
+      }
+    }
     it.classList.toggle('ready', !!h.item);
     it.setAttribute('aria-label', h.item ? 'Use ' + ITEM_NAME[h.item] : 'No item');
     $('#prog').hidden = h.s !== 'race';
