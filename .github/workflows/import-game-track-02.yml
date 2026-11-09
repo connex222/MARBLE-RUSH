@@ -1,0 +1,133 @@
+name: Import 8 track objects and medal variants (one-time)
+on:
+  push:
+    branches:
+      - art/game-track-objects-batch-02
+    paths:
+      - .github/workflows/import-game-track-02.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact named art and derive metallic medal variants
+        run: |
+          python -m pip -q install Pillow numpy
+          python - <<'PY'
+          import json,time,urllib.request,concurrent.futures,hashlib
+          from io import BytesIO
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image,ImageOps
+          urls=json.loads(r'''{"oil_puddle":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/df9db299-99c0-40b1-8f6b-91bb9dbf31a2.png","fx_bubble_shield":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/98cb9718-a49b-41ca-b98e-5f58d20994ea.png","fx_jelly_coat":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/aa30a588-7707-499e-82ad-e949186935ea.png","gate_start":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/d6dc3490-0d87-42e6-87d1-f9eba2e28da7.png","arch_finish":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/261b7e7d-891a-4bb1-b6aa-63a59d0d2249.png","medal_gold":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/98550f41-3b82-40a1-8bba-cc51bd6e4088.png"}''')
+          target=Path('assets/raw')
+          target.mkdir(parents=True,exist_ok=True)
+          wide={'oil_puddle','gate_start','arch_finish'}
+          translucent={'fx_bubble_shield','fx_jelly_coat'}
+          def convert(entry):
+              name,url=entry
+              data=None
+              for attempt in range(3):
+                  try:
+                      req=urllib.request.Request(url,headers={'User-Agent':'MarbleRushGameArtImporter/1.0'})
+                      with urllib.request.urlopen(req,timeout=75) as response:
+                          data=response.read(30000000)
+                      break
+                  except Exception:
+                      if attempt==2:raise
+                      time.sleep(2*(attempt+1))
+              if not data or not data.startswith(b'\x89PNG\r\n\x1a\n') or not 11000<len(data)<29000000:
+                  raise RuntimeError(f'{name}: invalid PNG source')
+              source=Image.open(BytesIO(data))
+              source.load()
+              if min(source.size)<500 or max(source.size)>4096:
+                  raise RuntimeError(f'{name}: unexpected PNG source size {source.size}')
+              rgba=source.convert('RGBA')
+              alpha=rgba.getchannel('A')
+              if alpha.getextrema()[0]==255:
+                  raise RuntimeError(f'{name}: image lacks true alpha transparency')
+              bbox=alpha.point(lambda a:255 if a>10 else 0).getbbox()
+              if bbox is None:
+                  raise RuntimeError(f'{name}: no visible subject')
+              cut=rgba.crop(bbox)
+              size=(1536,1024) if name in wide else (1024,1024)
+              max_width,max_height=(1320,840) if name in wide else (860,860)
+              factor=min(max_width/cut.width,max_height/cut.height)
+              width,height=max(1,round(cut.width*factor)),max(1,round(cut.height*factor))
+              cut=cut.resize((width,height),Image.Resampling.LANCZOS)
+              out=Image.new('RGBA',size,(0,0,0,0))
+              left,top=(size[0]-width)//2,(size[1]-height)//2
+              out.alpha_composite(cut,(left,top))
+              if name in translucent:
+                  a=np.asarray(out,dtype=np.uint8).copy()
+                  yy,xx=np.ogrid[:size[1],:size[0]]
+                  cx,cy=size[0]/2,size[1]/2
+                  rr=np.sqrt((xx-cx)**2+(yy-cy)**2)/min(width,height)*2
+                  # A coat effect must reveal the game's actual marble under it.
+                  cap=0.10+0.90*np.clip((rr-0.38)/0.44,0,1)
+                  a[:,:,3]=np.rint(a[:,:,3].astype(np.float32)*cap).astype(np.uint8)
+                  out=Image.fromarray(a,'RGBA')
+              pix=out.getchannel('A')
+              bounds=pix.getbbox()
+              if bounds is None:raise RuntimeError(f'{name}: empty output')
+              margin=min(bounds[0],bounds[1],size[0]-bounds[2],size[1]-bounds[3])
+              if margin<70:
+                  raise RuntimeError(f'{name}: edge safety margin {margin} <70 px')
+              dst=target/(name+'.png')
+              out.save(dst,format='PNG',optimize=True)
+              test=Image.open(dst);test.load()
+              if test.mode!='RGBA' or test.size!=size or test.getpixel((0,0))[3]!=0:
+                  raise RuntimeError(f'{name}: output not properly RGBA or wrong dimensions')
+              print(f'PASS: {name}.png size={test.size} alpha={test.getchannel("A").getextrema()} margin={margin}px bytes={dst.stat().st_size}',flush=True)
+              return name
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              done=sorted(pool.map(convert,urls.items()))
+          assert done==sorted(urls),f'Missing generated image(s): {done}'
+
+          # One consistent metal medal design, with the red satin ribbon and
+          # marble emblem preserved exactly; only gold-hued metal is recoloured.
+          gold=Image.open(target/'medal_gold.png').convert('RGBA')
+          base=np.asarray(gold,dtype=np.uint8)
+          hsv=np.asarray(gold.convert('RGB').convert('HSV'),dtype=np.uint8)
+          H=hsv[:,:,0].astype(np.float32)
+          S=hsv[:,:,1].astype(np.float32)
+          V=hsv[:,:,2].astype(np.float32)
+          # Gold/brass yellow-orange; exclude ruby-red ribbon and blue marble.
+          mask=(H>=11)&(H<=53)&(S>43)&(V>54)&(base[:,:,3]>18)
+          gold_pixels=int(mask.sum())
+          if gold_pixels<18000:
+              raise RuntimeError(f'Cannot reliably identify enough metal on medal ({gold_pixels} pixels)')
+          rgb=base[:,:,:3].astype(np.float32)
+          lum=rgb[:,:,0]*0.299+rgb[:,:,1]*0.587+rgb[:,:,2]*0.114
+          for metal in ('silver','bronze'):
+              a=base.copy()
+              if metal=='silver':
+                  new=np.stack((lum*0.99+4,lum*1.025+6,lum*1.08+8),axis=2)
+              else:
+                  new=np.stack((lum*1.21+7,lum*0.80+4,lum*0.51+4),axis=2)
+              clipped=np.clip(new,0,255).astype(np.uint8)
+              a[:,:,:3][mask]=clipped[mask]
+              target_file=target/('medal_'+metal+'.png')
+              Image.fromarray(a,'RGBA').save(target_file,format='PNG',optimize=True)
+              changed=np.count_nonzero(np.any(a[:,:,:3]!=base[:,:,:3],axis=2))
+              if changed<18000:raise RuntimeError(f'Not enough metal pixels recoloured for {metal}: {changed}')
+              if not np.array_equal(a[:,:,3],base[:,:,3]):
+                  raise RuntimeError(f'{metal} medal changed shape or transparency')
+              print(f'PASS: medal_{metal}.png — metallic finish recoloured, {changed} pixels; exact same ribbon/outline/alpha',flush=True)
+          all_files=[target/(name+'.png') for name in sorted(list(urls)+['medal_silver','medal_bronze'])]
+          hashes=[hashlib.sha256(x.read_bytes()).hexdigest() for x in all_files]
+          if len(all_files)!=8 or len(set(hashes))!=8:
+              raise SystemExit('FAIL: expected eight unique named track-object PNGs')
+          print('PASS: 8/8 correctly sized, alpha-transparent individually named track objects and three medal finishes',flush=True)
+          PY
+      - name: Commit art only and remove importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/oil_puddle.png assets/raw/fx_bubble_shield.png assets/raw/fx_jelly_coat.png assets/raw/gate_start.png assets/raw/arch_finish.png assets/raw/medal_gold.png assets/raw/medal_silver.png assets/raw/medal_bronze.png
+          git rm .github/workflows/import-game-track-02.yml
+          git commit -m "art: add remaining track props and three medal variants for review"
+          git push
