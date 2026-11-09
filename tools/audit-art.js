@@ -1,7 +1,6 @@
 /* MARBLE RUSH art preflight — run after npm run build.
- * Non-destructive audit: enforces each released theme pack and separately
- * reports the six approved Jungle Jumble assets not yet uploaded to GitHub.
- * This script tests file integration, not multiplayer or artistic quality.
+ * Enforces all 119 approved Master Bible images, seven complete themes and
+ * their compiled WebP files. Does not certify multiplayer or art aesthetics.
  */
 'use strict';
 const assert = require('node:assert/strict');
@@ -13,10 +12,6 @@ const RAW = path.join(ROOT,'assets','raw');
 const PUB = path.join(ROOT,'public');
 const IMG = path.join(PUB,'assets','img');
 const THEMES = ['toybox','candy','ice','space','jungle','seaside','clockwork'];
-const JUNGLE_PENDING = new Set([
-  'bg_far_jungle.png','tex_rail_jungle.png',
-  ...Array.from({length:4},(_,i)=>'prop_jungle_'+String(i+1).padStart(2,'0')+'.png'),
-]);
 const required = THEMES.flatMap(theme => [
   'bg_far_'+theme+'.png',
   'tex_rail_'+theme+'.png',
@@ -40,7 +35,6 @@ const FX_REQUIRED = [
 async function main() {
   const raw=fs.readdirSync(RAW).filter(x=>/\.(png|jpe?g|webp)$/i.test(x)).sort();
   const missing=required.filter(name=>!fs.existsSync(path.join(RAW,name)));
-  const unexpected=missing.filter(name=>!JUNGLE_PENDING.has(name));
   console.log('MASTER BIBLE THEME AUDIT');
   for(const t of THEMES) {
     const prefix=required.filter(x=>x==='bg_far_'+t+'.png'||x==='tex_rail_'+t+'.png'||x.startsWith('prop_'+t+'_'));
@@ -55,10 +49,11 @@ async function main() {
   const totalMissing=commonMissing.length+missing.length+itemMissing.length+fxMissing.length;
   console.log('FULL BIBLE ART AUDIT: '+(totalRequired-totalMissing)+'/'+totalRequired+' named PNG assets on GitHub');
   console.log('Shared/lobby/marble artwork: '+(COMMON_REQUIRED.length-commonMissing.length)+'/'+COMMON_REQUIRED.length);
-  console.log('Game-item and trophy art: '+(ITEM_REQUIRED.length-itemMissing.length)+'/'+ITEM_REQUIRED.length+' (not yet produced)');
-  console.log('Particle and effects art: '+(FX_REQUIRED.length-fxMissing.length)+'/'+FX_REQUIRED.length+' (not yet produced)');
+  console.log('Game-item and trophy art: '+(ITEM_REQUIRED.length-itemMissing.length)+'/'+ITEM_REQUIRED.length);
+  console.log('Particle and effects art: '+(FX_REQUIRED.length-fxMissing.length)+'/'+FX_REQUIRED.length);
   if(itemMissing.length)console.log('Still to produce — items:',itemMissing.join(', '));
   if(fxMissing.length)console.log('Still to produce — effects:',fxMissing.join(', '));
+  assert.equal(totalMissing,0,'All 119 approved Master Bible artworks must be on this branch');
   assert.equal(commonMissing.length,0,'Missing previously approved shared character/logo/marble images');
   fs.writeFileSync(path.join(ROOT,'qa-art-audit.json'),JSON.stringify({
     title:'MARBLE RUSH artwork inventory — Master Bible Section 9',
@@ -67,12 +62,10 @@ async function main() {
     themePacks:{required:required.length,missing,completeThemes:THEMES.filter(t=>!required.some(n=>n.includes(t)&&missing.includes(n)))},
     itemArtwork:{required:ITEM_REQUIRED.length,missing:itemMissing},
     effects:{required:FX_REQUIRED.length,missing:fxMissing},
-    blocker:'Six approved Jungle Jumble PNGs require local upload; 26 game item/effects PNGs have not yet been produced.',
+    blocker:null, status:'All approved source artwork complete; full gameplay and visual acceptance are separate checks.',
   },null,2));
 
-  if(missing.length)console.log('Missing approved theme images:',missing.join(', '));
-  assert.equal(unexpected.length,0,'Unexpected missing core theme art: '+unexpected.join(', '));
-  assert.equal(missing.length===0 || missing.every(x=>JUNGLE_PENDING.has(x)),true,'Missing core art outside Jungle');
+  assert.equal(missing.length,0,'All 70 theme-packs must be complete');
   const manifestPath=path.join(PUB,'assets','manifest.json');
   const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
   assert.ok(Array.isArray(manifest.images),'Build did not write an image manifest');
@@ -94,14 +87,18 @@ async function main() {
       assert.ok(meta.hasAlpha,output+' lost transparency');
       assert.ok(meta.width<=520&&meta.height<=520,output+' too large for decoration');
     }
+    if(ITEM_REQUIRED.includes(filename)||FX_REQUIRED.includes(filename)){
+      assert.ok(meta.hasAlpha,output+' lost approved art transparency');
+      assert.ok(meta.width<=910&&meta.height<=910,output+' unexpectedly large');
+    }
   }
   const built=fs.readFileSync(path.join(PUB,'tv.html'),'utf8');
   assert.ok(built.includes('approved transparent props'), 'Built TV has no approved-prop rendering');
   assert.ok(built.includes('prop_'), 'Built TV does not reference themed decorative props');
   assert.ok(!built.includes('/*ENGINE*/')&&!built.includes('/*TV*/'),'TV build left source placeholders');
   console.log('PASS: '+raw.length+' raw assets built into WebP and exactly matched in manifest');
-  console.log('PASS: all 6 complete packs, their generated backgrounds, rail textures, transparent props');
+  console.log('PASS: all 7 complete theme packs, pickups, medals, hazards and particle artwork');
   console.log('PASS: TV build contains theme prop integration and optional-art fallbacks');
-  if(missing.length)console.log('BLOCKER (art completeness only): Upload 6 previously approved Jungle Jumble files before claiming 70/70');
+  console.log('PASS: full Master Bible artwork specification 119/119; no missing files');
 }
 main().catch(error=>{console.error('FAIL:',error.stack||error);process.exitCode=1;});
