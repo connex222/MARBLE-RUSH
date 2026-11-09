@@ -1,0 +1,80 @@
+name: Import 8 MARBLE RUSH item + trophy artworks (one-time)
+on:
+  push:
+    branches:
+      - art/game-items-batch-01
+    paths:
+      - .github/workflows/import-game-items-01.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import PNGs, normalise with transparency, verify all eight
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import json,urllib.request,concurrent.futures,time,hashlib
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          urls=json.loads(r'''{"item_box":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/89946b18-bd2d-4399-b342-4893dea48573.png","item_turbo":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/713baebc-7eea-4c98-92ca-445c8a0a1345.png","item_jelly":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/df773590-411b-445d-ba56-59a288f36da0.png","item_oil":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/eabd779c-48ed-45fb-a98f-e1f7cc28d66c.png","item_big":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/f27e599c-376f-4a10-996d-7d575ad1bf1f.png","item_bubble":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/b9035625-60b7-49ad-a051-9036b280ee37.png","bumper":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/0cbdb8cf-efe0-42f8-945c-150527ffaaf1.png","trophy_cup":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/28defd40-d2e8-4399-8151-cef1a0c698be.png"}''')
+          expected=sorted(['item_box','item_turbo','item_jelly','item_oil','item_big','item_bubble','bumper','trophy_cup'])
+          if sorted(urls)!=expected:raise SystemExit('FAIL: missing item filename')
+          folder=Path('assets/raw')
+          folder.mkdir(parents=True,exist_ok=True)
+          def convert(item):
+              name,url=item
+              data=None
+              for n in range(3):
+                  try:
+                      req=urllib.request.Request(url,headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+                      with urllib.request.urlopen(req,timeout=70) as response:data=response.read(25000000)
+                      break
+                  except Exception:
+                      if n==2:raise
+                      time.sleep(2*(n+1))
+              if not data or not data.startswith(b'\x89PNG\r\n\x1a\n') or len(data)<12000:
+                  raise RuntimeError(f'Invalid source PNG: {name}')
+              src=Image.open(BytesIO(data));src.load()
+              if min(src.size)<500 or max(src.size)>4096:
+                  raise RuntimeError(f'Unexpected art source size {name}: {src.size}')
+              rgba=src.convert('RGBA')
+              alpha=rgba.getchannel('A')
+              if alpha.getextrema()[0]==255:raise RuntimeError(f'No transparent background for {name}')
+              box=alpha.point(lambda a:255 if a>10 else 0).getbbox()
+              if box is None:raise RuntimeError(f'No visible object in {name}')
+              subject=rgba.crop(box)
+              f=min(860/subject.width,860/subject.height)
+              sz=(max(1,round(subject.width*f)),max(1,round(subject.height*f)))
+              subject=subject.resize(sz,Image.Resampling.LANCZOS)
+              out=Image.new('RGBA',(1024,1024),(0,0,0,0))
+              out.alpha_composite(subject,((1024-sz[0])//2,(1024-sz[1])//2))
+              b=out.getchannel('A').getbbox()
+              margin=min(b[0],b[1],1024-b[2],1024-b[3])
+              if margin<79:raise RuntimeError(f'{name}: insufficient safe area {margin}')
+              path=folder/f'{name}.png'
+              out.save(path,format='PNG',optimize=True)
+              loaded=Image.open(path);loaded.load()
+              if loaded.size!=(1024,1024) or loaded.mode!='RGBA':raise RuntimeError(f'{name}: invalid final RGBA output')
+              if loaded.getpixel((0,0))[3]!=0:raise RuntimeError(f'{name}: opaque corner')
+              print(f'PASS: {name}.png — 1024x1024 RGBA alpha, clear margin {margin}px, {path.stat().st_size} bytes',flush=True)
+              return name
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              produced=list(pool.map(convert,urls.items()))
+          if sorted(produced)!=expected:raise SystemExit('FAIL: artwork missing')
+          hashes=[hashlib.sha256((folder/(k+'.png')).read_bytes()).hexdigest() for k in expected]
+          if len(set(hashes))!=8:raise SystemExit('FAIL: duplicate outputs')
+          print('PASS: 8/8 unique named transparent gameplay items and trophy artworks',flush=True)
+          PY
+      - name: Commit image files then delete importer workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/item_box.png assets/raw/item_turbo.png assets/raw/item_jelly.png assets/raw/item_oil.png assets/raw/item_big.png assets/raw/item_bubble.png assets/raw/bumper.png assets/raw/trophy_cup.png
+          git rm .github/workflows/import-game-items-01.yml
+          git commit -m "art: add first eight game item and trophy candidates"
+          git push
