@@ -60,6 +60,8 @@ async function main() {
   if(itemMissing.length)console.log('Still to produce — items:',itemMissing.join(', '));
   if(fxMissing.length)console.log('Still to produce — effects:',fxMissing.join(', '));
   assert.equal(commonMissing.length,0,'Missing previously approved shared character/logo/marble images');
+  assert.equal(totalMissing,0,'All 119 Master Bible artwork files must be present after final art approval');
+  assert.equal(totalRequired,119,'Master Bible image count unexpectedly changed');
   fs.writeFileSync(path.join(ROOT,'qa-art-audit.json'),JSON.stringify({
     title:'MARBLE RUSH artwork inventory — Master Bible Section 9',
     totals:{required:totalRequired,present:totalRequired-totalMissing,missing:totalMissing},
