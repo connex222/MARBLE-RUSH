@@ -12,12 +12,16 @@ async function main(){
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
-    window.__marbleArtDraws={backgrounds:new Set(),textures:new Set(),props:new Set()};
+    window.__marbleArtDraws={backgrounds:new Set(),textures:new Set(),props:new Set(),gameObjects:new Set(),effects:new Set()};
     const originalDraw=CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage=function(image,...args){
       const src=(image&&typeof image.src==='string')?image.src:'';
       if(src.includes('bg_far_'))window.__marbleArtDraws.backgrounds.add(src.split('/').pop());
       if(src.includes('prop_'))window.__marbleArtDraws.props.add(src.split('/').pop());
+      if(/\/(item_box|bumper|gate_start|arch_finish|oil_puddle|trophy_cup|medal_(gold|silver|bronze))\.webp/.test(src))
+        window.__marbleArtDraws.gameObjects.add(src.split('/').pop());
+      if(/\/fx_(glow|sparkle|spark|dust|frost|sprinkle|splash|poof|star_burst|wind|bubble_shield|jelly_coat)\.webp/.test(src))
+        window.__marbleArtDraws.effects.add(src.split('/').pop());
       return originalDraw.call(this,image,...args);
     };
     const originalPattern=CanvasRenderingContext2D.prototype.createPattern;
@@ -48,6 +52,7 @@ async function main(){
     const stats=await page.evaluate(()=>{
       const art=window.__marbleArtDraws;
       return {backgrounds:[...art.backgrounds],textures:[...art.textures],props:[...art.props],
+        gameObjects:[...art.gameObjects],effects:[...art.effects],
         track:document.querySelector('#trackName')?.textContent,
         imageCount:performance.getEntriesByType('resource').filter(x=>x.name.includes('/assets/img/')).length};
     });
@@ -57,7 +62,12 @@ async function main(){
     assert.ok(stats.backgrounds.some(x=>x.startsWith('bg_far_')),'No approved theme far background painted on canvas');
     assert.ok(stats.textures.some(x=>x.startsWith('tex_rail_')),'No theme rail material applied to canvas');
     assert.ok(stats.props.some(x=>x.startsWith('prop_')),'No approved decorative props painted on canvas');
-    console.log('PASS: real browser opened TV, added keyboard racer, selected track and rendered thematic background, patterned rail and transparent props');
+    for (const key of ['item_box.webp','bumper.webp','gate_start.webp','arch_finish.webp']) {
+      assert.ok(stats.gameObjects.includes(key),'Required art was never drawn in race: '+key);
+    }
+    assert.ok(stats.effects.includes('fx_glow.webp'),'Approved pickup glow asset was never drawn in a race');
+    assert.ok(stats.imageCount>=119,'Not all 119 approved images were requested');
+    console.log('PASS: real browser race rendered approved backgrounds, rails, 8 themed props, pickups, gates, bumpers, finish arch and glow');
   }finally{
     await browser.close();
   }
