@@ -276,7 +276,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         img.className = 'itemArt';
         img.alt = '';
         img.src = 'assets/img/item_' + h.item + '.webp';
-        img.onerror = () => img.remove();
+        img.onerror = () => { if (img.isConnected) { img.remove(); it.textContent = ITEM_ICON[h.item] || '✦'; } };
         it.textContent = '';
         it.appendChild(img);
       }
