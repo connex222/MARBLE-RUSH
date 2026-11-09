@@ -41,13 +41,17 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 
 /* ---------- boot ---------- */
 #boot{position:fixed;inset:0;display:grid;place-items:center;pointer-events:auto;
-  background:radial-gradient(ellipse at 50% 35%, #34206e 0%, var(--navy) 55%, var(--night) 100%)}
+  background:linear-gradient(135deg,rgba(15,17,48,.64),rgba(15,17,48,.85)),url('assets/img/bg_lobby.webp') center / cover no-repeat, var(--navy)
 .bootIn{text-align:center}
 .logo{font-family:var(--display);font-weight:700;line-height:.85;letter-spacing:-.01em;transform:skewX(-8deg)}
 .logo span{display:block;font-size:calc(150*var(--u));color:var(--red);
   -webkit-text-stroke:calc(5*var(--u)) var(--gold);paint-order:stroke fill;
   text-shadow:0 calc(10*var(--u)) 0 #8f1029, 0 calc(22*var(--u)) calc(40*var(--u)) rgba(0,0,0,.5)}
 .logo span+span{color:var(--cream);-webkit-text-stroke-color:var(--red);text-shadow:0 calc(10*var(--u)) 0 #8f1029, 0 calc(22*var(--u)) calc(40*var(--u)) rgba(0,0,0,.5)}
+.logo.asset-logo{width:100%;max-width:calc(620*var(--u));transform:none;margin-inline:auto}
+.logo.asset-logo span{display:none}
+.logo.asset-logo img{display:block;object-fit:contain;width:100%;height:auto;max-height:calc(270*var(--u));filter:drop-shadow(0 calc(12*var(--u)) calc(24*var(--u)) rgba(0,0,0,.42))}
+#lobbyLeft .logo.asset-logo img{max-height:calc(185*var(--u))}
 .bootMarble{width:calc(90*var(--u));height:calc(90*var(--u));border-radius:50%;margin:0 auto calc(26*var(--u));
   background:radial-gradient(circle at 34% 30%,#fff 0 9%,transparent 22%),conic-gradient(from 40deg,#FF3B5C,#fff4e0,#FFC83D,#FF3B5C,#fff4e0,#FF3B5C);
   box-shadow:inset calc(-10*var(--u)) calc(-12*var(--u)) calc(24*var(--u)) rgba(20,10,60,.55),0 0 0 calc(5*var(--u)) var(--gold),0 calc(20*var(--u)) calc(40*var(--u)) rgba(0,0,0,.5);
@@ -130,7 +134,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #clatter{position:fixed;left:calc(36*var(--u));bottom:calc(34*var(--u));display:flex;align-items:flex-end;gap:calc(14*var(--u));
   opacity:0;transform:translateY(30px);transition:all .3s cubic-bezier(.3,1.5,.5,1)}
 #clatter.show{opacity:1;transform:none}
-.clatterFace{position:relative;width:calc(96*var(--u));height:calc(96*var(--u));border-radius:50%;flex:none;
+.clatterFace{position:relative;width:calc(116*var(--u));height:calc(116*var(--u));border-radius:50%;flex:none;
   background:radial-gradient(circle at 32% 28%,#fff 0 7%,transparent 18%),conic-gradient(from 10deg,#FF3B5C,#FFC83D,#fff4e0,#FF3B5C,#FFC83D,#FF3B5C);
   box-shadow:inset calc(-8*var(--u)) calc(-10*var(--u)) calc(18*var(--u)) rgba(20,10,60,.55),0 0 0 calc(4*var(--u)) var(--gold)}
 .clatterFace::before{content:"";position:absolute;left:18%;right:18%;top:-14%;height:30%;background:#8a6a4a;border-radius:50% 50% 20% 20%;
@@ -139,6 +143,9 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
   box-shadow:0 calc(2*var(--u)) 0 rgba(0,0,0,.2)}
 .clatterFace i{position:absolute;top:36%;width:14%;height:16%;background:#14163A;border-radius:50%}
 .clatterFace i:first-child{left:30%} .clatterFace i:last-child{right:30%}
+.clatterFace.withArt{border:0;background:transparent;box-shadow:none}
+.clatterFace.withArt::before,.clatterFace.withArt::after,.clatterFace.withArt i{display:none}
+.clatterFace img{width:100%;height:100%;object-fit:contain;display:block;transform:scale(1.15);transform-origin:center bottom}
 #clatterText{max-width:calc(560*var(--u));background:var(--cream);color:var(--navy);font-family:var(--display);font-weight:600;font-size:calc(30*var(--u));
   border-radius:calc(24*var(--u)) calc(24*var(--u)) calc(24*var(--u)) calc(6*var(--u));padding:calc(14*var(--u)) calc(24*var(--u));box-shadow:0 calc(10*var(--u)) calc(30*var(--u)) rgba(0,0,0,.35)}
 
@@ -290,7 +297,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
     </div>
   </section>
 
-  <div id="clatter"><div class="clatterFace"><i></i><i></i></div><div id="clatterText"></div></div>
+  <div id="clatter"><div class="clatterFace"><img id="clatterArt" alt="Captain Clatter" hidden><i></i><i></i></div><div id="clatterText"></div></div>
   <div id="toast"></div>
   <div id="status" hidden></div>
 </div>
