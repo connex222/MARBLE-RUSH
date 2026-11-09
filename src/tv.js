@@ -473,10 +473,28 @@
         w: 60 + r() * 90, kind: (r() * 4) | 0, c: (THEMES[T.meta.theme] || THEMES.toybox).bokeh[(r() * 4) | 0], rot: (r() - 0.5) * 0.5,
       });
     }
+    // Eight approved theme cut-outs sit in the far-mid parallax layer, behind
+    // the physical rails and marbles. Keep the existing procedural decoration
+    // as a fallback while Jungle Jumble 01-04 and other art remain unavailable.
+    const props = [];
+    const propRng = rng(17311);
+    if (T.way && T.way.length) {
+      for (let i = 0; i < 8; i++) {
+        const at = T.way[Math.min(T.way.length - 1, Math.floor((i + 0.5) * T.way.length / 8))];
+        const side = (i % 2 === 0) ? -1 : 1;
+        props.push({
+          k: 'prop_' + T.meta.theme + '_' + String(i + 1).padStart(2, '0'),
+          x: at.x + (propRng() - 0.5) * 140,
+          y: at.y + side * (210 + propRng() * 70),
+          w: 170 + propRng() * 45,
+          rot: (propRng() - 0.5) * 0.10,
+        });
+      }
+    }
     const bokeh = [];
     const nb = ['planets', 'flakes'].includes((THEMES[T.meta.theme] || {}).deco) ? 140 : 46;
     for (let i = 0; i < nb; i++) bokeh.push({ x: r(), y: r(), r: 10 + r() * 40, c: NOTE_COLORS[(r() * 4) | 0], a: 0.05 + r() * 0.12, p: 0.02 + r() * 0.06 });
-    return { paths, posts, deco, bokeh };
+    return { paths, posts, deco, props, bokeh };
   }
 
   function drawBackground() {
@@ -515,6 +533,19 @@
     const p = 0.55;
     ctx.save();
     ctx.translate(cam.x * (1 - p), cam.y * (1 - p));
+    // Use approved transparent props whenever that numbered art exists.
+    // These sit BEHIND track geometry; if absent, the procedural art still runs.
+    for (const d of art.props || []) {
+      const img = IMG[d.k];
+      if (!img) continue;
+      const h = d.w * img.height / Math.max(1, img.width);
+      ctx.save();
+      ctx.globalAlpha = 0.78;
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.rot);
+      ctx.drawImage(img, -d.w / 2, -h / 2, d.w, h);
+      ctx.restore();
+    }
     ctx.globalAlpha = 0.28;
     for (const d of art.deco) {
       ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot);
