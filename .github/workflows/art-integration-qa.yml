@@ -1,0 +1,82 @@
+name: Approved art integration QA
+on:
+  push:
+    branches:
+      - dev/approved-art-integration-qa
+  pull_request:
+    paths:
+      - src/tv.js
+      - tools/audit-art.js
+      - tools/build.js
+      - assets/raw/**
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: Compile and verify every currently uploaded art asset
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install game build tools
+        run: npm install --no-audit --no-fund
+      - name: Validate source syntax
+        run: |
+          node --check src/tv.js
+          node --check src/engine.js
+          node --check tools/build.js
+          node --check tools/audit-art.js
+          node --check server/server.js
+      - name: Build game, resized art and HTML
+        run: npm run build
+      - name: Audit all seven theme packs and real compiled files
+        run: node tools/audit-art.js
+      - name: Smoke-test HTTP and generated assets without deploying
+        run: |
+          set -e
+          PORT=35993 node server/server.js > /tmp/marble-rush-local.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for try in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          curl --fail --silent --show-error http://127.0.0.1:35993/tv > /tmp/marble-rush-tv.html
+          curl --fail --silent --show-error http://127.0.0.1:35993/play > /tmp/marble-rush-play.html
+          curl --fail --silent --show-error http://127.0.0.1:35993/assets/manifest.json > /tmp/marble-rush-manifest.json
+          curl --fail --silent --show-error http://127.0.0.1:35993/assets/img/bg_far_clockwork.webp -o /tmp/marble-rush-background.webp
+          curl --fail --silent --show-error http://127.0.0.1:35993/assets/img/prop_clockwork_08.webp -o /tmp/marble-rush-robot.webp
+          grep -q 'prop_' /tmp/marble-rush-tv.html
+          test -s /tmp/marble-rush-background.webp
+          test -s /tmp/marble-rush-robot.webp
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('/tmp/marble-rush-manifest.json','utf8')); if(m.images.length<87)process.exit(1);console.log('HTTP SMOKE PASS: '+m.images.length+' images available')"
+          echo 'PASS: HTTP health, TV, phone, manifest, background and robot routes'
+      - name: Install headless Chromium for actual canvas-drawing QA
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Test a real race in the browser and capture screenshot
+        run: |
+          set -e
+          PORT=35993 node server/server.js > /tmp/marble-rush-browser.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for try in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/art-browser-smoke.js
+      - name: Save compiled preview for offline visual acceptance
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marble-rush-compiled-art-preview
+          path: |
+            public/
+            qa-art-race-preview.png
+            qa-art-audit.json
+          compression-level: 6
+          retention-days: 7
