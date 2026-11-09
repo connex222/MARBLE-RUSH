@@ -38,6 +38,18 @@ async function main(){
       await page.waitForTimeout(900);
       await page.locator('#btnJoin').click();
       await page.locator('#ctl').waitFor({state:'visible',timeout:15000});
+      await page.waitForFunction(
+        () => document.querySelector('#join .logo.asset-logo img')?.complete === true,
+        null,{timeout:15000}
+      );
+      const themed=await page.evaluate(()=>({
+        background:getComputedStyle(document.body).backgroundImage,
+        mini:getComputedStyle(document.querySelector('#meMarble')).backgroundImage,
+        swatch:getComputedStyle(document.querySelector('#swirls .sw')).backgroundImage
+      }));
+      assert.ok(themed.background.includes('bg_phone.webp'),'Approved controller background not applied to '+name);
+      assert.ok(themed.mini.includes('marble_swirl_'),'Approved marble texture not on phone HUD for '+name);
+      assert.ok(themed.swatch.includes('marble_swirl_01.webp'),'Approved 12-marble picker art not applied for '+name);
     }
     await tv.waitForFunction(()=>{
       const names=[...document.querySelectorAll('#lobbyPlayers .pname span')].map(x=>x.textContent);
@@ -67,7 +79,7 @@ async function main(){
     assert.deepEqual(errors,[],'Uncaught JS errors in TV/phone sessions');
     await tv.screenshot({path:'qa-art-multiplayer-tv.png',fullPage:true});
     await p1.screenshot({path:'qa-art-multiplayer-phone.png',fullPage:true});
-    console.log('PASS: TV + 2 independent phones joined room '+room+', voted, received active race HUD, sent real boost press/release');
+    console.log('PASS: TV + 2 independent phones joined room '+room+', loaded approved phone art, voted, received active race HUD, sent real boost press/release');
     console.log('MULTIPLAYER SMOKE STATS:',JSON.stringify({room,
       a:{messages:a.sent.length,hud:a.received.filter(x=>x.t==='hud').length},
       b:{messages:b.sent.length,hud:b.received.filter(x=>x.t==='hud').length},
