@@ -79,7 +79,22 @@
   const SND = {};
   fetch('assets/manifest.json').then(r => r.ok ? r.json() : null).then(man => {
     if (!man) return;
-    (man.images || []).forEach(o => { const im = new Image(); im.onload = () => { IMG[o.k] = im; }; im.src = `assets/img/${o.f}`; });
+    (man.images || []).forEach(o => {
+      const im = new Image();
+      im.onload = () => {
+        IMG[o.k] = im;
+        if (o.k === 'logo_marblerush') {
+          for (const logo of document.querySelectorAll('.logo')) {
+            if (logo.classList.contains('asset-logo')) continue;
+            const artwork = document.createElement('img');
+            artwork.src = im.src; artwork.alt = 'Marble Rush';
+            logo.appendChild(artwork);
+            logo.classList.add('asset-logo');
+          }
+        }
+      };
+      im.src = `assets/img/${o.f}`;
+    });
     (man.audio || []).forEach(o => { SND[o.k] = `assets/audio/${o.f}`; });
     Audio_.loadFiles();
   }).catch(() => { /* no assets yet — everything is code-drawn */ });
@@ -533,7 +548,10 @@
     const th = theme();
     g.addColorStop(0, th.bg[0]); g.addColorStop(0.55, th.bg[1]); g.addColorStop(1, th.bg[2]);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    const bg = IMG['bg_far_' + (world && world.t.meta.theme || 'toybox')];
+    const stage = state === 'boot' || state === 'lobby' ? 'bg_lobby'
+      : state === 'results' || state === 'finale' ? 'bg_results'
+      : 'bg_far_' + (world && world.t.meta.theme || 'toybox');
+    const bg = IMG[stage];
     if (bg) {
       const sc = Math.max(W / bg.width, H / bg.height) * 1.15;
       const ox = -((cam.x * 0.05) % 200) * S, oy = -((cam.y * 0.03) % 200) * S;
@@ -1064,6 +1082,15 @@
   const Clatter = (() => {
     let lastAt = -99, hideAt = 0;
     const el = $('#clatter'), txt = $('#clatterText');
+    const portrait = $('#clatterArt');
+    const poseFor = key => {
+      if (/winner|cup|perfect|finish|shortcut|trophy|champ/.test(key)) return 'clatter_cheer';
+      if (/offtrack|air|photo|neck|gasp/.test(key)) return 'clatter_gasp';
+      if (/bump|oil|wince|clack|slip/.test(key)) return 'clatter_wince';
+      if (/go|countdown|flag/.test(key)) return 'clatter_flag';
+      if (/vote|ready|overtake|announce|final_stretch/.test(key)) return 'clatter_announce';
+      return 'clatter_reference';
+    };
     const recent = {};
     function say(key, text, prio = 1) {
       if (state === 'lobby' && prio < 3) return;
@@ -1072,6 +1099,12 @@
       if (recent[key] && now - recent[key] < 14 && prio < 3) return;
       recent[key] = now; lastAt = now; hideAt = now + 2.6;
       txt.textContent = text;
+      const pose = IMG[poseFor(key)] || IMG.clatter_reference;
+      if (portrait && pose) {
+        portrait.src = pose.src;
+        portrait.hidden = false;
+        portrait.parentElement.classList.add('withArt');
+      }
       el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
       Audio_.play('vo_' + key, { gap: 0.5 });
     }
