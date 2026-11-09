@@ -30,6 +30,8 @@ async function main(){
   try{
     await page.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:20000});
     await page.locator('#btnBoot').click();
+    // Force full-effects art rendering on headless CI even if its framerate dips.
+    await page.locator('[data-set="fx"]').click();
     await page.locator('#btnKb').click();
     await page.locator('#btnStart').waitFor({state:'visible',timeout:10000});
     await page.locator('#btnStart').click();
