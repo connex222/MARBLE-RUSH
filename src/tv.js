@@ -423,6 +423,25 @@
     for (const p of parts) {
       const k = 1 - p.age / p.life;
       ctx.globalAlpha = Math.min(1, k * 1.4);
+      // Approved particles are optional, with lightweight procedural effects
+      // retained for reduced-motion / slow hardware and while art loads.
+      const sprite = {
+        star: 'fx_sparkle', spark: 'fx_spark',
+        dust: world && world.t.meta.theme === 'ice' ? 'fx_frost' : 'fx_dust',
+        sprite_sprinkle: 'fx_sprinkle', sprite_frost: 'fx_frost',
+        sprite_splash: 'fx_splash', sprite_poof: 'fx_poof',
+        sprite_star_burst: 'fx_star_burst'
+      }[p.kind];
+      if (sprite && !lite() && IMG[sprite]) {
+        const scale = p.kind === 'star' ? 4.0 : p.kind === 'spark' ? 5.5
+          : p.kind === 'dust' ? 6 : p.kind.startsWith('sprite_') ? 5.2 : 5;
+        const size = p.size * scale * (0.7 + 0.3 * k);
+        ctx.save();
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.drawImage(IMG[sprite], -size / 2, -size / 2, size, size);
+        ctx.restore();
+        continue;
+      }
       if (p.kind === 'spark') {
         ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 0.35; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.03, p.y - p.vy * 0.03); ctx.stroke();
@@ -906,7 +925,15 @@
       if (m.respawnT > 0) continue;
       const sp = Math.hypot(m.vx, m.vy);
       const p = players.get(m.id); if (!p) continue;
-      if (m.slipstream) {
+      if (m.slipstream && sp > 1) {
+        if (IMG.fx_wind) {
+          ctx.save();
+          ctx.translate(m.x - m.vx / sp * 65, m.y - m.vy / sp * 65);
+          ctx.rotate(Math.atan2(m.vy, m.vx));
+          ctx.globalAlpha = 0.48;
+          ctx.drawImage(IMG.fx_wind, -85, -28, 170, 56);
+          ctx.restore();
+        }
         ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
           const o = ((time * 9 + i * 0.33) % 1) * 60;
@@ -1338,6 +1365,9 @@
         case 'pickup':
           Audio_.play('sfx_item_pickup');
           emit('star', e.x, e.y, 14, { speed: 300, life: 0.6, size: 10, colors: ['#FFC83D', '#FF5FA2', '#4CC9F0', '#fff'] });
+          if (world.t.meta.theme === 'candy') {
+            emit('sprite_sprinkle', e.x, e.y, 3, { speed: 100, g: 160, life: 0.6, size: 11 });
+          }
           if (p) pop(ITEM_NAME[e.item], e.x, e.y - 30, '#FFE9A0', 26);
           break;
         case 'item': {
@@ -1352,12 +1382,16 @@
         case 'slip':
           Audio_.play('sfx_oil_slip');
           emit('blob', e.x, e.y, 8, { speed: 200, life: 0.6, size: 6, color: '#1b1430', g: 900 });
+          if (world.t.meta.theme === 'candy') {
+            emit('sprite_splash', e.x, e.y, 1, { speed: 0, g: 0, life: 0.45, size: 22 });
+          }
           break;
         case 'poof':
           if (e.reason === 'off') { Audio_.play('sfx_offtrack'); Clatter.say(Math.random() < 0.5 ? 'offtrack' : 'offtrack_2', Math.random() < 0.5 ? 'Whoops! Off the rails!' : "And they're airborne! …And they're gone!"); }
           else Audio_.play('sfx_respawn');
           emit('dust', e.x, e.y, 10, { speed: 160, life: 0.7, size: 12, color: '#FFF4E0' });
           emit('star', e.x, e.y, 6, { speed: 220, life: 0.6, size: 8, color: '#FFC83D' });
+          emit('sprite_poof', e.x, e.y, 1, { speed: 0, life: 0.55, size: 26 });
           if (e.reason === 'off' && p) pop('WHOOPS!', e.x, e.y - 20, '#FF8A75', 32);
           break;
         case 'appear':
@@ -1397,6 +1431,7 @@
         case 'finish': {
           Audio_.play('sfx_finish');
           emit('confetti', e.x, e.y - 60, 40, { speed: 500, g: 900, life: 1.8, size: 12, colors: [p ? p.color : '#fff', '#FFD23F', '#fff'] });
+          emit('sprite_star_burst', e.x, e.y - 75, 1, { speed: 0, g: 0, life: 0.7, size: 34 });
           const ord = ['1st', '2nd', '3rd'][e.place - 1] || e.place + 'th';
           toast(`${ord}  ${name}  ${e.t.toFixed(2)}s`, p ? p.color : '#fff');
           if (e.place === 1) Clatter.say('winner', `${name} wins it!`, 3);
