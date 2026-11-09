@@ -3,9 +3,13 @@ on:
   push:
     branches:
       - dev/approved-art-integration-qa
+      - dev/full-art-runtime-integration
   pull_request:
     paths:
       - src/tv.js
+      - src/tv.html
+      - tools/art-browser-smoke.js
+      - tools/art-multiplayer-smoke.js
       - tools/audit-art.js
       - tools/build.js
       - assets/raw/**
@@ -29,6 +33,8 @@ jobs:
           node --check src/engine.js
           node --check tools/build.js
           node --check tools/audit-art.js
+          node --check tools/art-browser-smoke.js
+          node --check tools/art-multiplayer-smoke.js
           node --check server/server.js
       - name: Build game, resized art and HTML
         run: npm run build
@@ -52,7 +58,7 @@ jobs:
           grep -q 'prop_' /tmp/marble-rush-tv.html
           test -s /tmp/marble-rush-background.webp
           test -s /tmp/marble-rush-robot.webp
-          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('/tmp/marble-rush-manifest.json','utf8')); if(m.images.length<87)process.exit(1);console.log('HTTP SMOKE PASS: '+m.images.length+' images available')"
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('/tmp/marble-rush-manifest.json','utf8')); if(m.images.length!==119)process.exit(1);console.log('HTTP SMOKE PASS: '+m.images.length+' images available')"
           echo 'PASS: HTTP health, TV, phone, manifest, background and robot routes'
       - name: Install headless Chromium for actual canvas-drawing QA
         run: |
@@ -69,6 +75,17 @@ jobs:
             sleep 1
           done
           node tools/art-browser-smoke.js
+      - name: Validate one TV and two phones over local WebSocket (no deployment)
+        run: |
+          set -e
+          PORT=35993 node server/server.js > /tmp/marble-rush-multiplayer.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for try in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/art-multiplayer-smoke.js
       - name: Save compiled preview for offline visual acceptance
         if: success()
         uses: actions/upload-artifact@v4
@@ -77,6 +94,8 @@ jobs:
           path: |
             public/
             qa-art-race-preview.png
+            qa-art-multiplayer-tv.png
+            qa-art-multiplayer-phone.png
             qa-art-audit.json
           compression-level: 6
           retention-days: 7

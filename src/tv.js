@@ -79,11 +79,38 @@
   const SND = {};
   fetch('assets/manifest.json').then(r => r.ok ? r.json() : null).then(man => {
     if (!man) return;
-    (man.images || []).forEach(o => { const im = new Image(); im.onload = () => { IMG[o.k] = im; }; im.src = `assets/img/${o.f}`; });
+    (man.images || []).forEach(o => {
+      const im = new Image();
+      im.onload = () => {
+        IMG[o.k] = im;
+        if (o.k === 'logo_marblerush') {
+          for (const logo of document.querySelectorAll('.logo')) {
+            if (logo.classList.contains('asset-logo')) continue;
+            const artwork = document.createElement('img');
+            artwork.src = im.src; artwork.alt = 'Marble Rush';
+            logo.appendChild(artwork);
+            logo.classList.add('asset-logo');
+          }
+        }
+      };
+      im.src = `assets/img/${o.f}`;
+    });
     (man.audio || []).forEach(o => { SND[o.k] = `assets/audio/${o.f}`; });
     Audio_.loadFiles();
   }).catch(() => { /* no assets yet — everything is code-drawn */ });
 
+  /* ---------- Optional approved art helpers ---------- */
+  // Every replacement has a code-drawn fallback for still-loading images.
+  // This is presentation-only; collision geometry and physics remain unchanged.
+  function drawSprite(key, x, y, w, h, opacity = 1) {
+    const im = IMG[key];
+    if (!im || !im.complete || !im.naturalWidth || w <= 0 || h <= 0) return false;
+    ctx.save();
+    ctx.globalAlpha *= opacity;
+    ctx.drawImage(im, x, y, w, h);
+    ctx.restore();
+    return true;
+  }
   /* ======================================================================
      AUDIO — synth fallbacks now, real files later (Section 11.4)
      ====================================================================== */
@@ -411,6 +438,25 @@
     for (const p of parts) {
       const k = 1 - p.age / p.life;
       ctx.globalAlpha = Math.min(1, k * 1.4);
+      // Approved particles are optional, with lightweight procedural effects
+      // retained for reduced-motion / slow hardware and while art loads.
+      const sprite = {
+        star: 'fx_sparkle', spark: 'fx_spark',
+        dust: world && world.t.meta.theme === 'ice' ? 'fx_frost' : 'fx_dust',
+        sprite_sprinkle: 'fx_sprinkle', sprite_frost: 'fx_frost',
+        sprite_splash: 'fx_splash', sprite_poof: 'fx_poof',
+        sprite_star_burst: 'fx_star_burst'
+      }[p.kind];
+      if (sprite && !lite() && IMG[sprite]) {
+        const scale = p.kind === 'star' ? 4.0 : p.kind === 'spark' ? 5.5
+          : p.kind === 'dust' ? 6 : p.kind.startsWith('sprite_') ? 5.2 : 5;
+        const size = p.size * scale * (0.7 + 0.3 * k);
+        ctx.save();
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.drawImage(IMG[sprite], -size / 2, -size / 2, size, size);
+        ctx.restore();
+        continue;
+      }
       if (p.kind === 'spark') {
         ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 0.35; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.03, p.y - p.vy * 0.03); ctx.stroke();
@@ -502,7 +548,10 @@
     const th = theme();
     g.addColorStop(0, th.bg[0]); g.addColorStop(0.55, th.bg[1]); g.addColorStop(1, th.bg[2]);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    const bg = IMG['bg_far_' + (world && world.t.meta.theme || 'toybox')];
+    const stage = state === 'boot' || state === 'lobby' ? 'bg_lobby'
+      : state === 'results' || state === 'finale' ? 'bg_results'
+      : 'bg_far_' + (world && world.t.meta.theme || 'toybox');
+    const bg = IMG[stage];
     if (bg) {
       const sc = Math.max(W / bg.width, H / bg.height) * 1.15;
       const ox = -((cam.x * 0.05) % 200) * S, oy = -((cam.y * 0.03) % 200) * S;
@@ -710,9 +759,12 @@
       for (const u of [0.18, 0.82]) { ctx.beginPath(); ctx.arc(s.x1 + s.dx * u, s.y1 + s.dy * u, 3.5, 0, 6.283); ctx.fill(); }
       if (s.flash > 0) { ctx.globalAlpha = s.flash * 3; ctx.lineWidth = 34; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
     }
-    // gate
+    // Starting gate: visual art tracks the existing gate geometry, never
+    // changes the closed/open state or collision rules.
     if (world.phase === 'pen') {
-      strokePath(P.gate, 12, '#e6ebf5'); strokePath(P.gate, 4, '#FF3B5C', 0, 0);
+      if (!drawSprite('gate_start', T.gateX - 112, T.gateY - 185, 224, 176)) {
+        strokePath(P.gate, 12, '#e6ebf5'); strokePath(P.gate, 4, '#FF3B5C', 0, 0);
+      }
     }
     // hazard signs
     for (const hz of T.hazards) {
@@ -730,6 +782,11 @@
       ctx.save(); ctx.translate(b.x, b.y); ctx.scale(k, k);
       if (b.flash > 0) { ctx.fillStyle = `rgba(255,210,63,${b.flash * 2})`; ctx.beginPath(); ctx.arc(0, 0, b.r * 1.8, 0, 6.283); ctx.fill(); }
       ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(4, 7, b.r, 0, 6.283); ctx.fill();
+      const bumperSize = b.r * 2.65;
+      if (drawSprite('bumper', -bumperSize / 2, -bumperSize / 2, bumperSize, bumperSize)) {
+        ctx.restore();
+        continue;
+      }
       const g = ctx.createRadialGradient(-6, -8, 2, 0, 0, b.r);
       g.addColorStop(0, th.bump[0]); g.addColorStop(0.6, th.bump[1]); g.addColorStop(1, th.bump[2]);
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, b.r, 0, 6.283); ctx.fill();
@@ -742,9 +799,15 @@
       const bob = Math.sin(time * 3 + gm.phase) * 4;
       ctx.save(); ctx.translate(gm.x, gm.y + bob);
       if (gm.cd > 0) { ctx.globalAlpha = 0.18; ctx.scale(0.6, 0.6); }
-      const gl = ctx.createRadialGradient(0, 0, 2, 0, 0, 34);
-      gl.addColorStop(0, 'rgba(255,240,180,0.6)'); gl.addColorStop(1, 'rgba(255,240,180,0)');
-      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 6.283); ctx.fill();
+      if (!drawSprite('fx_glow', -43, -43, 86, 86, 0.65)) {
+        const gl = ctx.createRadialGradient(0, 0, 2, 0, 0, 34);
+        gl.addColorStop(0, 'rgba(255,240,180,0.6)'); gl.addColorStop(1, 'rgba(255,240,180,0)');
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 6.283); ctx.fill();
+      }
+      if (drawSprite('item_box', -24, -24, 48, 48)) {
+        ctx.restore(); ctx.globalAlpha = 1;
+        continue;
+      }
       ctx.rotate(time * 1.2 + gm.phase);
       const hue = (time * 80 + gm.phase * 60) % 360;
       ctx.fillStyle = `hsl(${hue},90%,62%)`; ctx.strokeStyle = '#FFC83D'; ctx.lineWidth = 3;
@@ -759,6 +822,10 @@
       // chequered floor strip
       for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) {
         ctx.fillStyle = (i + j) % 2 ? '#111' : '#fff'; ctx.fillRect(x - 12 + j * 12, y - 2 + i * 6 - 18, 12, 6);
+      }
+      if (drawSprite('arch_finish', x - 112, y - 230, 224, 225)) {
+        ctx.restore();
+        continue;
       }
       ctx.fillStyle = '#c9d1e2';
       ctx.fillRect(x - 90, y - 230, 12, 230); ctx.fillRect(x + 78, y - 230, 12, 230);
@@ -779,6 +846,10 @@
       ctx.save(); ctx.translate(p.x, p.y + 10);
       ctx.rotate(Math.atan2(-p.nx, p.ny) || 0);
       ctx.globalAlpha = Math.min(1, p.t);
+      if (drawSprite('oil_puddle', -p.r * 1.28, -p.r * 0.33, p.r * 2.56, p.r * 0.66)) {
+        ctx.restore();
+        continue;
+      }
       const g = ctx.createRadialGradient(0, 0, 4, 0, 0, p.r);
       g.addColorStop(0, '#2a2140'); g.addColorStop(0.6, '#131022'); g.addColorStop(0.8, 'rgba(76,201,240,0.6)'); g.addColorStop(1, 'rgba(255,95,162,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.32, 0, 0, 6.283); ctx.fill();
@@ -848,10 +919,15 @@
       ctx.beginPath(); ctx.arc(0, 0, r * 0.82, -0.6, 0.9); ctx.stroke();
     }
     if (m.fx) {
+      if (m.fx.jelly > 0) {
+        drawSprite('fx_jelly_coat', -r * 1.38, -r * 1.38, r * 2.76, r * 2.76, 0.82);
+      }
       if (m.fx.bubble > 0) {
-        ctx.strokeStyle = `hsla(${(time * 200) % 360},90%,75%,0.8)`; ctx.lineWidth = 3;
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, 6.283); ctx.fill(); ctx.stroke();
+        if (!drawSprite('fx_bubble_shield', -r * 1.58, -r * 1.58, r * 3.16, r * 3.16, 0.88)) {
+          ctx.strokeStyle = `hsla(${(time * 200) % 360},90%,75%,0.8)`; ctx.lineWidth = 3;
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, 6.283); ctx.fill(); ctx.stroke();
+        }
       }
       if (m.fx.slip > 0) {
         ctx.strokeStyle = `hsla(${(time * 400) % 360},90%,60%,0.7)`; ctx.lineWidth = 2;
@@ -867,7 +943,15 @@
       if (m.respawnT > 0) continue;
       const sp = Math.hypot(m.vx, m.vy);
       const p = players.get(m.id); if (!p) continue;
-      if (m.slipstream) {
+      if (m.slipstream && sp > 1) {
+        if (IMG.fx_wind) {
+          ctx.save();
+          ctx.translate(m.x - m.vx / sp * 65, m.y - m.vy / sp * 65);
+          ctx.rotate(Math.atan2(m.vy, m.vx));
+          ctx.globalAlpha = 0.48;
+          ctx.drawImage(IMG.fx_wind, -85, -28, 170, 56);
+          ctx.restore();
+        }
         ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
           const o = ((time * 9 + i * 0.33) % 1) * 60;
@@ -998,6 +1082,15 @@
   const Clatter = (() => {
     let lastAt = -99, hideAt = 0;
     const el = $('#clatter'), txt = $('#clatterText');
+    const portrait = $('#clatterArt');
+    const poseFor = key => {
+      if (/winner|cup|perfect|finish|shortcut|trophy|champ/.test(key)) return 'clatter_cheer';
+      if (/offtrack|air|photo|neck|gasp/.test(key)) return 'clatter_gasp';
+      if (/bump|oil|wince|clack|slip/.test(key)) return 'clatter_wince';
+      if (/go|countdown|flag/.test(key)) return 'clatter_flag';
+      if (/vote|ready|overtake|announce|final_stretch/.test(key)) return 'clatter_announce';
+      return 'clatter_reference';
+    };
     const recent = {};
     function say(key, text, prio = 1) {
       if (state === 'lobby' && prio < 3) return;
@@ -1006,6 +1099,12 @@
       if (recent[key] && now - recent[key] < 14 && prio < 3) return;
       recent[key] = now; lastAt = now; hideAt = now + 2.6;
       txt.textContent = text;
+      const pose = IMG[poseFor(key)] || IMG.clatter_reference;
+      if (portrait && pose) {
+        portrait.src = pose.src;
+        portrait.hidden = false;
+        portrait.parentElement.classList.add('withArt');
+      }
       el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
       Audio_.play('vo_' + key, { gap: 0.5 });
     }
@@ -1299,6 +1398,9 @@
         case 'pickup':
           Audio_.play('sfx_item_pickup');
           emit('star', e.x, e.y, 14, { speed: 300, life: 0.6, size: 10, colors: ['#FFC83D', '#FF5FA2', '#4CC9F0', '#fff'] });
+          if (world.t.meta.theme === 'candy') {
+            emit('sprite_sprinkle', e.x, e.y, 3, { speed: 100, g: 160, life: 0.6, size: 11 });
+          }
           if (p) pop(ITEM_NAME[e.item], e.x, e.y - 30, '#FFE9A0', 26);
           break;
         case 'item': {
@@ -1313,12 +1415,16 @@
         case 'slip':
           Audio_.play('sfx_oil_slip');
           emit('blob', e.x, e.y, 8, { speed: 200, life: 0.6, size: 6, color: '#1b1430', g: 900 });
+          if (world.t.meta.theme === 'candy') {
+            emit('sprite_splash', e.x, e.y, 1, { speed: 0, g: 0, life: 0.45, size: 22 });
+          }
           break;
         case 'poof':
           if (e.reason === 'off') { Audio_.play('sfx_offtrack'); Clatter.say(Math.random() < 0.5 ? 'offtrack' : 'offtrack_2', Math.random() < 0.5 ? 'Whoops! Off the rails!' : "And they're airborne! …And they're gone!"); }
           else Audio_.play('sfx_respawn');
           emit('dust', e.x, e.y, 10, { speed: 160, life: 0.7, size: 12, color: '#FFF4E0' });
           emit('star', e.x, e.y, 6, { speed: 220, life: 0.6, size: 8, color: '#FFC83D' });
+          emit('sprite_poof', e.x, e.y, 1, { speed: 0, life: 0.55, size: 26 });
           if (e.reason === 'off' && p) pop('WHOOPS!', e.x, e.y - 20, '#FF8A75', 32);
           break;
         case 'appear':
@@ -1358,6 +1464,7 @@
         case 'finish': {
           Audio_.play('sfx_finish');
           emit('confetti', e.x, e.y - 60, 40, { speed: 500, g: 900, life: 1.8, size: 12, colors: [p ? p.color : '#fff', '#FFD23F', '#fff'] });
+          emit('sprite_star_burst', e.x, e.y - 75, 1, { speed: 0, g: 0, life: 0.7, size: 34 });
           const ord = ['1st', '2nd', '3rd'][e.place - 1] || e.place + 'th';
           toast(`${ord}  ${name}  ${e.t.toFixed(2)}s`, p ? p.color : '#fff');
           if (e.place === 1) Clatter.say('winner', `${name} wins it!`, 3);
@@ -1451,7 +1558,22 @@
       const m = world.get(row.dataset.id); if (!m) continue;
       row.style.transform = `translateY(${(m.rank - 1) * 100}%)`;
       row.querySelector('.spos').textContent = m.rank;
-      row.querySelector('.sitem').textContent = m.finished ? '🏁' : m.item ? ITEM_ICON[m.item] : '';
+      const slot = row.querySelector('.sitem');
+      const artKey = m.item ? 'item_' + m.item : '';
+      const icon = !m.finished && artKey ? IMG[artKey] : null;
+      const key = m.finished ? 'finished' : icon ? artKey + ':image' : artKey + ':fallback';
+      if (slot.dataset.key !== key) {
+        slot.dataset.key = key;
+        if (icon) {
+          const im = document.createElement('img');
+          im.src = icon.src; im.alt = ITEM_NAME[m.item] || 'Item';
+          slot.replaceChildren(im);
+          slot.title = im.alt;
+        } else {
+          slot.textContent = m.finished ? '🏁' : m.item ? ITEM_ICON[m.item] : '';
+          slot.title = m.item ? ITEM_NAME[m.item] : '';
+        }
+      }
       row.classList.toggle('fin', m.finished);
     }
     if (key !== lastStandKey) lastStandKey = key;
@@ -1530,6 +1652,15 @@
       row.innerHTML = `<span class="rpos">${['1st', '2nd', '3rd'][i] || (i + 1) + 'th'}</span><img alt="" src="${shapeImg(p.shape, p.color)}"><span class="rname"></span>
         <span class="rtime">${p.lastTime != null ? p.lastTime.toFixed(2) + 's' : 'DNF'}</span><span class="rpts">+${p.lastPts}</span><span class="rtot">${p.points}</span>`;
       row.querySelector('.rname').textContent = p.name;
+      if (i < 3) {
+        const medal = IMG[['medal_gold', 'medal_silver', 'medal_bronze'][i]];
+        if (medal) {
+          const im = document.createElement('img');
+          im.src = medal.src; im.alt = '';
+          im.className = 'rmedal';
+          row.querySelector('.rpos').prepend(im);
+        }
+      }
       box.appendChild(row);
     });
     $('#raceCount').textContent = `Race ${cup.race} of ${cup.n} · Cup points`;
@@ -1538,6 +1669,13 @@
     $('#btnFinale').hidden = done;
   }
   function renderFinale() {
+    const awardTrophy = $('#finaleTrophy');
+    if (awardTrophy && IMG.trophy_cup) {
+      const trophyImg = document.createElement('img');
+      trophyImg.src = IMG.trophy_cup.src;
+      trophyImg.alt = 'Marble Rush championship trophy';
+      awardTrophy.replaceChildren(trophyImg);
+    }
     const list = [...players.values()].sort((a, b) => b.points - a.points || b.wins - a.wins);
     const champ = list[0];
     $('#champName').textContent = champ ? champ.name : '';
