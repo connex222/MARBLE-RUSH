@@ -12,12 +12,13 @@ async function main(){
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
-    window.__marbleArtDraws={backgrounds:new Set(),textures:new Set(),props:new Set()};
+    window.__marbleArtDraws={backgrounds:new Set(),textures:new Set(),props:new Set(),gameArt:new Set()};
     const originalDraw=CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage=function(image,...args){
       const src=(image&&typeof image.src==='string')?image.src:'';
       if(src.includes('bg_far_'))window.__marbleArtDraws.backgrounds.add(src.split('/').pop());
       if(src.includes('prop_'))window.__marbleArtDraws.props.add(src.split('/').pop());
+      if(/\/(?:item_|fx_|bumper\.|gate_start\.|arch_finish\.|oil_puddle\.)/.test(src))window.__marbleArtDraws.gameArt.add(src.split('/').pop());
       return originalDraw.call(this,image,...args);
     };
     const originalPattern=CanvasRenderingContext2D.prototype.createPattern;
@@ -47,7 +48,7 @@ async function main(){
     await page.waitForTimeout(5000);
     const stats=await page.evaluate(()=>{
       const art=window.__marbleArtDraws;
-      return {backgrounds:[...art.backgrounds],textures:[...art.textures],props:[...art.props],
+      return {backgrounds:[...art.backgrounds],textures:[...art.textures],props:[...art.props],gameArt:[...art.gameArt],
         track:document.querySelector('#trackName')?.textContent,
         imageCount:performance.getEntriesByType('resource').filter(x=>x.name.includes('/assets/img/')).length};
     });
@@ -57,6 +58,9 @@ async function main(){
     assert.ok(stats.backgrounds.some(x=>x.startsWith('bg_far_')),'No approved theme far background painted on canvas');
     assert.ok(stats.textures.some(x=>x.startsWith('tex_rail_')),'No theme rail material applied to canvas');
     assert.ok(stats.props.some(x=>x.startsWith('prop_')),'No approved decorative props painted on canvas');
+    assert.ok(stats.gameArt.includes('item_box.webp'),'New gem pickup artwork never painted on canvas');
+    assert.ok(stats.gameArt.includes('arch_finish.webp'),'Approved finish arch artwork never painted on canvas');
+    assert.ok(stats.gameArt.includes('gate_start.webp'),'Approved starting gate artwork never painted on canvas');
     console.log('PASS: real browser opened TV, added keyboard racer, selected track and rendered thematic background, patterned rail and transparent props');
   }finally{
     await browser.close();
