@@ -84,6 +84,18 @@
     Audio_.loadFiles();
   }).catch(() => { /* no assets yet — everything is code-drawn */ });
 
+  /* ---------- Optional approved art helpers ---------- */
+  // Every replacement has a code-drawn fallback for still-loading images.
+  // This is presentation-only; collision geometry and physics remain unchanged.
+  function drawSprite(key, x, y, w, h, opacity = 1) {
+    const im = IMG[key];
+    if (!im || !im.complete || !im.naturalWidth || w <= 0 || h <= 0) return false;
+    ctx.save();
+    ctx.globalAlpha *= opacity;
+    ctx.drawImage(im, x, y, w, h);
+    ctx.restore();
+    return true;
+  }
   /* ======================================================================
      AUDIO — synth fallbacks now, real files later (Section 11.4)
      ====================================================================== */
@@ -710,9 +722,12 @@
       for (const u of [0.18, 0.82]) { ctx.beginPath(); ctx.arc(s.x1 + s.dx * u, s.y1 + s.dy * u, 3.5, 0, 6.283); ctx.fill(); }
       if (s.flash > 0) { ctx.globalAlpha = s.flash * 3; ctx.lineWidth = 34; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
     }
-    // gate
+    // Starting gate: visual art tracks the existing gate geometry, never
+    // changes the closed/open state or collision rules.
     if (world.phase === 'pen') {
-      strokePath(P.gate, 12, '#e6ebf5'); strokePath(P.gate, 4, '#FF3B5C', 0, 0);
+      if (!drawSprite('gate_start', T.gateX - 112, T.gateY - 185, 224, 176)) {
+        strokePath(P.gate, 12, '#e6ebf5'); strokePath(P.gate, 4, '#FF3B5C', 0, 0);
+      }
     }
     // hazard signs
     for (const hz of T.hazards) {
@@ -730,6 +745,11 @@
       ctx.save(); ctx.translate(b.x, b.y); ctx.scale(k, k);
       if (b.flash > 0) { ctx.fillStyle = `rgba(255,210,63,${b.flash * 2})`; ctx.beginPath(); ctx.arc(0, 0, b.r * 1.8, 0, 6.283); ctx.fill(); }
       ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(4, 7, b.r, 0, 6.283); ctx.fill();
+      const bumperSize = b.r * 2.65;
+      if (drawSprite('bumper', -bumperSize / 2, -bumperSize / 2, bumperSize, bumperSize)) {
+        ctx.restore();
+        continue;
+      }
       const g = ctx.createRadialGradient(-6, -8, 2, 0, 0, b.r);
       g.addColorStop(0, th.bump[0]); g.addColorStop(0.6, th.bump[1]); g.addColorStop(1, th.bump[2]);
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, b.r, 0, 6.283); ctx.fill();
@@ -742,9 +762,15 @@
       const bob = Math.sin(time * 3 + gm.phase) * 4;
       ctx.save(); ctx.translate(gm.x, gm.y + bob);
       if (gm.cd > 0) { ctx.globalAlpha = 0.18; ctx.scale(0.6, 0.6); }
-      const gl = ctx.createRadialGradient(0, 0, 2, 0, 0, 34);
-      gl.addColorStop(0, 'rgba(255,240,180,0.6)'); gl.addColorStop(1, 'rgba(255,240,180,0)');
-      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 6.283); ctx.fill();
+      if (!drawSprite('fx_glow', -43, -43, 86, 86, 0.65)) {
+        const gl = ctx.createRadialGradient(0, 0, 2, 0, 0, 34);
+        gl.addColorStop(0, 'rgba(255,240,180,0.6)'); gl.addColorStop(1, 'rgba(255,240,180,0)');
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 6.283); ctx.fill();
+      }
+      if (drawSprite('item_box', -24, -24, 48, 48)) {
+        ctx.restore(); ctx.globalAlpha = 1;
+        continue;
+      }
       ctx.rotate(time * 1.2 + gm.phase);
       const hue = (time * 80 + gm.phase * 60) % 360;
       ctx.fillStyle = `hsl(${hue},90%,62%)`; ctx.strokeStyle = '#FFC83D'; ctx.lineWidth = 3;
@@ -759,6 +785,10 @@
       // chequered floor strip
       for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) {
         ctx.fillStyle = (i + j) % 2 ? '#111' : '#fff'; ctx.fillRect(x - 12 + j * 12, y - 2 + i * 6 - 18, 12, 6);
+      }
+      if (drawSprite('arch_finish', x - 112, y - 230, 224, 225)) {
+        ctx.restore();
+        continue;
       }
       ctx.fillStyle = '#c9d1e2';
       ctx.fillRect(x - 90, y - 230, 12, 230); ctx.fillRect(x + 78, y - 230, 12, 230);
@@ -779,6 +809,10 @@
       ctx.save(); ctx.translate(p.x, p.y + 10);
       ctx.rotate(Math.atan2(-p.nx, p.ny) || 0);
       ctx.globalAlpha = Math.min(1, p.t);
+      if (drawSprite('oil_puddle', -p.r * 1.28, -p.r * 0.33, p.r * 2.56, p.r * 0.66)) {
+        ctx.restore();
+        continue;
+      }
       const g = ctx.createRadialGradient(0, 0, 4, 0, 0, p.r);
       g.addColorStop(0, '#2a2140'); g.addColorStop(0.6, '#131022'); g.addColorStop(0.8, 'rgba(76,201,240,0.6)'); g.addColorStop(1, 'rgba(255,95,162,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.32, 0, 0, 6.283); ctx.fill();
@@ -848,10 +882,15 @@
       ctx.beginPath(); ctx.arc(0, 0, r * 0.82, -0.6, 0.9); ctx.stroke();
     }
     if (m.fx) {
+      if (m.fx.jelly > 0) {
+        drawSprite('fx_jelly_coat', -r * 1.38, -r * 1.38, r * 2.76, r * 2.76, 0.82);
+      }
       if (m.fx.bubble > 0) {
-        ctx.strokeStyle = `hsla(${(time * 200) % 360},90%,75%,0.8)`; ctx.lineWidth = 3;
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, 6.283); ctx.fill(); ctx.stroke();
+        if (!drawSprite('fx_bubble_shield', -r * 1.58, -r * 1.58, r * 3.16, r * 3.16, 0.88)) {
+          ctx.strokeStyle = `hsla(${(time * 200) % 360},90%,75%,0.8)`; ctx.lineWidth = 3;
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, 6.283); ctx.fill(); ctx.stroke();
+        }
       }
       if (m.fx.slip > 0) {
         ctx.strokeStyle = `hsla(${(time * 400) % 360},90%,60%,0.7)`; ctx.lineWidth = 2;
