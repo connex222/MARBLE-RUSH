@@ -77,5 +77,6 @@ jobs:
           path: |
             public/
             qa-art-race-preview.png
+            qa-art-audit.json
           compression-level: 6
           retention-days: 7
