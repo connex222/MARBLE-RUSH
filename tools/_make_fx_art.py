@@ -48,6 +48,21 @@ def stars(cx,cy,r,inner=None,arms=4,angle=-math.pi/2):
         pts.append((cx+math.cos(a)*rr,cy+math.sin(a)*rr))
     return pts
 def save(img,name):
+    # Glow and smoke tails should never touch transparent texture edges.
+    # Normalize only effects whose faint visible alpha extends too near a border.
+    w,h=img.size
+    bounds=img.getchannel("A").getbbox()
+    if bounds is not None:
+        margin=min(bounds[0],bounds[1],w-bounds[2],h-bounds[3])
+        if margin<82:
+            subject=img.crop(bounds)
+            maxw,maxh=w-180,h-180
+            f=min(maxw/subject.width,maxh/subject.height,1.0)
+            sz=(max(1,round(subject.width*f)),max(1,round(subject.height*f)))
+            subject=subject.resize(sz,Image.Resampling.LANCZOS)
+            safe=new(w,h)
+            safe.alpha_composite(subject,((w-sz[0])//2,(h-sz[1])//2))
+            img=safe
     dest=ROOT/(name+".png")
     img.save(dest,"PNG",optimize=True)
     verify=Image.open(dest);verify.load()
