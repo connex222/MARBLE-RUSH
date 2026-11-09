@@ -1,4 +1,5 @@
 name: Generate and QA MARBLE RUSH ten premium FX textures (one-time)
+# Revised to keep all soft smoke/glow tails clear of texture boundaries.
 on:
   push:
     branches:
