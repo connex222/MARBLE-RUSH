@@ -1,0 +1,76 @@
+name: Import Clockwork Chaos seamless brass rail texture (one-time)
+on:
+  push:
+    branches:
+      - art/tex-rail-clockwork
+    paths:
+      - .github/workflows/import-tex-rail-clockwork.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download, make seamless, and QA clockmaker brass texture
+        env:
+          IMAGE_URL: https://cdn.creativeclaw.co/u/f3e7a3b1/images/78cef158-7ef9-456c-9dd7-b3a0fa0c8d66.png
+        run: |
+          python -m pip -q install Pillow numpy
+          python - <<'PY'
+          import os,urllib.request
+          from io import BytesIO
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image
+          req=urllib.request.Request(os.environ['IMAGE_URL'],headers={'User-Agent':'MarbleRushClockworkImporter/1.0'})
+          with urllib.request.urlopen(req,timeout=70) as response:
+              data=response.read(30000000)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n') or not 15000<len(data)<29000000:
+              raise SystemExit('FAIL: missing source PNG')
+          src=Image.open(BytesIO(data));src.load()
+          if src.width!=src.height or not 1024<=src.width<=4096:
+              raise SystemExit(f'FAIL: square texture required; got {src.size}')
+          rgb=src.convert('RGB').resize((1024,1024),Image.Resampling.LANCZOS)
+          arr=np.asarray(rgb,dtype=np.float32).copy()
+          if float(arr.std())<5:
+              raise SystemExit('FAIL: insufficient metallic texture detail')
+          band=64
+          for x in range(band):
+              f=.5*(1-x/(band-1))
+              a=arr[:,x,:].copy()
+              b=arr[:,-1-x,:].copy()
+              arr[:,x,:]=(1-f)*a+f*b
+              arr[:,-1-x,:]=(1-f)*b+f*a
+          for y in range(band):
+              f=.5*(1-y/(band-1))
+              a=arr[y,:,:].copy()
+              b=arr[-1-y,:,:].copy()
+              arr[y,:,:]=(1-f)*a+f*b
+              arr[-1-y,:,:]=(1-f)*b+f*a
+          out=Image.fromarray(np.clip(np.rint(arr),0,255).astype('uint8'),'RGB')
+          pixels=np.asarray(out,dtype=np.int16)
+          lr=int(np.abs(pixels[:,0,:]-pixels[:,-1,:]).max())
+          tb=int(np.abs(pixels[0,:,:]-pixels[-1,:,:]).max())
+          if lr>1 or tb>1:
+              raise SystemExit(f'FAIL: texture edge matching left/right={lr} top/bottom={tb}')
+          dst=Path('assets/raw/tex_rail_clockwork.png')
+          dst.parent.mkdir(parents=True,exist_ok=True)
+          out.save(dst,format='PNG',optimize=True)
+          chk=Image.open(dst);chk.load()
+          if chk.size!=(1024,1024) or chk.mode!='RGB':
+              raise SystemExit('FAIL: texture not exact 1024x1024 RGB PNG')
+          print('SOURCE:',src.size,src.mode)
+          print('SEAM MAX DIFF: left/right',lr,'top/bottom',tb)
+          print('PASS: Clockwork Chaos seamless 1024x1024 opaque RGB brass rail texture')
+          print('BYTES:',dst.stat().st_size)
+          PY
+      - name: Commit brass texture and remove importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/tex_rail_clockwork.png
+          git rm .github/workflows/import-tex-rail-clockwork.yml
+          git commit -m "art: add seamless polished-brass Clockwork Chaos rail texture candidate"
+          git push
