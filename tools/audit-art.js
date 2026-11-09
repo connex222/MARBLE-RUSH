@@ -22,6 +22,21 @@ const required = THEMES.flatMap(theme => [
   'tex_rail_'+theme+'.png',
   ...Array.from({length:8},(_,i)=>'prop_'+theme+'_'+String(i+1).padStart(2,'0')+'.png')
 ]);
+const COMMON_REQUIRED = [
+  'logo_marblerush','bg_lobby','bg_results','bg_phone',
+  'clatter_reference','clatter_announce','clatter_cheer','clatter_gasp','clatter_flag','clatter_wince',
+  ...Array.from({length:12},(_,i)=>'marble_swirl_'+String(i+1).padStart(2,'0')),
+  'marble_highlight',
+].map(k=>k+'.png');
+const ITEM_REQUIRED = [
+  'item_box','item_turbo','item_jelly','item_oil','item_big','item_bubble',
+  'oil_puddle','fx_bubble_shield','fx_jelly_coat','bumper','gate_start',
+  'arch_finish','trophy_cup','medal_gold','medal_silver','medal_bronze',
+].map(k=>k+'.png');
+const FX_REQUIRED = [
+  'fx_sparkle','fx_glow','fx_spark','fx_dust','fx_sprinkle',
+  'fx_frost','fx_splash','fx_poof','fx_star_burst','fx_wind',
+].map(k=>k+'.png');
 async function main() {
   const raw=fs.readdirSync(RAW).filter(x=>/\.(png|jpe?g|webp)$/i.test(x)).sort();
   const missing=required.filter(name=>!fs.existsSync(path.join(RAW,name)));
@@ -32,6 +47,29 @@ async function main() {
     console.log('• '+t+': '+(10-prefix.filter(x=>missing.includes(x)).length)+'/10 core images');
   }
   console.log('Required theme images: '+(70-missing.length)+'/70 present');
+  const remaining = list => list.filter(n=>!fs.existsSync(path.join(RAW,n)));
+  const commonMissing=remaining(COMMON_REQUIRED);
+  const itemMissing=remaining(ITEM_REQUIRED);
+  const fxMissing=remaining(FX_REQUIRED);
+  const totalRequired=COMMON_REQUIRED.length+required.length+ITEM_REQUIRED.length+FX_REQUIRED.length;
+  const totalMissing=commonMissing.length+missing.length+itemMissing.length+fxMissing.length;
+  console.log('FULL BIBLE ART AUDIT: '+(totalRequired-totalMissing)+'/'+totalRequired+' named PNG assets on GitHub');
+  console.log('Shared/lobby/marble artwork: '+(COMMON_REQUIRED.length-commonMissing.length)+'/'+COMMON_REQUIRED.length);
+  console.log('Game-item and trophy art: '+(ITEM_REQUIRED.length-itemMissing.length)+'/'+ITEM_REQUIRED.length+' (not yet produced)');
+  console.log('Particle and effects art: '+(FX_REQUIRED.length-fxMissing.length)+'/'+FX_REQUIRED.length+' (not yet produced)');
+  if(itemMissing.length)console.log('Still to produce — items:',itemMissing.join(', '));
+  if(fxMissing.length)console.log('Still to produce — effects:',fxMissing.join(', '));
+  assert.equal(commonMissing.length,0,'Missing previously approved shared character/logo/marble images');
+  fs.writeFileSync(path.join(ROOT,'qa-art-audit.json'),JSON.stringify({
+    title:'MARBLE RUSH artwork inventory — Master Bible Section 9',
+    totals:{required:totalRequired,present:totalRequired-totalMissing,missing:totalMissing},
+    shared:{required:COMMON_REQUIRED.length,missing:commonMissing},
+    themePacks:{required:required.length,missing,completeThemes:THEMES.filter(t=>!required.some(n=>n.includes(t)&&missing.includes(n)))},
+    itemArtwork:{required:ITEM_REQUIRED.length,missing:itemMissing},
+    effects:{required:FX_REQUIRED.length,missing:fxMissing},
+    blocker:'Six approved Jungle Jumble PNGs require local upload; 26 game item/effects PNGs have not yet been produced.',
+  },null,2));
+
   if(missing.length)console.log('Missing approved theme images:',missing.join(', '));
   assert.equal(unexpected.length,0,'Unexpected missing core theme art: '+unexpected.join(', '));
   assert.equal(missing.length===0 || missing.every(x=>JUNGLE_PENDING.has(x)),true,'Missing core art outside Jungle');
