@@ -1,0 +1,86 @@
+name: Import eight Clockwork Chaos props (one-time)
+on:
+  push:
+    branches:
+      - art/clockwork-props-01-08
+    paths:
+      - .github/workflows/import-clockwork-props.yml
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import and verify eight separate clockwork decorative object PNGs
+        run: |
+          python -m pip -q install Pillow
+          python - <<'PY'
+          import json,urllib.request,concurrent.futures,time,hashlib
+          from io import BytesIO
+          from pathlib import Path
+          from PIL import Image
+          urls=json.loads(r'''{"01":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/60f8fb00-5ef9-4911-9dc6-8a54dc112752.png","02":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/30201ca3-1278-4b7b-884c-726590cd5648.png","03":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/654d8802-2ff8-4ea3-900b-e80f60d23590.png","04":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/55e5a3a2-e13a-4a3a-8cc1-7380efccc896.png","05":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/0c6ded35-f807-4a92-b79a-caacafef3c99.png","06":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/5629446c-4ba6-4c14-8b60-add6c143c748.png","07":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/9ef01b80-6d06-44b6-bbd0-a94ddef59230.png","08":"https://cdn.creativeclaw.co/u/f3e7a3b1/images/0cbc8a08-b4fa-4a9a-b167-457281bb5248.png"}''')
+          expected=[f'{i:02d}' for i in range(1,9)]
+          if sorted(urls)!=expected:raise SystemExit('FAIL: expected exact 01..08 input source list')
+          folder=Path('assets/raw')
+          folder.mkdir(parents=True,exist_ok=True)
+          def convert(item):
+              ident,url=item
+              blob=None
+              for attempt in range(3):
+                  try:
+                      request=urllib.request.Request(url,headers={'User-Agent':'MarbleRushArtImporter/1.0'})
+                      with urllib.request.urlopen(request,timeout=75) as response:
+                          blob=response.read(30000000)
+                      break
+                  except Exception:
+                      if attempt==2:raise
+                      time.sleep((attempt+1)*2)
+              if not blob or not blob.startswith(b'\x89PNG\r\n\x1a\n') or not 10000<len(blob)<29000000:
+                  raise RuntimeError(f'{ident}: source is invalid PNG')
+              src=Image.open(BytesIO(blob));src.load()
+              if not (500<=min(src.size) and max(src.size)<=4096):
+                  raise RuntimeError(f'{ident}: unexpected source dimensions {src.size}')
+              rgba=src.convert('RGBA')
+              alpha=rgba.getchannel('A')
+              if alpha.getextrema()[0]==255:
+                  raise RuntimeError(f'{ident}: image does not have a transparent backdrop')
+              bbox=alpha.point(lambda value:255 if value>10 else 0).getbbox()
+              if bbox is None:
+                  raise RuntimeError(f'{ident}: object missing, completely transparent')
+              subject=rgba.crop(bbox)
+              factor=min(860.0/subject.width,860.0/subject.height)
+              size=(max(1,round(subject.width*factor)),max(1,round(subject.height*factor)))
+              subject=subject.resize(size,Image.Resampling.LANCZOS)
+              canvas=Image.new('RGBA',(1024,1024),(0,0,0,0))
+              canvas.alpha_composite(subject,((1024-size[0])//2,(1024-size[1])//2))
+              bounds=canvas.getchannel('A').getbbox()
+              margin=min(bounds[0],bounds[1],1024-bounds[2],1024-bounds[3])
+              if margin<79:
+                  raise RuntimeError(f'{ident}: subject clipping/safe area failed, margin {margin}px')
+              path=folder/f'prop_clockwork_{ident}.png'
+              canvas.save(path,format='PNG',optimize=True)
+              check=Image.open(path);check.load()
+              if check.size!=(1024,1024) or check.mode!='RGBA' or check.getpixel((0,0))[3]!=0:
+                  raise RuntimeError(f'{ident}: corrupt output or missing transparency')
+              print(f'PASS: prop_clockwork_{ident}.png source={src.size} 1024x1024 RGBA clear_margin={margin}px size={path.stat().st_size}',flush=True)
+              return ident
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              actual=list(pool.map(convert,urls.items()))
+          if sorted(actual)!=expected:
+              raise SystemExit('FAIL: less than eight output files')
+          hashes=[hashlib.sha256((folder/f'prop_clockwork_{ident}.png').read_bytes()).hexdigest() for ident in expected]
+          if len(set(hashes))!=8:
+              raise SystemExit('FAIL: duplicate images')
+          print('PASS: 8/8 distinct Clockwork Chaos props verified as transparent correctly numbered images',flush=True)
+          PY
+      - name: Commit only Clockwork Chaos art and remove importer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/raw/prop_clockwork_*.png
+          git rm .github/workflows/import-clockwork-props.yml
+          git commit -m "art: add eight premium Clockwork Chaos prop candidates"
+          git push
