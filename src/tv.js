@@ -407,10 +407,33 @@
     }
     for (let i = pops.length - 1; i >= 0; i--) { pops[i].age += dt; if (pops[i].age > pops[i].life) pops.splice(i, 1); }
   }
+  // Draw one optional, preloaded and approved artwork image. Callers keep the
+  // original vector geometry when images fail to load; no physics is affected.
+  function artImage(key, x, y, width, height, opacity = 1) {
+    const img = IMG[key];
+    if (!img || !img.complete || !img.naturalWidth) return false;
+    ctx.save();
+    ctx.globalAlpha *= opacity;
+    ctx.drawImage(img, x, y, width, height);
+    ctx.restore();
+    return true;
+  }
   function drawParts() {
     for (const p of parts) {
       const k = 1 - p.age / p.life;
       ctx.globalAlpha = Math.min(1, k * 1.4);
+      // Use the accepted VFX sprites at the original particle coordinates.
+      // Keep their procedural fallbacks when textures have not loaded.
+      const artKey = { spark: 'fx_spark', dust: 'fx_dust', star: 'fx_sparkle', blob: 'fx_poof' }[p.kind];
+      if (artKey && IMG[artKey] && !lite()) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        const diameter = p.size * (p.kind === 'dust' || p.kind === 'blob' ? 6 : 4);
+        artImage(artKey, -diameter / 2, -diameter / 2, diameter, diameter);
+        ctx.restore();
+        continue;
+      }
       if (p.kind === 'spark') {
         ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 0.35; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.03, p.y - p.vy * 0.03); ctx.stroke();
@@ -712,6 +735,8 @@
     }
     // gate
     if (world.phase === 'pen') {
+      // Sprite sits behind the actual authoritative closed barrier.
+      artImage('gate_start', T.gateX - 92, T.gateY - 170, 184, 180, 0.95);
       strokePath(P.gate, 12, '#e6ebf5'); strokePath(P.gate, 4, '#FF3B5C', 0, 0);
     }
     // hazard signs
@@ -730,6 +755,10 @@
       ctx.save(); ctx.translate(b.x, b.y); ctx.scale(k, k);
       if (b.flash > 0) { ctx.fillStyle = `rgba(255,210,63,${b.flash * 2})`; ctx.beginPath(); ctx.arc(0, 0, b.r * 1.8, 0, 6.283); ctx.fill(); }
       ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(4, 7, b.r, 0, 6.283); ctx.fill();
+      if (artImage('bumper', -b.r * 1.35, -b.r * 1.35, b.r * 2.7, b.r * 2.7)) {
+        ctx.restore();
+        continue;
+      }
       const g = ctx.createRadialGradient(-6, -8, 2, 0, 0, b.r);
       g.addColorStop(0, th.bump[0]); g.addColorStop(0.6, th.bump[1]); g.addColorStop(1, th.bump[2]);
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, b.r, 0, 6.283); ctx.fill();
@@ -746,6 +775,9 @@
       gl.addColorStop(0, 'rgba(255,240,180,0.6)'); gl.addColorStop(1, 'rgba(255,240,180,0)');
       ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 6.283); ctx.fill();
       ctx.rotate(time * 1.2 + gm.phase);
+      if (artImage('item_box', -19, -19, 38, 38)) {
+        ctx.restore(); ctx.globalAlpha = 1; continue;
+      }
       const hue = (time * 80 + gm.phase * 60) % 360;
       ctx.fillStyle = `hsl(${hue},90%,62%)`; ctx.strokeStyle = '#FFC83D'; ctx.lineWidth = 3;
       ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; ctx.lineTo(Math.cos(a) * 15, Math.sin(a) * 15); } ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -756,6 +788,11 @@
     for (const a of T.arches) {
       const x = a.x, y = a.y;
       ctx.save();
+      // The finish sprite is purely visual and has no collision shape.
+      if (artImage('arch_finish', x - 106, y - 270, 212, 275)) {
+        ctx.restore();
+        continue;
+      }
       // chequered floor strip
       for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) {
         ctx.fillStyle = (i + j) % 2 ? '#111' : '#fff'; ctx.fillRect(x - 12 + j * 12, y - 2 + i * 6 - 18, 12, 6);
@@ -779,6 +816,9 @@
       ctx.save(); ctx.translate(p.x, p.y + 10);
       ctx.rotate(Math.atan2(-p.nx, p.ny) || 0);
       ctx.globalAlpha = Math.min(1, p.t);
+      if (artImage('oil_puddle', -p.r, -p.r * 0.36, p.r * 2, p.r * 0.72)) {
+        ctx.restore(); continue;
+      }
       const g = ctx.createRadialGradient(0, 0, 4, 0, 0, p.r);
       g.addColorStop(0, '#2a2140'); g.addColorStop(0.6, '#131022'); g.addColorStop(0.8, 'rgba(76,201,240,0.6)'); g.addColorStop(1, 'rgba(255,95,162,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.32, 0, 0, 6.283); ctx.fill();
@@ -809,7 +849,10 @@
       ctx.rotate(a); ctx.scale(1 - k, 1 + k); ctx.rotate(-a);
     }
     // glow for big/bubble/jelly
-    if (m.fx && m.fx.jelly > 0) { ctx.fillStyle = 'rgba(61,220,151,0.35)'; ctx.beginPath(); ctx.arc(0, 0, r * 1.28, 0, 6.283); ctx.fill(); }
+    if (m.fx && m.fx.jelly > 0 && !IMG.fx_jelly_coat) {
+      ctx.fillStyle = 'rgba(61,220,151,0.35)';
+      ctx.beginPath(); ctx.arc(0, 0, r * 1.28, 0, 6.283); ctx.fill();
+    }
     // body
     ctx.save();
     ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.283); ctx.clip();
@@ -848,7 +891,12 @@
       ctx.beginPath(); ctx.arc(0, 0, r * 0.82, -0.6, 0.9); ctx.stroke();
     }
     if (m.fx) {
-      if (m.fx.bubble > 0) {
+      if (m.fx.jelly > 0) {
+        artImage('fx_jelly_coat', -r * 1.4, -r * 1.4, 2.8 * r, 2.8 * r, 0.80);
+      }
+      if (m.fx.bubble > 0 && artImage('fx_bubble_shield', -r * 1.55, -r * 1.55, r * 3.1, r * 3.1, 0.86)) {
+        // Approved translucent coat replaces the procedural ring when loaded.
+      } else if (m.fx.bubble > 0) {
         ctx.strokeStyle = `hsla(${(time * 200) % 360},90%,75%,0.8)`; ctx.lineWidth = 3;
         ctx.fillStyle = 'rgba(255,255,255,0.08)';
         ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, 6.283); ctx.fill(); ctx.stroke();
@@ -1530,6 +1578,14 @@
       row.innerHTML = `<span class="rpos">${['1st', '2nd', '3rd'][i] || (i + 1) + 'th'}</span><img alt="" src="${shapeImg(p.shape, p.color)}"><span class="rname"></span>
         <span class="rtime">${p.lastTime != null ? p.lastTime.toFixed(2) + 's' : 'DNF'}</span><span class="rpts">+${p.lastPts}</span><span class="rtot">${p.points}</span>`;
       row.querySelector('.rname').textContent = p.name;
+      if (i < 3) {
+        const medal = document.createElement('img');
+        medal.className = 'resultMedal';
+        medal.alt = ['Gold medal', 'Silver medal', 'Bronze medal'][i];
+        medal.src = 'assets/img/medal_' + ['gold', 'silver', 'bronze'][i] + '.webp';
+        medal.onerror = () => medal.remove();
+        row.querySelector('.rpos').prepend(medal);
+      }
       box.appendChild(row);
     });
     $('#raceCount').textContent = `Race ${cup.race} of ${cup.n} · Cup points`;
@@ -1542,6 +1598,15 @@
     const champ = list[0];
     $('#champName').textContent = champ ? champ.name : '';
     $('#champName').style.color = champ ? champ.color : '';
+    const trophy = $('.trophy');
+    if (trophy && !trophy.querySelector('img')) {
+      const img = document.createElement('img');
+      img.alt = 'Marble Rush gold championship trophy';
+      img.src = 'assets/img/trophy_cup.webp';
+      img.onerror = () => img.remove();
+      trophy.textContent = '';
+      trophy.appendChild(img);
+    }
     const box = $('#awardRows'); box.innerHTML = '';
     for (const p of list) {
       const row = document.createElement('div'); row.className = 'arow'; row.style.setProperty('--pc', p.color);
