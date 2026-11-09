@@ -54,11 +54,28 @@ jobs:
           test -s /tmp/marble-rush-robot.webp
           node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('/tmp/marble-rush-manifest.json','utf8')); if(m.images.length<87)process.exit(1);console.log('HTTP SMOKE PASS: '+m.images.length+' images available')"
           echo 'PASS: HTTP health, TV, phone, manifest, background and robot routes'
+      - name: Install headless Chromium for actual canvas-drawing QA
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Test a real race in the browser and capture screenshot
+        run: |
+          set -e
+          PORT=35993 node server/server.js > /tmp/marble-rush-browser.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for try in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/art-browser-smoke.js
       - name: Save compiled preview for offline visual acceptance
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: marble-rush-compiled-art-preview
-          path: public/
+          path: |
+            public/
+            qa-art-race-preview.png
           compression-level: 6
           retention-days: 7
