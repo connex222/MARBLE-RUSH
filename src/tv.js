@@ -1525,7 +1525,22 @@
       const m = world.get(row.dataset.id); if (!m) continue;
       row.style.transform = `translateY(${(m.rank - 1) * 100}%)`;
       row.querySelector('.spos').textContent = m.rank;
-      row.querySelector('.sitem').textContent = m.finished ? '🏁' : m.item ? ITEM_ICON[m.item] : '';
+      const slot = row.querySelector('.sitem');
+      const artKey = m.item ? 'item_' + m.item : '';
+      const icon = !m.finished && artKey ? IMG[artKey] : null;
+      const key = m.finished ? 'finished' : icon ? artKey + ':image' : artKey + ':fallback';
+      if (slot.dataset.key !== key) {
+        slot.dataset.key = key;
+        if (icon) {
+          const im = document.createElement('img');
+          im.src = icon.src; im.alt = ITEM_NAME[m.item] || 'Item';
+          slot.replaceChildren(im);
+          slot.title = im.alt;
+        } else {
+          slot.textContent = m.finished ? '🏁' : m.item ? ITEM_ICON[m.item] : '';
+          slot.title = m.item ? ITEM_NAME[m.item] : '';
+        }
+      }
       row.classList.toggle('fin', m.finished);
     }
     if (key !== lastStandKey) lastStandKey = key;
@@ -1604,6 +1619,15 @@
       row.innerHTML = `<span class="rpos">${['1st', '2nd', '3rd'][i] || (i + 1) + 'th'}</span><img alt="" src="${shapeImg(p.shape, p.color)}"><span class="rname"></span>
         <span class="rtime">${p.lastTime != null ? p.lastTime.toFixed(2) + 's' : 'DNF'}</span><span class="rpts">+${p.lastPts}</span><span class="rtot">${p.points}</span>`;
       row.querySelector('.rname').textContent = p.name;
+      if (i < 3) {
+        const medal = IMG[['medal_gold', 'medal_silver', 'medal_bronze'][i]];
+        if (medal) {
+          const im = document.createElement('img');
+          im.src = medal.src; im.alt = '';
+          im.className = 'rmedal';
+          row.querySelector('.rpos').prepend(im);
+        }
+      }
       box.appendChild(row);
     });
     $('#raceCount').textContent = `Race ${cup.race} of ${cup.n} · Cup points`;
@@ -1612,6 +1636,13 @@
     $('#btnFinale').hidden = done;
   }
   function renderFinale() {
+    const awardTrophy = $('#finaleTrophy');
+    if (awardTrophy && IMG.trophy_cup) {
+      const trophyImg = document.createElement('img');
+      trophyImg.src = IMG.trophy_cup.src;
+      trophyImg.alt = 'Marble Rush championship trophy';
+      awardTrophy.replaceChildren(trophyImg);
+    }
     const list = [...players.values()].sort((a, b) => b.points - a.points || b.wins - a.wins);
     const champ = list[0];
     $('#champName').textContent = champ ? champ.name : '';
