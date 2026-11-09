@@ -1510,7 +1510,9 @@
     if (!ms.length) return;
     const st = world.standings();
     const leader = st.find(m => !m.finished && m.respawnT <= 0) || st[0];
-    const consider = ms.filter(m => !m.finished && leader.prog - m.prog < 2800);
+    // Frame every active racer, including stragglers. Do not drop a marble
+    // from the shot merely because its progress falls far behind the leader.
+    const consider = ms.filter(m => !m.finished);
     if (!consider.length) consider.push(leader);
     let sx = 0, sy = 0, wsum = 0, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const m of consider) {
@@ -1518,13 +1520,21 @@
       sx += m.x * w; sy += m.y * w; wsum += w;
       minX = Math.min(minX, m.x); maxX = Math.max(maxX, m.x); minY = Math.min(minY, m.y); maxY = Math.max(maxY, m.y);
     }
-    const look = 0.25;
-    cam.tx = sx / wsum + leader.vx * look * 0.6;
-    cam.ty = sy / wsum + leader.vy * look * 0.6;
     const aspect = W / H;
-    const z = Math.min((1080 * aspect * 0.8) / (maxX - minX + 360), (1080 * 0.78) / (maxY - minY + 300));
+    const spanX = maxX - minX, spanY = maxY - minY;
+    const z = Math.min((1080 * aspect * 0.8) / (spanX + 360), (1080 * 0.78) / (spanY + 300));
+    // Bias the shot towards the leader while racing tightly, but shift to
+    // the pack's bounding-box centre when anyone falls behind.
+    const spread = Math.max(spanX, spanY);
+    const wide = Math.max(0, Math.min(1, (spread - 500) / 1300));
+    const focusX = sx / wsum, focusY = sy / wsum;
+    const look = 0.25 * (1 - wide);
+    cam.tx = focusX * (1 - wide) + (minX + maxX) * 0.5 * wide + leader.vx * look * 0.6;
+    cam.ty = focusY * (1 - wide) + (minY + maxY) * 0.5 * wide + leader.vy * look * 0.6;
     const sp = Math.hypot(leader.vx, leader.vy);
-    cam.tz = Math.max(0.62, Math.min(1.25, z)) * (1 - Math.min(0.08, sp / 24000));
+    // Wider minimum framing lets a trailing marble remain visible; the
+    // existing damped camera springs make the zoom-out and return seamless.
+    cam.tz = Math.max(0.42, Math.min(1.25, z)) * (1 - Math.min(0.08, sp / 24000));
     void dt;
   }
 
