@@ -14,6 +14,18 @@ const ids = Object.keys(game.MODES);
 assert.equal(ids.length,6);
 assert.deepEqual(ids,['grandprix','derby','dropzone','brawl','curling','golf']);
 assert.equal(game.MODES.grandprix.available,true);
+const sequence = [];
+const mock = {
+  cup: {n:0,race:99,played:['toybox']}, settings: {cup:4},
+  resetNight() { sequence.push('reset'); },
+  toVote() { sequence.push('vote'); }
+};
+game.MODES.grandprix.setup(mock);
+assert.deepEqual(sequence,['reset','vote'],'Grand Prix start order unchanged');
+assert.equal(mock.cup.n,4);
+assert.equal(mock.cup.race,0);
+assert.equal(mock.cup.played.length,0);
+
 assert.equal(ids.filter(id => game.MODES[id].available).length,1,'unfinished games must remain locked');
 for (const mode of Object.values(game.MODES)) {
   for (const fn of ['setup','startRound','tick','draw','onInput','onAction','botTick','hud','standings','roundResults','finalResults'])
