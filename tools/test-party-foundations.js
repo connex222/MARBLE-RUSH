@@ -6,10 +6,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const ctx = vm.createContext({});
-for (const name of ['registry','session','geometry','grandprix','derby','dropzone','brawl','curling','golf']) {
+for (const name of ['registry','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf']) {
   vm.runInContext(fs.readFileSync(path.join(root,'src','modes',name+'.js'),'utf8'), ctx, {filename:name+'.js'});
 }
-const game = vm.runInContext('({MODES, PartyNight, PartyCoordinator, partyPoints, PartyGeometry})', ctx);
+const game = vm.runInContext('({MODES, PartyNight, PartyCoordinator, partyPoints, PartyGeometry, PartyBots})', ctx);
 const ids = Object.keys(game.MODES);
 assert.equal(ids.length,6);
 assert.deepEqual(ids,['grandprix','derby','dropzone','brawl','curling','golf']);
@@ -185,5 +185,16 @@ console.log('PASS: 400ms bucket dwell, one-shot scores, re-entry and shrinking r
 
 console.log('PASS: optional peg collision and edge-triggered bucket sensor integration.');
 
+// Deterministic skill-based plans; 30 independent seeds per game.
+for(const mode of ['derby','dropzone','brawl','curling','golf']){
+  for(let seed=1;seed<=30;seed++){
+    const a=game.PartyBots.plan(mode,{targetX:0,halfWidth:575,energy:90,nearestDist:200},.7,seed);
+    const b=game.PartyBots.plan(mode,{targetX:0,halfWidth:575,energy:90,nearestDist:200},.7,seed);
+    assert.equal(JSON.stringify(a),JSON.stringify(b),mode+' CPU non-deterministic for seed '+seed);
+  }
+}
+assert.equal(game.PartyBots.plan('dropzone',{targetX:110},1,4).x,110);
+assert.throws(()=>game.PartyBots.plan('golf',{},-1,4),/Skill/);
+console.log('PASS: 150 repeatable CPU planning samples across five future modes.');
 console.log('PASS: deterministic peg, spinner, bucket, goal, water and shrinking-rim geometry.');
 console.log('PASS: 6 mode descriptors, locked unfinished games, Party Points, Party Night ledger, and optional passing.');
