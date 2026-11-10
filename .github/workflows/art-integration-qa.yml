@@ -6,6 +6,7 @@ on:
       - dev/full-art-runtime-integration
       - dev/party-pack-phase2-foundations
       - dev/party-pack-phase3-dropzone
+      - dev/party-pack-phase4-bowl-brawl
   pull_request:
     paths:
       - src/tv.js
@@ -99,6 +100,8 @@ jobs:
             qa-party-attract.png
             qa-dropzone-tv.png
             qa-dropzone-phone.png
+            qa-brawl-tv.png
+            qa-brawl-phone.png
             qa-art-race-preview.png
             qa-art-multiplayer-tv.png
             qa-art-multiplayer-phone.png
