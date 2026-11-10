@@ -37,7 +37,7 @@ for(let seed=1;seed<=30;seed++)assert.deepEqual(run(seed,3),run(seed,3),'seed '+
 assert.equal(run(987,8).final.length,8);
 assert.throws(()=>B.create([{id:'one'}],1),/2–8/);
 assert.throws(()=>B.create(Array.from({length:9},(_,i)=>({id:String(i)})),1),/2–8/);
-const human=B.create([{id:'a'},{id:'b'}],2);
+const human=B.create([{id:'a'},{id:'b'},{id:'c'}],2);
 assert.equal(human.action('bogus','ram'),false,'unknown client cannot act');
 assert.equal(human.action('a','aim',Infinity),false);
 assert.equal(human.action('a','left',6),false);
