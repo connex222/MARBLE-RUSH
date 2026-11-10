@@ -1812,7 +1812,9 @@
       };
       box.appendChild(card);
     }
-    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · available modes repeat' : 'Grand Prix, Drop Zone and Bowl Brawl playable · three modes in development';
+    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · eligible modes repeat' :
+      selectedMode === 'brawl' && players.size < 2 ? 'Bowl Brawl needs two or more racers' :
+      'Grand Prix, Drop Zone and Bowl Brawl playable · three modes in development';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -1838,8 +1840,12 @@
       } else card.innerHTML = '<div class="pempty">Waiting for a racer</div>';
       box.appendChild(card);
     }
-    $('#btnStart').disabled = players.size === 0;
-    $('#btnStart').textContent = partyLength ? 'Start Party Night' : 'Start the Cup';
+    const required = partyLength ? 1 : MODES[selectedMode].minPlayers;
+    $('#btnStart').disabled = players.size < required;
+    $('#btnStart').textContent = partyLength ? 'Start Party Night' :
+      players.size < required ? 'Need '+required+' players' :
+      selectedMode === 'brawl' ? 'Start Bowl Brawl' :
+      selectedMode === 'dropzone' ? 'Start Drop Zone' : 'Start the Cup';
     $('#btnCpu').disabled = players.size >= 8;
     $('#btnKb').disabled = players.size >= 8 || [...players.values()].filter(p => p.keys != null).length >= 4;
     for (const b of document.querySelectorAll('[data-set]')) {
