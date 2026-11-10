@@ -145,6 +145,31 @@ const builtWorld=new MR.World(partyTrack,{seed:1,passing:false});
 assert.equal(builtWorld.partyObstacles.length,13);
 assert.equal(builtWorld.opts.passing,false);
 console.log('PASS: Builder exposes all eight new Party Pack obstacle families.');
+// Initial race order and object state must match the original Grand Prix flow.
+const playerSet=new Map([
+ ['a',{id:'a',name:'A',points:20}],
+ ['b',{id:'b',name:'B',points:5}]
+]);
+const seed=421;
+const gpRace=game.MODES.grandprix.createRace({
+  WorldCtor:MR.World,tracks:MR.TRACKS,trackId:'toybox',seed,
+  settings:{items:true,catchup:true},players:playerSet,random:MR.rng(seed)
+});
+assert.equal(gpRace.marbles.length,2);
+assert.equal(gpRace.marbles[0].id,'a');
+assert.equal(gpRace.goTime,7);
+assert.equal(gpRace.marbles[0].appearT,0);
+assert.equal(gpRace.opts.passing,true);
+const bots=new Map([['cpu',{id:'cpu',cpu:true,bot:{skill:1,rel:0,voteAt:0}}]]);
+const botWorld={
+ time:2,goTime:7,marbles:[{id:'cpu',down:false,startUsed:false}],
+ press(id){this.lastPress=id},release(){},get(){}
+};
+assert.equal(game.MODES.grandprix.botTick({
+ state:'countdown',players:bots,vote:{opts:[]},now:5,world:botWorld,MR,
+ random:()=>0
+}),true);
+console.log('PASS: GP World construction and CPU adapter inputs.');
 const track = MR.TRACKS.toybox();
 const gp = new MR.World(track,{seed:17});
 const solid = new MR.World(MR.TRACKS.toybox(),{seed:17,passing:false});
