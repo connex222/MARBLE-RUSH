@@ -34,9 +34,15 @@ jobs:
           node --check tools/build.js
           node --check tools/balance-lab.js
           node --check tools/test-party-foundations.js
+          node --check tools/test-grandprix-regression.js
           for f in src/modes/*.js; do node --check "$f"; done
       - name: Validate modes and score ledger
         run: npm run test:party
+      - name: Compare Grand Prix deterministic physics to main
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          git show FETCH_HEAD:src/engine.js > /tmp/marble-rush-main-engine.js
+          node tools/test-grandprix-regression.js /tmp/marble-rush-main-engine.js
       - name: Compile both standalone browser pages
         run: npm run build
       - name: Verify all modes baked in, zero broken placeholders
@@ -69,6 +75,7 @@ jobs:
             tools/build.js
             tools/balance-lab.js
             tools/test-party-foundations.js
+            tools/test-grandprix-regression.js
             package.json
             docs/PARTY-PHASE2.md
             .github/workflows/party-foundations.yml
