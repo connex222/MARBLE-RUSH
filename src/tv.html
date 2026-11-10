@@ -118,6 +118,11 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 .partyModeCard small{display:block;font:700 calc(12*var(--u)) Nunito,sans-serif}
 .partyModeCard:focus-visible{outline:calc(4*var(--u)) solid var(--gold);outline-offset:calc(3*var(--u))}
 
+#partyNightOptions{position:absolute;top:calc(112*var(--u));left:0;right:0;display:flex;align-items:center;justify-content:center;gap:calc(12*var(--u));height:calc(48*var(--u))}
+#partyNightOptions span{font:800 calc(18*var(--u)) Nunito,sans-serif;color:var(--gold);margin-right:calc(8*var(--u))}
+#partyNightOptions button{font:800 calc(17*var(--u)) Nunito,sans-serif;color:var(--cream);border:calc(2*var(--u)) solid rgba(255,244,224,.3);background:rgba(15,17,48,.8);border-radius:calc(16*var(--u));padding:calc(8*var(--u)) calc(18*var(--u));cursor:pointer}
+#partyNightOptions button[aria-pressed="true"]{background:#314e66;border-color:var(--gold)}
+#partyNightOptions button:focus-visible{outline:calc(4*var(--u)) solid var(--gold)}
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -260,6 +265,13 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
     <section id="partyPicker" aria-label="Choose your Marble Rush game">
       <h2>CHOOSE YOUR GAME <span id="partyModeStatus">Grand Prix ready · more games in development</span></h2>
       <div id="partyModeCards" role="group" aria-label="Game modes"></div>
+      <div id="partyNightOptions" role="group" aria-label="Party Night length">
+        <span>PARTY NIGHT</span>
+        <button type="button" data-party="0" aria-pressed="true">Off</button>
+        <button type="button" data-party="3" aria-pressed="false">3 games</button>
+        <button type="button" data-party="5" aria-pressed="false">5 games</button>
+        <button type="button" data-party="7" aria-pressed="false">7 games</button>
+      </div>
     </section>
     <div id="lobbySettings">
       <button class="chip" data-set="cup">Cup<em>4 races</em></button>
