@@ -1030,26 +1030,52 @@ const MR = (() => {
       }
     }
 
-    /** Optional Party Pack peg / spinner collisions; inert in Grand Prix. */
+    /** Physics for opt-in Party Pack props. No extra work in Grand Prix. */
     collidePartyObstacles(m) {
-      for (const o of this.partyObstacles) {
-        if (o.type !== 'peg' && o.type !== 'spinner') continue;
-        // Spinner collision initially uses its central hub; rotating arms will
-        // be introduced with the dedicated Drop Zone game.
-        const r = o.r + m.r;
-        let dx = m.x - o.x, dy = m.y - o.y;
-        let d2 = dx * dx + dy * dy;
-        if (d2 >= r*r) continue;
-        // Deterministic separation even on exact centre contact.
-        if (d2 < 1e-8) {dx = 0; dy = -1; d2 = 1;}
-        const d = Math.sqrt(d2), nx = dx/d, ny = dy/d;
-        m.x += nx*(r-d); m.y += ny*(r-d);
-        const vn = m.vx*nx + m.vy*ny;
-        if (vn < 0) {
-          const e = o.type === 'peg' ? (o.restitution ?? 0.55) : 0.7;
-          m.vx -= (1+e)*vn*nx;
-          m.vy -= (1+e)*vn*ny;
-          if (-vn > 100) this.emit('party_hit', {id:m.id, kind:o.type, x:o.x, y:o.y, v:-vn});
+      if(!this.partyObstacles.length) return;
+      const bounce=(cx,cy,r,e,kind)=>{
+        let dx=m.x-cx,dy=m.y-cy,dist2=dx*dx+dy*dy;
+        const sum=r+m.r;
+        if(dist2>=sum*sum)return;
+        if(dist2<1e-8){dx=0;dy=-1;dist2=1;}
+        const d=Math.sqrt(dist2),nx=dx/d,ny=dy/d;
+        m.x+=nx*(sum-d);m.y+=ny*(sum-d);
+        const vn=m.vx*nx+m.vy*ny;
+        if(vn<0){
+          m.vx-=(1+e)*vn*nx;m.vy-=(1+e)*vn*ny;
+          if(-vn>100)this.emit('party_hit',{id:m.id,kind,x:cx,y:cy,v:-vn});
+        }
+      };
+      const segment=(x1,y1,x2,y2,r,e,kind)=>{
+        const dx=x2-x1,dy=y2-y1,len2=dx*dx+dy*dy||1;
+        const q=Math.max(0,Math.min(1,((m.x-x1)*dx+(m.y-y1)*dy)/len2));
+        bounce(x1+q*dx,y1+q*dy,r,e,kind);
+      };
+      for(const o of this.partyObstacles) {
+        if(o.type==='peg')bounce(o.x,o.y,o.r,o.restitution??.55,'peg');
+        else if(o.type==='spinner') {
+          bounce(o.x,o.y,Math.min(9,o.r*.25),.7,'spinner_hub');
+          const angle=(o.phase||0)+this.time*(o.radiansPerSecond||0);
+          for(let arm=0;arm<o.arms;arm++){
+            const a=angle+arm*2*Math.PI/o.arms;
+            segment(o.x,o.y,o.x+Math.cos(a)*o.r,o.y+Math.sin(a)*o.r,7,.7,'spinner');
+          }
+        } else if(o.type==='movingGate') {
+          const gx=o.x+o.range*Math.sin(2*Math.PI*this.time/o.period);
+          segment(gx,o.y-o.width/2,gx,o.y+o.width/2,5,.65,'movingGate');
+        } else if(o.type==='retractRim') {
+          const f=Math.max(0,Math.min(1,(this.time-o.start)/(o.end-o.start)));
+          const r=o.initialRadius-(o.initialRadius-o.minRadius)*f;
+          const dx=m.x-o.x,dy=m.y-o.y,d=Math.hypot(dx,dy);
+          if(d>r-m.r&&d>1e-8){
+            const nx=dx/d,ny=dy/d;
+            m.x=o.x+nx*(r-m.r);m.y=o.y+ny*(r-m.r);
+            const vn=m.vx*nx+m.vy*ny;
+            if(vn>0){
+              m.vx-=1.6*vn*nx;m.vy-=1.6*vn*ny;
+              if(vn>100)this.emit('party_hit',{id:m.id,kind:'rim',x:m.x,y:m.y,v:vn});
+            }
+          }
         }
       }
     }
