@@ -108,7 +108,7 @@ const MarbleCurling=(()=>{
     action(p.id,'throw');
   }
   function physics(dt){
-    const drag=state.sweep>0?.975:.967;
+    const drag=state.sweep>0?.995:.991;
     for(const a of state.stones){
       a.x+=a.vx*dt;a.y+=a.vy*dt;
       const f=Math.pow(drag,dt*60);
