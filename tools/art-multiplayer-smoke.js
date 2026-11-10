@@ -138,6 +138,29 @@ async function main(){
     await p1.screenshot({path:'qa-brawl-phone.png',fullPage:true});
     assert.deepEqual(errors,[],'Uncaught JS error in Bowl Brawl: '+errors.join(' | '));
     console.log('PASS: Bowl Brawl two real WebSocket phones with synced HUD and RAM energy deduction');
+    // Both independent phones place private virtual-gem wagers in Derby.
+    await tv.evaluate(()=>window.__MR.Game.toLobby());
+    await p1.locator('#vip button').filter({hasText:'Marble Derby'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Marble Derby'}).click();
+    await tv.waitForFunction(()=>window.__MR.selectedMode==='derby',{timeout:10000});
+    await tv.locator('#btnStart').click();
+    await tv.locator('[data-screen="derby"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.mode==='derby'&&document.body.dataset.s==='derby',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.mode==='derby'&&document.body.dataset.s==='derby',{timeout:10000});
+    await p1.locator('#modeActions button').filter({hasText:'Rocket'}).click();
+    await p2.locator('#modeActions button').filter({hasText:'Comet'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.derby.session()?.state.wagers.size===2,{timeout:8000});
+    const wagers=await tv.evaluate(()=>[...window.__MR.MODES.derby.session().state.wagers.values()].map(b=>b.horse).sort());
+    assert.deepEqual(wagers,[0,2],'Derby must retain both distinct phone wagers');
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='bet'),'Alice Derby bet not transmitted');
+    assert.ok(b.sent.some(x=>x.t==='act'&&x.a==='bet'),'Bob Derby bet not transmitted');
+    assert.ok(a.received.some(x=>x.t==='hud'&&x.mode==='derby'),'Alice Derby HUD missing');
+    assert.ok(b.received.some(x=>x.t==='hud'&&x.mode==='derby'),'Bob Derby HUD missing');
+    await tv.screenshot({path:'qa-derby-tv.png',fullPage:true});
+    await p1.screenshot({path:'qa-derby-phone.png',fullPage:true});
+    assert.deepEqual(errors,[],'Browser errors in two-phone Derby');
+    console.log('PASS: two WebSocket phones placed separate Derby bets and received virtual-gem HUD');
+
 
 
   }finally{await browser.close();}
