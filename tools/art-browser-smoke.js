@@ -167,6 +167,45 @@ async function main(){
     assert.ok(dz.roster[0].score>=250);
     assert.equal(errors.length,0,'Browser errors after Drop Zone: '+errors.join(' | '));
     console.log('PASS: Drop Zone five playable rounds, 1920×1080 TV, scoring and finale');
+    // Bowl Brawl: one local human plus a CPU rival, five fully simulated
+    // shrinking-ring rounds and the shared winner presentation.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();
+      a.addCpu();
+      a.Game.onAction('tv','mode','brawl');
+      a.Game.beginCup();
+    });
+    await page.locator('[data-screen="brawl"]').waitFor({state:'visible',timeout:10000});
+    assert.equal(await page.locator('#brawlCanvas').getAttribute('width'),'1920');
+    await page.screenshot({path:'qa-brawl-tv.png',fullPage:true});
+    const firstRam=await page.evaluate(()=>{
+      const b=window.__MR.MODES.brawl.session();
+      const human=b.state.marbles.find(x=>!b.state.roster.find(p=>p.id===x.id).cpu);
+      const old=human.energy;
+      const ok=b.action(human.id,'ram');
+      return {ok,old,now:human.energy};
+    });
+    assert.equal(firstRam.ok,true);
+    assert.ok(firstRam.now<firstRam.old,'RAM should consume energy');
+    await page.evaluate(()=>{
+      const b=window.__MR.MODES.brawl.session();
+      let n=0;
+      while(!b.state.done&&n++<25000)b.tick(.05);
+      if(!b.state.done)throw Error('Bowl Brawl did not finish 5 rounds');
+    });
+    await page.locator('[data-screen="finale"]').waitFor({state:'visible',timeout:10000});
+    const br=await page.evaluate(()=>{
+      const b=window.__MR.MODES.brawl.session();
+      return {round:b.state.round,history:b.state.roundHistory.length,
+        totals:b.state.roster.map(p=>({id:p.id,rounds:p.roundPoints.length,points:p.points}))};
+    });
+    assert.equal(br.round,5);
+    assert.equal(br.history,5);
+    assert.ok(br.totals.every(p=>p.rounds===5&&p.points>0));
+    assert.equal(errors.length,0,'Browser errors after Bowl Brawl: '+errors.join(' | '));
+    console.log('PASS: Bowl Brawl complete five-round TV arena, RAM energy and final standings');
+
 
   }finally{
     await browser.close();
