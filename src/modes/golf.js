@@ -195,6 +195,8 @@ const MarbleGolf = (() => {
       const bg=ctx.createLinearGradient(0,0,1920,1080);
       bg.addColorStop(0,'#18273b');bg.addColorStop(1,'#384d60');
       ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
+       MarblePartyStage.backdrop(ctx,'golf',state.elapsed);
+       MarblePartyStage.frame(ctx,548,231,1305,625,'golf');
       ctx.fillStyle='#fff5df';ctx.font='bold 67px Fredoka,sans-serif';ctx.fillText('MARBLE GOLF',64,88);
       ctx.fillStyle='#ffd984';ctx.font='bold 28px Nunito,sans-serif';
       ctx.fillText(`HOLE ${state.hole} OF ${HOLES} · ${state.layout.name} · PAR ${state.layout.par}`,65,137);
