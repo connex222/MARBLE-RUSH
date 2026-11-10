@@ -54,6 +54,31 @@ async function main(){
     // Force full-effects art rendering on headless CI even if its framerate dips.
     await page.locator('[data-set="fx"]').click();
     await page.locator('#btnKb').click();
+    // Exercise a complete three-game Party Night without three long
+    // real-time races. The separate race smoke still checks real physics.
+    await page.locator('[data-party="3"]').click();
+    await page.locator('#btnStart').click();
+    for(let gameIndex=0;gameIndex<3;gameIndex++){
+      await page.evaluate((i)=>{
+        const a=window.__MR;
+        if(i>0)a.Game.nextPartyGame();
+        // Enter a real Grand Prix world rather than the empty lobby bowl.
+        a.Game.startRace('toybox');
+        for(const p of a.players.values())p.points=20+i;
+        a.Game.finale();
+      },gameIndex);
+      const snap=await page.evaluate(()=>({
+        s:window.__MR.state,
+        party:window.__MR.partyRun?.status,
+        index:window.__MR.partyRun?.session.index
+      }));
+      assert.equal(snap.s,'finale');
+      assert.equal(snap.index,gameIndex+1);
+      assert.equal(snap.party,gameIndex===2?'complete':'ready');
+    }
+    assert.equal(await page.locator('#btnNewNight').textContent(),'New night');
+    await page.locator('#btnNewNight').click();
+    await page.locator('[data-party="0"]').click();
     await page.locator('#btnStart').waitFor({state:'visible',timeout:10000});
     await page.locator('#btnStart').click();
     await page.locator('#voteCards .vcard').first().waitFor({state:'visible',timeout:10000});
