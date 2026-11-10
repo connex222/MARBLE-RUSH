@@ -60,7 +60,7 @@ const MR = (() => {
       meta, segs: [], way: [], bumpers: [], pads: [], gems: [], loops: [],
       hazards: [], stairs: [], jumps: [], bowls: [], arches: [], walls: [],
       startSlots: [], gateX: 0, gateY: 0, finishWay: -1,
-      conveyors: [], seesaws: [], zones: [], forks: [], alts: [],
+      conveyors: [], seesaws: [], zones: [], forks: [], alts: [], partyObstacles: [],
     };
     let x = 0, y = 0, phi = 0, MATDEF = 'wood', zoneStart = -1;
     function setMat(m) { MATDEF = m; }
@@ -317,6 +317,56 @@ const MR = (() => {
       T.walls.push(seg(x + h * 4, y - 160, x + h * 4, y + 6, 'wall', { kind: 'wall' }));
     }
 
+    // New game builders create opt-in Party Pack objects at absolute coordinates.
+    // Grand Prix's original rail builder and seven tracks do not invoke these.
+    function partyPegGrid(px,py,cols,rows,dx,dy,r=9) {
+      if (![px,py,dx,dy,r].every(Number.isFinite)||dx<=0||dy<=0||r<=0||
+          !Number.isInteger(cols)||!Number.isInteger(rows)||cols<1||rows<1||cols*rows>2000)
+        throw Error('Invalid peg grid');
+      for(let row=0;row<rows;row++)for(let col=0;col<cols;col++)
+        T.partyObstacles.push({type:'peg',x:px+(col+(row%2)*.5)*dx,y:py+row*dy,r,restitution:.55});
+      return T;
+    }
+    function partySpinner(px,py,r=36,arms=3,speed=1.3) {
+      if(![px,py,r,speed].every(Number.isFinite)||r<=0||!Number.isInteger(arms)||arms<2||arms>12)
+        throw Error('Invalid spinner');
+      T.partyObstacles.push({type:'spinner',x:px,y:py,r,arms,radiansPerSecond:speed,phase:0});
+      return T;
+    }
+    function partyBucket(px,py,width,height,points=10) {
+      if(![px,py,width,height,points].every(Number.isFinite)||width<=0||height<=0||points<0)
+        throw Error('Invalid bucket');
+      T.partyObstacles.push({type:'bucket',x:px,y:py,width,height,points,dwell:.4});
+      return T;
+    }
+    function partyMovingGate(px,py,width,range,period=3) {
+      if(![px,py,width,range,period].every(Number.isFinite)||width<=0||period<=0||range<0)
+        throw Error('Invalid moving gate');
+      T.partyObstacles.push({type:'movingGate',x:px,y:py,width,range,period});
+      return T;
+    }
+    function partyTargetRing(px,py,r) {
+      if(![px,py,r].every(Number.isFinite)||r<=0)throw Error('Invalid target');
+      T.partyObstacles.push({type:'targetRing',x:px,y:py,r});
+      return T;
+    }
+    function partyCup(px,py,width=43,maxSpeed=900) {
+      if(![px,py,width,maxSpeed].every(Number.isFinite)||width<=0||maxSpeed<=0)throw Error('Invalid golf cup');
+      T.partyObstacles.push({type:'cup',x:px,y:py,width,maxSpeed});
+      return T;
+    }
+    function partyWater(px,py,width,height) {
+      if(![px,py,width,height].every(Number.isFinite)||width<=0||height<=0)throw Error('Invalid water');
+      T.partyObstacles.push({type:'water',x:px,y:py,width,height});
+      return T;
+    }
+    function partyRetractRim(px,py,initialRadius=620,start=15,end=75,minRadius=110) {
+      if(![px,py,initialRadius,start,end,minRadius].every(Number.isFinite)||
+        initialRadius<=0||minRadius<=0||minRadius>initialRadius||end<=start)
+        throw Error('Invalid shrinking rim');
+      T.partyObstacles.push({type:'retractRim',x:px,y:py,initialRadius,start,end,minRadius});
+      return T;
+    }
     function done() {
       // cumulative distance along route
       const w = T.way;
@@ -368,7 +418,10 @@ const MR = (() => {
 
     return {
       T, line, bend, aim, face, uturn, dangerTurn, loop, jump, bumpers, pad, gems, stairs, bowl,
-      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, fork, get x() { return x; }, get y() { return y; }, get h() { return H(); },
+      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, fork,
+      pegs:partyPegGrid, spinner:partySpinner, bucket:partyBucket, movingGate:partyMovingGate,
+      targetRing:partyTargetRing, cup:partyCup, water:partyWater, retractRim:partyRetractRim,
+      get x() { return x; }, get y() { return y; }, get h() { return H(); },
     };
   }
   const EMPTY = [];
@@ -682,8 +735,9 @@ const MR = (() => {
       this.t = track;
       this.opts = Object.assign({ items: true, catchup: true, free: false, passing: true }, opts);
       // Optional Party Pack obstacle set. Existing Grand Prix worlds have none.
-      this.partyObstacles = Array.isArray(opts.partyObstacles)
-        ? opts.partyObstacles.map(o => ({ ...o })) : [];
+      this.partyObstacles = (Array.isArray(opts.partyObstacles)
+        ? opts.partyObstacles : (Array.isArray(track.partyObstacles) ? track.partyObstacles : [])
+      ).map(o => ({ ...o }));
       this.partySensors = new Map();
 
       this.rand = rng(opts.seed || 1234);
