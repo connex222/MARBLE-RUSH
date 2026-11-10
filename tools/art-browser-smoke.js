@@ -80,6 +80,13 @@ async function main(){
       assert.equal(await page.evaluate(()=>window.__MR.state),'lobby',id+' could not return to lobby');
       assert.equal(await exit.isHidden(),true,'Exit must hide in lobby');
     }
+    // Restore the original one-human roster: later regression checks expect
+    // five Drop Zone rounds with one player, not ten with a temporary bot.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      for(const [id,p] of a.players)if(p.cpu)a.players.delete(id);
+      a.Game.toLobby();
+    });
     // Escape is also a host keyboard exit from a live Party Night.
     await page.evaluate(()=>{
       const a=window.__MR;a.Game.onAction('tv','party',3);a.Game.beginCup();
