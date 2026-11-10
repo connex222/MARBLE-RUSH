@@ -1239,6 +1239,11 @@
         partyRun = PartyCoordinator.start({playlist:ids, playerIds:[...players.keys()]});
       }
       if (partyRun) selectedMode = PartyCoordinator.begin(partyRun);
+      if (selectedMode === 'curling') {
+        MODES.curling.setup({players,seed:Date.now()>>>0,onFinish:r=>this.finishCurling(r)});
+        state='curling';stateT=0;showScreen('curling');
+        Audio_.Music.mode('lobby');sendHud(true);return;
+      }
       if (selectedMode === 'derby') {
         if(!partyRun)this.resetNight();
         MODES.derby.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishDerby(ranking)});
@@ -1271,6 +1276,21 @@
     nextPartyGame() {
       if (!partyRun || partyRun.status !== 'ready' || state !== 'finale') return;
       this.beginCup();
+    },
+    finishCurling(ranking) {
+      if(state!=='curling')return;
+      if(partyRun&&partyRun.status==='playing'){
+        const result=PartyCoordinator.complete(partyRun,ranking.map(p=>p.id));
+        for(const p of players.values())p.points=result.totals.get(p.id)||0;
+      }else{
+        for(const result of ranking){
+          const p=players.get(result.id);
+          if(p){p.points=result.points;p.lastPts=result.endPoints.at(-1)||0;p.lastPlace=ranking.indexOf(result)+1;}
+        }
+      }
+      world=new World(TRACKS.toybox(),{seed:1,free:true});art=buildArt(world.t);
+      for(const p of players.values())world.addMarble(p.id,p);
+      this.finale();
     },
     finishDerby(ranking) {
       if(state!=='derby')return;
@@ -1415,7 +1435,8 @@
     onInput(pid, k) {
       if (!world) return;
       const p = players.get(pid); if (!p) return;
-      if (!['lobby','countdown','race','dropzone','brawl','derby'].includes(state)) return;
+      if (!['lobby','countdown','race','dropzone','brawl','derby','curling'].includes(state)) return;
+      if (state==='curling') {MODES.curling.onInput(pid,k);return;}
       if (state==='derby') {MODES.derby.onInput(pid,k);return;}
       if (state==='brawl') {MODES.brawl.onInput(pid,k);return;}
       if (state==='dropzone') {MODES.dropzone.onInput(pid,k);return;}
@@ -1439,6 +1460,7 @@
       if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
+      if (a === 'lobby' && isVip && state === 'curling') {partyLength=0;this.toLobby();sendHud(true);return;}
       if (a === 'lobby' && isVip && state === 'derby') {partyLength=0;this.toLobby();sendHud(true);return;}
       if (a === 'lobby' && isVip && state === 'brawl') {
         partyLength=0;this.toLobby();sendHud(true);return;
@@ -1456,6 +1478,7 @@
       }
       // Future modes receive only scoped, bounded actions from known players;
       // player choices are validated in that mode, never by the relay.
+      if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep'].includes(a)) {MODES.curling.onAction(pid,a,v);sendHud(true);return;}
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {MODES.derby.onAction(pid,a,v);sendHud(true);return;}
       if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor'].includes(a)) {
         MODES.brawl.onAction(pid,a,v);sendHud(true);return;
@@ -1837,7 +1860,7 @@
     }
     $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · eligible modes repeat' :
       selectedMode === 'brawl' && players.size < 2 ? 'Bowl Brawl needs two or more racers' :
-      'Grand Prix, Marble Derby, Drop Zone and Bowl Brawl playable · two modes in development';
+      'Grand Prix, Derby, Drop Zone, Bowl Brawl and Curling playable · Golf in development';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -1960,18 +1983,18 @@
       const msg = {
         t: 'hud', s: state === 'photo' ? 'results' : state, mode: selectedMode, phase: state,
         availableModes: Object.values(MODES).filter(m => m.available).map(m => ({ id: m.id, name: m.name })), name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
-        place: ['dropzone','brawl','derby'].includes(state) ? 0 : m ? m.rank : 0,
-        n: ['dropzone','brawl','derby'].includes(state) ? players.size : world ? world.marbles.length : 0,
-        boost: ['dropzone','brawl','derby'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,
-        item: ['dropzone','brawl','derby'].includes(state) ? null : m ? m.item : null, fin: ['dropzone','brawl','derby'].includes(state) ? false : m ? m.finished : false,
+        place: ['dropzone','brawl','derby','curling'].includes(state) ? 0 : m ? m.rank : 0,
+        n: ['dropzone','brawl','derby','curling'].includes(state) ? players.size : world ? world.marbles.length : 0,
+        boost: ['dropzone','brawl','derby','curling'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,
+        item: ['dropzone','brawl','derby','curling'].includes(state) ? null : m ? m.item : null, fin: ['dropzone','brawl','derby','curling'].includes(state) ? false : m ? m.finished : false,
         off: m ? m.respawnT > 0 : false, prog: m && world.t.finishDist < Infinity ? Math.min(1, m.prog / world.t.finishDist) : 0,
         pts: p.lastPts, total: p.points, lastPlace: p.lastPlace || 0, award: p.award || '', inRace: !!m,
         players: players.size, cd: state === 'countdown' ? Math.max(0, Math.ceil(world.goTime - world.time)) : 0,
         opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
         myVote: state === 'vote' && vote.votes.has(p.id) ? vote.votes.get(p.id) : -1, picked: state === 'vote' ? vote.picked : -1,
         cupRace: cup.race, cupN: cup.n, cupDone: cup.race >= cup.n,
-        modeControls: state==='derby' ? MODES.derby.hud(p).modeControls : state==='brawl' ? MODES.brawl.hud(p).modeControls : state==='dropzone' ? MODES.dropzone.hud(p).modeControls : null,
-        ...(state==='derby' ? MODES.derby.hud(p) : state==='brawl' ? MODES.brawl.hud(p) : state === 'dropzone' ? MODES.dropzone.hud(p) : {}),
+        modeControls: state==='curling' ? MODES.curling.hud(p).modeControls : state==='derby' ? MODES.derby.hud(p).modeControls : state==='brawl' ? MODES.brawl.hud(p).modeControls : state==='dropzone' ? MODES.dropzone.hud(p).modeControls : null,
+        ...(state==='curling' ? MODES.curling.hud(p) : state==='derby' ? MODES.derby.hud(p) : state==='brawl' ? MODES.brawl.hud(p) : state === 'dropzone' ? MODES.dropzone.hud(p) : {}),
         cheerReady: performance.now() - (cheerTime.get(p.id) ?? -4000) >= 3000,
         partyLength, partyIndex: partyRun ? partyRun.session.index : 0,
         partyPending: !!partyRun && partyRun.status === 'ready',
@@ -1994,6 +2017,11 @@
       PartyAttract.preview(c, attractMode, (now - attractFrom)/1000);
     } else if (attractMode && now >= attractUntil) {
       attractMode = null; $('#partyAttractPanel').hidden = true;
+    }
+    if (state==='curling') {
+      stateT+=dt;MODES.curling.tick(dt);const canvas=$('#curlingCanvas');
+      MODES.curling.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='derby') {
       stateT+=dt;MODES.derby.tick(dt);const canvas=$('#derbyCanvas');
@@ -2161,7 +2189,15 @@
   }
   $('#btnBoot').onclick = bootStart;
   $('#btnStart').onclick = () => Game.onAction('tv', 'start');
-  $('#derbyRunner').onclick=()=>{const g=MODES.derby.session();
+  for(const [id,action] of [['curlLeft','left'],['curlRight','right'],
+    ['curlDown','powerdown'],['curlUp','powerup'],['curlThrow','throw'],['curlSweep','sweep']]){
+    $('#'+id).onclick=()=>{const g=MODES.curling.session();
+      if(!g)return;
+      const p=action==='sweep'?g.state.moving?.id:g.current()?.id;
+      if(p)g.action(p,action,['left','right'].includes(action)?2:undefined);
+    };
+  }
+  $('#derbyRunner').onclick={()=>{const g=MODES.derby.session();
     if(g?.state.phase==='betting')derbyTvHorse=(derbyTvHorse+1)%6;};
   $('#derbyStake').onclick=()=>{const g=MODES.derby.session();
     const p=g?.state.roster.find(x=>!x.cpu);if(!p)return;
@@ -2210,7 +2246,7 @@
     };
   }
   // test hooks for automated checks
-  window.__MR = { Game, players, MODES, PartyNight, PartyCoordinator, DropZone, BowlBrawl, MarbleDerby, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
+  window.__MR = { Game, players, MODES, PartyNight, PartyCoordinator, DropZone, BowlBrawl, MarbleDerby, MarbleCurling, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
 
   requestAnimationFrame(frame);
 })();
