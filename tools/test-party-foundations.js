@@ -6,10 +6,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const ctx = vm.createContext({});
-for (const name of ['registry','grandprix','derby','dropzone','brawl','curling','golf']) {
+for (const name of ['registry','geometry','grandprix','derby','dropzone','brawl','curling','golf']) {
   vm.runInContext(fs.readFileSync(path.join(root,'src','modes',name+'.js'),'utf8'), ctx, {filename:name+'.js'});
 }
-const game = vm.runInContext('({MODES, PartyNight, partyPoints})', ctx);
+const game = vm.runInContext('({MODES, PartyNight, partyPoints, PartyGeometry})', ctx);
 const ids = Object.keys(game.MODES);
 assert.equal(ids.length,6);
 assert.deepEqual(ids,['grandprix','derby','dropzone','brawl','curling','golf']);
@@ -36,4 +36,23 @@ const gp = new MR.World(track,{seed:17});
 const solid = new MR.World(MR.TRACKS.toybox(),{seed:17,passing:false});
 assert.equal(gp.opts.passing,true,'Grand Prix default passing must stay enabled');
 assert.equal(solid.opts.passing,false,'non-racing modes require real marble collision');
+const geo = game.PartyGeometry;
+const grid = geo.pegs(10,20,3,2,50,40,9);
+assert.equal(grid.length,6);
+assert.equal(grid[3].x,35);
+assert.equal(grid[3].y,60);
+const b = geo.bucket(100,300,50,80,250);
+assert.equal(geo.inBucket(b,100,330),true);
+assert.equal(geo.inBucket(b,180,330),false);
+assert.equal(geo.inRing(geo.targetRing(0,0,30),18,24),true);
+assert.equal(geo.inCup(geo.cup(30,120,43,900),30,800),true);
+assert.equal(geo.inCup(geo.cup(30,120,43,900),30,1000),false);
+const rim=geo.retractRim(0,0,620,15,75,110);
+assert.equal(geo.rimAt(rim,0),620);
+assert.equal(geo.rimAt(rim,75),110);
+assert.equal(geo.rimAt(rim,45),365);
+assert.throws(()=>geo.pegs(0,0,0,1,50,40),/grid/);
+assert.throws(()=>geo.spinner(0,0,-1),/radius/);
+assert.equal(geo.gatePosition(geo.movingGate(5,0,20,40,4),1),45);
+console.log('PASS: deterministic peg, spinner, bucket, goal, water and shrinking-rim geometry.');
 console.log('PASS: 6 mode descriptors, locked unfinished games, Party Points, Party Night ledger, and optional passing.');
