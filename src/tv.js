@@ -1210,6 +1210,8 @@
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
   // Phase 2: only Grand Prix is playable; other modes remain locked until tested.
   let selectedMode = 'grandprix';
+  let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
+  let partyRun = null;
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
   let timeScale = 1, slowUntil = 0, lastSlow = -99;
   let replayBuf = [], photo = null, photoPending = null, endAt = 0, results = null;
@@ -1217,6 +1219,7 @@
   const Game = {
     toLobby() {
       state = 'lobby'; stateT = 0;
+      partyRun = null;
       world = new World(TRACKS.lobby(), { free: true, seed: 1 });
       art = buildArt(world.t);
       for (const p of players.values()) world.addMarble(p.id, p);
@@ -1227,11 +1230,20 @@
     },
     beginCup() {
       if (players.size === 0 || !MODES[selectedMode]?.available) return;
-      // Grand Prix start is hosted by its mode adapter; same original sequence.
-      MODES.grandprix.setup({
+      if (partyLength && !partyRun) {
+        const ids = PartyNight.plan(partyLength, players.size, (Date.now() >>> 0));
+        partyRun = PartyCoordinator.start({playlist:ids, playerIds:[...players.keys()]});
+      }
+      if (partyRun) selectedMode = PartyCoordinator.begin(partyRun);
+      // Grand Prix still uses the original cup setup order.
+      MODES[selectedMode].setup({
         resetNight: () => this.resetNight(), cup, settings,
         toVote: () => this.toVote()
       });
+    },
+    nextPartyGame() {
+      if (!partyRun || partyRun.status !== 'ready' || state !== 'finale') return;
+      this.beginCup();
     },
     toVote() {
       state = 'vote'; stateT = 0;
@@ -1311,6 +1323,11 @@
       emit('confetti', fx, fy - 260, 120, { speed: 700, g: 900, life: 2.6, size: 14, colors: ['#FF3B5C', '#FFD23F', '#4CC9F0', '#3DDC97', '#FF5FA2', '#FFF4E0'], drag: 0.97 });
     },
     finale() {
+      if (partyRun && partyRun.status === 'playing') {
+        const ranking = [...players.values()].sort((a,b) => b.points-a.points || b.wins-a.wins).map(p => p.id);
+        const outcome = PartyCoordinator.complete(partyRun, ranking);
+        for (const p of players.values()) p.points = outcome.totals.get(p.id) || 0;
+      }
       state = 'finale'; stateT = 0;
       const list = [...players.values()];
       const aw = giveAwards(list);
@@ -1318,7 +1335,10 @@
       showScreen('finale');
       renderFinale();
       Audio_.play('sfx_trophy');
-      Clatter.say('cup', 'Ladies and gentlemen — your Marble Rush champion!', 3);
+      Clatter.say('cup', partyRun && partyRun.status !== 'complete' ? 'One game down! Ready for the next?' : 'Ladies and gentlemen — your Marble Rush champion!', 3);
+      const next = $('#btnNewNight');
+      if (next) next.textContent = partyRun && partyRun.status === 'ready' ? 'Next Party Game' : 'New night';
+      sendHud(true);
     },
     resetNight() { for (const p of players.values()) { p.points = 0; p.races = 0; p.wins = 0; p.tot = { perfect: 0, offs: 0, maxAir: 0, bumps: 0, climb: 0, topSpeed: 0 }; } },
 
@@ -1354,13 +1374,19 @@
       if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
+      if (a === 'party' && isVip && state === 'lobby' && [0,3,5,7].includes(v)) {
+        partyLength = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
+      }
       if (!isVip) return;
       if (a === 'start' && state === 'lobby') this.beginCup();
       else if ((a === 'next' || a === 'again') && state === 'results') { if (cup.race >= cup.n) this.finale(); else this.toVote(); }
       else if (a === 'skip' && state === 'vote' && vote.picked < 0) this.resolveVote();
       else if (a === 'lobby' && ['results', 'finale'].includes(state)) this.toLobby();
       else if (a === 'finale' && state === 'results') this.finale();
-      else if (a === 'newnight' && state === 'finale') { this.resetNight(); this.toLobby(); }
+      else if (a === 'newnight' && state === 'finale') {
+        if (partyRun && partyRun.status === 'ready') this.nextPartyGame();
+        else { partyLength = 0; this.resetNight(); this.toLobby(); }
+      }
       else if (a === 'cpu' && state === 'lobby') addCpu();
     },
   };
@@ -1717,7 +1743,11 @@
       card.onclick = () => Game.onAction('tv', 'mode', mode.id);
       box.appendChild(card);
     }
-    $('#partyModeStatus').textContent = 'Grand Prix playable · five modes in development';
+    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · available modes repeat' : 'Grand Prix playable · five modes in development';
+    const opts = $('#partyNightOptions');
+    if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
+      b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
+    }
   }
   function renderLobby() {
     renderModePicker();
@@ -1740,6 +1770,7 @@
       box.appendChild(card);
     }
     $('#btnStart').disabled = players.size === 0;
+    $('#btnStart').textContent = partyLength ? 'Start Party Night' : 'Start the Cup';
     $('#btnCpu').disabled = players.size >= 8;
     $('#btnKb').disabled = players.size >= 8 || [...players.values()].filter(p => p.keys != null).length >= 4;
     for (const b of document.querySelectorAll('[data-set]')) {
@@ -1839,6 +1870,8 @@
         opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
         myVote: state === 'vote' && vote.votes.has(p.id) ? vote.votes.get(p.id) : -1, picked: state === 'vote' ? vote.picked : -1,
         cupRace: cup.race, cupN: cup.n, cupDone: cup.race >= cup.n,
+        partyLength, partyIndex: partyRun ? partyRun.session.index : 0,
+        partyPending: !!partyRun && partyRun.status === 'ready',
       };
       const key = JSON.stringify(msg);
       if (force || key !== p.lastHud) { p.lastHud = key; Net.to(p.id, msg); }
@@ -1995,6 +2028,9 @@
   }
   $('#btnBoot').onclick = bootStart;
   $('#btnStart').onclick = () => Game.onAction('tv', 'start');
+  for (const b of document.querySelectorAll('[data-party]')) {
+    b.onclick = () => Game.onAction('tv', 'party', Number(b.dataset.party));
+  }
   $('#btnSkipVote').onclick = () => Game.onAction('tv', 'skip');
   $('#btnCpu').onclick = () => { Audio_.play('sfx_ui_tap'); addCpu(); };
   $('#btnKb').onclick = () => { Audio_.play('sfx_ui_tap'); addKeyboard(); };
@@ -2016,7 +2052,7 @@
     };
   }
   // test hooks for automated checks
-  window.__MR = { Game, players, MODES, PartyNight, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
+  window.__MR = { Game, players, MODES, PartyNight, PartyCoordinator, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
 
   requestAnimationFrame(frame);
 })();
