@@ -1250,28 +1250,18 @@
     },
     toVote() {
       state = 'vote'; stateT = 0;
-      const fresh = TRACK_INFO.filter(t => !cup.played.includes(t.id));
-      const pool = (fresh.length >= 3 ? fresh : fresh.concat(TRACK_INFO.filter(t => cup.played.includes(t.id)))).slice();
-      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-      vote.opts = pool.slice(0, 3); vote.votes = new Map(); vote.picked = -1;
-      vote.endAt = performance.now() / 1000 + 12;
-      for (const p of players.values()) if (p.cpu) p.bot.voteAt = performance.now() / 1000 + 1 + Math.random() * 5;
+      MODES.grandprix.startRound({cup,trackInfo:TRACK_INFO,vote,players,now:performance.now()/1000});
       showScreen('vote'); renderVote();
       Audio_.Music.mode('lobby');
       Clatter.say('vote', 'Pick your track, racers!', 3);
       sendHud(true);
     },
     castVote(pid, i) {
-      if (state !== 'vote' || vote.picked >= 0 || !(i >= 0 && i < vote.opts.length)) return;
-      vote.votes.set(pid, i); Audio_.play('sfx_ui_tap'); renderVote();
+      if (!MODES.grandprix.castVote({state,vote,pid,index:i})) return;
+      Audio_.play('sfx_ui_tap'); renderVote();
     },
     resolveVote() {
-      const counts = vote.opts.map(() => 0);
-      for (const v of vote.votes.values()) counts[v]++;
-      const best = Math.max(...counts);
-      const tied = counts.map((c, i) => c === best ? i : -1).filter(i => i >= 0);
-      vote.picked = tied[Math.floor(Math.random() * tied.length)];
-      vote.revealAt = performance.now() / 1000 + 1.6;
+      MODES.grandprix.resolveVote({vote,now:performance.now()/1000});
       Audio_.play('sfx_item_pickup');
       renderVote();
     },
@@ -1387,7 +1377,10 @@
       }
       if (!isVip) return;
       if (a === 'start' && state === 'lobby') this.beginCup();
-      else if ((a === 'next' || a === 'again') && state === 'results') { if (cup.race >= cup.n) this.finale(); else this.toVote(); }
+      else if ((a === 'next' || a === 'again') && state === 'results') {
+        if(MODES.grandprix.nextStep({cup})==='finale')this.finale();
+        else this.toVote();
+      }
       else if (a === 'skip' && state === 'vote' && vote.picked < 0) this.resolveVote();
       else if (a === 'lobby' && ['results', 'finale'].includes(state)) this.toLobby();
       else if (a === 'finale' && state === 'results') this.finale();
@@ -1423,11 +1416,8 @@
 
   /* ---------- CPU racers ---------- */
   function botTick() {
-    if (state === 'vote') {
-      const now = performance.now() / 1000;
-      for (const p of players.values()) if (p.cpu && p.bot.voteAt && now > p.bot.voteAt) { p.bot.voteAt = 0; Game.castVote(p.id, Math.floor(Math.random() * vote.opts.length)); }
-      return;
-    }
+    if(MODES.grandprix.botTick({state,players,vote,now:performance.now()/1000,
+      castVote:(pid,i)=>Game.castVote(pid,i)}))return;
     if (!world || !['race', 'countdown', 'lobby'].includes(state)) return;
     const t = world.time;
     for (const m of world.marbles) {
@@ -1951,12 +1941,8 @@
       Audio_.Music.intensity(k > 0.8 ? 1 : 0);
       if (k > 0.8 && !world._fs) { world._fs = true; Clatter.say('final_stretch', 'Into the final stretch!', 2); }
       if (st.length > 1 && !st[0].finished && Math.abs(st[0].prog - st[1].prog) < 40 && Math.random() < 0.004) Clatter.say('neck', "It's neck and neck!");
-      if (!endAt) {
-        if (world.allFinished()) endAt = world.time + 2.2;
-        else if (world.firstFinishTime !== null && world.time - world.firstFinishTime > 20) endAt = world.time;
-        else if (world.time - world.goTime > 170) endAt = world.time;
-      }
-      if (endAt && world.time >= endAt && !photoPending) Game.endRace();
+      if (!endAt) endAt = MODES.grandprix.shouldEnd({world,endAt,photoPending});
+      if (endAt && MODES.grandprix.shouldEnd({world,endAt,photoPending}) === true) Game.endRace();
     } else if (state === 'lobby') {
       world.step(dt);
       handleEvents();
