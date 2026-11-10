@@ -1295,18 +1295,7 @@
     },
     endRace() {
       const st = world.standings();
-      st.forEach((m, i) => {
-        const p = players.get(m.id); if (!p) return;
-        const pts = POINTS[i] || 0;
-        p.lastPts = pts; p.points += pts; p.races++;
-        if (i === 0) p.wins++;
-        p.lastPlace = i + 1; p.lastTime = m.finished ? m.finishTime : null;
-        for (const k of ['perfect', 'offs', 'bumps']) p.tot[k] += m.stats[k];
-        p.tot.maxAir = Math.max(p.tot.maxAir, m.stats.maxAir);
-        p.tot.climb = Math.max(p.tot.climb, m.stats.climb);
-        p.tot.topSpeed = Math.max(p.tot.topSpeed, m.stats.topSpeed);
-      });
-      results = st.map(m => m.id);
+      results = MODES.grandprix.roundResults({standings:st,players,points:POINTS});
       cup.race++; cup.played.push(cup.trackId);
       if (photo) { state = 'photo'; stateT = 0; Audio_.play('sfx_photo_shutter'); Clatter.say('photo', "It's a photo finish!", 3); }
       else this.showResults();
@@ -1324,7 +1313,7 @@
     },
     finale() {
       if (partyRun && partyRun.status === 'playing') {
-        const ranking = [...players.values()].sort((a,b) => b.points-a.points || b.wins-a.wins).map(p => p.id);
+        const ranking = MODES.grandprix.finalResults(players.values()).map(p=>p.id);
         const outcome = PartyCoordinator.complete(partyRun, ranking);
         for (const p of players.values()) p.points = outcome.totals.get(p.id) || 0;
       }
@@ -1363,9 +1352,7 @@
       if (!world) return;
       const p = players.get(pid); if (!p) return;
       if (!['lobby', 'countdown', 'race'].includes(state)) return;
-      if (k === 'p') world.press(pid);
-      else if (k === 'r') world.release(pid);
-      else if (k === 'i') world.useItem(pid);
+      MODES.grandprix.onInput({world,pid,k});
     },
     onAction(pid, a, v) {
       const isVip = pid === vipId() || pid === 'tv';
