@@ -1337,6 +1337,7 @@
       let p = players.get(pid);
       if (p) { p.connected = true; p.name = cleanName(name); if (swirl != null) p.swirl = swirl | 0; }
       else {
+        if (partyRun) { Net.to(pid, {t:'full'}); return; } // Party Night roster stays fixed
         p = makePlayer(pid, name, { swirl: swirl != null ? swirl | 0 : undefined });
         if (!p) { Net.to(pid, { t: 'full' }); return; }
         if (state === 'lobby' && world) world.addMarble(p.id, p);
@@ -1354,7 +1355,8 @@
       if (!world) return;
       const p = players.get(pid); if (!p) return;
       if (!['lobby', 'countdown', 'race'].includes(state)) return;
-      MODES.grandprix.onInput({world,pid,k});
+      if (selectedMode === 'grandprix') MODES.grandprix.onInput({world,pid,k});
+      else MODES[selectedMode]?.onInput(pid,k);
     },
     onAction(pid, a, v) {
       const isVip = pid === vipId() || pid === 'tv';
@@ -1365,6 +1367,12 @@
       }
       if (a === 'party' && isVip && state === 'lobby' && [0,3,5,7].includes(v)) {
         partyLength = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
+      }
+      // Future modes receive only scoped, bounded actions from known players;
+      // player choices are validated in that mode, never by the relay.
+      if (selectedMode !== 'grandprix' && MODES[selectedMode]?.available &&
+          players.has(pid) && typeof a === 'string' && /^[a-z]{1,16}$/.test(a)) {
+        MODES[selectedMode].onAction(pid,a,v); return;
       }
       if (!isVip) return;
       if (a === 'start' && state === 'lobby') this.beginCup();
@@ -1877,6 +1885,7 @@
         opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
         myVote: state === 'vote' && vote.votes.has(p.id) ? vote.votes.get(p.id) : -1, picked: state === 'vote' ? vote.picked : -1,
         cupRace: cup.race, cupN: cup.n, cupDone: cup.race >= cup.n,
+        modeControls: selectedMode === 'grandprix' ? null : (MODES[selectedMode]?.hud(p)?.controls || []),
         partyLength, partyIndex: partyRun ? partyRun.session.index : 0,
         partyPending: !!partyRun && partyRun.status === 'ready',
       };
