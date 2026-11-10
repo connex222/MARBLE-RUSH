@@ -83,7 +83,15 @@ const MarblePartyStage = (() => {
       const slot = { image: im, ready: false };
       im.onload=()=>{slot.ready=true;};
       im.onerror=()=>{slot.ready=false;};
-      im.src='assets/img/party_card_'+id+'.webp';
+      // Phase 3 approved cinematic background. Fallback to the original
+      // mode card when the optional new asset is not yet present.
+      im.onerror=()=>{
+        if(!slot.fallback){
+          slot.fallback=true;
+          im.src='assets/img/party_card_'+id+'.webp';
+        } else slot.ready=false;
+      };
+      im.src='assets/img/pp_'+id+'_bg.webp';
       art[id]=slot;
     }
     return art[id].ready ? art[id].image : null;
