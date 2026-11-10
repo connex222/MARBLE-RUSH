@@ -994,3 +994,39 @@ The production source and 119 approved artwork assets are preserved.
 The new arena art is code-rendered until visual acceptance in a later
 production phase. Physical 2–4-phone testing remains a later release gate.
 Phase 4 remains an isolated development branch; no merge/deploy.
+
+---
+
+## Party Pack Phase 5 — Marble Derby (development v0.8.0)
+
+**Scope:** implement a complete new **five-heat Derby** for 1–8 players,
+six CPU-driven marble runners and one virtual-gem wager per player per
+heat. Start with 600 gems. Stake options are 25, 50, 100 and 200 gems.
+Odds are computed and displayed before the wager and locked when placed.
+A winning wager credits floor(stake × locked odds), with no negative
+wallets, no real money, no cash-out, prize or monetisation. A 100-gem
+stipend is automatically awarded if a wallet is below the minimum
+25-gem stake at the start of a heat.
+
+The TV runs a deterministic, seeded six-lane race, one 1,500-unit
+distance per heat, with a maximum 24-second heat and a 12-second
+selection countdown. Human players can back one runner, pick the
+stake and cheer once per heat for a tiny boost. CPU players bet and
+cheer automatically according to their deterministic decisions.
+The Derby ends with the existing approved trophy presentation.
+Final gems, then successful wagers, net profit and original roster
+order determine the winner. Party Night grants 10/8/6/5/4/3/2/1
+Party Points based on the Derby final standings.
+
+Phone controls offer four stake presets, six runners and a CHEER
+action. All scoring and ownership checks take place in the
+authoritative TV runtime. Marble Curling and Marble Golf stay locked.
+Existing 119 approved art images, Grand Prix mechanics and camera,
+Drop Zone, Bowl Brawl and current audio are preserved. Derby track
+art is currently code-rendered pending future AAA art production.
+
+QA includes 30 seeded complete five-heat three-CPU games with replay,
+eight-player cap and invalid wagers, plus regression tests for all
+previous games, the shared Party Night and simulated TV/2-phone
+WebSocket acceptance. Physical phone acceptance remains outstanding.
+Phase 5 is a nonproduction branch; no main merge or Render deploy.
