@@ -262,12 +262,12 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   }
   function vipButtons(list) {
     const box = $('#vip');
-    const key = list.map(b => b[0]).join();
+    const key = list.map(b => b[0] + ':' + (b[3] || '') + ':' + b[1]).join('|');
     if (box.dataset.key === key) return;
     box.dataset.key = key; box.innerHTML = '';
-    for (const [a, label, primary] of list) {
+    for (const [a, label, primary, value] of list) {
       const b = document.createElement('button'); b.textContent = label; if (primary) b.className = 'primary';
-      b.onclick = () => { audio(); tone(900, 0.05, 'sine', 0.15); send({ t:'act', a }); };
+      b.onclick = () => { audio(); tone(900, 0.05, 'sine', 0.15); send({ t:'act', a, ...(value == null ? {} : { v: value }) }); };
       box.appendChild(b);
     }
     box.hidden = !list.length;
@@ -310,7 +310,11 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     switch (h.s) {
       case 'lobby':
         setText('', "You're in!", h.vip ? 'You are the host. Start when everyone has joined.' : 'Practise in the bowl while everyone joins.');
-        if (h.vip) vip = [['cpu', 'Add CPU racer'], ['start', 'Start race', true]];
+        if (h.vip) {
+          vip = [['cpu', 'Add CPU racer'], ['start', 'Start race', true]];
+          // Only ready modes are shown; the host's choice is relayed to TV.
+          for (const mode of (h.availableModes || [])) vip.push(['mode', (mode.id === h.mode ? '✓ ' : '') + mode.name, false, mode.id]);
+        }
         // Selection stays on the TV until the additional mode implementations pass QA.
         break;
       case 'countdown':
