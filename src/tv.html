@@ -142,6 +142,10 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 display:flex;gap:calc(12*var(--u));align-items:center;z-index:5}
 #derbyHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(16*var(--u))}
 #derbyHelp .btn.go{font-size:calc(23*var(--u))}
+#golfCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#golfHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));display:flex;gap:calc(9*var(--u));z-index:5}
+#golfHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(14*var(--u))}
+#golfHelp .btn.go{font-size:calc(24*var(--u))}
 #curlingCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
 #curlingHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));
 display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
@@ -342,6 +346,17 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
       <button class="btn" id="derbyRunner">Choose runner</button>
       <button class="btn go" id="derbyPick">Back a marble</button>
       <button class="btn" id="derbyCheer">CHEER!</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="golf" hidden>
+    <canvas id="golfCanvas" width="1920" height="1080" aria-label="Marble Golf five-hole miniature course"></canvas>
+    <div id="golfHelp">
+      <button class="btn" id="golfLeft">◀ Aim</button>
+      <button class="btn" id="golfDown">− Power</button>
+      <button class="btn go" id="golfShoot">SHOOT!</button>
+      <button class="btn" id="golfUp">+ Power</button>
+      <button class="btn" id="golfRight">Aim ▶</button>
     </div>
   </section>
 
