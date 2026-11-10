@@ -1,0 +1,55 @@
+name: Party Pack foundation QA
+on:
+  push:
+    branches: [dev/party-pack-phase2-foundations]
+  pull_request:
+    paths:
+      - 'src/modes/**'
+      - 'src/engine.js'
+      - 'src/tv.js'
+      - 'src/tv.html'
+      - 'src/play.html'
+      - 'tools/build.js'
+      - 'tools/balance-lab.js'
+      - 'tools/test-party-foundations.js'
+      - '.github/workflows/party-foundations.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check syntax
+        run: |
+          node --check src/engine.js
+          node --check src/tv.js
+          node --check server/server.js
+          node --check tools/build.js
+          node --check tools/balance-lab.js
+          node --check tools/test-party-foundations.js
+          for f in src/modes/*.js; do node --check "$f"; done
+      - name: Validate modes and score ledger
+        run: npm run test:party
+      - name: Compile both standalone browser pages
+        run: npm run build
+      - name: Verify all modes baked in, zero broken placeholders
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('public/tv.html','utf8');
+          for (const name of ['grandprix','derby','dropzone','brawl','curling','golf']) {
+            if (!html.includes("id: '"+name+"'")) throw Error('Missing mode '+name);
+          }
+          if(html.includes('/*MODES*/')) throw Error('Uncompiled mode placeholder');
+          if(html.length>1.5*1024*1024) throw Error('TV page above 1.5 MB');
+          if(!html.includes('partyModeCards')) throw Error('Missing lobby picker');
+          if(!html.includes('src="') && !html.includes('<canvas')) throw Error('TV document malformed');
+          console.log('PASS: standalone TV '+Math.round(html.length/1024)+' KB');
+          NODE
