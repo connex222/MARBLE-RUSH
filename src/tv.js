@@ -1212,6 +1212,7 @@
   let selectedMode = 'grandprix';
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
+  let derbyTvHorse = 0;
   let attractMode = null, attractUntil = 0, attractFrom = 0;
   const cheerTime = new Map();
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
@@ -1232,7 +1233,7 @@
       renderLobby();
     },
     beginCup() {
-      if (players.size === 0 || !MODES[selectedMode]?.available || players.size < MODES[selectedMode].minPlayers) return;
+      if (players.size === 0 || !MODES[selectedMode]?.available || (!partyLength && players.size < MODES[selectedMode].minPlayers)) return;
       if (partyLength && !partyRun) {
         const ids = PartyNight.plan(partyLength, players.size, (Date.now() >>> 0));
         partyRun = PartyCoordinator.start({playlist:ids, playerIds:[...players.keys()]});
@@ -1241,7 +1242,7 @@
       if (selectedMode === 'derby') {
         if(!partyRun)this.resetNight();
         MODES.derby.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishDerby(ranking)});
-        state='derby';stateT=0;showScreen('derby');Audio_.Music.mode('lobby');sendHud(true);return;
+        derbyTvHorse=0;state='derby';stateT=0;showScreen('derby');Audio_.Music.mode('lobby');sendHud(true);return;
       }
       if (selectedMode === 'brawl') {
         if(!partyRun)this.resetNight();
@@ -1997,6 +1998,14 @@
     if (state==='derby') {
       stateT+=dt;MODES.derby.tick(dt);const canvas=$('#derbyCanvas');
       MODES.derby.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      const derby=MODES.derby.session();
+      const local=derby.state.roster.find(p=>!p.cpu);
+      if(local){
+        $('#derbyRunner').textContent=derby.state.horses[derbyTvHorse].name+' ▶';
+        $('#derbyStake').textContent=local.stake+' gems';
+        $('#derbyPick').disabled=derby.state.phase!=='betting'||derby.state.wagers.has(local.id);
+        $('#derbyCheer').disabled=derby.state.phase!=='racing';
+      }
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='brawl') {
@@ -2152,6 +2161,8 @@
   }
   $('#btnBoot').onclick = bootStart;
   $('#btnStart').onclick = () => Game.onAction('tv', 'start');
+  $('#derbyRunner').onclick=()=>{const g=MODES.derby.session();
+    if(g?.state.phase==='betting')derbyTvHorse=(derbyTvHorse+1)%6;};
   $('#derbyStake').onclick=()=>{const g=MODES.derby.session();
     const p=g?.state.roster.find(x=>!x.cpu);if(!p)return;
     const opts=[25,50,100,200].filter(x=>x<=p.gems),i=opts.indexOf(p.stake);
@@ -2159,7 +2170,7 @@
   $('#derbyPick').onclick=()=>{const g=MODES.derby.session();
     if(!g||g.state.phase!=='betting')return;
     const p=g.state.roster.find(x=>!x.cpu&&!g.state.wagers.has(x.id));
-    if(p)g.action(p.id,'bet',{horse:0,stake:Math.min(p.stake,p.gems)});};
+    if(p)g.action(p.id,'bet',{horse:derbyTvHorse,stake:Math.min(p.stake,p.gems)});};
   $('#derbyCheer').onclick=()=>{const g=MODES.derby.session();
     const p=g?.state.roster.find(x=>!x.cpu&&g.state.wagers.has(x.id));
     if(p)g.action(p.id,'cheer');};
