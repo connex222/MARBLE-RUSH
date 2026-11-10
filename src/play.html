@@ -61,6 +61,8 @@ input{width:100%;font-family:var(--display);font-weight:600;font-size:30px;color
   box-shadow:inset -4px -6px 10px rgba(10,10,40,.5),0 0 0 3px var(--pc)}
 #meName{font-family:var(--display);font-weight:600;font-size:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #vipBadge{font-size:20px}
+#hostExitGame{flex:none;min-height:47px;padding:5px 12px;border:3px solid #ffe6b6;border-radius:14px;background:linear-gradient(#ff596e,#b50f37);color:#fff;box-shadow:0 5px 0 #6e1230;font:800 16px Fredoka,sans-serif;white-space:nowrap}
+#hostExitGame:active{transform:translateY(3px)}
 #hcBtn{flex:none;height:40px;padding:0 14px;border-radius:999px;border:2px solid var(--line);background:transparent;color:var(--ink);font-family:var(--body);font-weight:800;font-size:15px}
 
 #look{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 20px}
@@ -143,6 +145,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
 <section id="ctl" hidden>
   <div id="top">
     <div id="me"><div id="meMarble"></div><div id="meName"></div><span id="vipBadge" hidden>👑</span></div>
+    <button id="hostExitGame" type="button" aria-label="Return all players to the lobby" hidden>⌂ LOBBY</button>
     <button id="hcBtn" aria-label="Toggle high contrast">Contrast</button>
   </div>
   <div id="look">
@@ -292,6 +295,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   $('#cheer').onclick=()=>{
     audio();buzz(30);send({t:'act',a:'cheer'});
   };
+  $('#hostExitGame').onclick=()=>{audio();buzz(25);send({t:'act',a:'lobby'});};
   function renderModePanel(h) {
     const panel=$('#modePanel');
     if(!h.mode || h.mode==='grandprix' || !['race','countdown','results','lobby','dropzone','brawl','derby','curling','golf'].includes(h.s)){
@@ -332,6 +336,8 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     mini.style.backgroundSize = 'cover';
     $('#meName').textContent = h.name;
     $('#vipBadge').hidden = !h.vip;
+    // Persistent visible host action, independent of each mode's temporary panel.
+    $('#hostExitGame').hidden = !(h.vip && !['lobby','boot'].includes(h.s));
     $('#ringFg').style.strokeDashoffset = RING * (1 - h.boost / 100);
     $('#pad').classList.toggle('empty', h.boost < 25 && (h.s === 'race'));
     $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));

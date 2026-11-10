@@ -75,6 +75,16 @@ async function main(){
       const exit=page.locator('#partyBackLobby');
       await exit.waitFor({state:'visible',timeout:10000});
       assert.match(await exit.innerText(),/Back to Lobby/);
+      const hit=await page.evaluate(()=>{
+        const e=document.querySelector('#partyBackLobby'),r=e.getBoundingClientRect();
+        const top=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+        return {hit:top===e||e.contains(top),width:r.width,height:r.height,
+          right:window.innerWidth-r.right,bottom:window.innerHeight-r.bottom,
+          z:getComputedStyle(e).zIndex,position:getComputedStyle(e).position};
+      });
+      assert.ok(hit.hit && hit.width>=160 && hit.height>=50,
+        id+' return button is obscured or too small: '+JSON.stringify(hit));
+      if (id==='golf'||id==='brawl')await page.screenshot({path:'qa-premium-'+id+'-return.png',fullPage:true});
       await exit.click();
       await page.locator('[data-screen="lobby"]').waitFor({state:'visible',timeout:10000});
       assert.equal(await page.evaluate(()=>window.__MR.state),'lobby',id+' could not return to lobby');

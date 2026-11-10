@@ -282,18 +282,26 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
 
 @media (prefers-reduced-motion: reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
 /* Persistent host escape from every active game, including Grand Prix. */
+/* TV host exit sits outside the game canvas and scaled UI compositor. */
 #partyBackLobby{
-  position:absolute;right:calc(35*var(--u));top:calc(28*var(--u));z-index:90;
-  pointer-events:auto;min-width:calc(210*var(--u));height:calc(65*var(--u));
-  font:900 calc(25*var(--u)) Fredoka,sans-serif;letter-spacing:.01em;
-  color:#fff9e7;border:calc(3*var(--u)) solid #ffe1a3;border-radius:calc(22*var(--u));
-  background:linear-gradient(180deg,#8b4365,#432345);
-  box-shadow:inset 0 calc(3*var(--u)) rgba(255,255,255,.35),0 calc(7*var(--u)) 0 #17112d,0 calc(16*var(--u)) calc(26*var(--u)) #0009;
-  cursor:pointer
+  position:fixed!important;top:max(16px,env(safe-area-inset-top))!important;
+  right:max(18px,env(safe-area-inset-right))!important;
+  bottom:auto!important;
+  z-index:2147483646!important;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  min-width:230px;min-height:64px;padding:12px 24px;
+  border:4px solid #fff7c8;border-radius:22px;
+  background:linear-gradient(180deg,#ff6174 0%,#b5133e 100%);
+  color:white;font:800 clamp(20px,2.3vw,29px) Fredoka,system-ui,sans-serif;
+  text-shadow:0 2px 1px #610524;
+  box-shadow:0 8px 0 #54102c,0 18px 28px #000a,inset 0 3px 3px #ffffff77;
+  pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation;
 }
-#partyBackLobby:hover{background:linear-gradient(180deg,#a55579,#552a51)}
-#partyBackLobby:focus-visible{outline:calc(5*var(--u)) solid white;outline-offset:calc(5*var(--u))}
-#partyBackLobby:active{transform:translateY(calc(4*var(--u)));box-shadow:0 calc(3*var(--u)) 0 #17112d}
+#partyBackLobby:hover{filter:brightness(1.12)}
+#partyBackLobby:active{transform:translateY(5px);box-shadow:0 3px 0 #54102c}
+#partyBackLobby:focus-visible{outline:5px solid #ffe67d;outline-offset:5px}
+#partyBackLobby[hidden]{display:none!important}
+@media(max-width:780px){#partyBackLobby{min-width:175px;min-height:52px;padding:7px 15px;font-size:19px}}
 
 </style>
 </head>
@@ -455,12 +463,12 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
     </div>
   </section>
 
-  <button type="button" id="partyBackLobby" aria-label="Back to lobby, end current game" hidden>← Back to Lobby</button>
-
   <div id="clatter"><div class="clatterFace"><img id="clatterArt" alt="Captain Clatter" hidden><i></i><i></i></div><div id="clatterText"></div></div>
   <div id="toast"></div>
   <div id="status" hidden></div>
 </div>
+<!-- Independent top-level control: never clipped by a game screen or scaled canvas -->
+<button type="button" id="partyBackLobby" aria-label="Return to lobby and end current game" hidden>⌂ Back to Lobby</button>
 <script>/*ENGINE*/</script>
 <script>/*MODES*/</script>
 <script>/*QR*/</script>

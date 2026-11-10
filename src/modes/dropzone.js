@@ -137,15 +137,15 @@ const DropZone = (() => {
       const wood=ctx.createLinearGradient(0,0,1000,800);
       wood.addColorStop(0,'#e5b577');wood.addColorStop(1,'#ab784b');
       ctx.fillStyle=wood;ctx.fillRect(73,0,854,740);
-      ctx.fillStyle='#28345b';ctx.fillRect(80,0,840,710);
+      MarblePartyStage.surface(ctx,'dropzone',80,0,840,710,s.elapsed);
       ctx.strokeStyle='#ffe9ae';ctx.lineWidth=11;ctx.strokeRect(80,0,840,740);
       for(const peg of PEGS){
-        ctx.beginPath();ctx.fillStyle='#dcc3a0';ctx.arc(peg.x,peg.y,peg.r,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.fillStyle='#fff4d5';ctx.arc(peg.x-3,peg.y-3,2,0,Math.PI*2);ctx.fill();
+        MarblePartyStage.peg(ctx,peg.x,peg.y,peg.r+4,'#ffe7a6');
       }
       const gx=500+115*Math.sin(s.elapsed*.9);
+      MarblePartyStage.halo(ctx,gx,598,105,'#ffbd70');
       ctx.strokeStyle='#f7a76c';ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(gx-55,598);ctx.lineTo(gx+55,598);ctx.stroke();
-      ctx.fillStyle='#d7a5f2';ctx.beginPath();ctx.arc(500+110*Math.sin(s.elapsed*1.2),480,19,0,Math.PI*2);ctx.fill();
+      MarblePartyStage.peg(ctx,500+110*Math.sin(s.elapsed*1.2),480,24,'#e4b3ff');
       for(let i=0;i<BINS.length;i++){
         const x=80+i*105;
         ctx.fillStyle=i===4?'#a24f57':'#3c6381';ctx.fillRect(x,712,105,65);
@@ -156,13 +156,11 @@ const DropZone = (() => {
       if(!s.done&&!s.ball){
         ctx.strokeStyle='#ffe083';ctx.lineWidth=5;
         ctx.beginPath();ctx.moveTo(s.x,8);ctx.lineTo(s.x,90);ctx.stroke();
-        ctx.fillStyle='#ff3b5c';ctx.beginPath();ctx.arc(s.x,35,R,0,Math.PI*2);ctx.fill();
+        MarblePartyStage.marble(ctx,s.x,35,R,'#ff3b5c');
       }
       const balls=s.ball?[s.ball]:[];
       for(const b of balls){
-        const grad=ctx.createRadialGradient(b.x-5,b.y-6,2,b.x,b.y,R);
-        grad.addColorStop(0,'#fff');grad.addColorStop(.3,b.color);grad.addColorStop(1,'#172144');
-        ctx.fillStyle=grad;ctx.beginPath();ctx.arc(b.x,b.y,R,0,Math.PI*2);ctx.fill();
+        MarblePartyStage.marble(ctx,b.x,b.y,R,b.color);
       }
       ctx.restore();
       ctx.fillStyle='#fff4e0';ctx.font='bold 36px Fredoka,sans-serif';
