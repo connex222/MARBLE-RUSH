@@ -35,6 +35,12 @@ assert.deepEqual(Array.from(game.partyPoints(['a','b','c']), ([id, points]) => [
 assert.throws(()=>game.partyPoints(['a','a']),/unique/);
 assert.throws(()=>game.PartyNight.create(['grandprix','brawl','grandprix'],2),/unavailable/);
 assert.throws(()=>game.PartyNight.create(['grandprix'],2),/3, 5 or 7/);
+const seedPlan = game.PartyNight.plan(7,2,42);
+assert.equal(seedPlan.length,7);
+assert.ok(seedPlan.every(id=>id==='grandprix'),'until future modes ship, a safe plan can only repeat GP');
+assert.deepEqual(Array.from(game.PartyNight.plan(7,2,42)),Array.from(game.PartyNight.plan(7,2,42)));
+assert.throws(()=>game.PartyNight.plan(4,2,42),/configuration/);
+assert.throws(()=>game.PartyNight.plan(3,0,42),/configuration/);
 const session = game.PartyNight.create(['grandprix','grandprix','grandprix'],2);
 for (let i=0;i<3;i++) game.PartyNight.record(session, i===1?['b','a']:['a','b']);
 assert.equal(session.finished,true);
