@@ -52,7 +52,7 @@ assert.equal(human.action('h','left',1),true);
 assert.equal(human.state.x,479);
 assert.equal(human.action('h','drop'),true);
 assert.equal(human.action('h','drop'),false,'one drop only per turn');
-for(let i=0;i<1000&&!human.state.done;i++)human.step(.05);
+for(let i=0;i<1000&&human.state.turn===0;i++)human.step(.05);
 assert.equal(human.state.turn,1);
 assert.equal(human.state.done,false,'one drop must not end a five-round game');
 console.log('PASS: Drop Zone 30 seeds × 3 CPU players × 5 drops, replay deterministic, 8 scoring buckets, turn ownership, five-round totals.');
