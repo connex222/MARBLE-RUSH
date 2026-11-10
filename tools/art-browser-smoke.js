@@ -255,7 +255,7 @@ async function main(){
     // and present the shared championship without errors.
     await page.evaluate(()=>{
       const a=window.__MR;
-      a.Game.toLobby();a.Game.onAction('tv','mode','derby');a.Game.beginCup();
+      a.Game.toLobby();a.Game.onAction('tv','party',0);a.Game.onAction('tv','mode','derby');a.Game.beginCup();
     });
     await page.locator('[data-screen="derby"]').waitFor({state:'visible',timeout:10000});
     assert.equal(await page.locator('#derbyCanvas').getAttribute('width'),'1920');
