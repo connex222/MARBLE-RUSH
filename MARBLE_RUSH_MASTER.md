@@ -1030,3 +1030,40 @@ eight-player cap and invalid wagers, plus regression tests for all
 previous games, the shared Party Night and simulated TV/2-phone
 WebSocket acceptance. Physical phone acceptance remains outstanding.
 Phase 5 is a nonproduction branch; no main merge or Render deploy.
+
+---
+
+## Party Pack Phase 6 — Marble Curling (development v0.9.0)
+
+**Players:** 2–8. **Format:** five ends; two stones per participant
+per end. The shared TV controller handles the room, score reporting and
+championship screen, while `src/modes/curling.js` handles deterministic
+physics, authoritative input validation, turn order and scoring.
+The ice uses fixed-step friction, collisions among stones, side-wall
+bounces and a bounded slide. Aim is restricted to −40° through 40°;
+power 30–100. Players can press SWEEP during their own moving stone,
+temporarily lowering ice resistance. CPU marbles perform their turns
+using seeded aim/power choices. After 18 seconds of inactivity a human
+throw is released automatically; a slide stops by 22 seconds.
+
+**Scoring:** players ranked by nearest stone to the central button
+receive 10/8/6/5/4/3/2/1 points by end. Each of the player's stones
+within a radius of 80 world units earns an extra 2 points.
+Five-end totals determine the winner; end wins and joining order
+break ties. One completed Curling game contributes the normal
+Party Points scale based on these final standings.
+
+**TV and phone:** 1920×1080 ice rink with house, aim line, stones,
+round status and standings. TV fallback controls and phone control
+panels allow aim, power, throw and sweep. The large phone pad is
+THROW during aim or SWEEP during a slide. Invalid/unauthorised actions
+are rejected by the TV-hosted simulation.
+
+**Preservation:** all 119 approved art files, original music/audio,
+seven-track Grand Prix, Derby, Drop Zone and Bowl Brawl unchanged.
+Marble Golf remains locked. Curling ice is functional code-drawn
+development art pending final visual/audio acceptance. Test gates are
+30 deterministic five-end three-CPU matches with replays, 8-player
+capacity, legacy regressions, browser TV game and two-phone
+WebSocket simulated acceptance, before PR review. GitHub main and
+Render remain untouched; physical-phone acceptance is outstanding.
