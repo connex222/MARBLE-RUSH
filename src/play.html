@@ -294,7 +294,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   };
   function renderModePanel(h) {
     const panel=$('#modePanel');
-    if(!h.mode || h.mode==='grandprix' || !['race','countdown','results','lobby'].includes(h.s)){
+    if(!h.mode || h.mode==='grandprix' || !['race','countdown','results','lobby','dropzone'].includes(h.s)){
       panel.hidden=true;return;
     }
     panel.hidden=false;
@@ -302,7 +302,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     const pts=Number.isFinite(h.roundScore)?Math.round(h.roundScore):null;
     const power=Number.isFinite(h.power)?Math.max(0,Math.min(100,Math.round(h.power))):null;
     const aim=Number.isFinite(h.aim)?Math.round(h.aim):null;
-    $('#modeReadout').textContent=[pts===null?'':pts+' pts',power===null?'':'Power '+power+'%',aim===null?'':'Aim '+aim+'°'].filter(Boolean).join(' · ');
+    $('#modeReadout').textContent=[pts===null?'':pts+' pts',power===null?'':'Power '+power+'%',aim===null?'':'Aim '+aim+(h.mode==='dropzone'?' px':'°')].filter(Boolean).join(' · ');
     const cheer=$('#cheer');
     cheer.hidden=!(h.s==='race' && (!h.inRace || h.fin));
     cheer.disabled=!h.cheerReady;
@@ -371,6 +371,11 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         break;
       case 'countdown':
         setText(h.cd ? `<span>${h.cd}</span>` : '', h.inRace ? 'Tap right on ROLL!' : 'You join the next race', h.inRace ? 'for a perfect start' : '');
+        break;
+      case 'dropzone':
+        setText('', h.isTurn?'YOUR DROP':h.modePhase==='falling'?'MARBLE IN PLAY':'WAIT FOR YOUR TURN',
+          (h.roundScore||0)+' points · '+(h.turnLabel||'Drop Zone'));
+        if (h.vip) vip=[['lobby','End game & lobby']];
         break;
       case 'race':
         if (!h.inRace) { setText('', 'Watch the TV!', 'You join the next race'); break; }
