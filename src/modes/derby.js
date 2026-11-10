@@ -159,6 +159,8 @@ const MarbleDerby=(()=>{
       const bg=ctx.createLinearGradient(0,0,1920,1080);
       bg.addColorStop(0,'#141833');bg.addColorStop(1,'#42345a');
       ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
+     MarblePartyStage.backdrop(ctx,'derby',state.time);
+     MarblePartyStage.frame(ctx,500,202,1373,653,'derby');
       ctx.fillStyle='#fff6d8';ctx.font='bold 70px Fredoka,sans-serif';
       ctx.fillText('MARBLE DERBY',65,85);
       ctx.fillStyle='#ffd46b';ctx.font='bold 30px Nunito,sans-serif';

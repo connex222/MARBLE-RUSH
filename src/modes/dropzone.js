@@ -128,6 +128,8 @@ const DropZone = (() => {
       const bg=ctx.createLinearGradient(0,0,1920,1080);
       bg.addColorStop(0,'#14173b');bg.addColorStop(1,'#393065');
       ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
+       MarblePartyStage.backdrop(ctx,'dropzone',s.elapsed);
+       MarblePartyStage.frame(ctx,523,112,935,818,'dropzone');
       ctx.fillStyle='#fff4e0';ctx.font='bold 66px Fredoka,sans-serif';ctx.fillText('DROP ZONE',75,92);
       ctx.fillStyle='#ffd23f';ctx.font='bold 27px Nunito,sans-serif';
       ctx.fillText(`ROUND ${Math.min(s.round,ROUNDS)} / ${ROUNDS}    ·    ${s.turn}/${s.roster.length*ROUNDS} DROPS`,77,138);

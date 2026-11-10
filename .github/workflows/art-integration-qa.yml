@@ -63,7 +63,7 @@ jobs:
           grep -q 'prop_' /tmp/marble-rush-tv.html
           test -s /tmp/marble-rush-background.webp
           test -s /tmp/marble-rush-robot.webp
-          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('/tmp/marble-rush-manifest.json','utf8')); if(m.images.length!==119)process.exit(1);console.log('HTTP SMOKE PASS: '+m.images.length+' images available')"
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('/tmp/marble-rush-manifest.json','utf8')); if(m.images.length!==132)process.exit(1);console.log('HTTP SMOKE PASS: '+m.images.length+' images available')"
           echo 'PASS: HTTP health, TV, phone, manifest, background and robot routes'
       - name: Install headless Chromium for actual canvas-drawing QA
         run: |

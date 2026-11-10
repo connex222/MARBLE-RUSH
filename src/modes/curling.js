@@ -179,6 +179,8 @@ const MarbleCurling=(()=>{
     const bg=ctx.createLinearGradient(0,0,1920,1080);
     bg.addColorStop(0,'#161b44');bg.addColorStop(1,'#394b73');
     ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
+     MarblePartyStage.backdrop(ctx,'curling',state.elapsed);
+     MarblePartyStage.frame(ctx,485,225,1370,575,'curling');
     ctx.fillStyle='#fff7df';ctx.font='bold 68px Fredoka,sans-serif';ctx.fillText('MARBLE CURLING',62,92);
     ctx.fillStyle='#ffd576';ctx.font='bold 27px Nunito,sans-serif';ctx.fillText(`END ${state.end} OF ${ENDS}  ·  ${state.phase.toUpperCase()}`,66,142);
     const ox=495,oy=235,sc=1.04;
