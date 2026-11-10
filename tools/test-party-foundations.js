@@ -96,6 +96,34 @@ const inputCalls=[];
 game.MODES.grandprix.onInput({world:{press:id=>inputCalls.push('p'+id),
  release:id=>inputCalls.push('r'+id),useItem:id=>inputCalls.push('i'+id)},pid:'a',k:'p'});
 assert.deepEqual(inputCalls,['pa']);
+
+const voteA={opts:[],votes:new Map(),picked:-1};
+const voteRoster=new Map([['bot',{cpu:true,bot:{voteAt:0}}],['human',{cpu:false}]]);
+game.MODES.grandprix.startRound({cup:{played:[]},trackInfo:[
+  {id:'a'},{id:'b'},{id:'c'},{id:'d'}],
+  vote:voteA,players:voteRoster,random:()=>0.25,now:10});
+assert.equal(voteA.opts.length,3);
+assert.equal(voteA.endAt,22);
+assert.ok(voteRoster.get('bot').bot.voteAt>11);
+assert.equal(game.MODES.grandprix.castVote({state:'vote',vote:voteA,pid:'human',index:1}),true);
+assert.equal(game.MODES.grandprix.castVote({state:'race',vote:voteA,pid:'human',index:2}),false);
+assert.equal(voteA.votes.get('human'),1);
+game.MODES.grandprix.resolveVote({vote:voteA,random:()=>0.5,now:25});
+assert.equal(voteA.picked,1);
+assert.equal(voteA.revealAt,26.6);
+assert.equal(game.MODES.grandprix.castVote({state:'vote',vote:voteA,pid:'human',index:2}),false);
+const botCast=[];
+game.MODES.grandprix.botTick({state:'vote',players:voteRoster,vote:voteA,now:99,
+ castVote:(id,n)=>botCast.push([id,n]),random:()=>.5});
+assert.equal(botCast.length,1);
+assert.equal(botCast[0][0],'bot');
+assert.equal(game.MODES.grandprix.nextStep({cup:{race:2,n:4}}),'vote');
+assert.equal(game.MODES.grandprix.nextStep({cup:{race:4,n:4}}),'finale');
+const fakeWorld={time:25,goTime:0,firstFinishTime:20,allFinished:()=>true};
+assert.equal(game.MODES.grandprix.shouldEnd({world:fakeWorld,endAt:0,photoPending:false}),27.2);
+assert.equal(game.MODES.grandprix.shouldEnd({world:fakeWorld,endAt:24,photoPending:false}),true);
+assert.equal(game.MODES.grandprix.shouldEnd({world:fakeWorld,endAt:24,photoPending:true}),false);
+console.log('PASS: extracted Grand Prix track vote, CPU ballot and race transition decisions.');
 console.log('PASS: extracted Grand Prix input, scoring and rankings remain compatible.');
 const MR = require('../src/engine.js');
 // Build-native Party Pack obstacles, accessible to a World without DOM.
