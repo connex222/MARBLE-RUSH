@@ -31,11 +31,18 @@ npm run build
 
 Review the Phase 8 GitHub Actions result. Automated source checks and simulation cannot substitute for physical TV and phone acceptance.
 
+## Visual/audio enhancement pass
+
+- Six distinct, CSS-rendered miniature-diorama-style mode cards: glossy marbles, stage-specific palettes, stronger hierarchy and keyboard focus indication. All original approved assets, fonts and avatar bindings remain intact.
+- Added original, mode-sensitive synthesised Web Audio phrases for Derby, Drop Zone, Brawl, Curling and Golf, plus tactile putt, sweep, ram, cheer and release cues. These run through the existing music/SFX toggles.
+- A connected Creative Claw premium-music attempt was **blocked** on 10 November 2026 by a zero-credit balance (approximately 23 credits required); no charge was made. No external premium track has been produced or integrated.
+- Proposed generated menu artwork included incorrect game titles and was deliberately **not integrated**. Only the real modes Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf are advertised.
+
 ## Outstanding gates — not certified as AAA final
 
 1. Review actual TV and phone appearance for all six modes and complete manual browser regression.
 2. Test 2–4 real phones, QR joining/rejoining, host actions, CPU players and 3/5/7 Party Night transitions.
-3. Produce, approve and integrate dedicated high-quality mode-specific backgrounds, props and music/SFX. Existing approved Grand Prix artwork is preserved; current Party Pack modes still use code-drawn rendering and synthesised fallback audio.
+3. Produce, approve and integrate dedicated high-quality mode-specific backgrounds, props and an externally produced premium soundtrack when available. Procedural fallback cues are already in place. Existing approved Grand Prix artwork is preserved; current Party Pack modes still use code-drawn rendering and synthesised fallback audio.
 4. Check audio unlock/music toggle, volume balance, reduced-motion and legibility on TV/tablet/phone.
 5. Only after those gates pass, prepare merge and Render deployment.
 
