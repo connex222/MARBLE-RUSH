@@ -1213,6 +1213,7 @@
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
   let attractMode = null, attractUntil = 0, attractFrom = 0;
+  const cheerTime = new Map();
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
   let timeScale = 1, slowUntil = 0, lastSlow = -99;
   let replayBuf = [], photo = null, photoPending = null, endAt = 0, results = null;
@@ -1362,6 +1363,16 @@
       const isVip = pid === vipId() || pid === 'tv';
       if (a === 'swirl' && players.get(pid)) { players.get(pid).swirl = (v | 0) % SWIRLS.length; if (state === 'lobby') renderLobby(); return; }
       if (a === 'vote') { this.castVote(pid, v | 0); return; }
+      if (a === 'cheer' && players.has(pid) && state === 'race') {
+        const now = performance.now();
+        if (now - (cheerTime.get(pid) || -4000) < 3000) return;
+        cheerTime.set(pid,now);
+        const m = world && world.get(pid);
+        if (m) emit('confetti',m.x,m.y-75,18,{speed:210,g:380,life:.9,size:8,
+          colors:['#FF3B5C','#FFD23F','#4CC9F0'],drag:.96});
+        Audio_.play('crowd_cheer');
+        return;
+      }
       if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
