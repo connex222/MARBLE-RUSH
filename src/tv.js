@@ -1232,12 +1232,18 @@
       renderLobby();
     },
     beginCup() {
-      if (players.size === 0 || !MODES[selectedMode]?.available) return;
+      if (players.size === 0 || !MODES[selectedMode]?.available || players.size < MODES[selectedMode].minPlayers) return;
       if (partyLength && !partyRun) {
         const ids = PartyNight.plan(partyLength, players.size, (Date.now() >>> 0));
         partyRun = PartyCoordinator.start({playlist:ids, playerIds:[...players.keys()]});
       }
       if (partyRun) selectedMode = PartyCoordinator.begin(partyRun);
+      if (selectedMode === 'brawl') {
+        if(!partyRun)this.resetNight();
+        MODES.brawl.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishBrawl(ranking)});
+        state='brawl';stateT=0;showScreen('brawl');
+        Audio_.Music.mode('lobby');sendHud(true);return;
+      }
       if (selectedMode === 'dropzone') {
         if (!partyRun) this.resetNight();
         MODES.dropzone.setup({
@@ -1259,6 +1265,22 @@
     nextPartyGame() {
       if (!partyRun || partyRun.status !== 'ready' || state !== 'finale') return;
       this.beginCup();
+    },
+    finishBrawl(ranking) {
+      if(state!=='brawl')return;
+      if(partyRun&&partyRun.status==='playing'){
+        const result=PartyCoordinator.complete(partyRun,ranking.map(p=>p.id));
+        for(const p of players.values())p.points=result.totals.get(p.id)||0;
+      }else{
+        for(const p of ranking){
+          const player=players.get(p.id);
+          if(player){player.points=p.points;player.lastPts=p.roundPoints.at(-1)||0;player.lastPlace=ranking.indexOf(p)+1;}
+        }
+      }
+      world=new World(TRACKS.toybox(),{seed:1,free:true});
+      art=buildArt(world.t);
+      for(const p of players.values())world.addMarble(p.id,p);
+      this.finale();
     },
     finishDropZone(ranking) {
       if (state !== 'dropzone') return;
@@ -1373,7 +1395,8 @@
     onInput(pid, k) {
       if (!world) return;
       const p = players.get(pid); if (!p) return;
-      if (!['lobby','countdown','race','dropzone'].includes(state)) return;
+      if (!['lobby','countdown','race','dropzone','brawl'].includes(state)) return;
+      if (state==='brawl') {MODES.brawl.onInput(pid,k);return;}
       if (state==='dropzone') {MODES.dropzone.onInput(pid,k);return;}
       if (selectedMode === 'grandprix') MODES.grandprix.onInput({world,pid,k});
       else MODES[selectedMode]?.onInput(pid,k);
@@ -1395,6 +1418,9 @@
       if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
+      if (a === 'lobby' && isVip && state === 'brawl') {
+        partyLength=0;this.toLobby();sendHud(true);return;
+      }
       if (a === 'lobby' && isVip && state === 'dropzone') {
         // Aborting a Drop Zone game also cancels the current Party Night;
         // no partial round can be incorrectly credited to the next mode.
@@ -1408,6 +1434,9 @@
       }
       // Future modes receive only scoped, bounded actions from known players;
       // player choices are validated in that mode, never by the relay.
+      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor'].includes(a)) {
+        MODES.brawl.onAction(pid,a,v);sendHud(true);return;
+      }
       if (state === 'dropzone' && players.has(pid) && ['left','right','aim','drop'].includes(a)) {
         MODES.dropzone.onAction(pid,a,v);
         sendHud(true);
@@ -1783,7 +1812,7 @@
       };
       box.appendChild(card);
     }
-    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · available modes repeat' : 'Grand Prix and Drop Zone playable · four modes in development';
+    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · available modes repeat' : 'Grand Prix, Drop Zone and Bowl Brawl playable · three modes in development';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -1902,18 +1931,18 @@
       const msg = {
         t: 'hud', s: state === 'photo' ? 'results' : state, mode: selectedMode, phase: state,
         availableModes: Object.values(MODES).filter(m => m.available).map(m => ({ id: m.id, name: m.name })), name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
-        place: state==='dropzone' ? 0 : m ? m.rank : 0,
-        n: state==='dropzone' ? players.size : world ? world.marbles.length : 0,
-        boost: state==='dropzone' ? 100 : m ? Math.round(m.boost) : 100,
-        item: state==='dropzone' ? null : m ? m.item : null, fin: state==='dropzone' ? false : m ? m.finished : false,
+        place: ['dropzone','brawl'].includes(state) ? 0 : m ? m.rank : 0,
+        n: ['dropzone','brawl'].includes(state) ? players.size : world ? world.marbles.length : 0,
+        boost: ['dropzone','brawl'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,
+        item: ['dropzone','brawl'].includes(state) ? null : m ? m.item : null, fin: ['dropzone','brawl'].includes(state) ? false : m ? m.finished : false,
         off: m ? m.respawnT > 0 : false, prog: m && world.t.finishDist < Infinity ? Math.min(1, m.prog / world.t.finishDist) : 0,
         pts: p.lastPts, total: p.points, lastPlace: p.lastPlace || 0, award: p.award || '', inRace: !!m,
         players: players.size, cd: state === 'countdown' ? Math.max(0, Math.ceil(world.goTime - world.time)) : 0,
         opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
         myVote: state === 'vote' && vote.votes.has(p.id) ? vote.votes.get(p.id) : -1, picked: state === 'vote' ? vote.picked : -1,
         cupRace: cup.race, cupN: cup.n, cupDone: cup.race >= cup.n,
-        modeControls: selectedMode === 'dropzone' ? MODES.dropzone.hud(p).modeControls : null,
-        ...(state === 'dropzone' ? MODES.dropzone.hud(p) : {}),
+        modeControls: state==='brawl' ? MODES.brawl.hud(p).modeControls : state==='dropzone' ? MODES.dropzone.hud(p).modeControls : null,
+        ...(state==='brawl' ? MODES.brawl.hud(p) : state === 'dropzone' ? MODES.dropzone.hud(p) : {}),
         cheerReady: performance.now() - (cheerTime.get(p.id) ?? -4000) >= 3000,
         partyLength, partyIndex: partyRun ? partyRun.session.index : 0,
         partyPending: !!partyRun && partyRun.status === 'ready',
@@ -1936,6 +1965,12 @@
       PartyAttract.preview(c, attractMode, (now - attractFrom)/1000);
     } else if (attractMode && now >= attractUntil) {
       attractMode = null; $('#partyAttractPanel').hidden = true;
+    }
+    if (state==='brawl') {
+      stateT+=dt;MODES.brawl.tick(dt);
+      const canvas=$('#brawlCanvas');
+      MODES.brawl.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='dropzone') {
       stateT+=dt;
@@ -2084,6 +2119,12 @@
   }
   $('#btnBoot').onclick = bootStart;
   $('#btnStart').onclick = () => Game.onAction('tv', 'start');
+  for(const [id,action] of [['brawlLeft','left'],['brawlRight','right'],['brawlRam','ram'],['brawlAnchor','anchor']]){
+    $('#'+id).onclick=()=>{
+      const active=MODES.brawl.session()?.state.marbles.find(m=>m.alive);
+      if(active)MODES.brawl.onAction(active.id,action,['left','right'].includes(action)?2:undefined);
+    };
+  }
   for (const [id,action] of [['dropLeft','left'],['dropRight','right'],['dropNow','drop']]) {
     $(`#${id}`).onclick = () => {
       const active=MODES.dropzone.session()?.owner();
@@ -2114,7 +2155,7 @@
     };
   }
   // test hooks for automated checks
-  window.__MR = { Game, players, MODES, PartyNight, PartyCoordinator, DropZone, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
+  window.__MR = { Game, players, MODES, PartyNight, PartyCoordinator, DropZone, BowlBrawl, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
 
   requestAnimationFrame(frame);
 })();
