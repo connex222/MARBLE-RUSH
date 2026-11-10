@@ -4,6 +4,7 @@ on:
     branches:
       - dev/approved-art-integration-qa
       - dev/full-art-runtime-integration
+      - dev/party-pack-phase2-foundations
   pull_request:
     paths:
       - src/tv.js
