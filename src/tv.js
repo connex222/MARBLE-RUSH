@@ -1535,20 +1535,16 @@
       if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
-      if (a === 'lobby' && isVip && state === 'golf') {partyLength=0;this.toLobby();sendHud(true);return;}
-      if (a === 'lobby' && isVip && state === 'curling') {partyLength=0;this.toLobby();sendHud(true);return;}
-      if (a === 'lobby' && isVip && state === 'derby') {partyLength=0;this.toLobby();sendHud(true);return;}
-      if (a === 'lobby' && isVip && state === 'brawl') {
-        partyLength=0;this.toLobby();sendHud(true);return;
+      // Host may abandon any active game, including countdown/vote/Grand Prix.
+      // Resetting Party Night here prevents a partial mode being scored.
+      if (a === 'lobby' && isVip && !['boot','lobby'].includes(state)) {
+        partyLength=0;partyRun=null;
+        this.toLobby();sendHud(true);return;
       }
-      if (a === 'lobby' && isVip && state === 'dropzone') {
-        // Aborting a Drop Zone game also cancels the current Party Night;
-        // no partial round can be incorrectly credited to the next mode.
-        partyLength=0;
-        this.toLobby();
-        sendHud(true);
-        return;
-      }
+
+
+
+
       if (a === 'party' && isVip && state === 'lobby' && [0,3,5,7].includes(v)) {
         partyLength = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
@@ -1847,6 +1843,8 @@
     }
     for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== name;
     $('#raceHud').hidden = !(name === 'race');
+    // This is host-only TV navigation and remains available during all modes.
+    $('#partyBackLobby').hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
   }
   let lastStandKey = '';
   function updateRaceHud() {
@@ -2070,10 +2068,10 @@
       const msg = {
         t: 'hud', s: state === 'photo' ? 'results' : state, mode: selectedMode, phase: state,
         availableModes: Object.values(MODES).filter(m => m.available).map(m => ({ id: m.id, name: m.name })), name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
-        place: ['dropzone','brawl','derby','curling'].includes(state) ? 0 : m ? m.rank : 0,
-        n: ['dropzone','brawl','derby','curling'].includes(state) ? players.size : world ? world.marbles.length : 0,
-        boost: ['dropzone','brawl','derby','curling'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,
-        item: ['dropzone','brawl','derby','curling'].includes(state) ? null : m ? m.item : null, fin: ['dropzone','brawl','derby','curling'].includes(state) ? false : m ? m.finished : false,
+        place: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 0 : m ? m.rank : 0,
+        n: ['dropzone','brawl','derby','curling','golf'].includes(state) ? players.size : world ? world.marbles.length : 0,
+        boost: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,
+        item: ['dropzone','brawl','derby','curling','golf'].includes(state) ? null : m ? m.item : null, fin: ['dropzone','brawl','derby','curling'].includes(state) ? false : m ? m.finished : false,
         off: m ? m.respawnT > 0 : false, prog: m && world.t.finishDist < Infinity ? Math.min(1, m.prog / world.t.finishDist) : 0,
         pts: p.lastPts, total: p.points, lastPlace: p.lastPlace || 0, award: p.award || '', inRace: !!m,
         players: players.size, cd: state === 'countdown' ? Math.max(0, Math.ceil(world.goTime - world.time)) : 0,
@@ -2290,6 +2288,12 @@
     Game.toLobby();
   }
   $('#btnBoot').onclick = bootStart;
+  $('#partyBackLobby').onclick = () => Game.onAction('tv','lobby');
+  document.addEventListener('keydown', e => {
+    if(e.key==='Escape' && !['boot','lobby'].includes(state)) {
+      e.preventDefault();Game.onAction('tv','lobby');
+    }
+  });
   $('#btnStart').onclick = () => Game.onAction('tv', 'start');
   for(const [id,action] of [['golfLeft','left'],['golfRight','right'],
     ['golfDown','powerdown'],['golfUp','powerup'],['golfShoot','shoot']]) {
