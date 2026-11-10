@@ -69,10 +69,21 @@ async function main(){
       await page.evaluate((i)=>{
         const a=window.__MR;
         if(i>0)a.Game.nextPartyGame();
-        // Enter a real Grand Prix world rather than the empty lobby bowl.
-        a.Game.startRace('toybox');
-        for(const p of a.players.values())p.points=20+i;
-        a.Game.finale();
+        if(a.selectedMode==='dropzone'){
+          const dz=a.MODES.dropzone.session();
+          let guard=0;
+          while(!dz.state.done && guard++<15000){
+            if(!dz.state.ball)dz.action(dz.owner().id,'drop');
+            dz.step(.05);
+          }
+          if(!dz.state.done)throw Error('Party Night Drop Zone failed to finish');
+        }else{
+          // Skip waiting for complete multi-minute Grand Prix race in
+          // this coordinator smoke. A separate test races in real time.
+          a.Game.startRace('toybox');
+          for(const p of a.players.values())p.points=20+i;
+          a.Game.finale();
+        }
       },gameIndex);
       const snap=await page.evaluate(()=>({
         s:window.__MR.state,
@@ -86,6 +97,7 @@ async function main(){
     assert.equal(await page.locator('#btnNewNight').textContent(),'New night');
     await page.locator('#btnNewNight').click();
     await page.locator('[data-party="0"]').click();
+    await page.locator('#partyModeCards .partyModeCard').first().click();
     await page.locator('#btnStart').waitFor({state:'visible',timeout:10000});
     await page.locator('#btnStart').click();
     await page.locator('#voteCards .vcard').first().waitFor({state:'visible',timeout:10000});
