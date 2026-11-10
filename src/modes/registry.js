@@ -13,6 +13,35 @@ function partyPoints(ids) {
   return new Map(ids.map((id, i) => [id, PARTY_POINTS[i]]));
 }
 const PartyNight = {
+  // Build an eligible round-robin playlist. Repeat only when the chosen
+  // session is longer than the eligible set (e.g. seven picks / six modes).
+  plan(length, playerCount, seed = 1, requested = null) {
+    if (![3,5,7].includes(length) || !Number.isInteger(playerCount) || playerCount < 1 || playerCount > 8)
+      throw Error('Invalid Party Night configuration');
+    const available = (requested === null ? Object.keys(MODES) : requested).filter(id => {
+      const m = MODES[id]; return m && m.available && playerCount >= m.minPlayers && playerCount <= m.maxPlayers;
+    });
+    if (!available.length || new Set(available).size !== available.length) throw Error('No unique eligible modes');
+    if (!Number.isInteger(seed) || seed < 0) throw Error('Invalid playlist seed');
+    let rnd = seed >>> 0;
+    const rand = () => {
+      // Deterministic LCG, no Math.random or external state.
+      rnd = (Math.imul(1664525,rnd) + 1013904223) >>> 0;
+      return rnd / 4294967296;
+    };
+    const playlist = [];
+    while (playlist.length < length) {
+      const pool = available.slice();
+      for (let i=pool.length-1;i>0;i--) {
+        const j=Math.floor(rand()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];
+      }
+      // Avoid immediately repeating a mode between cycles if possible.
+      if (playlist.length && pool.length > 1 && pool[0] === playlist[playlist.length-1])
+        [pool[0],pool[1]] = [pool[1],pool[0]];
+      playlist.push(...pool.slice(0,length-playlist.length));
+    }
+    return playlist;
+  },
   create(ids, playerCount) {
     if (!Array.isArray(ids) || ![3,5,7].includes(ids.length)) throw Error('Select 3, 5 or 7 games');
     if (!Number.isInteger(playerCount) || playerCount < 1 || playerCount > 8) throw Error('Invalid player count');
