@@ -60,6 +60,28 @@ async function main(){
     // Force full-effects art rendering on headless CI even if its framerate dips.
     await page.locator('[data-set="fx"]').click();
     await page.locator('#btnKb').click();
+    // User-reported regression: every game must visibly provide Back to Lobby.
+    for (const id of ['dropzone','brawl','derby','curling','golf','grandprix']) {
+      await page.evaluate(mode=>{
+        const a=window.__MR;a.Game.toLobby();a.Game.onAction('tv','party',0);
+        a.Game.onAction('tv','mode',mode);a.Game.beginCup();
+      },id);
+      const exit=page.locator('#partyBackLobby');
+      await exit.waitFor({state:'visible',timeout:10000});
+      assert.match(await exit.innerText(),/Back to Lobby/);
+      await exit.click();
+      await page.locator('[data-screen="lobby"]').waitFor({state:'visible',timeout:10000});
+      assert.equal(await page.evaluate(()=>window.__MR.state),'lobby',id+' could not return to lobby');
+      assert.equal(await exit.isHidden(),true,'Exit must hide in lobby');
+    }
+    // Escape is also a host keyboard exit from a live Party Night.
+    await page.evaluate(()=>{
+      const a=window.__MR;a.Game.onAction('tv','party',3);a.Game.beginCup();
+    });
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(()=>window.__MR.state),'lobby');
+    assert.equal(await page.evaluate(()=>window.__MR.partyRun),null);
+    console.log('PASS: every game has TV Back to Lobby; Escape abandons a Party Night cleanly');
     // Exercise a complete three-game Party Night without three long
     // real-time races. The separate race smoke still checks real physics.
     await page.locator('[data-party="3"]').click();
