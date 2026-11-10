@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MARBLE RUSH — "Roll" engine  (v0.1)
+   MARBLE RUSH — "Roll" engine  (v0.4)
    Physics, track builder and race world. No DOM — runs in browser or Node.
    Spec: MARBLE_RUSH_MASTER.md sections 4 and 5.
    ========================================================================== */
@@ -10,9 +10,10 @@ const MR = (() => {
   const C = {
     G: 1500, R: 18, DT: 1 / 240, VMAX: 2400,
     BOOST_DV: 380, BOOST_AIR_DV: 150, BOOST_COST: 25, BOOST_REFILL: 14, BOOST_CD: 0.25,
-    GRIP_DOWN: 0.6, GRIP_BRAKE: 600, AIR_BRAKE: 200, AIR_GRAV: 0.2,
+    GRIP_DOWN: 0.6, GRIP_BRAKE: 600, GRIP_FLOOR: 420, GRIP_FADE: 380, AIR_BRAKE: 200, AIR_GRAV: 0.2,
+    SUPER_AT: 99.5, SUPER_MULT: 1.75, PASS_V: 150, PASS_K: 0.22,
     TAP_MS: 180, GRIP_DELAY_MS: 110,
-    RESPAWN_T: 1.2, STUCK_T: 3.0, OFF_DIST: 520,
+    RESPAWN_T: 1.2, STUCK_T: 3.0, OFF_DIST: 520, STRAY_DIST: 120, STRAY_T: 0.45,
     SLIP_RANGE: 150, PERFECT_WIN: 0.15,
     BUMPER_E: 1.25, BUMPER_MIN_OUT: 650, PAD_DV: 500,
     TURBO_DV: 650, JELLY_T: 5, BIG_T: 6, BUBBLE_T: 6, SLIP_T: 1.5, OIL_T: 8,
@@ -22,6 +23,7 @@ const MR = (() => {
   const MAT = {
     wood:  { e: 0.30, crr: 0.012 },
     wall:  { e: 0.25, crr: 0.012 },
+    cushion: { e: 0, crr: 0.012 }, // padded turn walls: soak up the hit so fast marbles drop cleanly instead of bouncing back uphill
     plate: { e: 0.42, crr: 0.012 },
     bowl:  { e: 0.20, crr: 0.22 },
     pad:   { e: 0.25, crr: 0.006 },
@@ -106,7 +108,7 @@ const MR = (() => {
     function uturn(drop = 160, wallH = 150, slope = 7) {
       const h = H();
       const xw = x + h * (2 * C.R + 14);
-      T.walls.push(seg(xw, y - wallH, xw, y + drop + 8, 'wall', { kind: 'wall' }));
+      T.walls.push(seg(xw, y - wallH, xw, y + drop + 8, 'cushion', { kind: 'wall' }));
       for (let k = 1; k <= 4; k++) way(xw - h * (C.R + 6), y - C.R + drop * k / 4);
       x = xw; y = y + drop;
       face(-h, slope);
@@ -690,6 +692,7 @@ const MR = (() => {
       this.firstFinishTime = null;
       this.loopLayersB = track.loops.map(l => `L${l.id}b`);
       this.stamp = 0;
+      this.passing = new Set(); // pairs of marbles currently overtaking each other
     }
 
     emit(type, d = {}) { d.type = type; d.time = this.time; this.events.push(d); }
@@ -795,20 +798,24 @@ const MR = (() => {
     boost(m) {
       if (m.cd > 0 || m.fx.slip > 0 || m.fx.hold > 0) return;
       if (m.boost < C.BOOST_COST) { this.emit('empty', { id: m.id }); return; }
+      const sup = m.boost >= C.SUPER_AT; // a full meter gives a SUPER boost — patience beats mashing
       m.boost -= C.BOOST_COST; m.cd = C.BOOST_CD;
       const grounded = m.gTime < 0.06;
       let dx, dy;
       const sp = Math.hypot(m.vx, m.vy);
       if (grounded) {
         dx = -m.ny; dy = m.nx;
+        // boost always pushes you forwards along the course — never back the way you came after a bounce
         const rd = this.routeDir(m);
-        const ref = sp > 40 ? { x: m.vx, y: m.vy } : rd;
+        const along = dx * rd.x + dy * rd.y;
+        const ref = Math.abs(along) > 0.25 || sp <= 40 ? rd : { x: m.vx, y: m.vy };
         if (dx * ref.x + dy * ref.y < 0) { dx = -dx; dy = -dy; }
       } else if (sp > 40) { dx = m.vx / sp; dy = m.vy / sp; }
       else { const rd = this.routeDir(m); dx = rd.x; dy = rd.y; }
-      const dv = grounded ? C.BOOST_DV : C.BOOST_AIR_DV;
+      const dv = (grounded ? C.BOOST_DV : C.BOOST_AIR_DV) * (sup ? C.SUPER_MULT : 1);
       m.vx += dx * dv; m.vy += dy * dv;
-      this.emit('boost', { id: m.id, x: m.x, y: m.y, dx, dy });
+      if (sup) m.stats.supers = (m.stats.supers || 0) + 1;
+      this.emit('boost', { id: m.id, x: m.x, y: m.y, dx, dy, sup });
     }
 
     rollItem(m) {
@@ -874,9 +881,12 @@ const MR = (() => {
       if (grip) {
         if (grounded) {
           ax -= m.nx * C.GRIP_DOWN * g; ay -= m.ny * C.GRIP_DOWN * g;
-          if (sp0 > 1) { ax -= m.vx / sp0 * C.GRIP_BRAKE; ay -= m.vy / sp0 * C.GRIP_BRAKE; }
+          // braking fades out as you slow, so holding the button can never stop a marble dead
+          const br = C.GRIP_BRAKE * clamp((sp0 - C.GRIP_FLOOR) / C.GRIP_FADE, 0, 1);
+          if (sp0 > 1) { ax -= m.vx / sp0 * br; ay -= m.vy / sp0 * br; }
         } else {
-          if (sp0 > 1) { ax -= m.vx / sp0 * C.AIR_BRAKE; ay -= m.vy / sp0 * C.AIR_BRAKE; }
+          const br = C.AIR_BRAKE * clamp((sp0 - C.GRIP_FLOOR) / C.GRIP_FADE, 0, 1);
+          if (sp0 > 1) { ax -= m.vx / sp0 * br; ay -= m.vy / sp0 * br; }
           ay += C.AIR_GRAV * g;
         }
       }
@@ -980,20 +990,38 @@ const MR = (() => {
     }
 
     marbleCollisions() {
-      const ms = this.marbles;
+      const ms = this.marbles, passing = this.passing;
       for (let i = 0; i < ms.length; i++) {
-        const a = ms[i]; if (a.respawnT > 0) continue;
+        const a = ms[i];
         for (let j = i + 1; j < ms.length; j++) {
-          const b = ms[j]; if (b.respawnT > 0) continue;
+          const b = ms[j];
+          const key = a.id + '|' + b.id;
+          if (a.respawnT > 0 || b.respawnT > 0) { passing.delete(key); continue; }
           const dx = b.x - a.x, dy = b.y - a.y, rs = a.r + b.r;
           const d2 = dx * dx + dy * dy;
-          if (d2 >= rs * rs || d2 < 1e-9) continue;
+          if (d2 >= rs * rs || d2 < 1e-9) { if (d2 > (rs + 3) * (rs + 3)) passing.delete(key); continue; }
+          if (passing.has(key)) continue; // mid-overtake: they are side by side, not touching
           const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, pen = rs - d;
-          const ma = a.fx.bubble > 0 ? 4 : a.mass, mb = b.fx.bubble > 0 ? 4 : b.mass;
-          const ia = 1 / ma, ib = 1 / mb, it = ia + ib;
+          const vr = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+          const aBig = a.fx.big > 0, bBig = b.fx.big > 0, aBub = a.fx.bubble > 0, bBub = b.fx.bubble > 0;
+          const solid = (aBig || bBig) && !(aBub || bBub); // Big Bertha always bulldozes (unless you're in a bubble)
+          // A clearly faster marble goes round the outside: a glancing clack, then it is through.
+          // Without this the marble in front is simply shoved along and nobody can ever overtake.
+          if (!solid && (-vr > C.PASS_V || aBub || bBub)) {
+            passing.add(key);
+            if (vr < 0 && !(aBub || bBub)) {
+              const jn = -vr * C.PASS_K * 0.5;
+              a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny;
+            }
+            if (-vr > 120) {
+              a.stats.bumps++; b.stats.bumps++;
+              this.emit('clack', { v: -vr * 0.6, x: a.x + nx * a.r, y: a.y + ny * a.r, bertha: false, pass: true, a: a.id, b: b.id });
+            }
+            continue;
+          }
+          const ia = 1 / a.mass, ib = 1 / b.mass, it = ia + ib;
           a.x -= nx * pen * ia / it; a.y -= ny * pen * ia / it;
           b.x += nx * pen * ib / it; b.y += ny * pen * ib / it;
-          const vr = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
           if (vr < 0) {
             const e = -vr < 60 ? 0 : 0.8;
             const jn = -(1 + e) * vr / it;
@@ -1001,8 +1029,7 @@ const MR = (() => {
             b.vx += jn * ib * nx; b.vy += jn * ib * ny;
             if (-vr > 120) {
               a.stats.bumps++; b.stats.bumps++;
-              const bertha = a.fx.big > 0 || b.fx.big > 0;
-              this.emit('clack', { v: -vr, x: a.x + nx * a.r, y: a.y + ny * a.r, bertha, a: a.id, b: b.id });
+              this.emit('clack', { v: -vr, x: a.x + nx * a.r, y: a.y + ny * a.r, bertha: aBig || bBig, a: a.id, b: b.id });
             }
           }
         }
@@ -1146,7 +1173,7 @@ const MR = (() => {
       if (m.respawnT > 0) return;
       m.respawnT = C.RESPAWN_T;
       m.respawnCP = cpIndex;
-      m.prevSpeed = Math.hypot(m.vx, m.vy);
+      m.prevSpeed = reason === 'stuck' ? 1200 : Math.hypot(m.vx, m.vy);
       m.stats.offs += reason === 'off' ? 1 : 0;
       this.emit('poof', { id: m.id, x: m.x, y: m.y, reason });
     }
@@ -1217,10 +1244,18 @@ const MR = (() => {
           this.respawn(m, this.cpBefore(m.prog), 'off');
           continue;
         }
+        // landed on a rail that isn't the route (dropped to a lower level): that's off the track too
+        if (m.routeD > C.STRAY_DIST && m.gTime < 0.05) {
+          if ((m.strayT = (m.strayT || 0) + dt) > C.STRAY_T) { m.strayT = 0; this.respawn(m, this.cpBefore(m.prog), 'off'); continue; }
+        } else if (m.routeD <= C.STRAY_DIST) m.strayT = 0;
         // stuck → next checkpoint ahead
         if (m.prog > m.stuckProg + 40) { m.stuckProg = m.prog; m.stuckT = 0; }
         else if ((m.stuckT += dt) > C.STUCK_T) {
-          const k = Math.min(this.cpBefore(m.prog) + 1, t.checkpoints.length - 1);
+          // rescue: hop to the next checkpoint. If that didn't get us clear last time, hop one further
+          // each try, so nobody can ever be trapped in a rescue loop.
+          m.rescueN = (m.rescueProg != null && m.prog < m.rescueProg + 260) ? (m.rescueN || 1) + 1 : 1;
+          const k = Math.min(this.cpBefore(m.prog) + m.rescueN, t.checkpoints.length - 1);
+          m.rescueProg = t.cum[t.checkpoints[k]];
           this.respawn(m, k, 'stuck');
           continue;
         }
@@ -1273,8 +1308,67 @@ const MR = (() => {
     return out;
   }
 
+
+  /* ======================================================================
+     CPU RACERS — a track-aware brain shared by the TV and the balance lab.
+     skill 0..1: how often it spots what is coming and how patient it is
+     with the boost meter. It reads the same track notes a person learns.
+     ====================================================================== */
+  const BOT = { KICK_V: 1050, LOOP_V: 1080, FORK_V: 1250, CRUISE: 1500 };
+  function trackNotes(T) {
+    if (T.notes) return T.notes;
+    const w = T.way, cum = T.cum;
+    const at = (x, y) => { let b = 0, bd = Infinity; for (let i = 0; i < w.length; i++) { const d = (w[i].x - x) ** 2 + (w[i].y - y) ** 2; if (d < bd) { bd = d; b = i; } } return cum[b]; };
+    const N = [];
+    for (const h of T.hazards) N.push({ p: at(h.x, h.y), k: 'kick' });
+    for (const j of T.jumps) N.push({ p: at(j.x, j.y - C.R), k: 'jump' });
+    for (const L of T.loops) N.push({ p: at(L.cx, L.cy + L.r - C.R), k: 'loop' });
+    for (const f of T.forks) N.push({ p: at(f.x, f.y - C.R), k: 'fork' });
+    for (const b of T.bowls) N.push({ p: at(b.cx - b.h * b.r, b.cy - C.R), k: 'bowl' });
+    N.sort((a, b) => a.p - b.p);
+    return (T.notes = N);
+  }
+  function botThink(w, m, b, R = Math.random) {
+    const t = w.time;
+    if (m.down && t >= b.rel) w.release(m.id);
+    if (m.finished || m.respawnT > 0 || w.phase !== 'race') return;
+    if (m.item) {
+      if (!b.itemAt) b.itemAt = t + 0.5 + R() * 2.5;
+      if (t > b.itemAt) { w.useItem(m.id); b.itemAt = 0; }
+    }
+    if (m.down || t < (b.next || 0)) return;
+    const s = b.skill;
+    b.next = t + 0.06 + (1 - s) * 0.22 * (0.5 + R());
+    const tap = () => { w.press(m.id); b.rel = t + 0.05; };
+    const hold = d => { w.press(m.id); b.rel = t + d; };
+    const sp = Math.hypot(m.vx, m.vy);
+    const T = w.t, notes = trackNotes(T);
+    const sees = R() < 0.25 + 0.75 * s; // does it notice what's coming this time?
+    // inside a whirlpool bowl: grip bleeds speed so you drop through sooner
+    if (sees) for (const B of T.bowls) {
+      if (m.y > B.cy - 20 && Math.hypot(m.x - B.cx, m.y - B.cy) < B.r + 24 && m.y < B.cy + B.r + 10) { if (sp > 260) hold(0.45); return; }
+    }
+    let nx = null;
+    for (const n of notes) if (n.p > m.prog - 20) { nx = n; break; }
+    const d = nx ? nx.p - m.prog : Infinity;
+    const full = m.boost >= C.SUPER_AT, can = m.boost >= C.BOOST_COST && m.cd <= 0 && m.fx.slip <= 0;
+    if (sees && nx) {
+      const reach = 140 + sp * 0.45;
+      if (nx.k === 'kick' && d < reach) { if (sp > BOT.KICK_V) hold(0.3); return; }
+      if (nx.k === 'jump' && d < 320) return; // leave the jump alone
+      if (nx.k === 'loop' && d < 620) { if (sp < BOT.LOOP_V && can) tap(); return; }
+      if (nx.k === 'fork' && d < 560) { if (sp < BOT.FORK_V && can && s > 0.35) tap(); return; }
+      if (nx.k === 'bowl' && d < 260) return;
+    }
+    if (!can) return;
+    // open track: patient racers wait for the SUPER boost, eager ones just go
+    if (full) { if (sp < BOT.CRUISE || R() < 0.3) tap(); return; }
+    if (sp < 420 && R() < 0.5) { tap(); return; }
+    if (R() < (1 - s) * 0.10) tap();
+  }
+
   const POINTS = [10, 8, 6, 5, 4, 3, 2, 1];
 
-  return { C, MAT, ITEMS, POINTS, rng, Builder, TRACKS, TRACK_INFO, World, giveAwards };
+  return { C, MAT, ITEMS, POINTS, BOT, rng, Builder, TRACKS, TRACK_INFO, World, giveAwards, botThink, trackNotes };
 })();
 if (typeof module !== 'undefined') module.exports = MR;

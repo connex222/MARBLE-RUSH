@@ -365,7 +365,7 @@
       cpu: !!opts.cpu, keys: opts.keys ?? null, connected: true, leftAt: 0,
       points: 0, lastPts: 0, races: 0, wins: 0,
       tot: { perfect: 0, offs: 0, maxAir: 0, bumps: 0, climb: 0, topSpeed: 0 },
-      bot: opts.cpu ? { skill: 0.5 + Math.random() * 0.45, rel: 0, itemAt: 0 } : null,
+      bot: opts.cpu ? { skill: 0.3 + Math.random() * 0.5, rel: 0, itemAt: 0 } : null,
     };
     players.set(id, p);
     return p;
@@ -492,23 +492,76 @@
      TRACK ART — prebuilt paths (Section 6.3)
      ====================================================================== */
   let art = null;
+  /* Rails are drawn as chunky beams hanging BELOW the collision line, so a marble
+     sits on top of a solid-looking track. Physics is untouched: the top face of
+     every beam is exactly the line the engine collides with. */
+  const TH = 30;            // beam thickness in design px (a marble is 36 across)
+  const CELL = 900;         // rails are grouped into cells so only what's on screen is drawn
+  const BEAMS = ['main', 'bowl', 'pad', 'slow', 'conveyor', 'short'];
+  function underSide(s, T, bowlC) {
+    let nx = -s.dy, ny = s.dx; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+    const mx = (s.x1 + s.x2) / 2, my = (s.y1 + s.y2) / 2;
+    let c = null;
+    if (s.kind === 'loop') { let bd = Infinity; for (const L of T.loops) { const d = Math.hypot(mx - L.cx, my - L.cy); if (d < bd) { bd = d; c = { x: L.cx, y: L.cy }; } } }
+    else if (s.kind === 'bowl' || s.mat === 'bowl') {
+      let bd = Infinity; for (const B of T.bowls) { const d = Math.hypot(mx - B.cx, my - B.cy); if (d < bd) { bd = d; c = { x: B.cx, y: B.cy }; } }
+      if (!c) c = bowlC;
+    }
+    if (c) { if (nx * (mx - c.x) + ny * (my - c.y) < 0) { nx = -nx; ny = -ny; } return [nx, ny]; }
+    if (Math.abs(ny) < 0.2) return [0, 0];       // near-vertical: draw it centred
+    if (ny < 0) { nx = -nx; ny = -ny; }
+    return [nx, ny];
+  }
   function buildArt(T) {
-    const paths = { short: new Path2D(), main: new Path2D(), wall: new Path2D(), bowl: new Path2D(), pad: new Path2D(), gate: new Path2D(), slow: new Path2D(), conveyor: new Path2D() };
     const MAP = { wood: 'main', candy: 'main', ice: 'main', metal: 'main', choc: 'slow' };
+    const cells = new Map();
+    const cellAt = (x, y) => {
+      const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL), k = cx + ',' + cy;
+      let c = cells.get(k);
+      if (!c) {
+        c = { x0: cx * CELL, y0: cy * CELL, wall: new Path2D(), cushion: new Path2D(), g: {} };
+        for (const b of BEAMS) c.g[b] = { deck: new Path2D(), low: new Path2D(), lip: new Path2D(), n: 0 };
+        cells.set(k, c);
+      }
+      return c;
+    };
+    const gate = new Path2D();
     const posts = [];
     const r = rng(77);
+    // centre of a bowl that isn't registered as one (the lobby half-pipe)
+    let bx = 0, by = 0, bn = 0;
+    for (const s of T.segs) if (s.kind === 'bowl') { bx += s.x1 + s.x2; by += s.y1 + s.y2; bn += 2; }
+    const bowlC = bn ? { x: bx / bn, y: by / bn - 200 } : null;
+    const put = (path, s, ux, uy, o) => { path.moveTo(s.x1 + ux * o, s.y1 + uy * o); path.lineTo(s.x2 + ux * o, s.y2 + uy * o); };
     for (const s of T.segs) {
       if (s.mat === 'plate') continue;
-      const p = paths[MAP[s.mat] || s.mat] || paths.main;
-      p.moveTo(s.x1, s.y1); p.lineTo(s.x2, s.y2);
-      if (s.kind === 'short') { paths.short.moveTo(s.x1, s.y1); paths.short.lineTo(s.x2, s.y2); }
+      const c = cellAt((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2);
+      if (s.mat === 'gate') { put(gate, s, 0, 0, 0); continue; }
+      if (s.mat === 'wall' || s.mat === 'cushion') { put(c[s.mat], s, 0, 0, 0); continue; }
+      const [ux, uy] = underSide(s, T, bowlC);
+      s._ux = ux; s._uy = uy;
+      const add = name => { const g = c.g[name]; put(g.deck, s, ux, uy, TH / 2); put(g.low, s, ux, uy, TH * 0.8); put(g.lip, s, ux, uy, 4.5); g.n++; };
+      add(MAP[s.mat] || (c.g[s.mat] ? s.mat : 'main'));
+      if (s.kind === 'short') add('short');
       const len = Math.sqrt(s.len2);
-      if (s.mat !== 'wall' && s.mat !== 'gate' && s.mat !== 'bowl' && s.kind !== 'loop' && len > 120) {
-        for (let d = 60; d < len - 30; d += 240) {
+      if (s.mat !== 'bowl' && s.kind !== 'loop' && s.kind !== 'bowl' && len > 120 && uy > 0.8) {
+        for (let d = 90; d < len - 40; d += 320) {
           const u = d / len;
-          posts.push({ x: s.x1 + s.dx * u, y: s.y1 + s.dy * u, h: 70 + r() * 50 });
+          posts.push({ x: s.x1 + s.dx * u, y: s.y1 + s.dy * u + TH - 6, h: 0, w: 16 + r() * 4 });
         }
       }
+    }
+    // scaffold: every post runs down to the rail beneath it, so the run reads as one built structure
+    for (const p of posts) {
+      let best = Infinity;
+      for (const s of T.segs) {
+        if (s.mat === 'wall' || s.mat === 'cushion' || s.mat === 'gate' || Math.abs(s.dx) < 1) continue;
+        const u = (p.x - s.x1) / s.dx;
+        if (u < 0 || u > 1) continue;
+        const yy = s.y1 + s.dy * u;
+        if (yy > p.y + 30 && yy < best) best = yy;
+      }
+      if (best - p.y < 520) { p.h = best - p.y + 4; p.foot = false; } else { p.h = 220; p.foot = true; }
     }
     // decorative toy blocks in the far-mid layer
     const deco = [];
@@ -540,7 +593,7 @@
     const bokeh = [];
     const nb = ['planets', 'flakes'].includes((THEMES[T.meta.theme] || {}).deco) ? 140 : 46;
     for (let i = 0; i < nb; i++) bokeh.push({ x: r(), y: r(), r: 10 + r() * 40, c: NOTE_COLORS[(r() * 4) | 0], a: 0.05 + r() * 0.12, p: 0.02 + r() * 0.06 });
-    return { paths, posts, deco, props, bokeh };
+    return { cells: [...cells.values()], gate, posts, deco, props, bokeh, pat: null, patKey: '' };
   }
 
   function drawBackground() {
@@ -653,7 +706,6 @@
     ctx.save(); ctx.translate(ox, oy); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(p); ctx.restore();
   }
   function drawTrack(T, time) {
-    const P = art.paths;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     const th = theme();
     // low-gravity zones
@@ -666,39 +718,66 @@
       ctx.font = '700 26px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(220,205,255,0.55)';
       ctx.fillText('LOW GRAVITY', (z.x0 + z.x1) / 2, z.y0 + 300);
     }
-    // support posts
+    // what part of the world is on screen (cull everything else)
+    const vw = W / (cam.z * S) / 2 + 80, vh = H / (cam.z * S) / 2 + 80;
+    const vx0 = cam.x - vw, vx1 = cam.x + vw, vy0 = cam.y - vh, vy1 = cam.y + vh;
+    const vis = art.cells.filter(c => c.x0 + CELL + 460 > vx0 && c.x0 - 460 < vx1 && c.y0 + CELL + 460 > vy0 && c.y0 - 460 < vy1);
+    const low = lite();
+    const EDGE = 'rgba(14,10,34,0.92)';
+    // scaffold posts (behind the rails)
     for (const p of art.posts) {
-      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(p.x - 3, p.y + 6, 12, p.h);
-      ctx.fillStyle = th.post[0]; ctx.fillRect(p.x - 6, p.y + 2, 12, p.h);
-      ctx.fillStyle = th.post[1]; ctx.fillRect(p.x - 6, p.y + 2, 4, p.h);
+      if (p.x < vx0 || p.x > vx1 || p.y > vy1 || p.y + p.h < vy0) continue;
+      const hw = p.w / 2;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(p.x - hw + 7, p.y + 8, p.w, p.h);
+      if (p.foot) {
+        const g = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
+        g.addColorStop(0, th.post[0]); g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g; ctx.fillRect(p.x - hw, p.y, p.w, p.h);
+        continue;
+      }
+      ctx.fillStyle = EDGE; ctx.fillRect(p.x - hw - 2, p.y, p.w + 4, p.h);
+      ctx.fillStyle = th.post[0]; ctx.fillRect(p.x - hw, p.y, p.w, p.h);
+      ctx.fillStyle = th.post[1]; ctx.fillRect(p.x - hw, p.y, p.w * 0.36, p.h);
+      ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(p.x + hw - p.w * 0.22, p.y, p.w * 0.22, p.h);
+      ctx.fillStyle = th.post[1]; ctx.fillRect(p.x - hw - 5, p.y + p.h - 9, p.w + 10, 9); // foot plate
     }
     const texKey = 'tex_rail_' + (T.meta.theme || 'toybox');
-    const pat = IMG[texKey] ? ctx.createPattern(IMG[texKey], 'repeat') : null;
-    // shadows
-    for (const k of ['main', 'bowl', 'pad', 'wall', 'slow', 'conveyor']) strokePath(P[k], 20, 'rgba(0,0,0,0.32)', 5, 9);
-    // base
-    strokePath(P.main, 17, pat || th.main);
-    if (th.stripe && !pat) {
-      ctx.save(); ctx.setLineDash([16, 16]); strokePath(P.main, 17, th.stripe); ctx.restore();
+    if (art.patKey !== texKey + !!IMG[texKey]) { art.patKey = texKey + !!IMG[texKey]; art.pat = IMG[texKey] ? ctx.createPattern(IMG[texKey], 'repeat') : null; }
+    const pat = art.pat;
+    const bodyOf = { main: pat || th.main, bowl: th.bowl[0], pad: '#1597b8', slow: th.slow[0], conveyor: '#3b3f4a' };
+    const hiOf = { main: th.hi, bowl: th.bowl[1], pad: '#7FE8FF', slow: th.slow[1], conveyor: '#8c93a6' };
+    const each = (name, fn) => { for (const c of vis) { const g = c.g[name]; if (g.n) fn(g, c); } };
+    const KINDS = ['main', 'bowl', 'pad', 'slow', 'conveyor'];
+    // 1 — soft drop shadow under the whole structure
+    if (!low) {
+      for (const k of KINDS) each(k, g => strokePath(g.deck, TH + 4, 'rgba(0,0,0,0.30)', 12, 20));
+      for (const c of vis) { strokePath(c.wall, 24, 'rgba(0,0,0,0.30)', 10, 14); strokePath(c.cushion, 26, 'rgba(0,0,0,0.30)', 10, 14); }
     }
-    strokePath(P.bowl, 17, th.bowl[0]);
-    strokePath(P.wall, 15, th.wall[0]);
-    strokePath(P.pad, 17, '#1597b8');
-    strokePath(P.slow, 19, th.slow[0]);
-    strokePath(P.conveyor, 18, '#3b3f4a');
-    // conveyor belt stripes
-    ctx.save(); ctx.setLineDash([10, 14]); ctx.lineDashOffset = -time * 120; strokePath(P.conveyor, 10, '#FFD23F'); ctx.restore();
-    // highlights
-    strokePath(P.main, 6, th.hi, 0, -4);
-    if (th.strip) strokePath(P.main, 3, th.strip, 0, 2);
-    strokePath(P.bowl, 6, th.bowl[1], 0, -4);
-    strokePath(P.wall, 5, th.wall[1], -3, 0);
-    strokePath(P.pad, 6, '#7FE8FF', 0, -4);
-    strokePath(P.slow, 6, th.slow[1], 0, -5);
-    strokePath(P.main, 2, 'rgba(255,255,255,0.45)', 0, -6);
+    // 2 — dark outline, so rails read against any painted background
+    for (const k of KINDS) each(k, g => strokePath(g.deck, TH + 8, EDGE));
+    for (const c of vis) { strokePath(c.wall, 26, EDGE); strokePath(c.cushion, 30, EDGE); }
+    // 3 — beam body (theme texture when the art is in, flat colour until then)
+    for (const k of KINDS) each(k, g => strokePath(g.deck, TH, bodyOf[k]));
+    if (th.stripe && !pat) { ctx.save(); ctx.setLineDash([18, 18]); each('main', g => strokePath(g.deck, TH, th.stripe)); ctx.restore(); }
+    if (pat) each('main', g => strokePath(g.deck, TH, 'rgba(255,255,255,0.06)'));
+    // conveyor belt: moving yellow slats
+    ctx.save(); ctx.setLineDash([10, 14]); ctx.lineDashOffset = -time * 120; each('conveyor', g => strokePath(g.deck, TH * 0.55, '#FFD23F')); ctx.restore();
+    // 4 — shaded underside gives the beam its depth
+    if (!low) for (const k of KINDS) each(k, g => strokePath(g.low, TH * 0.4, 'rgba(8,6,30,0.34)'));
+    // 5 — bright running surface on top
+    for (const k of KINDS) each(k, g => strokePath(g.lip, 8, hiOf[k]));
+    if (th.strip) each('main', g => strokePath(g.deck, 4, th.strip));
+    for (const k of KINDS) each(k, g => strokePath(g.lip, 2.5, 'rgba(255,255,255,0.6)', 0, -2));
+    // walls: plain barriers, and padded cushions at the end of each level
+    for (const c of vis) {
+      strokePath(c.wall, 20, th.wall[0]); strokePath(c.wall, 6, th.wall[1], -4, 0);
+      strokePath(c.cushion, 24, th.wall[0]);
+      ctx.save(); ctx.setLineDash([3, 26]); strokePath(c.cushion, 24, 'rgba(0,0,0,0.22)'); ctx.restore(); // quilting
+      strokePath(c.cushion, 7, th.wall[1], -5, 0);
+    }
     // shortcut rails glow gold
-    ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(time * 4); strokePath(P.short, 26, 'rgba(255,200,61,0.35)'); ctx.restore();
-    strokePath(P.short, 4, '#FFC83D', 0, -5);
+    ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(time * 4); each('short', g => strokePath(g.deck, TH + 22, 'rgba(255,200,61,0.35)')); ctx.restore();
+    each('short', g => strokePath(g.lip, 8, '#FFC83D'));
     // fork signposts
     for (const F of T.forks) {
       ctx.save(); ctx.translate(F.signX, F.signY);
@@ -719,16 +798,18 @@
       board(-80, F.kind === 'gems' ? 'GEM ALLEY' : 'LONG WAY', F.kind === 'gems' ? '#FF5FA2' : '#e6ebf5', -F.h);
       ctx.restore();
     }
-    if (T.meta.theme === 'ice') { ctx.save(); ctx.globalAlpha = 0.35 + 0.15 * Math.sin(time * 2); strokePath(P.main, 26, 'rgba(160,220,255,0.25)'); ctx.restore(); }
+    if (T.meta.theme === 'ice' && !low) { ctx.save(); ctx.globalAlpha = 0.35 + 0.15 * Math.sin(time * 2); each('main', g => strokePath(g.deck, TH + 14, 'rgba(160,220,255,0.22)')); ctx.restore(); }
     // seesaws
     for (const ss of T.seesaws) {
       const g = ss.seg;
       ctx.fillStyle = th.post[0];
       ctx.beginPath(); ctx.moveTo(ss.px, ss.py + 4); ctx.lineTo(ss.px + 26, ss.py + 70); ctx.lineTo(ss.px - 26, ss.py + 70); ctx.closePath(); ctx.fill();
       ctx.lineCap = 'round';
-      ctx.lineWidth = 22; ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.moveTo(g.x1 + 5, g.y1 + 9); ctx.lineTo(g.x2 + 5, g.y2 + 9); ctx.stroke();
-      ctx.lineWidth = 18; ctx.strokeStyle = th.plank[0]; ctx.beginPath(); ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); ctx.stroke();
-      ctx.lineWidth = 5; ctx.strokeStyle = th.plank[1]; ctx.beginPath(); ctx.moveTo(g.x1, g.y1 - 4); ctx.lineTo(g.x2, g.y2 - 4); ctx.stroke();
+      { // plank hangs below its collision line, like every other rail
+        let ux = -(g.y2 - g.y1), uy = g.x2 - g.x1; const ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul; if (uy < 0) { ux = -ux; uy = -uy; }
+        const ln = (o, w, col, sx = 0, sy = 0) => { ctx.lineWidth = w; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(g.x1 + ux * o + sx, g.y1 + uy * o + sy); ctx.lineTo(g.x2 + ux * o + sx, g.y2 + uy * o + sy); ctx.stroke(); };
+        ln(12, 28, 'rgba(0,0,0,0.3)', 10, 16); ln(12, 32, EDGE); ln(12, 24, th.plank[0]); ln(19, 9, 'rgba(8,6,30,0.3)'); ln(4, 7, th.plank[1]);
+      }
       ctx.save(); ctx.translate(ss.px, ss.py); ctx.rotate(time * 0.6);
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
       for (let i = 0; i < 6; i++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 16); ctx.stroke(); }
@@ -737,33 +818,30 @@
     // boost pad chevrons
     for (const pd of T.pads) {
       const s = pd.s, len = Math.sqrt(s.len2), off = (time * 260) % 50;
-      ctx.save(); ctx.translate(s.x1, s.y1); ctx.rotate(Math.atan2(s.dy, s.dx));
+      const ox = (s._ux || 0) * TH * 0.55, oy = (s._uy == null ? 1 : s._uy) * TH * 0.55;
+      ctx.save(); ctx.translate(s.x1 + ox, s.y1 + oy); ctx.rotate(Math.atan2(s.dy, s.dx));
       ctx.fillStyle = pd.glow > 0 ? '#ffffff' : '#c8f7ff';
-      for (let d = off; d < len - 10; d += 50) {
-        ctx.globalAlpha = 0.85;
-        ctx.beginPath(); ctx.moveTo(d, -10); ctx.lineTo(d + 12, -4); ctx.lineTo(d, 2); ctx.lineTo(d + 5, -4); ctx.closePath(); ctx.fill();
+      for (let d = off; d < len - 14; d += 50) {
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath(); ctx.moveTo(d, -9); ctx.lineTo(d + 15, 0); ctx.lineTo(d, 9); ctx.lineTo(d + 6, 0); ctx.closePath(); ctx.fill();
       }
       ctx.restore(); ctx.globalAlpha = 1;
-      if (pd.glow > 0) { ctx.save(); ctx.globalAlpha = pd.glow * 1.5; strokePath(new Path2D(`M${s.x1} ${s.y1}L${s.x2} ${s.y2}`), 30, 'rgba(127,232,255,0.5)'); ctx.restore(); }
+      if (pd.glow > 0) { ctx.save(); ctx.globalAlpha = pd.glow * 1.5; strokePath(new Path2D(`M${s.x1 + ox} ${s.y1 + oy}L${s.x2 + ox} ${s.y2 + oy}`), TH + 22, 'rgba(127,232,255,0.5)'); ctx.restore(); }
     }
     // xylophone plates
     for (const s of T.stairs) {
       const col = NOTE_COLORS[s.note];
-      ctx.lineWidth = 20; ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-      ctx.beginPath(); ctx.moveTo(s.x1 + 5, s.y1 + 9); ctx.lineTo(s.x2 + 5, s.y2 + 9); ctx.stroke();
-      ctx.lineWidth = 18; ctx.strokeStyle = col;
-      ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
-      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-      ctx.beginPath(); ctx.moveTo(s.x1, s.y1 - 4); ctx.lineTo(s.x2, s.y2 - 4); ctx.stroke();
+      const bar = (o, w, c, sx = 0, sy = 0) => { ctx.lineWidth = w; ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(s.x1 + sx, s.y1 + o + sy); ctx.lineTo(s.x2 + sx, s.y2 + o + sy); ctx.stroke(); };
+      bar(13, 28, 'rgba(0,0,0,0.3)', 10, 16); bar(13, 32, EDGE); bar(13, 24, col); bar(20, 9, 'rgba(8,6,30,0.28)'); bar(4, 7, 'rgba(255,255,255,0.6)');
       ctx.fillStyle = '#e8edf6';
-      for (const u of [0.18, 0.82]) { ctx.beginPath(); ctx.arc(s.x1 + s.dx * u, s.y1 + s.dy * u, 3.5, 0, 6.283); ctx.fill(); }
-      if (s.flash > 0) { ctx.globalAlpha = s.flash * 3; ctx.lineWidth = 34; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
+      for (const u of [0.18, 0.82]) { ctx.beginPath(); ctx.arc(s.x1 + s.dx * u, s.y1 + s.dy * u + 14, 4.5, 0, 6.283); ctx.fill(); }
+      if (s.flash > 0) { ctx.globalAlpha = s.flash * 3; bar(13, 44, col); ctx.globalAlpha = 1; }
     }
     // Starting gate: visual art tracks the existing gate geometry, never
     // changes the closed/open state or collision rules.
     if (world.phase === 'pen') {
       if (!drawSprite('gate_start', T.gateX - 112, T.gateY - 185, 224, 176)) {
-        strokePath(P.gate, 12, '#e6ebf5'); strokePath(P.gate, 4, '#FF3B5C', 0, 0);
+        strokePath(art.gate, 12, '#e6ebf5'); strokePath(art.gate, 4, '#FF3B5C', 0, 0);
       }
     }
     // hazard signs
@@ -1321,15 +1399,7 @@
         continue;
       }
       if (state === 'lobby') { if (!m.down && Math.random() < 0.004) { world.press(m.id); b.rel = t + 0.05; } continue; }
-      const sp = Math.hypot(m.vx, m.vy);
-      if (!m.down) {
-        if (m.boost >= 50 && sp < 750 + b.skill * 200 && Math.random() < 0.03 + b.skill * 0.04) { world.press(m.id); b.rel = t + 0.05; }
-        else if (sp > 1350 - b.skill * 200 && Math.random() < b.skill) { world.press(m.id); b.rel = t + 0.35; }
-      }
-      if (m.item) {
-        if (!b.itemAt) b.itemAt = t + 0.8 + Math.random() * 3;
-        if (t > b.itemAt) { world.useItem(m.id); b.itemAt = 0; }
-      }
+      MR.botThink(world, m, b); // track-aware brain shared with the balance lab (engine.js)
     }
   }
 
@@ -1373,15 +1443,16 @@
           break;
         case 'clack':
           Audio_.play('clack', { vol: Math.min(1, e.v / 700), gap: 0.02 });
-          emit('star', e.x, e.y, 4, { speed: 200, life: 0.3, size: 6, color: '#fff' });
+          emit('star', e.x, e.y, e.pass ? 3 : 4, { speed: 200, life: 0.3, size: 6, color: '#fff' });
           if (e.bertha && e.v > 400) { cam.trauma = Math.min(1, cam.trauma + 0.5); slowMo(); Clatter.say('big', "Big Bertha's coming through!", 2); }
           else if (e.v > 380 && Math.random() < 0.08) Clatter.say('bump', 'Oof! Marble on marble!');
           break;
         case 'boost': {
-          Audio_.play('sfx_boost', { gap: 0.02 });
+          Audio_.play('sfx_boost', { gap: 0.02, vol: e.sup ? 1 : 0.7 });
           const a = Math.atan2(-e.dy, -e.dx);
-          emit('spark', e.x, e.y, 12, { dir: a, spread: 0.9, speed: 420, life: 0.35, size: 10, colors: [p ? p.color : '#fff', '#FFE9A0', '#ffffff'] });
-          emit('ring', e.x, e.y, 1, { speed: 0, life: 0.35, size: 10, color: p ? p.color : '#fff' });
+          emit('spark', e.x, e.y, e.sup ? 26 : 12, { dir: a, spread: e.sup ? 1.2 : 0.9, speed: e.sup ? 620 : 420, life: e.sup ? 0.5 : 0.35, size: e.sup ? 13 : 10, colors: [p ? p.color : '#fff', '#FFE9A0', '#ffffff'] });
+          emit('ring', e.x, e.y, 1, { speed: 0, life: 0.35, size: e.sup ? 20 : 10, color: e.sup ? '#FFD23F' : p ? p.color : '#fff' });
+          if (e.sup) { emit('star', e.x, e.y, 8, { speed: 320, life: 0.5, size: 10, colors: ['#FFD23F', '#FFF4E0'] }); if (!p || !p.cpu) pop('SUPER!', e.x, e.y - 46, '#FFD23F', 30); }
           break;
         }
         case 'empty': break;
@@ -1520,21 +1591,38 @@
       sx += m.x * w; sy += m.y * w; wsum += w;
       minX = Math.min(minX, m.x); maxX = Math.max(maxX, m.x); minY = Math.min(minY, m.y); maxY = Math.max(maxY, m.y);
     }
+    // Closer camera: frame the main pack, not the whole field. Anyone left out of
+    // shot gets an edge arrow with their gap, so the marbles stay big enough to
+    // read from the sofa.
     const aspect = W / H;
+    // follow the biggest bunch of racers (front-most bunch on a tie), not a lone runaway leader
+    let anchor = leader, bestN = 0;
+    for (const a of consider) {
+      const n = consider.filter(m => a.prog - m.prog >= 0 && a.prog - m.prog < 1100).length;
+      if (n > bestN || (n === bestN && a.prog > anchor.prog)) { bestN = n; anchor = a; }
+    }
+    const pack = consider.filter(m => anchor.prog - m.prog >= -60 && anchor.prog - m.prog < 1100);
+    if (pack.length) {
+      minX = Infinity; maxX = -Infinity; minY = Infinity; maxY = -Infinity; sx = 0; sy = 0; wsum = 0;
+      for (const m of pack) {
+        const w = m === leader ? 2 : 1; sx += m.x * w; sy += m.y * w; wsum += w;
+        minX = Math.min(minX, m.x); maxX = Math.max(maxX, m.x); minY = Math.min(minY, m.y); maxY = Math.max(maxY, m.y);
+      }
+    }
     const spanX = maxX - minX, spanY = maxY - minY;
-    const z = Math.min((1080 * aspect * 0.8) / (spanX + 360), (1080 * 0.78) / (spanY + 300));
+    const z = Math.min((1080 * aspect * 0.84) / (spanX + 300), (1080 * 0.8) / (spanY + 260));
     // Bias the shot towards the leader while racing tightly, but shift to
     // the pack's bounding-box centre when anyone falls behind.
     const spread = Math.max(spanX, spanY);
     const wide = Math.max(0, Math.min(1, (spread - 500) / 1300));
     const focusX = sx / wsum, focusY = sy / wsum;
     const look = 0.25 * (1 - wide);
-    cam.tx = focusX * (1 - wide) + (minX + maxX) * 0.5 * wide + leader.vx * look * 0.6;
-    cam.ty = focusY * (1 - wide) + (minY + maxY) * 0.5 * wide + leader.vy * look * 0.6;
+    cam.tx = focusX * (1 - wide) + (minX + maxX) * 0.5 * wide + anchor.vx * look * 0.6;
+    cam.ty = focusY * (1 - wide) + (minY + maxY) * 0.5 * wide + anchor.vy * look * 0.6;
     const sp = Math.hypot(leader.vx, leader.vy);
     // Wider minimum framing lets a trailing marble remain visible; the
     // existing damped camera springs make the zoom-out and return seamless.
-    cam.tz = Math.max(0.42, Math.min(1.25, z)) * (1 - Math.min(0.08, sp / 24000));
+    cam.tz = Math.max(0.68, Math.min(1.3, z)) * (1 - Math.min(0.06, sp / 30000));
     void dt;
   }
 

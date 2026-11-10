@@ -21,7 +21,11 @@ body.hc{--bg:#000; --bg2:#000; --card:#000; --ink:#fff; --dim:#fff; --line:#fff}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden;
   user-select:none;-webkit-user-select:none;touch-action:manipulation;overscroll-behavior:none}
-body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background-image:linear-gradient(rgba(15,17,48,.84),rgba(15,17,48,.9)),url('assets/img/bg_phone.webp');
+  background-size:cover;background-position:center;background-repeat:no-repeat}
+@media (prefers-color-scheme: light){body:not(.hc){background-image:linear-gradient(rgba(255,246,230,.88),rgba(255,246,230,.94)),url('assets/img/bg_phone.webp')}}
+body.hc{background-image:none}
 [hidden]{display:none!important}
 button{font-family:var(--display);cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -31,6 +35,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .logo{font-family:var(--display);font-weight:700;line-height:.86;transform:skewX(-8deg);margin:6px 0 4px}
 .logo span{display:block;font-size:54px;color:var(--red);-webkit-text-stroke:2px var(--gold);paint-order:stroke fill;text-shadow:0 4px 0 #8f1029}
 .logo span+span{color:#FFF4E0;-webkit-text-stroke-color:var(--red)}
+.logo.asset-logo{transform:none;margin:6px auto 4px;width:100%;max-width:330px}
+.logo.asset-logo span{display:none}
+.logo.asset-logo img{display:block;width:100%;height:auto;max-height:130px;object-fit:contain;filter:drop-shadow(0 7px 12px rgba(0,0,0,.32))}
 label{font-weight:800;font-size:16px;color:var(--dim)}
 input{width:100%;font-family:var(--display);font-weight:600;font-size:30px;color:var(--ink);background:var(--card);border:3px solid var(--line);
   border-radius:18px;padding:12px 16px;margin-top:6px}
@@ -88,6 +95,9 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
 #pad.grip::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:6px solid var(--mint);animation:gripPulse .5s ease-in-out infinite alternate}
 @keyframes gripPulse{to{inset:-20px;opacity:.5}}
 #pad.empty{filter:grayscale(.85) brightness(.8)}
+#pad.super{filter:saturate(1.25) brightness(1.1)}
+#pad.super #ringFg{stroke:#fff;stroke-width:7;filter:drop-shadow(0 0 6px var(--gold))}
+#pad.super::before{content:"";position:absolute;inset:-12px;border-radius:50%;box-shadow:0 0 0 5px var(--gold),0 0 34px 8px var(--gold);animation:gripPulse .45s ease-in-out infinite alternate;pointer-events:none}
 #pad.burst{animation:burst .35s ease-out}
 @keyframes burst{0%{transform:scale(1.06)}100%{transform:scale(1)}}
 #ring{position:absolute;inset:-12px;pointer-events:none;transform:rotate(-90deg)}
@@ -99,6 +109,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
 #padText span{font-weight:600;font-size:min(5.4vw,3.2vh);opacity:.95;margin-top:6px}
 #item{position:absolute;right:16px;top:-6px;width:88px;height:88px;border-radius:50%;border:4px solid var(--gold);background:var(--card);
   font-size:42px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(0,0,0,.35);touch-action:none;color:var(--ink)}
+#item img{width:72px;height:72px;object-fit:contain;pointer-events:none}
 #item:disabled{display:none}
 #item.ready{animation:itemPulse .9s ease-in-out infinite}
 @keyframes itemPulse{50%{transform:scale(1.08)}}
@@ -166,12 +177,21 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   $('#inCode').value = (params.get('room') || store.get('mr_room') || '').toUpperCase();
   $('#inName').value = store.get('mr_name') || '';
   if (store.get('mr_hc') === '1') document.body.classList.add('hc');
+  // Replace the text logo only when the approved artwork loads correctly.
+  const logoEl = document.querySelector('#join .logo');
+  if (logoEl) {
+    const art = new Image();
+    art.onload = () => { art.alt = 'Marble Rush'; logoEl.appendChild(art); logoEl.classList.add('asset-logo'); };
+    art.src = 'assets/img/logo_marblerush.webp';
+  }
 
   // swirl picker
   SWIRLS.forEach((p, i) => {
     const b = document.createElement('button');
     b.className = 'sw'; b.setAttribute('aria-label', 'Marble ' + (i + 1));
     b.style.cssText = `--a:${p[0]};--b:${p[1]};--c:${p[2]}`;
+    b.style.backgroundImage = `radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0 8%,transparent 20%),url('assets/img/marble_swirl_${String(i + 1).padStart(2, '0')}.webp'),conic-gradient(var(--a),var(--b),var(--c))`;
+    b.style.backgroundSize = 'cover';
     b.onclick = () => { swirl = i; store.set('mr_swirl', i); markSwirl(); if (joined) send({ t:'act', a:'swirl', v:i }); };
     $('#swirls').appendChild(b);
   });
@@ -257,15 +277,30 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     let h = hud;
     document.documentElement.style.setProperty('--pc', h.color);
     const pal = SWIRLS[h.swirl % 12];
-    $('#meMarble').style.cssText = `--a:${pal[0]};--b:${pal[1]};--c:${pal[2]}`;
+    const mini = $('#meMarble');
+    mini.style.cssText = `--a:${pal[0]};--b:${pal[1]};--c:${pal[2]}`;
+    mini.style.backgroundImage = `radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0 8%,transparent 20%),url('assets/img/marble_swirl_${String(h.swirl % 12 + 1).padStart(2, '0')}.webp'),conic-gradient(var(--a),var(--b),var(--c))`;
+    mini.style.backgroundSize = 'cover';
     $('#meName').textContent = h.name;
     $('#vipBadge').hidden = !h.vip;
     $('#ringFg').style.strokeDashoffset = RING * (1 - h.boost / 100);
     $('#pad').classList.toggle('empty', h.boost < 25 && (h.s === 'race'));
+    $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
     const it = $('#item');
     if (h.s !== 'race') h = Object.assign({}, h, { item: null });
-    it.disabled = !h.item; it.textContent = h.item ? ITEM_ICON[h.item] : '';
+    it.disabled = !h.item;
+    const iconKey = h.item ? 'item_' + h.item : '';
+    if ((it.dataset.iconKey || '') !== iconKey) {
+      it.dataset.iconKey = iconKey;
+      if (iconKey) {
+        const im = document.createElement('img');
+        im.alt = '';
+        im.src = 'assets/img/' + iconKey + '.webp';
+        im.onerror = () => { if (it.dataset.iconKey === iconKey) it.textContent = ITEM_ICON[h.item] || '★'; };
+        it.replaceChildren(im);
+      } else it.textContent = '';
+    }
     it.classList.toggle('ready', !!h.item);
     it.setAttribute('aria-label', h.item ? 'Use ' + ITEM_NAME[h.item] : 'No item');
     $('#prog').hidden = h.s !== 'race';
@@ -301,7 +336,8 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
       default: setText('', 'Watch the TV!', '');
     }
     vipButtons(vip);
-    $('#padText b').textContent = h.s === 'race' && h.boost < 25 ? 'GRIP' : 'TAP';
+    $('#padText b').textContent = h.s === 'race' && h.boost < 25 ? 'WAIT' : h.s === 'race' && h.boost >= 100 ? 'SUPER!' : 'TAP';
+    $('#padText span').textContent = h.s === 'race' && h.boost < 25 ? 'meter is filling' : h.s === 'race' && h.boost >= 100 ? 'full meter · tap now' : 'boost · hold to grip';
   }
 
   function renderVotes(h) {
@@ -342,7 +378,8 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     if (held <= 180) {
       const canBoost = !hud || hud.s !== 'race' || hud.boost >= 25;
       if (canBoost) {
-        tone(320, 0.18, 'triangle', 0.16, 980); buzz(15);
+        const sup = hud && hud.s === 'race' && hud.boost >= 100;
+        tone(sup ? 420 : 320, sup ? 0.3 : 0.18, 'triangle', sup ? 0.22 : 0.16, sup ? 1500 : 980); buzz(sup ? 40 : 15);
         pad.classList.remove('burst'); void pad.offsetWidth; pad.classList.add('burst');
         $('#flash').classList.remove('on'); void $('#flash').offsetWidth; $('#flash').classList.add('on');
       } else { tone(110, 0.15, 'square', 0.08, 70); }

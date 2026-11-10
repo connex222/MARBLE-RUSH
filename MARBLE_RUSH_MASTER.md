@@ -188,7 +188,7 @@ The server gives each player a different award where possible.
 | Gravity | **1,500 px/s²** downward (zones can change it) | Weighty but lively |
 | Top speed cap | **2,400 px/s** | Readable on screen |
 | Track collision | Circle vs line segments (rails are polylines) | Any track shape |
-| Marble vs marble | Circle vs circle, restitution **0.8**, equal mass (Big Bertha 3×) | Satisfying clacks |
+| Marble vs marble | Circle vs circle, restitution **0.8**, equal mass (Big Bertha 3×). **Overtaking:** when one marble closes on another faster than **150 px/s**, they glance off (a soft clack) and pass side by side instead of shoving. Big Bertha always bulldozes; a Bubble Shield always slips through | Satisfying clacks, and the faster marble can actually get past |
 | Rail restitution | **0.25** (wood 0.3, metal 0.2, candy 0.15, ice 0.25) | Marbles settle onto rails, don't skitter |
 | Rolling resistance | **0.012 × g** (ice 0.004, candy 0.02) | Surfaces feel different |
 | Air drag | 0.9995 per step | Gentle |
@@ -202,12 +202,16 @@ The server gives each player a different award where possible.
 | Input | Grounded | In the air |
 |---|---|---|
 | **Boost (tap)** | +380 px/s along the tangent (direction of travel), 0.25 s cooldown | +150 px/s along velocity (a little air control) |
-| **Grip (hold)** | Extra pull into the track of **0.6 g** along −n, plus braking of **600 px/s²** along −t | Gentle braking 200 px/s², slight extra gravity 0.2 g (lands sooner) |
+| **Grip (hold)** | Extra pull into the track of **0.6 g** along −n, plus braking of **600 px/s²** along −t. Braking fades to nothing between 800 and 420 px/s, so holding can never stop a marble dead | Gentle braking 200 px/s² (same fade), slight extra gravity 0.2 g (lands sooner) |
 | **Nothing** | Normal rolling | Ballistic flight |
 
 **Flying off happens naturally:** on a crest of radius `r`, a marble leaves the rail when `v² / r > g × cos(slope)`. Grip raises that limit by 60%, so **holding grip lets you take crests faster**. No fake "fall off" rules — it's real physics, so it always feels fair.
 
 **Boost meter:** 0–100. Tap costs 25. Refills **14 per second** (× slipstream / back-marker bonuses).
+
+**Super boost:** tapping with a **full meter** gives **1.75×** the push, a gold burst on the TV and "SUPER!" on the phone. The phone pad glows gold and reads **SUPER!** when it's ready, and **WAIT** when the meter is too low to boost. This is what makes patience beat mashing.
+
+Boost always pushes **forwards along the course**, even straight after a bounce off a wall.
 
 **Rolling look:** the marble's visual angle advances by `distance rolled ÷ radius`. The swirl texture rotates with it; the shine highlight stays fixed on top. This is what makes the marbles look like real glass.
 
@@ -216,6 +220,9 @@ The server gives each player a different award where possible.
 - Leaving the play area, falling into a **void** or landing in a **catch net** → marble "poofs" and reappears at the last **checkpoint** after **1.2 s**, rolling at 40% of its previous speed.
 - Checkpoints every ~8% of the track (invisible gates).
 - Costs about 2–3 seconds — painful, never fatal.
+- **Wrong rail:** a marble that lands on a lower level (more than 120 px off the route for 0.45 s) counts as off the track.
+- **Stuck rescue:** no progress for 3 s → hop to the next checkpoint, rolling at a modest speed. If a rescue didn't get it clear, the next rescue hops one checkpoint further, so nobody can ever be trapped.
+- **Turn walls** at the end of each level are padded **cushions** (no bounce), so fast marbles drop to the next level instead of bouncing back uphill.
 
 ### 5.5 Track pieces (all built in code from data)
 
@@ -242,7 +249,7 @@ The server gives each player a different award where possible.
 
 - **Target:** the pack centre, leader weighted 2×, ignoring marbles more than 1.2 screens behind.
 - **Look-ahead:** 0.25 s ahead of the leader's velocity.
-- **Zoom:** fits the pack with 15% padding, clamped between 0.6× and 1.3×. Zooms out slightly at high speed for a sense of rush.
+- **Zoom:** fits the **biggest bunch of racers** (within 1,100 px of each other), clamped between **0.68× and 1.3×**, so marbles stay big enough to read from the sofa. Anyone out of shot gets an edge arrow with their gap. Zooms out slightly at high speed.
 - **Motion:** all camera moves use the Gentle spring (5.8) — never jerky.
 - **Off-screen marbles:** shown as an arrow at the screen edge with their token and a "−3.2s" gap.
 - **Countdown fly-through:** camera glides from finish to start along the track (4 s).
@@ -279,6 +286,7 @@ The server gives each player a different award where possible.
 - **Layers (back to front):** far background image (parallax 0.05) → mid props (parallax 0.4) → track rails and supports → marbles, items and particles → near props (parallax 1.2) → UI layer (HTML text) → FX layer (confetti, flashes).
 - **Target:** 60 fps on a mid-range laptop. **Auto "Lite FX"** if frame time averages over 20 ms: halves particles, turns off glow blur and near-prop layer.
 - **Particle cap:** 800 (Lite 350).
+- **Rails** are drawn as chunky **30 px beams** hanging below the collision line (dark outline → textured body → shaded underside → bright running surface), with scaffold posts that run down to the rail beneath. Physics is unchanged: the top face of every beam is exactly the line the engine collides with. Rails are grouped into 900 px cells and only on-screen cells are drawn.
 
 ---
 
@@ -855,6 +863,7 @@ Built after Marble Rush, reusing the same **Party Core**: lobby and room codes, 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 10 Nov 2026 | Build v0.4: **skill now pays** — overtaking (5.2), grip can't stall (5.3), super boost on a full meter (5.3), stuck rescue and wrong-rail rules, cushioned turn walls (5.4); new track-aware CPU brain shared by TV and tests; `npm run balance` lab (tools/balance-lab.js). **Track look** — chunky textured beams, scaffold posts, closer camera that follows the biggest bunch (5.6, 5.9). Lobby how-to adds "Wait: full meter = super boost" |
 | 1.0 | 8 Nov 2026 | First master document |
 | 1.3 | 8 Nov 2026 | Build v0.3: three branched tracks (Jungle Jumble, Seaside Sprint, Clockwork Chaos) with daredevil shortcuts and gem alleys; fork piece added to 5.5; Grand Prix (7 races) Cup option; Clatter calls out shortcuts; art prompts for the three new themes in 9.4 |
 | 1.2 | 8 Nov 2026 | Build v0.2: all four launch tracks playable (Candy Cascade, Frosty Freefall, Orbit Drop added); Cup of 1, 2 or 4 races chosen in the lobby; track vote before each race (phones vote; TV can click a card or Decide now); new track pieces built: conveyor, slow zone, seesaw, low-gravity zone; each theme has its own code-drawn look until its art pack arrives |

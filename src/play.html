@@ -94,6 +94,9 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
 #pad.grip::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:6px solid var(--mint);animation:gripPulse .5s ease-in-out infinite alternate}
 @keyframes gripPulse{to{inset:-20px;opacity:.5}}
 #pad.empty{filter:grayscale(.85) brightness(.8)}
+#pad.super{filter:saturate(1.25) brightness(1.1)}
+#pad.super #ringFg{stroke:#fff;stroke-width:7;filter:drop-shadow(0 0 6px var(--gold))}
+#pad.super::before{content:"";position:absolute;inset:-12px;border-radius:50%;box-shadow:0 0 0 5px var(--gold),0 0 34px 8px var(--gold);animation:gripPulse .45s ease-in-out infinite alternate;pointer-events:none}
 #pad.burst{animation:burst .35s ease-out}
 @keyframes burst{0%{transform:scale(1.06)}100%{transform:scale(1)}}
 #ring{position:absolute;inset:-12px;pointer-events:none;transform:rotate(-90deg)}
@@ -281,6 +284,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     $('#vipBadge').hidden = !h.vip;
     $('#ringFg').style.strokeDashoffset = RING * (1 - h.boost / 100);
     $('#pad').classList.toggle('empty', h.boost < 25 && (h.s === 'race'));
+    $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
     const it = $('#item');
     if (h.s !== 'race') h = Object.assign({}, h, { item: null });
@@ -331,7 +335,8 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
       default: setText('', 'Watch the TV!', '');
     }
     vipButtons(vip);
-    $('#padText b').textContent = h.s === 'race' && h.boost < 25 ? 'GRIP' : 'TAP';
+    $('#padText b').textContent = h.s === 'race' && h.boost < 25 ? 'WAIT' : h.s === 'race' && h.boost >= 100 ? 'SUPER!' : 'TAP';
+    $('#padText span').textContent = h.s === 'race' && h.boost < 25 ? 'meter is filling' : h.s === 'race' && h.boost >= 100 ? 'full meter · tap now' : 'boost · hold to grip';
   }
 
   function renderVotes(h) {
@@ -372,7 +377,8 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     if (held <= 180) {
       const canBoost = !hud || hud.s !== 'race' || hud.boost >= 25;
       if (canBoost) {
-        tone(320, 0.18, 'triangle', 0.16, 980); buzz(15);
+        const sup = hud && hud.s === 'race' && hud.boost >= 100;
+        tone(sup ? 420 : 320, sup ? 0.3 : 0.18, 'triangle', sup ? 0.22 : 0.16, sup ? 1500 : 980); buzz(sup ? 40 : 15);
         pad.classList.remove('burst'); void pad.offsetWidth; pad.classList.add('burst');
         $('#flash').classList.remove('on'); void $('#flash').offsetWidth; $('#flash').classList.add('on');
       } else { tone(110, 0.15, 'square', 0.08, 70); }

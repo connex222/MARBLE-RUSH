@@ -42,13 +42,17 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 
 /* ---------- boot ---------- */
 #boot{position:fixed;inset:0;display:grid;place-items:center;pointer-events:auto;
-  background:radial-gradient(ellipse at 50% 35%, #34206e 0%, var(--navy) 55%, var(--night) 100%)}
+  background:linear-gradient(135deg,rgba(15,17,48,.64),rgba(15,17,48,.85)),url('assets/img/bg_lobby.webp') center / cover no-repeat, var(--navy)}
 .bootIn{text-align:center}
 .logo{font-family:var(--display);font-weight:700;line-height:.85;letter-spacing:-.01em;transform:skewX(-8deg)}
 .logo span{display:block;font-size:calc(150*var(--u));color:var(--red);
   -webkit-text-stroke:calc(5*var(--u)) var(--gold);paint-order:stroke fill;
   text-shadow:0 calc(10*var(--u)) 0 #8f1029, 0 calc(22*var(--u)) calc(40*var(--u)) rgba(0,0,0,.5)}
 .logo span+span{color:var(--cream);-webkit-text-stroke-color:var(--red);text-shadow:0 calc(10*var(--u)) 0 #8f1029, 0 calc(22*var(--u)) calc(40*var(--u)) rgba(0,0,0,.5)}
+.logo.asset-logo{width:100%;max-width:calc(620*var(--u));transform:none;margin-inline:auto}
+.logo.asset-logo span{display:none}
+.logo.asset-logo img{display:block;object-fit:contain;width:100%;height:auto;max-height:calc(270*var(--u));filter:drop-shadow(0 calc(12*var(--u)) calc(24*var(--u)) rgba(0,0,0,.42))}
+#lobbyLeft .logo.asset-logo img{max-height:calc(185*var(--u))}
 .bootMarble{width:calc(90*var(--u));height:calc(90*var(--u));border-radius:50%;margin:0 auto calc(26*var(--u));
   background:radial-gradient(circle at 34% 30%,#fff 0 9%,transparent 22%),conic-gradient(from 40deg,#FF3B5C,#fff4e0,#FFC83D,#FF3B5C,#fff4e0,#FF3B5C);
   box-shadow:inset calc(-10*var(--u)) calc(-12*var(--u)) calc(24*var(--u)) rgba(20,10,60,.55),0 0 0 calc(5*var(--u)) var(--gold),0 calc(20*var(--u)) calc(40*var(--u)) rgba(0,0,0,.5);
@@ -74,7 +78,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 .howTo{margin-top:calc(22*var(--u));display:flex;gap:calc(14*var(--u))}
 .howTo div{flex:1;background:rgba(30,34,87,.85);border-radius:calc(20*var(--u));padding:calc(14*var(--u)) calc(16*var(--u));font-size:calc(20*var(--u));line-height:1.25}
 .howTo b{display:block;font-family:var(--display);font-weight:600;font-size:calc(28*var(--u));color:var(--cream)}
-.howTo .tap b{color:var(--sky)} .howTo .hold b{color:var(--mint)}
+.howTo .tap b{color:var(--sky)} .howTo .hold b{color:var(--mint)} .howTo .wait b{color:var(--gold)}
 
 #lobbyRight{position:absolute;right:calc(56*var(--u));top:calc(52*var(--u));width:calc(560*var(--u))}
 #lobbyRight h2{font-family:var(--display);font-weight:600;font-size:calc(34*var(--u));margin-bottom:calc(16*var(--u))}
@@ -114,7 +118,8 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 .spos{width:calc(40*var(--u));text-align:center;font-family:var(--display);font-weight:700;font-size:calc(28*var(--u));color:var(--gold);margin-left:calc(6*var(--u))}
 .sshape{width:calc(22*var(--u));height:calc(22*var(--u))}
 .sname{flex:1;font-family:var(--display);font-weight:600;font-size:calc(24*var(--u));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sitem{width:calc(36*var(--u));font-size:calc(22*var(--u))}
+.sitem{width:calc(36*var(--u));font-size:calc(22*var(--u));display:flex;align-items:center;justify-content:center}
+.sitem img{width:calc(34*var(--u));height:calc(34*var(--u));object-fit:contain}
 #countdown{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(0);font-family:var(--display);font-weight:700;
   font-size:calc(260*var(--u));color:var(--cream);-webkit-text-stroke:calc(8*var(--u)) var(--navy);paint-order:stroke fill;
   text-shadow:0 calc(12*var(--u)) 0 rgba(0,0,0,.35)}
@@ -130,7 +135,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #clatter{position:fixed;left:calc(36*var(--u));bottom:calc(34*var(--u));display:flex;align-items:flex-end;gap:calc(14*var(--u));
   opacity:0;transform:translateY(30px);transition:all .3s cubic-bezier(.3,1.5,.5,1)}
 #clatter.show{opacity:1;transform:none}
-.clatterFace{position:relative;width:calc(96*var(--u));height:calc(96*var(--u));border-radius:50%;flex:none;
+.clatterFace{position:relative;width:calc(116*var(--u));height:calc(116*var(--u));border-radius:50%;flex:none;
   background:radial-gradient(circle at 32% 28%,#fff 0 7%,transparent 18%),conic-gradient(from 10deg,#FF3B5C,#FFC83D,#fff4e0,#FF3B5C,#FFC83D,#FF3B5C);
   box-shadow:inset calc(-8*var(--u)) calc(-10*var(--u)) calc(18*var(--u)) rgba(20,10,60,.55),0 0 0 calc(4*var(--u)) var(--gold)}
 .clatterFace::before{content:"";position:absolute;left:18%;right:18%;top:-14%;height:30%;background:#8a6a4a;border-radius:50% 50% 20% 20%;
@@ -139,6 +144,9 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
   box-shadow:0 calc(2*var(--u)) 0 rgba(0,0,0,.2)}
 .clatterFace i{position:absolute;top:36%;width:14%;height:16%;background:#14163A;border-radius:50%}
 .clatterFace i:first-child{left:30%} .clatterFace i:last-child{right:30%}
+.clatterFace.withArt{border:0;background:transparent;box-shadow:none}
+.clatterFace.withArt::before,.clatterFace.withArt::after,.clatterFace.withArt i{display:none}
+.clatterFace img{width:100%;height:100%;object-fit:contain;display:block;transform:scale(1.15);transform-origin:center bottom}
 #clatterText{max-width:calc(560*var(--u));background:var(--cream);color:var(--navy);font-family:var(--display);font-weight:600;font-size:calc(30*var(--u));
   border-radius:calc(24*var(--u)) calc(24*var(--u)) calc(24*var(--u)) calc(6*var(--u));padding:calc(14*var(--u)) calc(24*var(--u));box-shadow:0 calc(10*var(--u)) calc(30*var(--u)) rgba(0,0,0,.35)}
 
@@ -154,8 +162,9 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
   border-left:calc(6*var(--u)) solid var(--pc);animation:rowIn .45s cubic-bezier(.3,1.4,.5,1) backwards}
 @keyframes rowIn{from{transform:translateX(-40px);opacity:0}}
 .rrow.first{background:linear-gradient(90deg,rgba(255,200,61,.28),rgba(30,34,87,.7));height:calc(70*var(--u))}
-.rpos{font-family:var(--display);font-weight:700;font-size:calc(30*var(--u));color:var(--gold)}
+.rpos{font-family:var(--display);font-weight:700;font-size:calc(30*var(--u));color:var(--gold);display:flex;align-items:center;gap:calc(4*var(--u))}
 .rrow img{width:calc(26*var(--u));height:calc(26*var(--u))}
+.rrow .rpos img.rmedal{width:calc(34*var(--u));height:calc(34*var(--u));object-fit:contain;flex-shrink:0}
 .rname{font-family:var(--display);font-weight:600;font-size:calc(30*var(--u));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rtime{font-size:calc(22*var(--u));opacity:.75;font-variant-numeric:tabular-nums;text-align:right}
 .rpts{font-family:var(--display);font-weight:600;font-size:calc(26*var(--u));color:var(--mint);text-align:right}
@@ -163,6 +172,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 .panelBtns{display:flex;gap:calc(14*var(--u));justify-content:center;margin-top:calc(24*var(--u))}
 .champLine{font-family:var(--display);font-weight:700;font-size:calc(84*var(--u));line-height:1.05;margin:calc(10*var(--u)) 0 calc(20*var(--u))}
 .trophy{font-size:calc(90*var(--u));float:right;line-height:1;animation:bob 2s ease-in-out infinite}
+.trophy img{display:block;width:calc(110*var(--u));height:calc(110*var(--u));object-fit:contain}
 @keyframes bob{50%{transform:translateY(calc(-10*var(--u))) rotate(4deg)}}
 .arow{display:grid;grid-template-columns:calc(34*var(--u)) 1fr 1.2fr calc(110*var(--u));gap:calc(12*var(--u));align-items:center;height:calc(54*var(--u));
   padding:0 calc(16*var(--u));border-radius:calc(14*var(--u));background:rgba(30,34,87,.7);border-left:calc(6*var(--u)) solid var(--pc);margin-bottom:calc(6*var(--u))}
@@ -226,6 +236,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
         <div class="howTo">
           <div class="tap"><b>Tap</b>to boost</div>
           <div class="hold"><b>Hold</b>to grip the track</div>
+          <div class="wait"><b>Wait</b>full meter = super boost</div>
         </div>
       </div>
     </div>
@@ -280,7 +291,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 
   <section class="screen" data-screen="finale" hidden>
     <div class="panel">
-      <div class="trophy">🏆</div>
+      <div class="trophy" id="finaleTrophy">🏆</div>
       <h2>Champion</h2>
       <div class="champLine" id="champName"></div>
       <div id="awardRows"></div>
@@ -288,12 +299,12 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
     </div>
   </section>
 
-  <div id="clatter"><div class="clatterFace"><i></i><i></i></div><div id="clatterText"></div></div>
+  <div id="clatter"><div class="clatterFace"><img id="clatterArt" alt="Captain Clatter" hidden><i></i><i></i></div><div id="clatterText"></div></div>
   <div id="toast"></div>
   <div id="status" hidden></div>
 </div>
 <script>/* ==========================================================================
-   MARBLE RUSH — "Roll" engine  (v0.1)
+   MARBLE RUSH — "Roll" engine  (v0.4)
    Physics, track builder and race world. No DOM — runs in browser or Node.
    Spec: MARBLE_RUSH_MASTER.md sections 4 and 5.
    ========================================================================== */
@@ -304,9 +315,10 @@ const MR = (() => {
   const C = {
     G: 1500, R: 18, DT: 1 / 240, VMAX: 2400,
     BOOST_DV: 380, BOOST_AIR_DV: 150, BOOST_COST: 25, BOOST_REFILL: 14, BOOST_CD: 0.25,
-    GRIP_DOWN: 0.6, GRIP_BRAKE: 600, AIR_BRAKE: 200, AIR_GRAV: 0.2,
+    GRIP_DOWN: 0.6, GRIP_BRAKE: 600, GRIP_FLOOR: 420, GRIP_FADE: 380, AIR_BRAKE: 200, AIR_GRAV: 0.2,
+    SUPER_AT: 99.5, SUPER_MULT: 1.75, PASS_V: 150, PASS_K: 0.22,
     TAP_MS: 180, GRIP_DELAY_MS: 110,
-    RESPAWN_T: 1.2, STUCK_T: 3.0, OFF_DIST: 520,
+    RESPAWN_T: 1.2, STUCK_T: 3.0, OFF_DIST: 520, STRAY_DIST: 120, STRAY_T: 0.45,
     SLIP_RANGE: 150, PERFECT_WIN: 0.15,
     BUMPER_E: 1.25, BUMPER_MIN_OUT: 650, PAD_DV: 500,
     TURBO_DV: 650, JELLY_T: 5, BIG_T: 6, BUBBLE_T: 6, SLIP_T: 1.5, OIL_T: 8,
@@ -316,6 +328,7 @@ const MR = (() => {
   const MAT = {
     wood:  { e: 0.30, crr: 0.012 },
     wall:  { e: 0.25, crr: 0.012 },
+    cushion: { e: 0, crr: 0.012 }, // padded turn walls: soak up the hit so fast marbles drop cleanly instead of bouncing back uphill
     plate: { e: 0.42, crr: 0.012 },
     bowl:  { e: 0.20, crr: 0.22 },
     pad:   { e: 0.25, crr: 0.006 },
@@ -400,7 +413,7 @@ const MR = (() => {
     function uturn(drop = 160, wallH = 150, slope = 7) {
       const h = H();
       const xw = x + h * (2 * C.R + 14);
-      T.walls.push(seg(xw, y - wallH, xw, y + drop + 8, 'wall', { kind: 'wall' }));
+      T.walls.push(seg(xw, y - wallH, xw, y + drop + 8, 'cushion', { kind: 'wall' }));
       for (let k = 1; k <= 4; k++) way(xw - h * (C.R + 6), y - C.R + drop * k / 4);
       x = xw; y = y + drop;
       face(-h, slope);
@@ -984,6 +997,7 @@ const MR = (() => {
       this.firstFinishTime = null;
       this.loopLayersB = track.loops.map(l => `L${l.id}b`);
       this.stamp = 0;
+      this.passing = new Set(); // pairs of marbles currently overtaking each other
     }
 
     emit(type, d = {}) { d.type = type; d.time = this.time; this.events.push(d); }
@@ -1089,20 +1103,24 @@ const MR = (() => {
     boost(m) {
       if (m.cd > 0 || m.fx.slip > 0 || m.fx.hold > 0) return;
       if (m.boost < C.BOOST_COST) { this.emit('empty', { id: m.id }); return; }
+      const sup = m.boost >= C.SUPER_AT; // a full meter gives a SUPER boost — patience beats mashing
       m.boost -= C.BOOST_COST; m.cd = C.BOOST_CD;
       const grounded = m.gTime < 0.06;
       let dx, dy;
       const sp = Math.hypot(m.vx, m.vy);
       if (grounded) {
         dx = -m.ny; dy = m.nx;
+        // boost always pushes you forwards along the course — never back the way you came after a bounce
         const rd = this.routeDir(m);
-        const ref = sp > 40 ? { x: m.vx, y: m.vy } : rd;
+        const along = dx * rd.x + dy * rd.y;
+        const ref = Math.abs(along) > 0.25 || sp <= 40 ? rd : { x: m.vx, y: m.vy };
         if (dx * ref.x + dy * ref.y < 0) { dx = -dx; dy = -dy; }
       } else if (sp > 40) { dx = m.vx / sp; dy = m.vy / sp; }
       else { const rd = this.routeDir(m); dx = rd.x; dy = rd.y; }
-      const dv = grounded ? C.BOOST_DV : C.BOOST_AIR_DV;
+      const dv = (grounded ? C.BOOST_DV : C.BOOST_AIR_DV) * (sup ? C.SUPER_MULT : 1);
       m.vx += dx * dv; m.vy += dy * dv;
-      this.emit('boost', { id: m.id, x: m.x, y: m.y, dx, dy });
+      if (sup) m.stats.supers = (m.stats.supers || 0) + 1;
+      this.emit('boost', { id: m.id, x: m.x, y: m.y, dx, dy, sup });
     }
 
     rollItem(m) {
@@ -1168,9 +1186,12 @@ const MR = (() => {
       if (grip) {
         if (grounded) {
           ax -= m.nx * C.GRIP_DOWN * g; ay -= m.ny * C.GRIP_DOWN * g;
-          if (sp0 > 1) { ax -= m.vx / sp0 * C.GRIP_BRAKE; ay -= m.vy / sp0 * C.GRIP_BRAKE; }
+          // braking fades out as you slow, so holding the button can never stop a marble dead
+          const br = C.GRIP_BRAKE * clamp((sp0 - C.GRIP_FLOOR) / C.GRIP_FADE, 0, 1);
+          if (sp0 > 1) { ax -= m.vx / sp0 * br; ay -= m.vy / sp0 * br; }
         } else {
-          if (sp0 > 1) { ax -= m.vx / sp0 * C.AIR_BRAKE; ay -= m.vy / sp0 * C.AIR_BRAKE; }
+          const br = C.AIR_BRAKE * clamp((sp0 - C.GRIP_FLOOR) / C.GRIP_FADE, 0, 1);
+          if (sp0 > 1) { ax -= m.vx / sp0 * br; ay -= m.vy / sp0 * br; }
           ay += C.AIR_GRAV * g;
         }
       }
@@ -1274,20 +1295,38 @@ const MR = (() => {
     }
 
     marbleCollisions() {
-      const ms = this.marbles;
+      const ms = this.marbles, passing = this.passing;
       for (let i = 0; i < ms.length; i++) {
-        const a = ms[i]; if (a.respawnT > 0) continue;
+        const a = ms[i];
         for (let j = i + 1; j < ms.length; j++) {
-          const b = ms[j]; if (b.respawnT > 0) continue;
+          const b = ms[j];
+          const key = a.id + '|' + b.id;
+          if (a.respawnT > 0 || b.respawnT > 0) { passing.delete(key); continue; }
           const dx = b.x - a.x, dy = b.y - a.y, rs = a.r + b.r;
           const d2 = dx * dx + dy * dy;
-          if (d2 >= rs * rs || d2 < 1e-9) continue;
+          if (d2 >= rs * rs || d2 < 1e-9) { if (d2 > (rs + 3) * (rs + 3)) passing.delete(key); continue; }
+          if (passing.has(key)) continue; // mid-overtake: they are side by side, not touching
           const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, pen = rs - d;
-          const ma = a.fx.bubble > 0 ? 4 : a.mass, mb = b.fx.bubble > 0 ? 4 : b.mass;
-          const ia = 1 / ma, ib = 1 / mb, it = ia + ib;
+          const vr = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+          const aBig = a.fx.big > 0, bBig = b.fx.big > 0, aBub = a.fx.bubble > 0, bBub = b.fx.bubble > 0;
+          const solid = (aBig || bBig) && !(aBub || bBub); // Big Bertha always bulldozes (unless you're in a bubble)
+          // A clearly faster marble goes round the outside: a glancing clack, then it is through.
+          // Without this the marble in front is simply shoved along and nobody can ever overtake.
+          if (!solid && (-vr > C.PASS_V || aBub || bBub)) {
+            passing.add(key);
+            if (vr < 0 && !(aBub || bBub)) {
+              const jn = -vr * C.PASS_K * 0.5;
+              a.vx -= jn * nx; a.vy -= jn * ny; b.vx += jn * nx; b.vy += jn * ny;
+            }
+            if (-vr > 120) {
+              a.stats.bumps++; b.stats.bumps++;
+              this.emit('clack', { v: -vr * 0.6, x: a.x + nx * a.r, y: a.y + ny * a.r, bertha: false, pass: true, a: a.id, b: b.id });
+            }
+            continue;
+          }
+          const ia = 1 / a.mass, ib = 1 / b.mass, it = ia + ib;
           a.x -= nx * pen * ia / it; a.y -= ny * pen * ia / it;
           b.x += nx * pen * ib / it; b.y += ny * pen * ib / it;
-          const vr = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
           if (vr < 0) {
             const e = -vr < 60 ? 0 : 0.8;
             const jn = -(1 + e) * vr / it;
@@ -1295,8 +1334,7 @@ const MR = (() => {
             b.vx += jn * ib * nx; b.vy += jn * ib * ny;
             if (-vr > 120) {
               a.stats.bumps++; b.stats.bumps++;
-              const bertha = a.fx.big > 0 || b.fx.big > 0;
-              this.emit('clack', { v: -vr, x: a.x + nx * a.r, y: a.y + ny * a.r, bertha, a: a.id, b: b.id });
+              this.emit('clack', { v: -vr, x: a.x + nx * a.r, y: a.y + ny * a.r, bertha: aBig || bBig, a: a.id, b: b.id });
             }
           }
         }
@@ -1440,7 +1478,7 @@ const MR = (() => {
       if (m.respawnT > 0) return;
       m.respawnT = C.RESPAWN_T;
       m.respawnCP = cpIndex;
-      m.prevSpeed = Math.hypot(m.vx, m.vy);
+      m.prevSpeed = reason === 'stuck' ? 1200 : Math.hypot(m.vx, m.vy);
       m.stats.offs += reason === 'off' ? 1 : 0;
       this.emit('poof', { id: m.id, x: m.x, y: m.y, reason });
     }
@@ -1511,10 +1549,18 @@ const MR = (() => {
           this.respawn(m, this.cpBefore(m.prog), 'off');
           continue;
         }
+        // landed on a rail that isn't the route (dropped to a lower level): that's off the track too
+        if (m.routeD > C.STRAY_DIST && m.gTime < 0.05) {
+          if ((m.strayT = (m.strayT || 0) + dt) > C.STRAY_T) { m.strayT = 0; this.respawn(m, this.cpBefore(m.prog), 'off'); continue; }
+        } else if (m.routeD <= C.STRAY_DIST) m.strayT = 0;
         // stuck → next checkpoint ahead
         if (m.prog > m.stuckProg + 40) { m.stuckProg = m.prog; m.stuckT = 0; }
         else if ((m.stuckT += dt) > C.STUCK_T) {
-          const k = Math.min(this.cpBefore(m.prog) + 1, t.checkpoints.length - 1);
+          // rescue: hop to the next checkpoint. If that didn't get us clear last time, hop one further
+          // each try, so nobody can ever be trapped in a rescue loop.
+          m.rescueN = (m.rescueProg != null && m.prog < m.rescueProg + 260) ? (m.rescueN || 1) + 1 : 1;
+          const k = Math.min(this.cpBefore(m.prog) + m.rescueN, t.checkpoints.length - 1);
+          m.rescueProg = t.cum[t.checkpoints[k]];
           this.respawn(m, k, 'stuck');
           continue;
         }
@@ -1567,9 +1613,68 @@ const MR = (() => {
     return out;
   }
 
+
+  /* ======================================================================
+     CPU RACERS — a track-aware brain shared by the TV and the balance lab.
+     skill 0..1: how often it spots what is coming and how patient it is
+     with the boost meter. It reads the same track notes a person learns.
+     ====================================================================== */
+  const BOT = { KICK_V: 1050, LOOP_V: 1080, FORK_V: 1250, CRUISE: 1500 };
+  function trackNotes(T) {
+    if (T.notes) return T.notes;
+    const w = T.way, cum = T.cum;
+    const at = (x, y) => { let b = 0, bd = Infinity; for (let i = 0; i < w.length; i++) { const d = (w[i].x - x) ** 2 + (w[i].y - y) ** 2; if (d < bd) { bd = d; b = i; } } return cum[b]; };
+    const N = [];
+    for (const h of T.hazards) N.push({ p: at(h.x, h.y), k: 'kick' });
+    for (const j of T.jumps) N.push({ p: at(j.x, j.y - C.R), k: 'jump' });
+    for (const L of T.loops) N.push({ p: at(L.cx, L.cy + L.r - C.R), k: 'loop' });
+    for (const f of T.forks) N.push({ p: at(f.x, f.y - C.R), k: 'fork' });
+    for (const b of T.bowls) N.push({ p: at(b.cx - b.h * b.r, b.cy - C.R), k: 'bowl' });
+    N.sort((a, b) => a.p - b.p);
+    return (T.notes = N);
+  }
+  function botThink(w, m, b, R = Math.random) {
+    const t = w.time;
+    if (m.down && t >= b.rel) w.release(m.id);
+    if (m.finished || m.respawnT > 0 || w.phase !== 'race') return;
+    if (m.item) {
+      if (!b.itemAt) b.itemAt = t + 0.5 + R() * 2.5;
+      if (t > b.itemAt) { w.useItem(m.id); b.itemAt = 0; }
+    }
+    if (m.down || t < (b.next || 0)) return;
+    const s = b.skill;
+    b.next = t + 0.06 + (1 - s) * 0.22 * (0.5 + R());
+    const tap = () => { w.press(m.id); b.rel = t + 0.05; };
+    const hold = d => { w.press(m.id); b.rel = t + d; };
+    const sp = Math.hypot(m.vx, m.vy);
+    const T = w.t, notes = trackNotes(T);
+    const sees = R() < 0.25 + 0.75 * s; // does it notice what's coming this time?
+    // inside a whirlpool bowl: grip bleeds speed so you drop through sooner
+    if (sees) for (const B of T.bowls) {
+      if (m.y > B.cy - 20 && Math.hypot(m.x - B.cx, m.y - B.cy) < B.r + 24 && m.y < B.cy + B.r + 10) { if (sp > 260) hold(0.45); return; }
+    }
+    let nx = null;
+    for (const n of notes) if (n.p > m.prog - 20) { nx = n; break; }
+    const d = nx ? nx.p - m.prog : Infinity;
+    const full = m.boost >= C.SUPER_AT, can = m.boost >= C.BOOST_COST && m.cd <= 0 && m.fx.slip <= 0;
+    if (sees && nx) {
+      const reach = 140 + sp * 0.45;
+      if (nx.k === 'kick' && d < reach) { if (sp > BOT.KICK_V) hold(0.3); return; }
+      if (nx.k === 'jump' && d < 320) return; // leave the jump alone
+      if (nx.k === 'loop' && d < 620) { if (sp < BOT.LOOP_V && can) tap(); return; }
+      if (nx.k === 'fork' && d < 560) { if (sp < BOT.FORK_V && can && s > 0.35) tap(); return; }
+      if (nx.k === 'bowl' && d < 260) return;
+    }
+    if (!can) return;
+    // open track: patient racers wait for the SUPER boost, eager ones just go
+    if (full) { if (sp < BOT.CRUISE || R() < 0.3) tap(); return; }
+    if (sp < 420 && R() < 0.5) { tap(); return; }
+    if (R() < (1 - s) * 0.10) tap();
+  }
+
   const POINTS = [10, 8, 6, 5, 4, 3, 2, 1];
 
-  return { C, MAT, ITEMS, POINTS, rng, Builder, TRACKS, TRACK_INFO, World, giveAwards };
+  return { C, MAT, ITEMS, POINTS, BOT, rng, Builder, TRACKS, TRACK_INFO, World, giveAwards, botThink, trackNotes };
 })();
 if (typeof module !== 'undefined') module.exports = MR;
 </script>
@@ -1812,11 +1917,38 @@ if (typeof module !== 'undefined') module.exports = QR;
   const SND = {};
   fetch('assets/manifest.json').then(r => r.ok ? r.json() : null).then(man => {
     if (!man) return;
-    (man.images || []).forEach(o => { const im = new Image(); im.onload = () => { IMG[o.k] = im; }; im.src = `assets/img/${o.f}`; });
+    (man.images || []).forEach(o => {
+      const im = new Image();
+      im.onload = () => {
+        IMG[o.k] = im;
+        if (o.k === 'logo_marblerush') {
+          for (const logo of document.querySelectorAll('.logo')) {
+            if (logo.classList.contains('asset-logo')) continue;
+            const artwork = document.createElement('img');
+            artwork.src = im.src; artwork.alt = 'Marble Rush';
+            logo.appendChild(artwork);
+            logo.classList.add('asset-logo');
+          }
+        }
+      };
+      im.src = `assets/img/${o.f}`;
+    });
     (man.audio || []).forEach(o => { SND[o.k] = `assets/audio/${o.f}`; });
     Audio_.loadFiles();
   }).catch(() => { /* no assets yet — everything is code-drawn */ });
 
+  /* ---------- Optional approved art helpers ---------- */
+  // Every replacement has a code-drawn fallback for still-loading images.
+  // This is presentation-only; collision geometry and physics remain unchanged.
+  function drawSprite(key, x, y, w, h, opacity = 1) {
+    const im = IMG[key];
+    if (!im || !im.complete || !im.naturalWidth || w <= 0 || h <= 0) return false;
+    ctx.save();
+    ctx.globalAlpha *= opacity;
+    ctx.drawImage(im, x, y, w, h);
+    ctx.restore();
+    return true;
+  }
   /* ======================================================================
      AUDIO — synth fallbacks now, real files later (Section 11.4)
      ====================================================================== */
@@ -2071,7 +2203,7 @@ if (typeof module !== 'undefined') module.exports = QR;
       cpu: !!opts.cpu, keys: opts.keys ?? null, connected: true, leftAt: 0,
       points: 0, lastPts: 0, races: 0, wins: 0,
       tot: { perfect: 0, offs: 0, maxAir: 0, bumps: 0, climb: 0, topSpeed: 0 },
-      bot: opts.cpu ? { skill: 0.5 + Math.random() * 0.45, rel: 0, itemAt: 0 } : null,
+      bot: opts.cpu ? { skill: 0.3 + Math.random() * 0.5, rel: 0, itemAt: 0 } : null,
     };
     players.set(id, p);
     return p;
@@ -2144,6 +2276,25 @@ if (typeof module !== 'undefined') module.exports = QR;
     for (const p of parts) {
       const k = 1 - p.age / p.life;
       ctx.globalAlpha = Math.min(1, k * 1.4);
+      // Approved particles are optional, with lightweight procedural effects
+      // retained for reduced-motion / slow hardware and while art loads.
+      const sprite = {
+        star: 'fx_sparkle', spark: 'fx_spark',
+        dust: world && world.t.meta.theme === 'ice' ? 'fx_frost' : 'fx_dust',
+        sprite_sprinkle: 'fx_sprinkle', sprite_frost: 'fx_frost',
+        sprite_splash: 'fx_splash', sprite_poof: 'fx_poof',
+        sprite_star_burst: 'fx_star_burst'
+      }[p.kind];
+      if (sprite && !lite() && IMG[sprite]) {
+        const scale = p.kind === 'star' ? 4.0 : p.kind === 'spark' ? 5.5
+          : p.kind === 'dust' ? 6 : p.kind.startsWith('sprite_') ? 5.2 : 5;
+        const size = p.size * scale * (0.7 + 0.3 * k);
+        ctx.save();
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.drawImage(IMG[sprite], -size / 2, -size / 2, size, size);
+        ctx.restore();
+        continue;
+      }
       if (p.kind === 'spark') {
         ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 0.35; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.03, p.y - p.vy * 0.03); ctx.stroke();
@@ -2179,23 +2330,76 @@ if (typeof module !== 'undefined') module.exports = QR;
      TRACK ART — prebuilt paths (Section 6.3)
      ====================================================================== */
   let art = null;
+  /* Rails are drawn as chunky beams hanging BELOW the collision line, so a marble
+     sits on top of a solid-looking track. Physics is untouched: the top face of
+     every beam is exactly the line the engine collides with. */
+  const TH = 30;            // beam thickness in design px (a marble is 36 across)
+  const CELL = 900;         // rails are grouped into cells so only what's on screen is drawn
+  const BEAMS = ['main', 'bowl', 'pad', 'slow', 'conveyor', 'short'];
+  function underSide(s, T, bowlC) {
+    let nx = -s.dy, ny = s.dx; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+    const mx = (s.x1 + s.x2) / 2, my = (s.y1 + s.y2) / 2;
+    let c = null;
+    if (s.kind === 'loop') { let bd = Infinity; for (const L of T.loops) { const d = Math.hypot(mx - L.cx, my - L.cy); if (d < bd) { bd = d; c = { x: L.cx, y: L.cy }; } } }
+    else if (s.kind === 'bowl' || s.mat === 'bowl') {
+      let bd = Infinity; for (const B of T.bowls) { const d = Math.hypot(mx - B.cx, my - B.cy); if (d < bd) { bd = d; c = { x: B.cx, y: B.cy }; } }
+      if (!c) c = bowlC;
+    }
+    if (c) { if (nx * (mx - c.x) + ny * (my - c.y) < 0) { nx = -nx; ny = -ny; } return [nx, ny]; }
+    if (Math.abs(ny) < 0.2) return [0, 0];       // near-vertical: draw it centred
+    if (ny < 0) { nx = -nx; ny = -ny; }
+    return [nx, ny];
+  }
   function buildArt(T) {
-    const paths = { short: new Path2D(), main: new Path2D(), wall: new Path2D(), bowl: new Path2D(), pad: new Path2D(), gate: new Path2D(), slow: new Path2D(), conveyor: new Path2D() };
     const MAP = { wood: 'main', candy: 'main', ice: 'main', metal: 'main', choc: 'slow' };
+    const cells = new Map();
+    const cellAt = (x, y) => {
+      const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL), k = cx + ',' + cy;
+      let c = cells.get(k);
+      if (!c) {
+        c = { x0: cx * CELL, y0: cy * CELL, wall: new Path2D(), cushion: new Path2D(), g: {} };
+        for (const b of BEAMS) c.g[b] = { deck: new Path2D(), low: new Path2D(), lip: new Path2D(), n: 0 };
+        cells.set(k, c);
+      }
+      return c;
+    };
+    const gate = new Path2D();
     const posts = [];
     const r = rng(77);
+    // centre of a bowl that isn't registered as one (the lobby half-pipe)
+    let bx = 0, by = 0, bn = 0;
+    for (const s of T.segs) if (s.kind === 'bowl') { bx += s.x1 + s.x2; by += s.y1 + s.y2; bn += 2; }
+    const bowlC = bn ? { x: bx / bn, y: by / bn - 200 } : null;
+    const put = (path, s, ux, uy, o) => { path.moveTo(s.x1 + ux * o, s.y1 + uy * o); path.lineTo(s.x2 + ux * o, s.y2 + uy * o); };
     for (const s of T.segs) {
       if (s.mat === 'plate') continue;
-      const p = paths[MAP[s.mat] || s.mat] || paths.main;
-      p.moveTo(s.x1, s.y1); p.lineTo(s.x2, s.y2);
-      if (s.kind === 'short') { paths.short.moveTo(s.x1, s.y1); paths.short.lineTo(s.x2, s.y2); }
+      const c = cellAt((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2);
+      if (s.mat === 'gate') { put(gate, s, 0, 0, 0); continue; }
+      if (s.mat === 'wall' || s.mat === 'cushion') { put(c[s.mat], s, 0, 0, 0); continue; }
+      const [ux, uy] = underSide(s, T, bowlC);
+      s._ux = ux; s._uy = uy;
+      const add = name => { const g = c.g[name]; put(g.deck, s, ux, uy, TH / 2); put(g.low, s, ux, uy, TH * 0.8); put(g.lip, s, ux, uy, 4.5); g.n++; };
+      add(MAP[s.mat] || (c.g[s.mat] ? s.mat : 'main'));
+      if (s.kind === 'short') add('short');
       const len = Math.sqrt(s.len2);
-      if (s.mat !== 'wall' && s.mat !== 'gate' && s.mat !== 'bowl' && s.kind !== 'loop' && len > 120) {
-        for (let d = 60; d < len - 30; d += 240) {
+      if (s.mat !== 'bowl' && s.kind !== 'loop' && s.kind !== 'bowl' && len > 120 && uy > 0.8) {
+        for (let d = 90; d < len - 40; d += 320) {
           const u = d / len;
-          posts.push({ x: s.x1 + s.dx * u, y: s.y1 + s.dy * u, h: 70 + r() * 50 });
+          posts.push({ x: s.x1 + s.dx * u, y: s.y1 + s.dy * u + TH - 6, h: 0, w: 16 + r() * 4 });
         }
       }
+    }
+    // scaffold: every post runs down to the rail beneath it, so the run reads as one built structure
+    for (const p of posts) {
+      let best = Infinity;
+      for (const s of T.segs) {
+        if (s.mat === 'wall' || s.mat === 'cushion' || s.mat === 'gate' || Math.abs(s.dx) < 1) continue;
+        const u = (p.x - s.x1) / s.dx;
+        if (u < 0 || u > 1) continue;
+        const yy = s.y1 + s.dy * u;
+        if (yy > p.y + 30 && yy < best) best = yy;
+      }
+      if (best - p.y < 520) { p.h = best - p.y + 4; p.foot = false; } else { p.h = 220; p.foot = true; }
     }
     // decorative toy blocks in the far-mid layer
     const deco = [];
@@ -2206,10 +2410,28 @@ if (typeof module !== 'undefined') module.exports = QR;
         w: 60 + r() * 90, kind: (r() * 4) | 0, c: (THEMES[T.meta.theme] || THEMES.toybox).bokeh[(r() * 4) | 0], rot: (r() - 0.5) * 0.5,
       });
     }
+    // Eight approved theme cut-outs sit in the far-mid parallax layer, behind
+    // the physical rails and marbles. Keep the existing procedural decoration
+    // as a fallback while Jungle Jumble 01-04 and other art remain unavailable.
+    const props = [];
+    const propRng = rng(17311);
+    if (T.way && T.way.length) {
+      for (let i = 0; i < 8; i++) {
+        const at = T.way[Math.min(T.way.length - 1, Math.floor((i + 0.5) * T.way.length / 8))];
+        const side = (i % 2 === 0) ? -1 : 1;
+        props.push({
+          k: 'prop_' + T.meta.theme + '_' + String(i + 1).padStart(2, '0'),
+          x: at.x + (propRng() - 0.5) * 140,
+          y: at.y + side * (210 + propRng() * 70),
+          w: 170 + propRng() * 45,
+          rot: (propRng() - 0.5) * 0.10,
+        });
+      }
+    }
     const bokeh = [];
     const nb = ['planets', 'flakes'].includes((THEMES[T.meta.theme] || {}).deco) ? 140 : 46;
     for (let i = 0; i < nb; i++) bokeh.push({ x: r(), y: r(), r: 10 + r() * 40, c: NOTE_COLORS[(r() * 4) | 0], a: 0.05 + r() * 0.12, p: 0.02 + r() * 0.06 });
-    return { paths, posts, deco, bokeh };
+    return { cells: [...cells.values()], gate, posts, deco, props, bokeh, pat: null, patKey: '' };
   }
 
   function drawBackground() {
@@ -2217,7 +2439,10 @@ if (typeof module !== 'undefined') module.exports = QR;
     const th = theme();
     g.addColorStop(0, th.bg[0]); g.addColorStop(0.55, th.bg[1]); g.addColorStop(1, th.bg[2]);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    const bg = IMG['bg_far_' + (world && world.t.meta.theme || 'toybox')];
+    const stage = state === 'boot' || state === 'lobby' ? 'bg_lobby'
+      : state === 'results' || state === 'finale' ? 'bg_results'
+      : 'bg_far_' + (world && world.t.meta.theme || 'toybox');
+    const bg = IMG[stage];
     if (bg) {
       const sc = Math.max(W / bg.width, H / bg.height) * 1.15;
       const ox = -((cam.x * 0.05) % 200) * S, oy = -((cam.y * 0.03) % 200) * S;
@@ -2248,6 +2473,19 @@ if (typeof module !== 'undefined') module.exports = QR;
     const p = 0.55;
     ctx.save();
     ctx.translate(cam.x * (1 - p), cam.y * (1 - p));
+    // Use approved transparent props whenever that numbered art exists.
+    // These sit BEHIND track geometry; if absent, the procedural art still runs.
+    for (const d of art.props || []) {
+      const img = IMG[d.k];
+      if (!img) continue;
+      const h = d.w * img.height / Math.max(1, img.width);
+      ctx.save();
+      ctx.globalAlpha = 0.78;
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.rot);
+      ctx.drawImage(img, -d.w / 2, -h / 2, d.w, h);
+      ctx.restore();
+    }
     ctx.globalAlpha = 0.28;
     for (const d of art.deco) {
       ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot);
@@ -2306,7 +2544,6 @@ if (typeof module !== 'undefined') module.exports = QR;
     ctx.save(); ctx.translate(ox, oy); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke(p); ctx.restore();
   }
   function drawTrack(T, time) {
-    const P = art.paths;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     const th = theme();
     // low-gravity zones
@@ -2319,39 +2556,66 @@ if (typeof module !== 'undefined') module.exports = QR;
       ctx.font = '700 26px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(220,205,255,0.55)';
       ctx.fillText('LOW GRAVITY', (z.x0 + z.x1) / 2, z.y0 + 300);
     }
-    // support posts
+    // what part of the world is on screen (cull everything else)
+    const vw = W / (cam.z * S) / 2 + 80, vh = H / (cam.z * S) / 2 + 80;
+    const vx0 = cam.x - vw, vx1 = cam.x + vw, vy0 = cam.y - vh, vy1 = cam.y + vh;
+    const vis = art.cells.filter(c => c.x0 + CELL + 460 > vx0 && c.x0 - 460 < vx1 && c.y0 + CELL + 460 > vy0 && c.y0 - 460 < vy1);
+    const low = lite();
+    const EDGE = 'rgba(14,10,34,0.92)';
+    // scaffold posts (behind the rails)
     for (const p of art.posts) {
-      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(p.x - 3, p.y + 6, 12, p.h);
-      ctx.fillStyle = th.post[0]; ctx.fillRect(p.x - 6, p.y + 2, 12, p.h);
-      ctx.fillStyle = th.post[1]; ctx.fillRect(p.x - 6, p.y + 2, 4, p.h);
+      if (p.x < vx0 || p.x > vx1 || p.y > vy1 || p.y + p.h < vy0) continue;
+      const hw = p.w / 2;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(p.x - hw + 7, p.y + 8, p.w, p.h);
+      if (p.foot) {
+        const g = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
+        g.addColorStop(0, th.post[0]); g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g; ctx.fillRect(p.x - hw, p.y, p.w, p.h);
+        continue;
+      }
+      ctx.fillStyle = EDGE; ctx.fillRect(p.x - hw - 2, p.y, p.w + 4, p.h);
+      ctx.fillStyle = th.post[0]; ctx.fillRect(p.x - hw, p.y, p.w, p.h);
+      ctx.fillStyle = th.post[1]; ctx.fillRect(p.x - hw, p.y, p.w * 0.36, p.h);
+      ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(p.x + hw - p.w * 0.22, p.y, p.w * 0.22, p.h);
+      ctx.fillStyle = th.post[1]; ctx.fillRect(p.x - hw - 5, p.y + p.h - 9, p.w + 10, 9); // foot plate
     }
     const texKey = 'tex_rail_' + (T.meta.theme || 'toybox');
-    const pat = IMG[texKey] ? ctx.createPattern(IMG[texKey], 'repeat') : null;
-    // shadows
-    for (const k of ['main', 'bowl', 'pad', 'wall', 'slow', 'conveyor']) strokePath(P[k], 20, 'rgba(0,0,0,0.32)', 5, 9);
-    // base
-    strokePath(P.main, 17, pat || th.main);
-    if (th.stripe && !pat) {
-      ctx.save(); ctx.setLineDash([16, 16]); strokePath(P.main, 17, th.stripe); ctx.restore();
+    if (art.patKey !== texKey + !!IMG[texKey]) { art.patKey = texKey + !!IMG[texKey]; art.pat = IMG[texKey] ? ctx.createPattern(IMG[texKey], 'repeat') : null; }
+    const pat = art.pat;
+    const bodyOf = { main: pat || th.main, bowl: th.bowl[0], pad: '#1597b8', slow: th.slow[0], conveyor: '#3b3f4a' };
+    const hiOf = { main: th.hi, bowl: th.bowl[1], pad: '#7FE8FF', slow: th.slow[1], conveyor: '#8c93a6' };
+    const each = (name, fn) => { for (const c of vis) { const g = c.g[name]; if (g.n) fn(g, c); } };
+    const KINDS = ['main', 'bowl', 'pad', 'slow', 'conveyor'];
+    // 1 — soft drop shadow under the whole structure
+    if (!low) {
+      for (const k of KINDS) each(k, g => strokePath(g.deck, TH + 4, 'rgba(0,0,0,0.30)', 12, 20));
+      for (const c of vis) { strokePath(c.wall, 24, 'rgba(0,0,0,0.30)', 10, 14); strokePath(c.cushion, 26, 'rgba(0,0,0,0.30)', 10, 14); }
     }
-    strokePath(P.bowl, 17, th.bowl[0]);
-    strokePath(P.wall, 15, th.wall[0]);
-    strokePath(P.pad, 17, '#1597b8');
-    strokePath(P.slow, 19, th.slow[0]);
-    strokePath(P.conveyor, 18, '#3b3f4a');
-    // conveyor belt stripes
-    ctx.save(); ctx.setLineDash([10, 14]); ctx.lineDashOffset = -time * 120; strokePath(P.conveyor, 10, '#FFD23F'); ctx.restore();
-    // highlights
-    strokePath(P.main, 6, th.hi, 0, -4);
-    if (th.strip) strokePath(P.main, 3, th.strip, 0, 2);
-    strokePath(P.bowl, 6, th.bowl[1], 0, -4);
-    strokePath(P.wall, 5, th.wall[1], -3, 0);
-    strokePath(P.pad, 6, '#7FE8FF', 0, -4);
-    strokePath(P.slow, 6, th.slow[1], 0, -5);
-    strokePath(P.main, 2, 'rgba(255,255,255,0.45)', 0, -6);
+    // 2 — dark outline, so rails read against any painted background
+    for (const k of KINDS) each(k, g => strokePath(g.deck, TH + 8, EDGE));
+    for (const c of vis) { strokePath(c.wall, 26, EDGE); strokePath(c.cushion, 30, EDGE); }
+    // 3 — beam body (theme texture when the art is in, flat colour until then)
+    for (const k of KINDS) each(k, g => strokePath(g.deck, TH, bodyOf[k]));
+    if (th.stripe && !pat) { ctx.save(); ctx.setLineDash([18, 18]); each('main', g => strokePath(g.deck, TH, th.stripe)); ctx.restore(); }
+    if (pat) each('main', g => strokePath(g.deck, TH, 'rgba(255,255,255,0.06)'));
+    // conveyor belt: moving yellow slats
+    ctx.save(); ctx.setLineDash([10, 14]); ctx.lineDashOffset = -time * 120; each('conveyor', g => strokePath(g.deck, TH * 0.55, '#FFD23F')); ctx.restore();
+    // 4 — shaded underside gives the beam its depth
+    if (!low) for (const k of KINDS) each(k, g => strokePath(g.low, TH * 0.4, 'rgba(8,6,30,0.34)'));
+    // 5 — bright running surface on top
+    for (const k of KINDS) each(k, g => strokePath(g.lip, 8, hiOf[k]));
+    if (th.strip) each('main', g => strokePath(g.deck, 4, th.strip));
+    for (const k of KINDS) each(k, g => strokePath(g.lip, 2.5, 'rgba(255,255,255,0.6)', 0, -2));
+    // walls: plain barriers, and padded cushions at the end of each level
+    for (const c of vis) {
+      strokePath(c.wall, 20, th.wall[0]); strokePath(c.wall, 6, th.wall[1], -4, 0);
+      strokePath(c.cushion, 24, th.wall[0]);
+      ctx.save(); ctx.setLineDash([3, 26]); strokePath(c.cushion, 24, 'rgba(0,0,0,0.22)'); ctx.restore(); // quilting
+      strokePath(c.cushion, 7, th.wall[1], -5, 0);
+    }
     // shortcut rails glow gold
-    ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(time * 4); strokePath(P.short, 26, 'rgba(255,200,61,0.35)'); ctx.restore();
-    strokePath(P.short, 4, '#FFC83D', 0, -5);
+    ctx.save(); ctx.globalAlpha = 0.55 + 0.25 * Math.sin(time * 4); each('short', g => strokePath(g.deck, TH + 22, 'rgba(255,200,61,0.35)')); ctx.restore();
+    each('short', g => strokePath(g.lip, 8, '#FFC83D'));
     // fork signposts
     for (const F of T.forks) {
       ctx.save(); ctx.translate(F.signX, F.signY);
@@ -2372,16 +2636,18 @@ if (typeof module !== 'undefined') module.exports = QR;
       board(-80, F.kind === 'gems' ? 'GEM ALLEY' : 'LONG WAY', F.kind === 'gems' ? '#FF5FA2' : '#e6ebf5', -F.h);
       ctx.restore();
     }
-    if (T.meta.theme === 'ice') { ctx.save(); ctx.globalAlpha = 0.35 + 0.15 * Math.sin(time * 2); strokePath(P.main, 26, 'rgba(160,220,255,0.25)'); ctx.restore(); }
+    if (T.meta.theme === 'ice' && !low) { ctx.save(); ctx.globalAlpha = 0.35 + 0.15 * Math.sin(time * 2); each('main', g => strokePath(g.deck, TH + 14, 'rgba(160,220,255,0.22)')); ctx.restore(); }
     // seesaws
     for (const ss of T.seesaws) {
       const g = ss.seg;
       ctx.fillStyle = th.post[0];
       ctx.beginPath(); ctx.moveTo(ss.px, ss.py + 4); ctx.lineTo(ss.px + 26, ss.py + 70); ctx.lineTo(ss.px - 26, ss.py + 70); ctx.closePath(); ctx.fill();
       ctx.lineCap = 'round';
-      ctx.lineWidth = 22; ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.moveTo(g.x1 + 5, g.y1 + 9); ctx.lineTo(g.x2 + 5, g.y2 + 9); ctx.stroke();
-      ctx.lineWidth = 18; ctx.strokeStyle = th.plank[0]; ctx.beginPath(); ctx.moveTo(g.x1, g.y1); ctx.lineTo(g.x2, g.y2); ctx.stroke();
-      ctx.lineWidth = 5; ctx.strokeStyle = th.plank[1]; ctx.beginPath(); ctx.moveTo(g.x1, g.y1 - 4); ctx.lineTo(g.x2, g.y2 - 4); ctx.stroke();
+      { // plank hangs below its collision line, like every other rail
+        let ux = -(g.y2 - g.y1), uy = g.x2 - g.x1; const ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul; if (uy < 0) { ux = -ux; uy = -uy; }
+        const ln = (o, w, col, sx = 0, sy = 0) => { ctx.lineWidth = w; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(g.x1 + ux * o + sx, g.y1 + uy * o + sy); ctx.lineTo(g.x2 + ux * o + sx, g.y2 + uy * o + sy); ctx.stroke(); };
+        ln(12, 28, 'rgba(0,0,0,0.3)', 10, 16); ln(12, 32, EDGE); ln(12, 24, th.plank[0]); ln(19, 9, 'rgba(8,6,30,0.3)'); ln(4, 7, th.plank[1]);
+      }
       ctx.save(); ctx.translate(ss.px, ss.py); ctx.rotate(time * 0.6);
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
       for (let i = 0; i < 6; i++) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 16); ctx.stroke(); }
@@ -2390,31 +2656,31 @@ if (typeof module !== 'undefined') module.exports = QR;
     // boost pad chevrons
     for (const pd of T.pads) {
       const s = pd.s, len = Math.sqrt(s.len2), off = (time * 260) % 50;
-      ctx.save(); ctx.translate(s.x1, s.y1); ctx.rotate(Math.atan2(s.dy, s.dx));
+      const ox = (s._ux || 0) * TH * 0.55, oy = (s._uy == null ? 1 : s._uy) * TH * 0.55;
+      ctx.save(); ctx.translate(s.x1 + ox, s.y1 + oy); ctx.rotate(Math.atan2(s.dy, s.dx));
       ctx.fillStyle = pd.glow > 0 ? '#ffffff' : '#c8f7ff';
-      for (let d = off; d < len - 10; d += 50) {
-        ctx.globalAlpha = 0.85;
-        ctx.beginPath(); ctx.moveTo(d, -10); ctx.lineTo(d + 12, -4); ctx.lineTo(d, 2); ctx.lineTo(d + 5, -4); ctx.closePath(); ctx.fill();
+      for (let d = off; d < len - 14; d += 50) {
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath(); ctx.moveTo(d, -9); ctx.lineTo(d + 15, 0); ctx.lineTo(d, 9); ctx.lineTo(d + 6, 0); ctx.closePath(); ctx.fill();
       }
       ctx.restore(); ctx.globalAlpha = 1;
-      if (pd.glow > 0) { ctx.save(); ctx.globalAlpha = pd.glow * 1.5; strokePath(new Path2D(`M${s.x1} ${s.y1}L${s.x2} ${s.y2}`), 30, 'rgba(127,232,255,0.5)'); ctx.restore(); }
+      if (pd.glow > 0) { ctx.save(); ctx.globalAlpha = pd.glow * 1.5; strokePath(new Path2D(`M${s.x1 + ox} ${s.y1 + oy}L${s.x2 + ox} ${s.y2 + oy}`), TH + 22, 'rgba(127,232,255,0.5)'); ctx.restore(); }
     }
     // xylophone plates
     for (const s of T.stairs) {
       const col = NOTE_COLORS[s.note];
-      ctx.lineWidth = 20; ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-      ctx.beginPath(); ctx.moveTo(s.x1 + 5, s.y1 + 9); ctx.lineTo(s.x2 + 5, s.y2 + 9); ctx.stroke();
-      ctx.lineWidth = 18; ctx.strokeStyle = col;
-      ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
-      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-      ctx.beginPath(); ctx.moveTo(s.x1, s.y1 - 4); ctx.lineTo(s.x2, s.y2 - 4); ctx.stroke();
+      const bar = (o, w, c, sx = 0, sy = 0) => { ctx.lineWidth = w; ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(s.x1 + sx, s.y1 + o + sy); ctx.lineTo(s.x2 + sx, s.y2 + o + sy); ctx.stroke(); };
+      bar(13, 28, 'rgba(0,0,0,0.3)', 10, 16); bar(13, 32, EDGE); bar(13, 24, col); bar(20, 9, 'rgba(8,6,30,0.28)'); bar(4, 7, 'rgba(255,255,255,0.6)');
       ctx.fillStyle = '#e8edf6';
-      for (const u of [0.18, 0.82]) { ctx.beginPath(); ctx.arc(s.x1 + s.dx * u, s.y1 + s.dy * u, 3.5, 0, 6.283); ctx.fill(); }
-      if (s.flash > 0) { ctx.globalAlpha = s.flash * 3; ctx.lineWidth = 34; ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
+      for (const u of [0.18, 0.82]) { ctx.beginPath(); ctx.arc(s.x1 + s.dx * u, s.y1 + s.dy * u + 14, 4.5, 0, 6.283); ctx.fill(); }
+      if (s.flash > 0) { ctx.globalAlpha = s.flash * 3; bar(13, 44, col); ctx.globalAlpha = 1; }
     }
-    // gate
+    // Starting gate: visual art tracks the existing gate geometry, never
+    // changes the closed/open state or collision rules.
     if (world.phase === 'pen') {
-      strokePath(P.gate, 12, '#e6ebf5'); strokePath(P.gate, 4, '#FF3B5C', 0, 0);
+      if (!drawSprite('gate_start', T.gateX - 112, T.gateY - 185, 224, 176)) {
+        strokePath(art.gate, 12, '#e6ebf5'); strokePath(art.gate, 4, '#FF3B5C', 0, 0);
+      }
     }
     // hazard signs
     for (const hz of T.hazards) {
@@ -2432,6 +2698,11 @@ if (typeof module !== 'undefined') module.exports = QR;
       ctx.save(); ctx.translate(b.x, b.y); ctx.scale(k, k);
       if (b.flash > 0) { ctx.fillStyle = `rgba(255,210,63,${b.flash * 2})`; ctx.beginPath(); ctx.arc(0, 0, b.r * 1.8, 0, 6.283); ctx.fill(); }
       ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(4, 7, b.r, 0, 6.283); ctx.fill();
+      const bumperSize = b.r * 2.65;
+      if (drawSprite('bumper', -bumperSize / 2, -bumperSize / 2, bumperSize, bumperSize)) {
+        ctx.restore();
+        continue;
+      }
       const g = ctx.createRadialGradient(-6, -8, 2, 0, 0, b.r);
       g.addColorStop(0, th.bump[0]); g.addColorStop(0.6, th.bump[1]); g.addColorStop(1, th.bump[2]);
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, b.r, 0, 6.283); ctx.fill();
@@ -2444,9 +2715,15 @@ if (typeof module !== 'undefined') module.exports = QR;
       const bob = Math.sin(time * 3 + gm.phase) * 4;
       ctx.save(); ctx.translate(gm.x, gm.y + bob);
       if (gm.cd > 0) { ctx.globalAlpha = 0.18; ctx.scale(0.6, 0.6); }
-      const gl = ctx.createRadialGradient(0, 0, 2, 0, 0, 34);
-      gl.addColorStop(0, 'rgba(255,240,180,0.6)'); gl.addColorStop(1, 'rgba(255,240,180,0)');
-      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 6.283); ctx.fill();
+      if (!drawSprite('fx_glow', -43, -43, 86, 86, 0.65)) {
+        const gl = ctx.createRadialGradient(0, 0, 2, 0, 0, 34);
+        gl.addColorStop(0, 'rgba(255,240,180,0.6)'); gl.addColorStop(1, 'rgba(255,240,180,0)');
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 34, 0, 6.283); ctx.fill();
+      }
+      if (drawSprite('item_box', -24, -24, 48, 48)) {
+        ctx.restore(); ctx.globalAlpha = 1;
+        continue;
+      }
       ctx.rotate(time * 1.2 + gm.phase);
       const hue = (time * 80 + gm.phase * 60) % 360;
       ctx.fillStyle = `hsl(${hue},90%,62%)`; ctx.strokeStyle = '#FFC83D'; ctx.lineWidth = 3;
@@ -2461,6 +2738,10 @@ if (typeof module !== 'undefined') module.exports = QR;
       // chequered floor strip
       for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) {
         ctx.fillStyle = (i + j) % 2 ? '#111' : '#fff'; ctx.fillRect(x - 12 + j * 12, y - 2 + i * 6 - 18, 12, 6);
+      }
+      if (drawSprite('arch_finish', x - 112, y - 230, 224, 225)) {
+        ctx.restore();
+        continue;
       }
       ctx.fillStyle = '#c9d1e2';
       ctx.fillRect(x - 90, y - 230, 12, 230); ctx.fillRect(x + 78, y - 230, 12, 230);
@@ -2481,6 +2762,10 @@ if (typeof module !== 'undefined') module.exports = QR;
       ctx.save(); ctx.translate(p.x, p.y + 10);
       ctx.rotate(Math.atan2(-p.nx, p.ny) || 0);
       ctx.globalAlpha = Math.min(1, p.t);
+      if (drawSprite('oil_puddle', -p.r * 1.28, -p.r * 0.33, p.r * 2.56, p.r * 0.66)) {
+        ctx.restore();
+        continue;
+      }
       const g = ctx.createRadialGradient(0, 0, 4, 0, 0, p.r);
       g.addColorStop(0, '#2a2140'); g.addColorStop(0.6, '#131022'); g.addColorStop(0.8, 'rgba(76,201,240,0.6)'); g.addColorStop(1, 'rgba(255,95,162,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * 0.32, 0, 0, 6.283); ctx.fill();
@@ -2550,10 +2835,15 @@ if (typeof module !== 'undefined') module.exports = QR;
       ctx.beginPath(); ctx.arc(0, 0, r * 0.82, -0.6, 0.9); ctx.stroke();
     }
     if (m.fx) {
+      if (m.fx.jelly > 0) {
+        drawSprite('fx_jelly_coat', -r * 1.38, -r * 1.38, r * 2.76, r * 2.76, 0.82);
+      }
       if (m.fx.bubble > 0) {
-        ctx.strokeStyle = `hsla(${(time * 200) % 360},90%,75%,0.8)`; ctx.lineWidth = 3;
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, 6.283); ctx.fill(); ctx.stroke();
+        if (!drawSprite('fx_bubble_shield', -r * 1.58, -r * 1.58, r * 3.16, r * 3.16, 0.88)) {
+          ctx.strokeStyle = `hsla(${(time * 200) % 360},90%,75%,0.8)`; ctx.lineWidth = 3;
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.beginPath(); ctx.arc(0, 0, r * 1.5, 0, 6.283); ctx.fill(); ctx.stroke();
+        }
       }
       if (m.fx.slip > 0) {
         ctx.strokeStyle = `hsla(${(time * 400) % 360},90%,60%,0.7)`; ctx.lineWidth = 2;
@@ -2569,7 +2859,15 @@ if (typeof module !== 'undefined') module.exports = QR;
       if (m.respawnT > 0) continue;
       const sp = Math.hypot(m.vx, m.vy);
       const p = players.get(m.id); if (!p) continue;
-      if (m.slipstream) {
+      if (m.slipstream && sp > 1) {
+        if (IMG.fx_wind) {
+          ctx.save();
+          ctx.translate(m.x - m.vx / sp * 65, m.y - m.vy / sp * 65);
+          ctx.rotate(Math.atan2(m.vy, m.vx));
+          ctx.globalAlpha = 0.48;
+          ctx.drawImage(IMG.fx_wind, -85, -28, 170, 56);
+          ctx.restore();
+        }
         ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
           const o = ((time * 9 + i * 0.33) % 1) * 60;
@@ -2700,6 +2998,15 @@ if (typeof module !== 'undefined') module.exports = QR;
   const Clatter = (() => {
     let lastAt = -99, hideAt = 0;
     const el = $('#clatter'), txt = $('#clatterText');
+    const portrait = $('#clatterArt');
+    const poseFor = key => {
+      if (/winner|cup|perfect|finish|shortcut|trophy|champ/.test(key)) return 'clatter_cheer';
+      if (/offtrack|air|photo|neck|gasp/.test(key)) return 'clatter_gasp';
+      if (/bump|oil|wince|clack|slip/.test(key)) return 'clatter_wince';
+      if (/go|countdown|flag/.test(key)) return 'clatter_flag';
+      if (/vote|ready|overtake|announce|final_stretch/.test(key)) return 'clatter_announce';
+      return 'clatter_reference';
+    };
     const recent = {};
     function say(key, text, prio = 1) {
       if (state === 'lobby' && prio < 3) return;
@@ -2708,6 +3015,12 @@ if (typeof module !== 'undefined') module.exports = QR;
       if (recent[key] && now - recent[key] < 14 && prio < 3) return;
       recent[key] = now; lastAt = now; hideAt = now + 2.6;
       txt.textContent = text;
+      const pose = IMG[poseFor(key)] || IMG.clatter_reference;
+      if (portrait && pose) {
+        portrait.src = pose.src;
+        portrait.hidden = false;
+        portrait.parentElement.classList.add('withArt');
+      }
       el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
       Audio_.play('vo_' + key, { gap: 0.5 });
     }
@@ -2924,15 +3237,7 @@ if (typeof module !== 'undefined') module.exports = QR;
         continue;
       }
       if (state === 'lobby') { if (!m.down && Math.random() < 0.004) { world.press(m.id); b.rel = t + 0.05; } continue; }
-      const sp = Math.hypot(m.vx, m.vy);
-      if (!m.down) {
-        if (m.boost >= 50 && sp < 750 + b.skill * 200 && Math.random() < 0.03 + b.skill * 0.04) { world.press(m.id); b.rel = t + 0.05; }
-        else if (sp > 1350 - b.skill * 200 && Math.random() < b.skill) { world.press(m.id); b.rel = t + 0.35; }
-      }
-      if (m.item) {
-        if (!b.itemAt) b.itemAt = t + 0.8 + Math.random() * 3;
-        if (t > b.itemAt) { world.useItem(m.id); b.itemAt = 0; }
-      }
+      MR.botThink(world, m, b); // track-aware brain shared with the balance lab (engine.js)
     }
   }
 
@@ -2976,15 +3281,16 @@ if (typeof module !== 'undefined') module.exports = QR;
           break;
         case 'clack':
           Audio_.play('clack', { vol: Math.min(1, e.v / 700), gap: 0.02 });
-          emit('star', e.x, e.y, 4, { speed: 200, life: 0.3, size: 6, color: '#fff' });
+          emit('star', e.x, e.y, e.pass ? 3 : 4, { speed: 200, life: 0.3, size: 6, color: '#fff' });
           if (e.bertha && e.v > 400) { cam.trauma = Math.min(1, cam.trauma + 0.5); slowMo(); Clatter.say('big', "Big Bertha's coming through!", 2); }
           else if (e.v > 380 && Math.random() < 0.08) Clatter.say('bump', 'Oof! Marble on marble!');
           break;
         case 'boost': {
-          Audio_.play('sfx_boost', { gap: 0.02 });
+          Audio_.play('sfx_boost', { gap: 0.02, vol: e.sup ? 1 : 0.7 });
           const a = Math.atan2(-e.dy, -e.dx);
-          emit('spark', e.x, e.y, 12, { dir: a, spread: 0.9, speed: 420, life: 0.35, size: 10, colors: [p ? p.color : '#fff', '#FFE9A0', '#ffffff'] });
-          emit('ring', e.x, e.y, 1, { speed: 0, life: 0.35, size: 10, color: p ? p.color : '#fff' });
+          emit('spark', e.x, e.y, e.sup ? 26 : 12, { dir: a, spread: e.sup ? 1.2 : 0.9, speed: e.sup ? 620 : 420, life: e.sup ? 0.5 : 0.35, size: e.sup ? 13 : 10, colors: [p ? p.color : '#fff', '#FFE9A0', '#ffffff'] });
+          emit('ring', e.x, e.y, 1, { speed: 0, life: 0.35, size: e.sup ? 20 : 10, color: e.sup ? '#FFD23F' : p ? p.color : '#fff' });
+          if (e.sup) { emit('star', e.x, e.y, 8, { speed: 320, life: 0.5, size: 10, colors: ['#FFD23F', '#FFF4E0'] }); if (!p || !p.cpu) pop('SUPER!', e.x, e.y - 46, '#FFD23F', 30); }
           break;
         }
         case 'empty': break;
@@ -3001,6 +3307,9 @@ if (typeof module !== 'undefined') module.exports = QR;
         case 'pickup':
           Audio_.play('sfx_item_pickup');
           emit('star', e.x, e.y, 14, { speed: 300, life: 0.6, size: 10, colors: ['#FFC83D', '#FF5FA2', '#4CC9F0', '#fff'] });
+          if (world.t.meta.theme === 'candy') {
+            emit('sprite_sprinkle', e.x, e.y, 3, { speed: 100, g: 160, life: 0.6, size: 11 });
+          }
           if (p) pop(ITEM_NAME[e.item], e.x, e.y - 30, '#FFE9A0', 26);
           break;
         case 'item': {
@@ -3015,12 +3324,16 @@ if (typeof module !== 'undefined') module.exports = QR;
         case 'slip':
           Audio_.play('sfx_oil_slip');
           emit('blob', e.x, e.y, 8, { speed: 200, life: 0.6, size: 6, color: '#1b1430', g: 900 });
+          if (world.t.meta.theme === 'candy') {
+            emit('sprite_splash', e.x, e.y, 1, { speed: 0, g: 0, life: 0.45, size: 22 });
+          }
           break;
         case 'poof':
           if (e.reason === 'off') { Audio_.play('sfx_offtrack'); Clatter.say(Math.random() < 0.5 ? 'offtrack' : 'offtrack_2', Math.random() < 0.5 ? 'Whoops! Off the rails!' : "And they're airborne! …And they're gone!"); }
           else Audio_.play('sfx_respawn');
           emit('dust', e.x, e.y, 10, { speed: 160, life: 0.7, size: 12, color: '#FFF4E0' });
           emit('star', e.x, e.y, 6, { speed: 220, life: 0.6, size: 8, color: '#FFC83D' });
+          emit('sprite_poof', e.x, e.y, 1, { speed: 0, life: 0.55, size: 26 });
           if (e.reason === 'off' && p) pop('WHOOPS!', e.x, e.y - 20, '#FF8A75', 32);
           break;
         case 'appear':
@@ -3060,6 +3373,7 @@ if (typeof module !== 'undefined') module.exports = QR;
         case 'finish': {
           Audio_.play('sfx_finish');
           emit('confetti', e.x, e.y - 60, 40, { speed: 500, g: 900, life: 1.8, size: 12, colors: [p ? p.color : '#fff', '#FFD23F', '#fff'] });
+          emit('sprite_star_burst', e.x, e.y - 75, 1, { speed: 0, g: 0, life: 0.7, size: 34 });
           const ord = ['1st', '2nd', '3rd'][e.place - 1] || e.place + 'th';
           toast(`${ord}  ${name}  ${e.t.toFixed(2)}s`, p ? p.color : '#fff');
           if (e.place === 1) Clatter.say('winner', `${name} wins it!`, 3);
@@ -3105,7 +3419,9 @@ if (typeof module !== 'undefined') module.exports = QR;
     if (!ms.length) return;
     const st = world.standings();
     const leader = st.find(m => !m.finished && m.respawnT <= 0) || st[0];
-    const consider = ms.filter(m => !m.finished && leader.prog - m.prog < 2800);
+    // Frame every active racer, including stragglers. Do not drop a marble
+    // from the shot merely because its progress falls far behind the leader.
+    const consider = ms.filter(m => !m.finished);
     if (!consider.length) consider.push(leader);
     let sx = 0, sy = 0, wsum = 0, minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const m of consider) {
@@ -3113,13 +3429,38 @@ if (typeof module !== 'undefined') module.exports = QR;
       sx += m.x * w; sy += m.y * w; wsum += w;
       minX = Math.min(minX, m.x); maxX = Math.max(maxX, m.x); minY = Math.min(minY, m.y); maxY = Math.max(maxY, m.y);
     }
-    const look = 0.25;
-    cam.tx = sx / wsum + leader.vx * look * 0.6;
-    cam.ty = sy / wsum + leader.vy * look * 0.6;
+    // Closer camera: frame the main pack, not the whole field. Anyone left out of
+    // shot gets an edge arrow with their gap, so the marbles stay big enough to
+    // read from the sofa.
     const aspect = W / H;
-    const z = Math.min((1080 * aspect * 0.8) / (maxX - minX + 360), (1080 * 0.78) / (maxY - minY + 300));
+    // follow the biggest bunch of racers (front-most bunch on a tie), not a lone runaway leader
+    let anchor = leader, bestN = 0;
+    for (const a of consider) {
+      const n = consider.filter(m => a.prog - m.prog >= 0 && a.prog - m.prog < 1100).length;
+      if (n > bestN || (n === bestN && a.prog > anchor.prog)) { bestN = n; anchor = a; }
+    }
+    const pack = consider.filter(m => anchor.prog - m.prog >= -60 && anchor.prog - m.prog < 1100);
+    if (pack.length) {
+      minX = Infinity; maxX = -Infinity; minY = Infinity; maxY = -Infinity; sx = 0; sy = 0; wsum = 0;
+      for (const m of pack) {
+        const w = m === leader ? 2 : 1; sx += m.x * w; sy += m.y * w; wsum += w;
+        minX = Math.min(minX, m.x); maxX = Math.max(maxX, m.x); minY = Math.min(minY, m.y); maxY = Math.max(maxY, m.y);
+      }
+    }
+    const spanX = maxX - minX, spanY = maxY - minY;
+    const z = Math.min((1080 * aspect * 0.84) / (spanX + 300), (1080 * 0.8) / (spanY + 260));
+    // Bias the shot towards the leader while racing tightly, but shift to
+    // the pack's bounding-box centre when anyone falls behind.
+    const spread = Math.max(spanX, spanY);
+    const wide = Math.max(0, Math.min(1, (spread - 500) / 1300));
+    const focusX = sx / wsum, focusY = sy / wsum;
+    const look = 0.25 * (1 - wide);
+    cam.tx = focusX * (1 - wide) + (minX + maxX) * 0.5 * wide + anchor.vx * look * 0.6;
+    cam.ty = focusY * (1 - wide) + (minY + maxY) * 0.5 * wide + anchor.vy * look * 0.6;
     const sp = Math.hypot(leader.vx, leader.vy);
-    cam.tz = Math.max(0.62, Math.min(1.25, z)) * (1 - Math.min(0.08, sp / 24000));
+    // Wider minimum framing lets a trailing marble remain visible; the
+    // existing damped camera springs make the zoom-out and return seamless.
+    cam.tz = Math.max(0.68, Math.min(1.3, z)) * (1 - Math.min(0.06, sp / 30000));
     void dt;
   }
 
@@ -3153,7 +3494,22 @@ if (typeof module !== 'undefined') module.exports = QR;
       const m = world.get(row.dataset.id); if (!m) continue;
       row.style.transform = `translateY(${(m.rank - 1) * 100}%)`;
       row.querySelector('.spos').textContent = m.rank;
-      row.querySelector('.sitem').textContent = m.finished ? '🏁' : m.item ? ITEM_ICON[m.item] : '';
+      const slot = row.querySelector('.sitem');
+      const artKey = m.item ? 'item_' + m.item : '';
+      const icon = !m.finished && artKey ? IMG[artKey] : null;
+      const key = m.finished ? 'finished' : icon ? artKey + ':image' : artKey + ':fallback';
+      if (slot.dataset.key !== key) {
+        slot.dataset.key = key;
+        if (icon) {
+          const im = document.createElement('img');
+          im.src = icon.src; im.alt = ITEM_NAME[m.item] || 'Item';
+          slot.replaceChildren(im);
+          slot.title = im.alt;
+        } else {
+          slot.textContent = m.finished ? '🏁' : m.item ? ITEM_ICON[m.item] : '';
+          slot.title = m.item ? ITEM_NAME[m.item] : '';
+        }
+      }
       row.classList.toggle('fin', m.finished);
     }
     if (key !== lastStandKey) lastStandKey = key;
@@ -3232,6 +3588,15 @@ if (typeof module !== 'undefined') module.exports = QR;
       row.innerHTML = `<span class="rpos">${['1st', '2nd', '3rd'][i] || (i + 1) + 'th'}</span><img alt="" src="${shapeImg(p.shape, p.color)}"><span class="rname"></span>
         <span class="rtime">${p.lastTime != null ? p.lastTime.toFixed(2) + 's' : 'DNF'}</span><span class="rpts">+${p.lastPts}</span><span class="rtot">${p.points}</span>`;
       row.querySelector('.rname').textContent = p.name;
+      if (i < 3) {
+        const medal = IMG[['medal_gold', 'medal_silver', 'medal_bronze'][i]];
+        if (medal) {
+          const im = document.createElement('img');
+          im.src = medal.src; im.alt = '';
+          im.className = 'rmedal';
+          row.querySelector('.rpos').prepend(im);
+        }
+      }
       box.appendChild(row);
     });
     $('#raceCount').textContent = `Race ${cup.race} of ${cup.n} · Cup points`;
@@ -3240,6 +3605,13 @@ if (typeof module !== 'undefined') module.exports = QR;
     $('#btnFinale').hidden = done;
   }
   function renderFinale() {
+    const awardTrophy = $('#finaleTrophy');
+    if (awardTrophy && IMG.trophy_cup) {
+      const trophyImg = document.createElement('img');
+      trophyImg.src = IMG.trophy_cup.src;
+      trophyImg.alt = 'Marble Rush championship trophy';
+      awardTrophy.replaceChildren(trophyImg);
+    }
     const list = [...players.values()].sort((a, b) => b.points - a.points || b.wins - a.wins);
     const champ = list[0];
     $('#champName').textContent = champ ? champ.name : '';

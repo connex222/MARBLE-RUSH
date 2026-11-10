@@ -1,4 +1,4 @@
-# Marble Rush — v0.3
+# Marble Rush — v0.4
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
@@ -35,6 +35,16 @@ The free plan sleeps when unused. The TV shows "Polishing the marbles…" for up
 
 Anything you haven't made yet stays code-drawn, so the game always works.
 
+## What's new in v0.4
+
+- **Skill pays now.** Faster marbles can overtake, holding grip never stops you dead, and tapping with a full meter gives a **SUPER boost**. A marble nobody touches now finishes near the back instead of winning.
+- **Chunky track.** Rails are thick textured beams on scaffolding, and the camera sits closer so marbles are readable from the sofa.
+- **Smarter CPU racers** that read the track (grip before kickers, boost into loops and shortcuts).
+
+## Balance check (optional)
+
+`npm run balance` races every track with test racers (do-nothing, button-masher, CPU levels and an "expert" that looks ahead) and prints who wins. Use it after changing any physics number in `src/engine.js`.
+
 ## Folder map
 
 | Folder | What's in it |
@@ -45,3 +55,4 @@ Anything you haven't made yet stays code-drawn, so the game always works.
 | `assets/raw/` | Where you drop ChatGPT images and sounds |
 | `fonts/` | Fredoka and Nunito (free OFL fonts), baked into the pages |
 | `tools/build.js` | Resizes art and bakes everything into single files |
+| `tools/balance-lab.js` | Screen-free race tester (`npm run balance`) |
