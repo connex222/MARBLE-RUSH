@@ -26,7 +26,7 @@ assert.equal(mock.cup.n,4);
 assert.equal(mock.cup.race,0);
 assert.equal(mock.cup.played.length,0);
 
-assert.equal(ids.filter(id => game.MODES[id].available).length,1,'unfinished games must remain locked');
+assert.equal(ids.filter(id => game.MODES[id].available).length,2,'only Grand Prix and Drop Zone should be playable');
 for (const mode of Object.values(game.MODES)) {
   for (const fn of ['setup','startRound','tick','draw','onInput','onAction','botTick','hud','standings','roundResults','finalResults'])
     assert.equal(typeof mode[fn],'function',mode.id+'.'+fn);
@@ -37,7 +37,8 @@ assert.throws(()=>game.PartyNight.create(['grandprix','brawl','grandprix'],2),/u
 assert.throws(()=>game.PartyNight.create(['grandprix'],2),/3, 5 or 7/);
 const seedPlan = game.PartyNight.plan(7,2,42);
 assert.equal(seedPlan.length,7);
-assert.ok(seedPlan.every(id=>id==='grandprix'),'until future modes ship, a safe plan can only repeat GP');
+assert.ok(seedPlan.every(id=>['grandprix','dropzone'].includes(id)),'playlist must contain only released games');
+assert.ok(seedPlan.includes('dropzone'),'Party Night must include playable Drop Zone');
 assert.deepEqual(Array.from(game.PartyNight.plan(7,2,42)),Array.from(game.PartyNight.plan(7,2,42)));
 assert.throws(()=>game.PartyNight.plan(4,2,42),/configuration/);
 assert.throws(()=>game.PartyNight.plan(3,0,42),/configuration/);
