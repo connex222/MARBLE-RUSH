@@ -44,12 +44,11 @@ async function main(){
         picker:bounds('#partyPicker'),join:bounds('.joinCard'),settings:bounds('#lobbySettings'),controls:bounds('#lobbyBottom')};
     });
     assert.equal(picker.cards.length,6,'Six mode cards must be visible');
-    assert.equal(picker.cards.filter(c=>c.disabled).length,1,'Only Golf must remain locked');
+    assert.equal(picker.cards.filter(c=>c.disabled).length,0,'All six modes must be enabled');
     assert.equal(picker.cards.filter(c=>c.pressed==='true').length,1,'One mode selected');
-    const locked=page.locator('#partyModeCards .partyModeCard[data-locked="true"]').first();
-    await locked.click();
+    await page.locator('#partyModeCards .partyModeCard').last().hover();
     await page.waitForFunction(()=>!document.querySelector('#partyAttractPanel').hidden,{timeout:5000});
-    assert.equal(await page.evaluate(()=>window.__MR.selectedMode),'grandprix','Preview must not launch an unfinished game');
+    assert.equal(await page.evaluate(()=>window.__MR.selectedMode),'grandprix','Hover preview must not select a game');
     await page.screenshot({path:'qa-party-attract.png',fullPage:true});
     await page.locator('#partyModeCards .partyModeCard').first().click();
 
@@ -205,7 +204,7 @@ async function main(){
     assert.ok(br.totals.every(p=>p.rounds===5&&p.points>0));
     assert.equal(errors.length,0,'Browser errors after Bowl Brawl: '+errors.join(' | '));
     console.log('PASS: Bowl Brawl complete five-round TV arena, RAM energy and final standings');
-    // Three-game Party Night may select any three of the four completed games.
+    // Three-game Party Night may select any three of the six enabled games.
     // Preserve all modes' score transitions through deterministic simulation
     // rather than waiting for several full races in real time.
     await page.evaluate(()=>{
@@ -233,6 +232,10 @@ async function main(){
             g.step(.05);
           }
           if(!g.state.done)throw Error('Party Night Drop Zone did not complete');
+        }else if(mode==='golf'){
+          const g=a.MODES.golf.session();let n=0;
+          while(!g.state.done&&n++<120000)g.step(.1);
+          if(!g.state.done)throw Error('Party Night Golf failed to finish');
         }else if(mode==='grandprix'){
           a.Game.startRace('toybox');
           for(const p of a.players.values())p.points=10;
@@ -249,7 +252,7 @@ async function main(){
     }));
     assert.equal(party.history.length,3);
     assert.equal(new Set(party.history).size,3);
-    assert.ok(party.history.every(x=>['grandprix','derby','dropzone','brawl','curling'].includes(x)));
+    assert.ok(party.history.every(x=>['grandprix','derby','dropzone','brawl','curling','golf'].includes(x)));
     assert.equal(party.totals.length,2);
     assert.ok(party.totals.every(p=>p>=6&&p<=30));
     assert.equal(party.status,'complete');
