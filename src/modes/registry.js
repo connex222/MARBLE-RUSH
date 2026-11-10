@@ -164,6 +164,19 @@ const MarblePartyStage = (() => {
       q.addColorStop(0,i%2?gold:accent);q.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=q;ctx.beginPath();ctx.arc(x,1028,26,0,Math.PI*2);ctx.fill();
     }
+    // Batch B: optional high-resolution toy props sit outside the active
+    // physics board and the left-side standings, retaining sofa readability.
+    // Missing image files simply skip the decorations.
+    const props={
+      derby:[['grandstand',1125,17,290,181],['hay_bales',1610,868,190,142]],
+      dropzone:[['glass_chute',1170,7,180,189],['gold_bucket',1642,870,181,138]],
+      brawl:[['spin_hazard',1158,17,205,167],['striped_bumper',1651,877,190,137]],
+      curling:[['alpine_lodge',1085,14,295,190],['ice_blocks',1622,855,201,155]],
+      golf:[['windmill',1144,18,202,185],['stone_bridge',1581,865,243,157]]
+    };
+    for(const [name,x,y,w,h] of props[id]||[]){
+      drawSprite(ctx,'pp_'+id+'_prop_'+name,x,y,w,h,.97);
+    }
     ctx.restore();
   }
   function round(ctx,x,y,w,h,r) {
@@ -243,7 +256,7 @@ const MarblePartyStage = (() => {
     ctx.fillStyle=spec;ctx.fillRect(x,y,w,h);
     // Texture replaces the flat surface only if the approved 1024px material
     // exists; the gradient/material fallback above remains usable otherwise.
-    drawSprite(ctx,'pp_'+id+'_surface_main',x,y,w,h,.74);
+    drawSprite(ctx,'pp_'+id+'_surface_main',x,y,w,h,.58);
     ctx.restore();
     // Gold/chrome bevel around physically active surface.
     ctx.lineWidth=10;ctx.strokeStyle=gold;round(ctx,x,y,w,h,10);ctx.stroke();
