@@ -193,6 +193,8 @@ const BowlBrawl = (() => {
       const grad=ctx.createLinearGradient(0,0,1920,1080);
       grad.addColorStop(0,'#161c43');grad.addColorStop(1,'#46345c');
       ctx.fillStyle=grad;ctx.fillRect(0,0,1920,1080);
+       MarblePartyStage.backdrop(ctx,'brawl',state.elapsed);
+       MarblePartyStage.frame(ctx,628,88,905,906,'brawl');
       ctx.fillStyle='#fff4e0';ctx.font='bold 62px Fredoka,sans-serif';ctx.fillText('BOWL BRAWL',76,85);
       ctx.fillStyle='#ffd23f';ctx.font='bold 29px Nunito,sans-serif';
       ctx.fillText(`ROUND ${state.round}/${ROUNDS}  ·  ${Math.ceil(Math.max(0,ROUND_TIME-state.elapsed))}s`,77,132);
