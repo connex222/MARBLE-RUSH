@@ -188,7 +188,12 @@
       stopIntro();
       introSource=ac.createBufferSource();introSource.buffer=buf;
       introEnvelope=ac.createGain();introEnvelope.gain.value=.55;
-      introSource.connect(introEnvelope);introEnvelope.connect(sfx);
+      // A modest speech-only band limit suppresses recording hiss without
+      // filtering or modifying the game's music and impact effects.
+      const voiceHigh=ac.createBiquadFilter();voiceHigh.type='highpass';voiceHigh.frequency.value=105;
+      const voiceLow=ac.createBiquadFilter();voiceLow.type='lowpass';voiceLow.frequency.value=5600;voiceLow.Q.value=.7;
+      introSource.connect(voiceHigh);voiceHigh.connect(voiceLow);
+      voiceLow.connect(introEnvelope);introEnvelope.connect(sfx);
       introSource.onended=()=>{introSource=null;introEnvelope=null;};
       // Keep the introduction brief: finish before 9 seconds, and taper the
       // clip's noisy tail instead of replaying the full 26-second script.
