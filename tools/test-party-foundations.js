@@ -6,10 +6,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const ctx = vm.createContext({});
-for (const name of ['registry','geometry','grandprix','derby','dropzone','brawl','curling','golf']) {
+for (const name of ['registry','session','geometry','grandprix','derby','dropzone','brawl','curling','golf']) {
   vm.runInContext(fs.readFileSync(path.join(root,'src','modes',name+'.js'),'utf8'), ctx, {filename:name+'.js'});
 }
-const game = vm.runInContext('({MODES, PartyNight, partyPoints, PartyGeometry})', ctx);
+const game = vm.runInContext('({MODES, PartyNight, PartyCoordinator, partyPoints, PartyGeometry})', ctx);
 const ids = Object.keys(game.MODES);
 assert.equal(ids.length,6);
 assert.deepEqual(ids,['grandprix','derby','dropzone','brawl','curling','golf']);
@@ -48,6 +48,31 @@ assert.equal(session.totals.get('a'),28);
 assert.equal(session.totals.get('b'),26);
 assert.equal(game.PartyNight.next(session),null);
 assert.throws(()=>game.PartyNight.record(session,['a','b']),/finished/);
+// Multi-mode state machine: no skipping, double-scoring or roster substitution.
+const coord = game.PartyCoordinator;
+const co = coord.start({playlist:['grandprix','grandprix','grandprix'], playerIds:['p1','p2']});
+assert.equal(coord.current(co),'grandprix');
+assert.equal(coord.snapshot(co).round,1);
+assert.throws(()=>coord.complete(co,['p1','p2']),/no active/);
+assert.equal(coord.begin(co),'grandprix');
+assert.throws(()=>coord.begin(co),/cannot begin/);
+assert.throws(()=>coord.complete(co,['p1','p1']),/every participant/);
+assert.throws(()=>coord.complete(co,['p1','hacker']),/every participant/);
+let first = coord.complete(co,['p2','p1']);
+assert.equal(first.finished,false);
+assert.equal(first.next,'grandprix');
+assert.equal(coord.standings(co)[0].id,'p2');
+for(let i=0;i<2;i++){
+  coord.begin(co);
+  const result = coord.complete(co,['p1','p2']);
+  if(i===1)assert.equal(result.finished,true);
+}
+assert.equal(coord.current(co),null);
+assert.equal(coord.snapshot(co).round,3);
+assert.deepEqual(Array.from(coord.standings(co),p=>[p.id,p.points]),[['p1',28],['p2',26]]);
+assert.throws(()=>coord.begin(co),/cannot begin/);
+assert.throws(()=>coord.start({playlist:['grandprix','grandprix','grandprix'],playerIds:['p1','p1']}),/unique/);
+console.log('PASS: fixed-roster Party Night transitions, score accumulation, eligibility, and replay guards.');
 const MR = require('../src/engine.js');
 const track = MR.TRACKS.toybox();
 const gp = new MR.World(track,{seed:17});
