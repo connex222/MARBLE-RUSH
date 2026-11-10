@@ -117,6 +117,28 @@ async function main(){
     await p1.screenshot({path:'qa-dropzone-phone.png',fullPage:true});
     assert.deepEqual(errors,[],'JS errors during Drop Zone: '+errors.join(' | '));
     console.log('PASS: two independent phones joined Drop Zone, VIP selected mode, phone release, both received state');
+    // Bowl Brawl: same live room and both connected phones control marbles.
+    await tv.evaluate(()=>window.__MR.Game.toLobby());
+    await p1.locator('#vip button').filter({hasText:'Bowl Brawl'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Bowl Brawl'}).click();
+    await tv.waitForFunction(()=>window.__MR.selectedMode==='brawl',{timeout:10000});
+    await tv.locator('#btnStart').click();
+    await tv.locator('[data-screen="brawl"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.mode==='brawl'&&document.body.dataset.s==='brawl',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.mode==='brawl'&&document.body.dataset.s==='brawl',{timeout:10000});
+    const before=await tv.evaluate(()=>window.__MR.MODES.brawl.session().state.marbles.map(m=>({id:m.id,energy:m.energy})));
+    await p1.locator('#modeActions button').filter({hasText:'RAM!'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.brawl.session()?.state.events.some(e=>e.kind==='ram'),{timeout:8000});
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='ram'),'Player A did not send RAM action');
+    assert.ok(a.received.some(x=>x.t==='hud'&&x.mode==='brawl'),'Player A missing Bowl Brawl HUD');
+    assert.ok(b.received.some(x=>x.t==='hud'&&x.mode==='brawl'),'Player B missing Bowl Brawl HUD');
+    const after=await tv.evaluate(()=>window.__MR.MODES.brawl.session().state.marbles.map(m=>({id:m.id,energy:m.energy})));
+    assert.ok(after.some((m,i)=>m.energy<before[i].energy),'RAM must consume energy');
+    await tv.screenshot({path:'qa-brawl-tv.png',fullPage:true});
+    await p1.screenshot({path:'qa-brawl-phone.png',fullPage:true});
+    assert.deepEqual(errors,[],'Uncaught JS error in Bowl Brawl: '+errors.join(' | '));
+    console.log('PASS: Bowl Brawl two real WebSocket phones with synced HUD and RAM energy deduction');
+
 
   }finally{await browser.close();}
 }
