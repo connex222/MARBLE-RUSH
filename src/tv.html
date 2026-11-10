@@ -137,6 +137,11 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
  display:flex;gap:calc(11*var(--u));align-items:center;z-index:5}
 #brawlHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(15*var(--u))}
 #brawlHelp .btn.go{font-size:calc(24*var(--u));padding:calc(12*var(--u)) calc(22*var(--u))}
+#derbyCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#derbyHelp{position:absolute;right:calc(60*var(--u));bottom:calc(20*var(--u));
+display:flex;gap:calc(12*var(--u));align-items:center;z-index:5}
+#derbyHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(16*var(--u))}
+#derbyHelp .btn.go{font-size:calc(23*var(--u))}
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -322,6 +327,15 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
       <button class="btn go" id="brawlRam">RAM!</button>
       <button class="btn" id="brawlAnchor">ANCHOR</button>
       <button class="btn" id="brawlRight">Turn ▶</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="derby" hidden>
+    <canvas id="derbyCanvas" width="1920" height="1080" aria-label="Marble Derby race and virtual gems scoreboard"></canvas>
+    <div id="derbyHelp">
+      <button class="btn" id="derbyStake">Change stake</button>
+      <button class="btn go" id="derbyPick">Back a marble</button>
+      <button class="btn" id="derbyCheer">CHEER!</button>
     </div>
   </section>
 
