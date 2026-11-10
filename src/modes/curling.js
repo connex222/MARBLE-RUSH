@@ -185,13 +185,16 @@ const MarbleCurling=(()=>{
     ctx.fillStyle='#ffd576';ctx.font='bold 27px Nunito,sans-serif';ctx.fillText(`END ${state.end} OF ${ENDS}  ·  ${state.phase.toUpperCase()}`,66,142);
     const ox=495,oy=235,sc=1.04;
     ctx.save();ctx.translate(ox,oy);ctx.scale(sc,sc);
-    ctx.fillStyle='#bfe6f5';ctx.fillRect(0,0,WIDTH,HEIGHT);
+    MarblePartyStage.surface(ctx,'curling',0,0,WIDTH,HEIGHT,state.elapsed);
     ctx.strokeStyle='#f6f9fa';ctx.lineWidth=14;ctx.strokeRect(0,0,WIDTH,HEIGHT);
     for(let x=100;x<WIDTH;x+=140){
       ctx.strokeStyle='rgba(72,115,167,.13)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,HEIGHT);ctx.stroke();
     }
     for(const [r,c] of [[140,'#297ab9'],[100,'#f4f6f7'],[65,'#dc4e5c'],[27,'#f4f6f7']]){
-      ctx.fillStyle=c;ctx.beginPath();ctx.arc(BUTTON_X,BUTTON_Y,r,0,Math.PI*2);ctx.fill();
+      ctx.save();ctx.shadowColor='#193b64a8';ctx.shadowBlur=9;
+      const ring=ctx.createRadialGradient(BUTTON_X-r*.38,BUTTON_Y-r*.4,1,BUTTON_X,BUTTON_Y,r*1.17);
+      ring.addColorStop(0,'#fff');ring.addColorStop(.22,c);ring.addColorStop(.72,c);ring.addColorStop(1,'#173d61');
+      ctx.fillStyle=ring;ctx.beginPath();ctx.arc(BUTTON_X,BUTTON_Y,r,0,Math.PI*2);ctx.fill();ctx.restore();
     }
     ctx.fillStyle='#235585';ctx.beginPath();ctx.arc(BUTTON_X,BUTTON_Y,7,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='#4964a0';ctx.lineWidth=3;
@@ -204,10 +207,7 @@ const MarbleCurling=(()=>{
     for(const stone of state.stones){
       const p=getPlayer(stone.id);
       ctx.fillStyle='rgba(17,35,63,.2)';ctx.beginPath();ctx.ellipse(stone.x+4,stone.y+8,21,12,0,0,Math.PI*2);ctx.fill();
-      const g=ctx.createRadialGradient(stone.x-8,stone.y-10,2,stone.x,stone.y,STONE_R);
-      g.addColorStop(0,'#fff');g.addColorStop(.3,p.color);g.addColorStop(1,'#1c2c53');
-      ctx.fillStyle=g;ctx.beginPath();ctx.arc(stone.x,stone.y,STONE_R,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+      MarblePartyStage.marble(ctx,stone.x,stone.y,STONE_R,p.color);
     }
     ctx.restore();
     ctx.fillStyle='#fff7e6';ctx.font='bold 33px Fredoka,sans-serif';ctx.fillText('END STANDINGS',67,242);
