@@ -17,7 +17,7 @@ const MarbleDerby=(()=>{
     const rnd=randomFrom(seed);
     const roster=players.map((p,i)=>({id:p.id,name:String(p.name||'Player '+(i+1)).slice(0,16),
       cpu:!!p.cpu,color:typeof p.color==='string'?p.color:COLORS[i%6],
-      gems:START_GEMS,won:0,successful:0,bets:[],totalProfit:0,stipends:0}));
+      gems:START_GEMS,won:0,successful:0,bets:[],totalProfit:0,stipends:0,stake:50}));
     const state={seed,roster,round:0,phase:'betting',phaseTime:0,time:0,
       horses:[],wagers:new Map(),cheers:new Set(),history:[],done:false,finishedCalled:false,
       lastWinner:null,showResultsFor:2.5,acc:0};
@@ -48,6 +48,7 @@ const MarbleDerby=(()=>{
     }
     function action(id,type,value){
       if(!getPlayer(id)||state.done)return false;
+      if(type==='stake'&&state.phase==='betting'&&!state.wagers.has(id)&&STAKES.includes(value)&&getPlayer(id).gems>=value){getPlayer(id).stake=value;return true;}
       if(type==='bet'&&value&&typeof value==='object'&&Object.keys(value).length<=3)
         return bet(id,value.horse,value.stake);
       if(type==='cheer'&&state.phase==='racing'){
@@ -135,9 +136,10 @@ const MarbleDerby=(()=>{
       const p=getPlayer(id);if(!p)return {};
       const pick=state.wagers.get(id),canBet=state.phase==='betting'&&!pick;
       const controls=[];
-      if(canBet)for(const h of state.horses){
-        const stake=p.gems>=50?50:25;
-        controls.push({a:'bet',label:h.name+' ('+h.odds+'×)',v:{horse:h.id,stake}});
+      if(canBet){
+        for(const stake of STAKES.filter(x=>x<=p.gems))controls.push({a:'stake',label:stake+' gems',v:stake,selected:p.stake===stake});
+        const stake=p.gems>=p.stake?p.stake:25;
+        for(const h of state.horses)controls.push({a:'bet',label:h.name+' ('+h.odds+'×)',v:{horse:h.id,stake}});
       }
       if(state.phase==='racing'&&pick&&!state.cheers.has(id))
         controls.push({a:'cheer',label:'CHEER '+state.horses[pick.horse].name+'!',v:0});
@@ -145,6 +147,7 @@ const MarbleDerby=(()=>{
         turnLabel:`Heat ${state.round}/${ROUNDS} · ${state.phase.toUpperCase()}`,
         roundScore:p.gems,gems:p.gems,modePhase:state.phase,
         modeControls:controls,isTurn:canBet||state.phase==='racing'&&!!pick,
+        stake:p.stake,
         modeHint:pick?`Backed ${state.horses[pick.horse].name} for ${pick.stake} gems`:
           state.phase==='betting'?'Pick a runner and place your gems':'Watch the race',
         myBet:pick?{horse:pick.horse,stake:pick.stake}:null,
