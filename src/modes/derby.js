@@ -166,16 +166,16 @@ const MarbleDerby=(()=>{
       ctx.fillStyle='#ffd46b';ctx.font='bold 30px Nunito,sans-serif';
       ctx.fillText(`HEAT ${state.round} OF ${ROUNDS}   ·   ${state.phase.toUpperCase()}`,70,142);
       const tx=510,ty=210,tw=1350,lane=104;
-      ctx.fillStyle='#755044';ctx.fillRect(tx,ty,tw,628);
+      MarblePartyStage.surface(ctx,'derby',tx,ty,tw,628,state.time);
       for(let i=0;i<HORSES;i++){
-        ctx.fillStyle=i%2?'#93614d':'#ac785c';ctx.fillRect(tx,ty+i*lane,tw,lane);
+        const strip=ctx.createLinearGradient(tx,ty+i*lane,tx+tw,ty+(i+1)*lane);
+        strip.addColorStop(0,i%2?'rgba(137,72,69,.52)':'rgba(224,153,91,.55)');
+        strip.addColorStop(.5,'rgba(255,242,179,.10)');strip.addColorStop(1,'rgba(22,14,42,.46)');
+        ctx.fillStyle=strip;ctx.fillRect(tx,ty+i*lane,tw,lane);
         ctx.strokeStyle='#e8cda0';ctx.lineWidth=3;
         ctx.beginPath();ctx.moveTo(tx,ty+i*lane);ctx.lineTo(tx+tw,ty+i*lane);ctx.stroke();
         const horse=state.horses[i],x=tx+35+horse.x/LENGTH*(tw-100),y=ty+i*lane+lane/2;
-        const g=ctx.createRadialGradient(x-12,y-12,3,x,y,30);
-        g.addColorStop(0,'#fff');g.addColorStop(.25,horse.color);g.addColorStop(1,'#25244a');
-        ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,28,0,Math.PI*2);ctx.fill();
-        ctx.strokeStyle='#fff0ce';ctx.lineWidth=2;ctx.stroke();
+        MarblePartyStage.marble(ctx,x,y,30,horse.color);
         ctx.fillStyle='#fff6e7';ctx.font='bold 23px Nunito,sans-serif';
         ctx.fillText(horse.name,tx+18,ty+i*lane+35);
         ctx.fillStyle='#ffdd6b';ctx.font='bold 21px Nunito,sans-serif';
