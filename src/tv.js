@@ -1897,6 +1897,7 @@
         myVote: state === 'vote' && vote.votes.has(p.id) ? vote.votes.get(p.id) : -1, picked: state === 'vote' ? vote.picked : -1,
         cupRace: cup.race, cupN: cup.n, cupDone: cup.race >= cup.n,
         modeControls: selectedMode === 'grandprix' ? null : (MODES[selectedMode]?.hud(p)?.controls || []),
+        cheerReady: performance.now() - (cheerTime.get(p.id) ?? -4000) >= 3000,
         partyLength, partyIndex: partyRun ? partyRun.session.index : 0,
         partyPending: !!partyRun && partyRun.status === 'ready',
       };
