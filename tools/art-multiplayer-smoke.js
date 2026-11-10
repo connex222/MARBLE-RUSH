@@ -60,6 +60,13 @@ async function main(){
     assert.ok(b.sent.some(x=>x.t==='join'&&x.code===room));
     assert.ok(a.received.some(x=>x.t==='hud'&&x.s==='lobby'));
     assert.ok(b.received.some(x=>x.t==='hud'&&x.s==='lobby'));
+    // The first joined phone should be VIP. Mode choice must be carried by
+    // the existing <4 KB action message and never unlock unfinished modes.
+    await p1.waitForFunction(()=>[...document.querySelectorAll('#vip button')].some(b=>b.textContent.includes('Grand Prix')),{timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Grand Prix'}).click();
+    await tv.waitForFunction(()=>window.__MR?.selectedMode==='grandprix',{timeout:10000});
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='mode'&&x.v==='grandprix'),'VIP mode choice did not reach TV');
+    assert.equal(await tv.locator('#partyModeCards .partyModeCard:disabled').count(),5,'Unfinished modes must remain locked');
     await tv.locator('#btnStart').click();
     await p1.locator('#votes button').first().waitFor({state:'visible',timeout:15000});
     await p1.locator('#votes button').first().click();
