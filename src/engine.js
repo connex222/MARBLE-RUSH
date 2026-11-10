@@ -681,6 +681,11 @@ const MR = (() => {
     constructor(track, opts = {}) {
       this.t = track;
       this.opts = Object.assign({ items: true, catchup: true, free: false, passing: true }, opts);
+      // Optional Party Pack obstacle set. Existing Grand Prix worlds have none.
+      this.partyObstacles = Array.isArray(opts.partyObstacles)
+        ? opts.partyObstacles.map(o => ({ ...o })) : [];
+      this.partySensors = new Map();
+
       this.rand = rng(opts.seed || 1234);
       this.time = 0; this.acc = 0;
       this.phase = this.opts.free ? 'free' : 'pen';
@@ -846,6 +851,7 @@ const MR = (() => {
       const ms = this.marbles;
       for (const m of ms) this.moveMarble(m, dt);
       this.marbleCollisions();
+      this.checkPartySensors();
       this.features(dt);
       for (const m of ms) this.updateProgress(m);
       this.rankAndRules(dt);
@@ -908,6 +914,7 @@ const MR = (() => {
       for (let k = 0; k < sub; k++) {
         m.x += m.vx * h; m.y += m.vy * h;
         this.collideTrack(m);
+        this.collidePartyObstacles(m);
       }
       // rolling resistance
       if (m.gTime === 0) {
@@ -965,6 +972,51 @@ const MR = (() => {
             if (-vn > 140) this.emit('impact', { id: m.id, mat: s.mat, note: s.note, v: -vn, x: px, y: py });
           }
           m.gTime = 0; m.nx = nx; m.ny = ny; m.crr = mat.crr;
+        }
+      }
+    }
+
+    /** Optional Party Pack peg / spinner collisions; inert in Grand Prix. */
+    collidePartyObstacles(m) {
+      for (const o of this.partyObstacles) {
+        if (o.type !== 'peg' && o.type !== 'spinner') continue;
+        // Spinner collision initially uses its central hub; rotating arms will
+        // be introduced with the dedicated Drop Zone game.
+        const r = o.r + m.r;
+        let dx = m.x - o.x, dy = m.y - o.y;
+        let d2 = dx * dx + dy * dy;
+        if (d2 >= r*r) continue;
+        // Deterministic separation even on exact centre contact.
+        if (d2 < 1e-8) {dx = 0; dy = -1; d2 = 1;}
+        const d = Math.sqrt(d2), nx = dx/d, ny = dy/d;
+        m.x += nx*(r-d); m.y += ny*(r-d);
+        const vn = m.vx*nx + m.vy*ny;
+        if (vn < 0) {
+          const e = o.type === 'peg' ? (o.restitution ?? 0.55) : 0.7;
+          m.vx -= (1+e)*vn*nx;
+          m.vy -= (1+e)*vn*ny;
+          if (-vn > 100) this.emit('party_hit', {id:m.id, kind:o.type, x:o.x, y:o.y, v:-vn});
+        }
+      }
+    }
+
+    /** Sensor events only on first entry; no repeat-scoring while held inside. */
+    checkPartySensors() {
+      if (!this.partyObstacles.length) return;
+      for (const m of this.marbles) {
+        if (m.respawnT > 0) continue;
+        for (let i=0;i<this.partyObstacles.length;i++) {
+          const o=this.partyObstacles[i];
+          if (!['bucket','targetRing','water','cup'].includes(o.type)) continue;
+          let inside=false;
+          if (o.type==='bucket') inside=m.x>=o.x-o.width/2&&m.x<=o.x+o.width/2&&m.y>=o.y&&m.y<=o.y+o.height;
+          else if (o.type==='water') inside=Math.abs(m.x-o.x)<=o.width/2&&Math.abs(m.y-o.y)<=o.height/2;
+          else if (o.type==='targetRing') inside=Math.hypot(m.x-o.x,m.y-o.y)<=o.r;
+          else if (o.type==='cup') inside=Math.abs(m.x-o.x)<=o.width/2&&Math.hypot(m.vx,m.vy)<o.maxSpeed;
+          const key=m.id+':'+i;
+          const wasInside=this.partySensors.get(key)||false;
+          if (inside&&!wasInside) this.emit('party_sensor',{id:m.id,kind:o.type,index:i,points:o.points||0,x:m.x,y:m.y});
+          if (inside!==wasInside) this.partySensors.set(key,inside);
         }
       }
     }
