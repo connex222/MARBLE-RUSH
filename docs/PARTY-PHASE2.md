@@ -28,3 +28,27 @@ The source branch is isolated from Render's deployed main. Artwork files, sound 
 
 ## QA
 GitHub foundation CI runs `npm install`, `npm run test:party`, `npm run build` and source syntax checks. The browser art suite also runs on development-branch pushes and checks real-TV picker layout and two-phone mode selection. New dedicated CI check compares candidate and main Grand Prix physics over all seven tracks with four racers and identical seeded inputs; this check passed on its first run. Run `npm run balance -- grandprix 1` to compare the live race against the baseline; production has not been touched. CI also runs static syntax checks and audits that the six mode descriptors are baked into the standalone TV page. Do not claim end-to-end Party Night works until modes have been implemented and tested.
+
+## Current integration milestone (10 November 2026)
+- Party Night coordinator is connected to TV/phone: 3/5/7 games, cumulative
+  Party Points and a 'Next Party Game' transition.
+- End-to-end browser smoke includes three complete simulated Grand Prix cups
+  inside one Party Night, followed by an ordinary Grand Prix art smoke.
+- Grand Prix adapter now owns cup setup, physical input delegation, point
+  distribution and final rankings; track voting, rendering, countdown and
+  per-frame mechanics remain in the legacy TV controller to preserve behaviour.
+- Six mode cards support 15-second CPU *concept previews*. Locked modes cannot
+  be started or selected as a playable game.
+- Mode-specific phone controls and spectator cheering are integrated as
+  shared scaffolding. Their actual betting, aim and power rules belong to
+  each game's dedicated production phase.
+- World Builder provides all eight new obstacle families. Opt-in physics
+  includes peg, spinner-arm, moving gate and shrinking rim contacts, plus
+  bucket scoring after 0.4 seconds and one-shot sensor events.
+- Seeded bot planners are available for all five new modes; real competitive
+  bots and 30+ simulated full games per mode require those modes' rules.
+
+**Remaining boundary:** Phase 2 establishes the shared infrastructure.
+No one should claim that the five new games are playable or balanced yet.
+Grand Prix is kept authoritative in the TV controller where required by
+the approved runtime, rather than risking an unverified complete extraction.
