@@ -75,6 +75,15 @@ input{width:100%;font-family:var(--display);font-weight:600;font-size:30px;color
 #vip button{flex:1 1 40%;font-weight:600;font-size:22px;color:var(--ink);background:var(--card);border:3px solid var(--line);border-radius:18px;padding:14px 10px}
 #vip button.primary{color:#fff;background:linear-gradient(180deg,#ff5a77,#e02447);border-color:#ffd0d8;box-shadow:0 5px 0 #8f1029}
 
+#modePanel{padding:6px 18px 12px;text-align:center;max-height:210px;overflow:auto}
+#modeTurn{font:800 19px Fredoka,sans-serif;color:var(--gold)}
+#modeReadout{font:700 16px Nunito,sans-serif;color:var(--ink);margin:4px}
+#modeActions{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+#modeActions button{font:800 16px Nunito,sans-serif;color:var(--ink);background:var(--card);
+ border:2px solid var(--line);border-radius:12px;padding:8px 13px;min-width:80px}
+#modeActions button[aria-pressed="true"]{border-color:var(--gold)}
+#cheer{align-self:center;margin:6px 0 8px;border:2px solid var(--gold);background:var(--card);border-radius:14px;
+ font:800 16px Nunito,sans-serif;color:var(--ink);padding:8px 20px}
 #votes{display:flex;flex-direction:column;gap:10px;padding:0 18px 12px}
 #votes button{display:flex;align-items:center;gap:12px;font-weight:600;font-size:24px;color:#fff;border:3px solid transparent;border-radius:20px;padding:14px 16px;
   background:var(--vc);box-shadow:0 5px 0 rgba(0,0,0,.3);text-align:left;text-shadow:0 2px 0 rgba(0,0,0,.3)}
@@ -144,6 +153,12 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   </div>
   <div id="votes" hidden></div>
   <div id="vip" hidden></div>
+  <section id="modePanel" hidden aria-label="Current game controls">
+    <div id="modeTurn"></div>
+    <div id="modeReadout"></div>
+    <div id="modeActions"></div>
+  </section>
+  <button id="cheer" type="button" hidden>CHEER!</button>
   <div id="padZone">
     <button id="pad" aria-label="Tap to boost, hold to grip">
       <svg id="ring" viewBox="0 0 100 100"><circle id="ringBg" cx="50" cy="50" r="46"/><circle id="ringFg" cx="50" cy="50" r="46"/></svg>
@@ -262,15 +277,50 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   }
   function vipButtons(list) {
     const box = $('#vip');
-    const key = list.map(b => b[0]).join();
+    const key = list.map(b => b[0] + ':' + String(b[3] ?? '') + ':' + b[1]).join('|');
     if (box.dataset.key === key) return;
     box.dataset.key = key; box.innerHTML = '';
-    for (const [a, label, primary] of list) {
+    for (const [a, label, primary, value] of list) {
       const b = document.createElement('button'); b.textContent = label; if (primary) b.className = 'primary';
-      b.onclick = () => { audio(); tone(900, 0.05, 'sine', 0.15); send({ t:'act', a }); };
+      b.onclick = () => { audio(); tone(900, 0.05, 'sine', 0.15); send({ t:'act', a, ...(value == null ? {} : { v: value }) }); };
       box.appendChild(b);
     }
     box.hidden = !list.length;
+  }
+  // Shared phone panels are driven by validated HUD descriptors from the TV.
+  // Grand Prix is unchanged. Future modes provide their own button actions.
+  $('#cheer').onclick=()=>{
+    audio();buzz(30);send({t:'act',a:'cheer'});
+  };
+  function renderModePanel(h) {
+    const panel=$('#modePanel');
+    if(!h.mode || h.mode==='grandprix' || !['race','countdown','results','lobby','dropzone','brawl','derby','curling','golf'].includes(h.s)){
+      panel.hidden=true;return;
+    }
+    panel.hidden=false;
+    $('#modeTurn').textContent=String(h.turnLabel||'').slice(0,70);
+    const pts=Number.isFinite(h.roundScore)?Math.round(h.roundScore):null;
+    const power=Number.isFinite(h.power)?Math.max(0,Math.min(100,Math.round(h.power))):null;
+    const aim=Number.isFinite(h.aim)?Math.round(h.aim):null;
+    $('#modeReadout').textContent=[pts===null?'':pts+' pts',power===null?'':'Power '+power+'%',Number.isFinite(h.energy)?'Energy '+Math.round(h.energy)+'%':'',aim===null?'':'Aim '+aim+(h.mode==='dropzone'?' px':'°')].filter(Boolean).join(' · ');
+    const cheer=$('#cheer');
+    cheer.hidden=!(h.s==='race' && (!h.inRace || h.fin));
+    cheer.disabled=!h.cheerReady;
+    const controls=Array.isArray(h.modeControls)?h.modeControls.slice(0,12):[];
+    const key=JSON.stringify(controls);
+    const box=$('#modeActions');
+    if(box.dataset.key!==key){
+      box.dataset.key=key;box.replaceChildren();
+      for(const control of controls){
+        if(!control || typeof control.a!=='string' || !/^[a-z]{1,16}$/.test(control.a))continue;
+        const button=document.createElement('button');
+        button.type='button';
+        button.textContent=String(control.label||control.a).slice(0,30);
+        button.setAttribute('aria-pressed',String(!!control.selected));
+        button.onclick=()=>{audio();buzz(14);send({t:'act',a:control.a,v:control.v});};
+        box.appendChild(button);
+      }
+    }
   }
   function render() {
     let h = hud;
@@ -286,6 +336,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     $('#pad').classList.toggle('empty', h.boost < 25 && (h.s === 'race'));
     $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
+    document.body.dataset.mode = h.mode || 'grandprix';
     const it = $('#item');
     if (h.s !== 'race') h = Object.assign({}, h, { item: null });
     it.disabled = !h.item;
@@ -309,10 +360,42 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     switch (h.s) {
       case 'lobby':
         setText('', "You're in!", h.vip ? 'You are the host. Start when everyone has joined.' : 'Practise in the bowl while everyone joins.');
-        if (h.vip) vip = [['cpu', 'Add CPU racer'], ['start', 'Start race', true]];
+        if (h.vip) {
+          vip = [['cpu', 'Add CPU racer'], ['start', h.partyLength ? 'Start Party Night' : 'Start race', true]];
+          for (const n of [0,3,5,7])
+            vip.push(['party', (h.partyLength === n ? '✓ ' : '') + (n ? n + '-game Party Night' : 'Party Night off'), false, n]);
+          // Only ready modes are shown; the host's choice is relayed to TV.
+          for (const mode of (h.availableModes || [])) vip.push(['mode', (mode.id === h.mode ? '✓ ' : '') + mode.name, false, mode.id]);
+        }
+        // Selection stays on the TV until the additional mode implementations pass QA.
         break;
       case 'countdown':
         setText(h.cd ? `<span>${h.cd}</span>` : '', h.inRace ? 'Tap right on ROLL!' : 'You join the next race', h.inRace ? 'for a perfect start' : '');
+        break;
+      case 'golf':
+        setText('', h.modePhase==='aim'&&h.isTurn?'YOUR SHOT':h.modePhase==='rolling'?'MARBLE IN MOTION':h.modePhase==='results'?'HOLE RESULTS':'MARBLE GOLF',
+          'Hole '+(h.hole||1)+'/5 · '+(h.roundScore||0)+' strokes · '+(h.modeHint||''));
+        if(h.vip)vip=[['lobby','End game & lobby']];
+        break;
+      case 'curling':
+        setText('',h.modePhase==='aim'&&h.isTurn?'YOUR THROW':h.modePhase==='slide'&&h.isTurn?'SWEEP!':h.modePhase==='results'?'END RESULTS':'MARBLE CURLING',
+          (h.roundScore||0)+' points · '+(h.modeHint||h.turnLabel||''));
+        if(h.vip)vip=[['lobby','End game & lobby']];
+        break;
+      case 'derby':
+        setText('',h.modePhase==='betting'?'PLACE YOUR BET':h.modePhase==='racing'?'THEY ARE OFF!':h.modePhase==='results'?'HEAT RESULTS':'DERBY FINISHED',
+          (h.gems||0)+' virtual gems · '+(h.modeHint||h.turnLabel||''));
+        if(h.vip)vip=[['lobby','End game & lobby']];
+        break;
+      case 'brawl':
+        setText('', h.modePhase==='eliminated'?'OUT OF THE BOWL':h.modePhase==='finished'?'BRAWL COMPLETE':'BOWL BRAWL',
+          (h.roundScore||0)+' points · '+(h.turnLabel||'Bowl Brawl'));
+        if(h.vip)vip=[['lobby','End game & lobby']];
+        break;
+      case 'dropzone':
+        setText('', h.isTurn?'YOUR DROP':h.modePhase==='falling'?'MARBLE IN PLAY':'WAIT FOR YOUR TURN',
+          (h.roundScore||0)+' points · '+(h.turnLabel||'Drop Zone'));
+        if (h.vip) vip=[['lobby','End game & lobby']];
         break;
       case 'race':
         if (!h.inRace) { setText('', 'Watch the TV!', 'You join the next race'); break; }
@@ -330,13 +413,29 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         break;
       case 'finale':
         setText('🏆', h.award || 'Good Sport', `${h.total} points tonight`);
-        if (h.vip) vip = [['newnight', 'New night', true]];
+        if (h.vip) vip = [['newnight', h.partyPending ? 'Next party game' : 'New night', true]];
         break;
       default: setText('', 'Watch the TV!', '');
     }
     vipButtons(vip);
-    $('#padText b').textContent = h.s === 'race' && h.boost < 25 ? 'WAIT' : h.s === 'race' && h.boost >= 100 ? 'SUPER!' : 'TAP';
-    $('#padText span').textContent = h.s === 'race' && h.boost < 25 ? 'meter is filling' : h.s === 'race' && h.boost >= 100 ? 'full meter · tap now' : 'boost · hold to grip';
+    renderModePanel(h);
+    // Cheering works for finished/waiting Grand Prix racers as well.
+    const cheer = $('#cheer');
+    cheer.hidden = !(h.s === 'race' && (!h.inRace || h.fin));
+    cheer.disabled = !h.cheerReady;
+    // Phone layout adapter. New mode controls are activated only as their modes ship.
+    const labels = {
+      grandprix: ['TAP', 'boost · hold to grip'],
+      derby: ['NUDGE', 'cheer your pick'],
+      dropzone: ['DROP', 'tap to release'],
+      derby: ['CHEER!', 'back your marble, cheer once per heat'],
+      brawl: ['RAM', 'hold to anchor'],
+      curling: ['SWEEP', 'hold to brake'],
+      golf: ['SHOOT!', 'aim and set power first']
+    };
+    const label = labels[h.mode] || labels.grandprix;
+    $('#padText b').textContent = h.mode === 'grandprix' && h.s === 'race' && h.boost < 25 ? 'WAIT' : h.mode === 'grandprix' && h.s === 'race' && h.boost >= 100 ? 'SUPER!' : label[0];
+    $('#padText span').textContent = h.mode === 'grandprix' && h.s === 'race' && h.boost < 25 ? 'meter is filling' : h.mode === 'grandprix' && h.s === 'race' && h.boost >= 100 ? 'full meter · tap now' : label[1];
   }
 
   function renderVotes(h) {

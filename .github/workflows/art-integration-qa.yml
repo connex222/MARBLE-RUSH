@@ -4,6 +4,11 @@ on:
     branches:
       - dev/approved-art-integration-qa
       - dev/full-art-runtime-integration
+      - dev/party-pack-phase2-foundations
+      - dev/party-pack-phase3-dropzone
+      - dev/party-pack-phase4-bowl-brawl
+      - dev/party-pack-phase5-marble-derby
+      - dev/party-pack-phase6-marble-curling
   pull_request:
     paths:
       - src/tv.js
@@ -93,6 +98,16 @@ jobs:
           name: marble-rush-compiled-art-preview
           path: |
             public/
+            qa-party-picker.png
+            qa-party-attract.png
+            qa-dropzone-tv.png
+            qa-dropzone-phone.png
+            qa-brawl-tv.png
+            qa-brawl-phone.png
+            qa-derby-tv.png
+            qa-derby-phone.png
+            qa-curling-tv.png
+            qa-curling-phone.png
             qa-art-race-preview.png
             qa-art-multiplayer-tv.png
             qa-art-multiplayer-phone.png

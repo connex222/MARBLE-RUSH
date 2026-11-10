@@ -123,6 +123,13 @@ function pack(seeds) {
   console.log(`\n${n} races · mean win time ${(len / n).toFixed(1)}s · last-place gap ${(last / n).toFixed(1)}s · lead changes ${(lc / n).toFixed(1)}`);
   for (const k of kinds) console.log(k.padEnd(9), 'wins', String(wins[k] || 0).padStart(3), `(${((wins[k] || 0) / n * 100).toFixed(0)}%)`.padStart(6), ' average place', (place[k].reduce((a, b) => a + b) / place[k].length).toFixed(2), ' seconds behind winner', (behind[k] / n).toFixed(1));
 }
-const mode = process.argv[2] || 'all', seeds = +process.argv[3] || 6;
+const requested = process.argv[2] || 'all';
+const unavailable = ['derby','dropzone','brawl','curling','golf'];
+if (unavailable.includes(requested)) {
+  console.error(requested + ': mode not implemented yet; dedicated balance tests will be added in its phase.');
+  process.exit(2);
+}
+const mode = requested === 'grandprix' ? 'all' : requested, seeds = +process.argv[3] || 6;
+if (!['solo','pack','all'].includes(mode)) { console.error('Unknown mode: ' + requested); process.exit(2); }
 if (mode !== 'pack') solo(seeds);
 if (mode !== 'solo') pack(seeds);

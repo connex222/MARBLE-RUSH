@@ -870,3 +870,200 @@ Built after Marble Rush, reusing the same **Party Core**: lobby and room codes, 
 | 1.1 | 8 Nov 2026 | Build v0.1: Toy Box Tumble playable end to end; TV lobby has a QR code; local test mode (open tv.html, keyboard + CPU racers); manifest now lists each asset's file, so sounds can be MP3, OGG, M4A or WAV; music and sound are code-generated until real files arrive |
 
 *Rule: any change to filenames, sizes, rules or scoring gets a new line here. Both AIs work from the latest version only.*
+
+---
+
+## Party Pack v0.5.0 development appendix — 10 November 2026
+
+The existing Grand Prix retains its approved seven tracks, artwork, audio,
+camera and core race rules. This appendix documents the **Phase 2 foundation**
+only. It does not supersede the existing approved graphics bible.
+
+**Mode registration:** `src/modes/registry.js` registers Grand Prix, Marble
+Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf with a shared
+interface. The five new games are deliberately unavailable until built.
+
+**Party Night:** The TV and VIP phone support 3-, 5- and 7-game selections.
+An isolated, fixed-roster session coordinator awards 10/8/6/5/4/3/2/1
+Party Points to each game's final ranking. The live development prototype
+repeats Grand Prix until other games are available. Reconnection uses the
+existing TV/phone relay; new players cannot join a session already in progress.
+
+**Mode previews:** A 15-second code-drawn CPU concept animation can be
+opened for any game. This is a preview, not a playable or calibrated
+demonstration of an unfinished mode.
+
+**Shared engine options:** `passing:false` disables Grand Prix's special
+glancing overtakes; default `passing:true` preserves Grand Prix. A new
+Builder API supports peg grids, spinners, buckets, moving gates, target rings,
+golf cups, water zones and shrinking rims. The World supports opt-in
+collisions and scoring sensor events, including 0.4s bucket dwell. Future
+game modes retain responsibility for detailed score/rule consequences.
+
+**Phone UI:** Existing Grand Prix pad remains unchanged. Mode-specific HUD
+labels, optional betting/aim/power control panels, VIP mode/Party Night
+selection and rate-limited cheering are prepared for future modes.
+
+**QA:** Foundation tests, seven-track deterministic main-versus-development
+Grand Prix regression, code/art audit, build, and simulated TV/two-phone
+browser checks are required. A full real-device acceptance is still pending.
+
+
+---
+
+## Phase 3 — Drop Zone v0.6.0 development appendix (10 November 2026)
+
+Drop Zone is the first new playable Party Pack game. The current approved
+Grand Prix seven-track rendering, camera, 119 art assets and audio are
+untouched. There are now two playable mode cards; the other four are locked.
+
+**Gameplay:** 1–8 participants; five turns per participant, one marble per
+turn; sequential turn order; aim LEFT/RIGHT then press DROP. The marble
+falls through an 85-peg board with an animated bumper and gate, bounces
+off the walls and settles into one of eight buckets. From left to right,
+the bucket awards are 50, 100, 200, 500, 1000, 500, 200, 100.
+The game winner has the highest total; jackpot count and roster order
+break ties. A marble's flight has a 10-second fail-safe and scoring
+requires a 0.4-second settling interval. Inactive players are
+automatically released after 25 seconds so the session cannot stall.
+
+**Devices:** TV shows a 1920×1080 board with turn, scores and Left/Drop/Right
+fallback controls. Connected phones display the active turn, controls,
+aim position and points. CPU turns are automatically resolved using
+seeded randomness; unowned or duplicate drop commands are rejected.
+No player data is transmitted to a new external service.
+
+**Party Night:** Drop Zone is a single game within a 3/5/7-game session.
+Its five-round final ranking is converted to the existing Party Points
+scale 10/8/6/5/4/3/2/1. The fixed player roster and cumulative scores
+remain controlled by Phase 2 PartyCoordinator. The shared finale displays
+the winner and offers the next game.
+
+**Art:** the functional Drop Zone pegboard is currently code-rendered,
+following the established premium colour palette. It is not a claim that
+a new 3D environment has been artistically approved; future visual
+production must preserve its physics and screen affordances.
+
+**QA:** 30 deterministic full CPU simulations with repeated seeds,
+one eight-racer capacity test, input validation, Grand Prix regression,
+local browser-rendered Drop Zone completion, and TV/two-phone WebSocket
+smoke. Physical multiplayer acceptance is a separate Alpha release gate.
+
+**Release constraint:** all development remains in
+`dev/party-pack-phase3-dropzone`, PR #39 based on the Phase 2 development
+branch. No GitHub main merge or Render production deployment.
+
+---
+
+## Party Pack Phase 4 — Bowl Brawl (development v0.7.0)
+
+**Architecture:** `src/modes/brawl.js` implements the deterministic,
+DOM-free arena simulation; `src/tv.js` handles room control, TV drawing
+and Party Night scoring, and `src/play.html` handles phone button input.
+The minimum number of Bowl Brawl players is **2** and the maximum is **8**.
+The mode is disabled at startup if too few racers have joined.
+
+**Rules:** five rounds, all players participate simultaneously in a circular
+arena. RAM consumes **28 energy**, ANCHOR consumes **15 energy**,
+energy regenerates and attack actions are cooldown-limited. RAM launches
+the marble along its selected heading. ANCHOR reduces momentum and
+resistance to incoming impacts. Human players can steer left/right; CPU
+opponents aim toward nearby surviving rivals. The 380-unit safety
+radius begins shrinking after 10 seconds, reaching 110 by 42 seconds.
+A player outside the ring is eliminated. The round ends on one survivor
+or 42 seconds. Rankings favour living racers, then survival time;
+the round points schedule is 10, 8, 6, 5, 4, 3, 2, 1.
+Five-round totals determine the winner; wins and hit counts break ties.
+
+**Party Night:** a completed Bowl Brawl counts as one game within 3/5/7-game
+Party Night, using the existing 10/8/6/5/4/3/2/1 final-game points.
+The fixed roster and cross-game totals remain controlled by
+`PartyCoordinator`. Grand Prix and Drop Zone stay playable.
+
+**TV and phone:** the TV uses a 1920×1080 code-rendered bowl, shrinking
+gold safety ring, avatar-coloured marbles, round timer and standings,
+plus optional local control buttons. Phones show current round, points,
+energy and RAM/ANCHOR/TURN buttons. The large phone pad triggers RAM.
+Unauthorised inputs and spam are rejected in the mode's logic.
+
+**Testing and release:** 30+ deterministic three-CPU full-match seeds
+with five rounds, eight-player capacity test, invalid-roster, energy,
+cooldown and elimination guards, seeded Grand Prix physics comparison,
+Drop Zone regression and browser TV + 2-phone WebSocket testing.
+The production source and 119 approved artwork assets are preserved.
+The new arena art is code-rendered until visual acceptance in a later
+production phase. Physical 2–4-phone testing remains a later release gate.
+Phase 4 remains an isolated development branch; no merge/deploy.
+
+---
+
+## Party Pack Phase 5 — Marble Derby (development v0.8.0)
+
+**Scope:** implement a complete new **five-heat Derby** for 1–8 players,
+six CPU-driven marble runners and one virtual-gem wager per player per
+heat. Start with 600 gems. Stake options are 25, 50, 100 and 200 gems.
+Odds are computed and displayed before the wager and locked when placed.
+A winning wager credits floor(stake × locked odds), with no negative
+wallets, no real money, no cash-out, prize or monetisation. A 100-gem
+stipend is automatically awarded if a wallet is below the minimum
+25-gem stake at the start of a heat.
+
+The TV runs a deterministic, seeded six-lane race, one 1,500-unit
+distance per heat, with a maximum 24-second heat and a 12-second
+selection countdown. Human players can back one runner, pick the
+stake and cheer once per heat for a tiny boost. CPU players bet and
+cheer automatically according to their deterministic decisions.
+The Derby ends with the existing approved trophy presentation.
+Final gems, then successful wagers, net profit and original roster
+order determine the winner. Party Night grants 10/8/6/5/4/3/2/1
+Party Points based on the Derby final standings.
+
+Phone controls offer four stake presets, six runners and a CHEER
+action. All scoring and ownership checks take place in the
+authoritative TV runtime. Marble Curling and Marble Golf stay locked.
+Existing 119 approved art images, Grand Prix mechanics and camera,
+Drop Zone, Bowl Brawl and current audio are preserved. Derby track
+art is currently code-rendered pending future AAA art production.
+
+QA includes 30 seeded complete five-heat three-CPU games with replay,
+eight-player cap and invalid wagers, plus regression tests for all
+previous games, the shared Party Night and simulated TV/2-phone
+WebSocket acceptance. Physical phone acceptance remains outstanding.
+Phase 5 is a nonproduction branch; no main merge or Render deploy.
+
+---
+
+## Party Pack Phase 6 — Marble Curling (development v0.9.0)
+
+**Players:** 2–8. **Format:** five ends; two stones per participant
+per end. The shared TV controller handles the room, score reporting and
+championship screen, while `src/modes/curling.js` handles deterministic
+physics, authoritative input validation, turn order and scoring.
+The ice uses fixed-step friction, collisions among stones, side-wall
+bounces and a bounded slide. Aim is restricted to −40° through 40°;
+power 30–100. Players can press SWEEP during their own moving stone,
+temporarily lowering ice resistance. CPU marbles perform their turns
+using seeded aim/power choices. After 18 seconds of inactivity a human
+throw is released automatically; a slide stops by 22 seconds.
+
+**Scoring:** players ranked by nearest stone to the central button
+receive 10/8/6/5/4/3/2/1 points by end. Each of the player's stones
+within a radius of 80 world units earns an extra 2 points.
+Five-end totals determine the winner; end wins and joining order
+break ties. One completed Curling game contributes the normal
+Party Points scale based on these final standings.
+
+**TV and phone:** 1920×1080 ice rink with house, aim line, stones,
+round status and standings. TV fallback controls and phone control
+panels allow aim, power, throw and sweep. The large phone pad is
+THROW during aim or SWEEP during a slide. Invalid/unauthorised actions
+are rejected by the TV-hosted simulation.
+
+**Preservation:** all 119 approved art files, original music/audio,
+seven-track Grand Prix, Derby, Drop Zone and Bowl Brawl unchanged.
+Marble Golf remains locked. Curling ice is functional code-drawn
+development art pending final visual/audio acceptance. Test gates are
+30 deterministic five-end three-CPU matches with replays, 8-player
+capacity, legacy regressions, browser TV game and two-phone
+WebSocket simulated acceptance, before PR review. GitHub main and
+Render remain untouched; physical-phone acceptance is outstanding.

@@ -35,9 +35,68 @@ async function main(){
   try{
     await page.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:20000});
     await page.locator('#btnBoot').click();
+    // Party Pack picker must fit within the TV-safe lobby without covering
+    // joining instructions, settings or the start controls.
+    await page.locator('#partyModeCards .partyModeCard').first().waitFor({state:'visible'});
+    const picker=await page.evaluate(()=>{
+      const bounds=id=>{const r=document.querySelector(id).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom};};
+      return {cards:[...document.querySelectorAll('.partyModeCard')].map(x=>({disabled:x.dataset.locked==='true',pressed:x.getAttribute('aria-pressed')})),
+        picker:bounds('#partyPicker'),join:bounds('.joinCard'),settings:bounds('#lobbySettings'),controls:bounds('#lobbyBottom')};
+    });
+    assert.equal(picker.cards.length,6,'Six mode cards must be visible');
+    assert.equal(picker.cards.filter(c=>c.disabled).length,0,'All six modes must be enabled');
+    assert.equal(picker.cards.filter(c=>c.pressed==='true').length,1,'One mode selected');
+    await page.locator('#partyModeCards .partyModeCard').last().hover();
+    await page.waitForFunction(()=>!document.querySelector('#partyAttractPanel').hidden,{timeout:5000});
+    assert.equal(await page.evaluate(()=>window.__MR.selectedMode),'grandprix','Hover preview must not select a game');
+    await page.screenshot({path:'qa-party-attract.png',fullPage:true});
+    await page.locator('#partyModeCards .partyModeCard').first().click();
+
+    const overlaps=(a,b)=>a.x<b.right&&a.right>b.x&&a.y<b.bottom&&a.bottom>b.y;
+    for(const [name,rect] of [['joining instructions',picker.join],['settings',picker.settings],['start controls',picker.controls]])
+      assert.equal(overlaps(picker.picker,rect),false,'Party picker overlaps '+name+': '+JSON.stringify(picker));
+    await page.screenshot({path:'qa-party-picker.png',fullPage:true});
+    console.log('PASS: six-mode picker and TV-safe lobby geometry');
     // Force full-effects art rendering on headless CI even if its framerate dips.
     await page.locator('[data-set="fx"]').click();
     await page.locator('#btnKb').click();
+    // Exercise a complete three-game Party Night without three long
+    // real-time races. The separate race smoke still checks real physics.
+    await page.locator('[data-party="3"]').click();
+    await page.locator('#btnStart').click();
+    for(let gameIndex=0;gameIndex<3;gameIndex++){
+      await page.evaluate((i)=>{
+        const a=window.__MR;
+        if(i>0)a.Game.nextPartyGame();
+        if(a.selectedMode==='dropzone'){
+          const dz=a.MODES.dropzone.session();
+          let guard=0;
+          while(!dz.state.done && guard++<15000){
+            if(!dz.state.ball)dz.action(dz.owner().id,'drop');
+            dz.step(.05);
+          }
+          if(!dz.state.done)throw Error('Party Night Drop Zone failed to finish');
+        }else{
+          // Skip waiting for complete multi-minute Grand Prix race in
+          // this coordinator smoke. A separate test races in real time.
+          a.Game.startRace('toybox');
+          for(const p of a.players.values())p.points=20+i;
+          a.Game.finale();
+        }
+      },gameIndex);
+      const snap=await page.evaluate(()=>({
+        s:window.__MR.state,
+        party:window.__MR.partyRun?.status,
+        index:window.__MR.partyRun?.session.index
+      }));
+      assert.equal(snap.s,'finale');
+      assert.equal(snap.index,gameIndex+1);
+      assert.equal(snap.party,gameIndex===2?'complete':'ready');
+    }
+    assert.equal(await page.locator('#btnNewNight').textContent(),'New night');
+    await page.locator('#btnNewNight').click();
+    await page.locator('[data-party="0"]').click();
+    await page.locator('#partyModeCards .partyModeCard').first().click();
     await page.locator('#btnStart').waitFor({state:'visible',timeout:10000});
     await page.locator('#btnStart').click();
     await page.locator('#voteCards .vcard').first().waitFor({state:'visible',timeout:10000});
@@ -74,6 +133,210 @@ async function main(){
     assert.ok(stats.clatterPose&&/clatter_(reference|announce|cheer|gasp|flag|wince)\.webp/.test(stats.clatterPose),'Approved Captain Clatter pose never used');
     assert.ok(stats.imageCount>=119,'Not all 119 approved images were requested');
     console.log('PASS: real browser race rendered approved backgrounds, rails, 8 themed props, pickups, gates, bumpers, finish arch and glow');
+    // Phase 3: run a playable Drop Zone board with actual collision steps
+    // and verify a full five-round end-to-end single-player result.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();
+      a.Game.onAction('tv','mode','dropzone');
+      a.Game.beginCup();
+    });
+    await page.locator('[data-screen="dropzone"]').waitFor({state:'visible',timeout:10000});
+    assert.equal(await page.locator('#dropZoneCanvas').getAttribute('width'),'1920');
+    await page.screenshot({path:'qa-dropzone-tv.png',fullPage:true});
+    await page.locator('#dropNow').click();
+    const initial=await page.evaluate(()=>({
+      active:!!window.__MR.MODES.dropzone.session().state.ball,
+      turn:window.__MR.MODES.dropzone.session().state.turn
+    }));
+    assert.equal(initial.active,true,'TV DROP button did not release a marble');
+    await page.evaluate(()=>{
+      const dz=window.__MR.MODES.dropzone.session();
+      let guard=0;
+      while(!dz.state.done&&guard++<10000){
+        if(!dz.state.ball)dz.action(dz.owner().id,'drop');
+        dz.step(.05);
+      }
+      if(!dz.state.done)throw Error('Drop Zone did not complete five rounds');
+    });
+    await page.locator('[data-screen="finale"]').waitFor({state:'visible',timeout:10000});
+    const dz=await page.evaluate(()=>window.__MR.MODES.dropzone.session().state);
+    assert.equal(dz.turn,5);
+    assert.equal(dz.roster[0].drops,5);
+    assert.ok(dz.roster[0].score>=250);
+    assert.equal(errors.length,0,'Browser errors after Drop Zone: '+errors.join(' | '));
+    console.log('PASS: Drop Zone five playable rounds, 1920×1080 TV, scoring and finale');
+    // Bowl Brawl: one local human plus a CPU rival, five fully simulated
+    // shrinking-ring rounds and the shared winner presentation.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();
+      a.addCpu();
+      a.Game.onAction('tv','mode','brawl');
+      a.Game.beginCup();
+    });
+    await page.locator('[data-screen="brawl"]').waitFor({state:'visible',timeout:10000});
+    assert.equal(await page.locator('#brawlCanvas').getAttribute('width'),'1920');
+    await page.screenshot({path:'qa-brawl-tv.png',fullPage:true});
+    const firstRam=await page.evaluate(()=>{
+      const b=window.__MR.MODES.brawl.session();
+      const human=b.state.marbles.find(x=>!b.state.roster.find(p=>p.id===x.id).cpu);
+      const old=human.energy;
+      const ok=b.action(human.id,'ram');
+      return {ok,old,now:human.energy};
+    });
+    assert.equal(firstRam.ok,true);
+    assert.ok(firstRam.now<firstRam.old,'RAM should consume energy');
+    await page.evaluate(()=>{
+      const b=window.__MR.MODES.brawl.session();
+      let n=0;
+      while(!b.state.done&&n++<25000)b.tick(.05);
+      if(!b.state.done)throw Error('Bowl Brawl did not finish 5 rounds');
+    });
+    await page.locator('[data-screen="finale"]').waitFor({state:'visible',timeout:10000});
+    const br=await page.evaluate(()=>{
+      const b=window.__MR.MODES.brawl.session();
+      return {round:b.state.round,history:b.state.roundHistory.length,
+        totals:b.state.roster.map(p=>({id:p.id,rounds:p.roundPoints.length,points:p.points}))};
+    });
+    assert.equal(br.round,5);
+    assert.equal(br.history,5);
+    assert.ok(br.totals.every(p=>p.rounds===5&&p.points>0));
+    assert.equal(errors.length,0,'Browser errors after Bowl Brawl: '+errors.join(' | '));
+    console.log('PASS: Bowl Brawl complete five-round TV arena, RAM energy and final standings');
+    // Three-game Party Night may select any three of the six enabled games.
+    // Preserve all modes' score transitions through deterministic simulation
+    // rather than waiting for several full races in real time.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();a.Game.onAction('tv','party',3);a.Game.beginCup();
+      let guard=0;
+      while(a.partyRun?.status!=='complete'&&guard++<3){
+        const mode=a.selectedMode;
+        if(mode==='brawl'){
+          const g=a.MODES.brawl.session();let n=0;
+          while(!g.state.done&&n++<25000)g.tick(.05);
+          if(!g.state.done)throw Error('Party Night Brawl did not complete');
+        }else if(mode==='curling'){
+          const g=a.MODES.curling.session();let n=0;
+          while(!g.state.done&&n++<120000)g.step(.1);
+          if(!g.state.done)throw Error('Party Night Curling failed to finish');
+        }else if(mode==='derby'){
+          const g=a.MODES.derby.session();let n=0;
+          while(!g.state.done&&n++<30000)g.step(.05);
+          if(!g.state.done)throw Error('Party Night Derby did not complete');
+        }else if(mode==='dropzone'){
+          const g=a.MODES.dropzone.session();let n=0;
+          while(!g.state.done&&n++<15000){
+            if(!g.state.ball)g.action(g.owner().id,'drop');
+            g.step(.05);
+          }
+          if(!g.state.done)throw Error('Party Night Drop Zone did not complete');
+        }else if(mode==='golf'){
+          const g=a.MODES.golf.session();let n=0;
+          while(!g.state.done&&n++<120000)g.step(.1);
+          if(!g.state.done)throw Error('Party Night Golf failed to finish');
+        }else if(mode==='grandprix'){
+          a.Game.startRace('toybox');
+          for(const p of a.players.values())p.points=10;
+          a.Game.finale();
+        }else throw Error('Unexpected Party Night mode: '+mode);
+        if(a.partyRun.status==='ready')a.Game.nextPartyGame();
+      }
+      if(a.partyRun?.status!=='complete')throw Error('Party Night did not finish all modes');
+    });
+    const party=await page.evaluate(()=>({
+      history:window.__MR.partyRun.history.map(g=>g.mode).sort(),
+      totals:[...window.__MR.partyRun.session.totals.values()],
+      status:window.__MR.partyRun.status
+    }));
+    assert.equal(party.history.length,3);
+    assert.equal(new Set(party.history).size,3);
+    assert.ok(party.history.every(x=>['grandprix','derby','dropzone','brawl','curling','golf'].includes(x)));
+    assert.equal(party.totals.length,2);
+    assert.ok(party.totals.every(p=>p>=6&&p<=30));
+    assert.equal(party.status,'complete');
+    assert.equal(errors.length,0,'Mixed Party Night JS errors: '+errors.join(' | '));
+    console.log('PASS: Three-mode Party Night awards correct cumulative points and exits cleanly');
+    // The actual playable Derby must run 5 heats, retain valid virtual gems
+    // and present the shared championship without errors.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();a.Game.onAction('tv','party',0);a.Game.onAction('tv','mode','derby');a.Game.beginCup();
+    });
+    await page.locator('[data-screen="derby"]').waitFor({state:'visible',timeout:10000});
+    assert.equal(await page.locator('#derbyCanvas').getAttribute('width'),'1920');
+    await page.screenshot({path:'qa-derby-tv.png',fullPage:true});
+    await page.locator('#derbyRunner').click();
+    await page.locator('#derbyStake').click();
+    await page.locator('#derbyPick').click();
+    const tvWager=await page.evaluate(()=>{
+      const g=window.__MR.MODES.derby.session();
+      const human=g.state.roster.find(p=>!p.cpu);
+      if(!human)throw Error('Derby missing human player');
+      return g.state.wagers.get(human.id);
+    });
+    assert.equal(tvWager.horse,1,'TV runner selector must change the backed marble');
+    assert.equal(tvWager.stake,100,'TV stake selector must change virtual-gem stake');
+    await page.evaluate(()=>{
+      const g=window.__MR.MODES.derby.session();
+      let n=0;
+      while(!g.state.done&&n++<30000)g.step(.05);
+      if(!g.state.done)throw Error('Derby failed to complete five heats');
+    });
+    await page.locator('[data-screen="finale"]').waitFor({state:'visible',timeout:10000});
+    const derby=await page.evaluate(()=>({
+      history:window.__MR.MODES.derby.session().state.history.length,
+      bets:window.__MR.MODES.derby.session().state.roster.map(p=>p.bets.length),
+      gems:window.__MR.MODES.derby.session().state.roster.map(p=>p.gems)
+    }));
+    assert.equal(derby.history,5);
+    assert.ok(derby.bets.every(n=>n===5));
+    assert.ok(derby.gems.every(n=>n>=0));
+    assert.deepEqual(errors,[],'JavaScript errors in Marble Derby');
+    console.log('PASS: Five real Derby heats, virtual gems and winner presentation');
+    // Start five-end Curling, test local TV controls, complete via real
+    // deterministic ice physics and verify the approved shared finale.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();a.Game.onAction('tv','party',0);
+      a.Game.onAction('tv','mode','curling');
+      a.Game.beginCup();
+    });
+    await page.locator('[data-screen="curling"]').waitFor({state:'visible',timeout:10000});
+    assert.equal(await page.locator('#curlingCanvas').getAttribute('width'),'1920');
+    await page.screenshot({path:'qa-curling-tv.png',fullPage:true});
+    await page.locator('#curlRight').click();
+    await page.locator('#curlUp').click();
+    await page.locator('#curlThrow').click();
+    const shot=await page.evaluate(()=>{
+      const g=window.__MR.MODES.curling.session();
+      return {phase:g.state.phase,stones:g.state.stones.length,angle:g.state.stones[0]?.vy};
+    });
+    assert.equal(shot.phase,'slide');
+    assert.equal(shot.stones,1);
+    assert.ok(shot.angle>0,'TV aim control must change the throw heading');
+    await page.evaluate(()=>{
+      const g=window.__MR.MODES.curling.session();let n=0;
+      while(!g.state.done&&n++<120000)g.step(.1);
+      if(!g.state.done)throw Error('Curling never finished five ends');
+    });
+    await page.locator('[data-screen="finale"]').waitFor({state:'visible',timeout:10000});
+    const cur=await page.evaluate(()=>({
+      count:window.__MR.MODES.curling.session().state.history.length,
+      played:window.__MR.MODES.curling.session().state.roster.map(p=>p.stonesPlayed),
+      ends:window.__MR.MODES.curling.session().state.roster.map(p=>p.endPoints.length)
+    }));
+    assert.equal(cur.count,5);
+    assert.ok(cur.played.every(n=>n===10));
+    assert.ok(cur.ends.every(n=>n===5));
+    assert.deepEqual(errors,[],'Curling browser errors');
+    console.log('PASS: TV five-end Curling, throw physics, scoreboard and winner presentation');
+
+
+
+
+
   }finally{
     await browser.close();
   }

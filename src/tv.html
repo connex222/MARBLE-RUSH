@@ -104,6 +104,83 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #status{position:absolute;left:50%;top:calc(30*var(--u));transform:translateX(-50%);background:rgba(15,17,48,.9);border-radius:999px;
   padding:calc(10*var(--u)) calc(24*var(--u));font-size:calc(20*var(--u));border:calc(2*var(--u)) solid rgba(255,200,61,.4)}
 
+
+/* Party Pack visual treatment — distinctive miniature-diorama-inspired cards.
+   No changes to approved Grand Prix art or original marble avatars. */
+#partyPicker{position:absolute;top:calc(755*var(--u));left:calc(55*var(--u));right:calc(55*var(--u));z-index:2}
+#partyPicker h2{font:700 calc(24*var(--u)) Fredoka,sans-serif;margin:0 0 calc(9*var(--u));color:var(--cream);
+ text-shadow:0 calc(3*var(--u)) calc(12*var(--u)) #000}
+#partyModeStatus{font:700 calc(16*var(--u)) Nunito,sans-serif;color:var(--gold);margin-left:calc(16*var(--u))}
+#partyModeCards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:calc(13*var(--u))}
+.partyModeCard{--accent:#ffc83d;--top:#294068;--base:#13162d;position:relative;isolation:isolate;
+ min-width:0;height:calc(85*var(--u));padding:calc(7*var(--u)) calc(13*var(--u));
+ border-radius:calc(22*var(--u));overflow:hidden;
+ background:linear-gradient(150deg,rgba(255,255,255,.18),transparent 42%),linear-gradient(165deg,var(--top),var(--base));
+ border:calc(3*var(--u)) solid color-mix(in srgb,var(--accent) 64%,white 36%);
+ color:var(--cream);cursor:pointer;display:flex;align-items:flex-end;justify-content:center;text-align:center;
+ box-shadow:inset 0 calc(3*var(--u)) rgba(255,255,255,.24),inset 0 calc(-10*var(--u)) calc(22*var(--u)) rgba(0,0,0,.45),0 calc(8*var(--u)) calc(18*var(--u)) rgba(0,0,0,.45);
+ transition:transform .17s ease,box-shadow .17s ease}
+.partyModeCard::before{content:'';position:absolute;z-index:-1;width:calc(80*var(--u));height:calc(80*var(--u));
+ border-radius:50%;top:calc(-12*var(--u));left:calc(18*var(--u));
+ background:radial-gradient(circle at 29% 25%,#fff 0 5%,rgba(255,255,255,.7) 8%,transparent 22%),
+ conic-gradient(from 40deg,var(--accent),#fdf9e2 27%,var(--accent) 46%,#1b2447 69%,var(--accent));
+ box-shadow:inset calc(-10*var(--u)) calc(-13*var(--u)) calc(16*var(--u)) #0008,0 calc(8*var(--u)) calc(14*var(--u)) #0007}
+.partyModeCard::after{content:'';position:absolute;z-index:-2;width:110%;height:calc(36*var(--u));top:calc(37*var(--u));left:-5%;
+ transform:rotate(-16deg);background:linear-gradient(180deg,#fff5,transparent 20%,var(--accent) 25%,#ffffff6b 40%,transparent 58%,#0006 62%,transparent 85%);opacity:.68}
+.partyModeCard[data-mode="grandprix"]{--accent:#ff4a67;--top:#602142;--base:#210e28}
+.partyModeCard[data-mode="derby"]{--accent:#ffc65f;--top:#6b3921;--base:#231327}
+.partyModeCard[data-mode="dropzone"]{--accent:#56c9ff;--top:#153e79;--base:#101b3a}
+.partyModeCard[data-mode="brawl"]{--accent:#fa7cda;--top:#643174;--base:#25142f}
+.partyModeCard[data-mode="curling"]{--accent:#91e9ff;--top:#2c6380;--base:#0b2639}
+.partyModeCard[data-mode="golf"]{--accent:#a9f57c;--top:#386c37;--base:#102b22}
+.partyModeCard:hover{transform:translateY(calc(-5*var(--u)));box-shadow:0 calc(10*var(--u)) calc(32*var(--u)) #0009,0 0 calc(16*var(--u)) var(--accent)}
+.partyModeCard[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 calc(3*var(--u)) var(--gold),0 0 calc(22*var(--u)) var(--accent)}
+.partyModeCard[data-locked="true"]{opacity:.6;cursor:help}
+.partyModeCard .modeIcon{position:absolute;right:calc(17*var(--u));top:calc(10*var(--u));font-size:calc(37*var(--u));filter:drop-shadow(0 calc(4*var(--u)) calc(3*var(--u)) #0009)}
+.partyModeCard strong{display:block;font:700 calc(21*var(--u)) Fredoka,sans-serif;text-shadow:0 calc(3*var(--u)) calc(6*var(--u)) #000e;line-height:1.05}
+.partyModeCard small{display:block;font:700 calc(13*var(--u)) Nunito,sans-serif;color:#fff9d8;text-shadow:0 calc(2*var(--u)) calc(5*var(--u)) #000;margin-top:calc(3*var(--u))}
+.partyModeCard:focus-visible{outline:calc(5*var(--u)) solid white;outline-offset:calc(4*var(--u))}
+/* Approved ChatGPT tile art is optional; keep every mode accessible without it. */
+.partyModeCard.has-art{background-image:linear-gradient(180deg,rgba(7,12,34,.06) 0%,rgba(7,12,34,.06) 35%,rgba(7,12,34,.94) 100%),var(--party-thumb);background-position:center 42%;background-size:cover}
+.partyModeCard.has-art::before,.partyModeCard.has-art::after{display:none}
+.partyModeCard.has-art .modeIcon{display:none}
+.partyModeCard.has-art strong{font-size:calc(20*var(--u))}
+.partyModeCard.has-art small{font-size:calc(12*var(--u))}
+
+@media (prefers-reduced-motion:reduce){.partyModeCard{transition:none}.partyModeCard:hover{transform:none}}
+#partyNightOptions{position:absolute;top:0;right:0;display:flex;align-items:center;justify-content:flex-end;gap:calc(7*var(--u));height:calc(29*var(--u));z-index:3}
+#partyNightOptions span{font:800 calc(14*var(--u)) Nunito,sans-serif;color:var(--gold);margin-right:calc(5*var(--u))}
+#partyNightOptions button{font:800 calc(14*var(--u)) Nunito,sans-serif;color:var(--cream);border:calc(2*var(--u)) solid rgba(255,244,224,.3);background:rgba(15,17,48,.8);border-radius:calc(12*var(--u));padding:calc(3*var(--u)) calc(9*var(--u));cursor:pointer}
+#partyNightOptions button[aria-pressed="true"]{background:#314e66;border-color:var(--gold)}
+#partyNightOptions button:focus-visible{outline:calc(4*var(--u)) solid var(--gold)}
+#partyAttractPanel{position:absolute;left:34%;top:20%;width:32%;aspect-ratio:620/360;z-index:4;
+  border:calc(5*var(--u)) solid var(--gold);border-radius:calc(22*var(--u));overflow:hidden;
+  background:#131831;box-shadow:0 calc(16*var(--u)) calc(45*var(--u)) rgba(0,0,0,.65);pointer-events:none}
+#partyAttractCanvas{display:block;width:100%;height:100%}
+#dropZoneCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#dropZoneHelp{position:absolute;right:calc(65*var(--u));bottom:calc(20*var(--u));
+ display:flex;gap:calc(14*var(--u));align-items:center;z-index:5}
+#dropZoneHelp .btn{font-size:calc(23*var(--u));padding:calc(11*var(--u)) calc(18*var(--u))}
+#dropZoneHelp .btn.go{font-size:calc(24*var(--u));padding:calc(13*var(--u)) calc(23*var(--u))}
+#brawlCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#brawlHelp{position:absolute;right:calc(60*var(--u));bottom:calc(20*var(--u));
+ display:flex;gap:calc(11*var(--u));align-items:center;z-index:5}
+#brawlHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(15*var(--u))}
+#brawlHelp .btn.go{font-size:calc(24*var(--u));padding:calc(12*var(--u)) calc(22*var(--u))}
+#derbyCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#derbyHelp{position:absolute;right:calc(60*var(--u));bottom:calc(20*var(--u));
+display:flex;gap:calc(12*var(--u));align-items:center;z-index:5}
+#derbyHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(16*var(--u))}
+#derbyHelp .btn.go{font-size:calc(23*var(--u))}
+#golfCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#golfHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));display:flex;gap:calc(9*var(--u));z-index:5}
+#golfHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(14*var(--u))}
+#golfHelp .btn.go{font-size:calc(24*var(--u))}
+#curlingCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#curlingHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));
+display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
+#curlingHelp .btn{font-size:calc(19*var(--u));padding:calc(10*var(--u)) calc(13*var(--u))}
+#curlingHelp .btn.go{font-size:calc(22*var(--u))}
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -243,6 +320,20 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
       <h2>Racers</h2>
       <div id="lobbyPlayers"></div>
     </div>
+    <div id="partyAttractPanel" hidden aria-label="Game preview">
+      <canvas id="partyAttractCanvas" width="620" height="360"></canvas>
+    </div>
+    <section id="partyPicker" aria-label="Choose your Marble Rush game">
+      <h2>CHOOSE YOUR GAME <span id="partyModeStatus">Grand Prix ready · more games in development</span></h2>
+      <div id="partyModeCards" role="group" aria-label="Game modes"></div>
+      <div id="partyNightOptions" role="group" aria-label="Party Night length">
+        <span>PARTY NIGHT</span>
+        <button type="button" data-party="0" aria-pressed="true">Off</button>
+        <button type="button" data-party="3" aria-pressed="false">3 games</button>
+        <button type="button" data-party="5" aria-pressed="false">5 games</button>
+        <button type="button" data-party="7" aria-pressed="false">7 games</button>
+      </div>
+    </section>
     <div id="lobbySettings">
       <button class="chip" data-set="cup">Cup<em>4 races</em></button>
       <button class="chip" data-set="items">Items</button>
@@ -256,6 +347,58 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
       <button class="btn" id="btnKb">Add keyboard racer</button>
       <button class="btn go" id="btnStart" disabled>Start the Cup</button>
       <button class="btn" id="btnCpu">Add CPU racer</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="dropzone" hidden>
+    <canvas id="dropZoneCanvas" width="1920" height="1080" aria-label="Drop Zone pegboard game"></canvas>
+    <div id="dropZoneHelp">
+      <button class="btn" id="dropLeft">◀ Left</button>
+      <button class="btn go" id="dropNow">DROP!</button>
+      <button class="btn" id="dropRight">Right ▶</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="brawl" hidden>
+    <canvas id="brawlCanvas" width="1920" height="1080" aria-label="Bowl Brawl marble arena"></canvas>
+    <div id="brawlHelp">
+      <button class="btn" id="brawlLeft">◀ Turn</button>
+      <button class="btn go" id="brawlRam">RAM!</button>
+      <button class="btn" id="brawlAnchor">ANCHOR</button>
+      <button class="btn" id="brawlRight">Turn ▶</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="derby" hidden>
+    <canvas id="derbyCanvas" width="1920" height="1080" aria-label="Marble Derby race and virtual gems scoreboard"></canvas>
+    <div id="derbyHelp">
+      <button class="btn" id="derbyStake">Change stake</button>
+      <button class="btn" id="derbyRunner">Choose runner</button>
+      <button class="btn go" id="derbyPick">Back a marble</button>
+      <button class="btn" id="derbyCheer">CHEER!</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="golf" hidden>
+    <canvas id="golfCanvas" width="1920" height="1080" aria-label="Marble Golf five-hole miniature course"></canvas>
+    <div id="golfHelp">
+      <button class="btn" id="golfLeft">◀ Aim</button>
+      <button class="btn" id="golfDown">− Power</button>
+      <button class="btn go" id="golfShoot">SHOOT!</button>
+      <button class="btn" id="golfUp">+ Power</button>
+      <button class="btn" id="golfRight">Aim ▶</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="curling" hidden>
+    <canvas id="curlingCanvas" width="1920" height="1080" aria-label="Marble Curling ice rink and scoring house"></canvas>
+    <div id="curlingHelp">
+      <button class="btn" id="curlLeft">◀ Aim</button>
+      <button class="btn" id="curlDown">− Power</button>
+      <button class="btn go" id="curlThrow">THROW!</button>
+      <button class="btn" id="curlSweep">SWEEP!</button>
+      <button class="btn" id="curlUp">+ Power</button>
+      <button class="btn" id="curlRight">Aim ▶</button>
     </div>
   </section>
 
@@ -303,6 +446,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
   <div id="status" hidden></div>
 </div>
 <script>/*ENGINE*/</script>
+<script>/*MODES*/</script>
 <script>/*QR*/</script>
 <script>/*TV*/</script>
 </body>

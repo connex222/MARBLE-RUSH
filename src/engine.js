@@ -60,7 +60,7 @@ const MR = (() => {
       meta, segs: [], way: [], bumpers: [], pads: [], gems: [], loops: [],
       hazards: [], stairs: [], jumps: [], bowls: [], arches: [], walls: [],
       startSlots: [], gateX: 0, gateY: 0, finishWay: -1,
-      conveyors: [], seesaws: [], zones: [], forks: [], alts: [],
+      conveyors: [], seesaws: [], zones: [], forks: [], alts: [], partyObstacles: [],
     };
     let x = 0, y = 0, phi = 0, MATDEF = 'wood', zoneStart = -1;
     function setMat(m) { MATDEF = m; }
@@ -317,6 +317,56 @@ const MR = (() => {
       T.walls.push(seg(x + h * 4, y - 160, x + h * 4, y + 6, 'wall', { kind: 'wall' }));
     }
 
+    // New game builders create opt-in Party Pack objects at absolute coordinates.
+    // Grand Prix's original rail builder and seven tracks do not invoke these.
+    function partyPegGrid(px,py,cols,rows,dx,dy,r=9) {
+      if (![px,py,dx,dy,r].every(Number.isFinite)||dx<=0||dy<=0||r<=0||
+          !Number.isInteger(cols)||!Number.isInteger(rows)||cols<1||rows<1||cols*rows>2000)
+        throw Error('Invalid peg grid');
+      for(let row=0;row<rows;row++)for(let col=0;col<cols;col++)
+        T.partyObstacles.push({type:'peg',x:px+(col+(row%2)*.5)*dx,y:py+row*dy,r,restitution:.55});
+      return T;
+    }
+    function partySpinner(px,py,r=36,arms=3,speed=1.3) {
+      if(![px,py,r,speed].every(Number.isFinite)||r<=0||!Number.isInteger(arms)||arms<2||arms>12)
+        throw Error('Invalid spinner');
+      T.partyObstacles.push({type:'spinner',x:px,y:py,r,arms,radiansPerSecond:speed,phase:0});
+      return T;
+    }
+    function partyBucket(px,py,width,height,points=10) {
+      if(![px,py,width,height,points].every(Number.isFinite)||width<=0||height<=0||points<0)
+        throw Error('Invalid bucket');
+      T.partyObstacles.push({type:'bucket',x:px,y:py,width,height,points,dwell:.4});
+      return T;
+    }
+    function partyMovingGate(px,py,width,range,period=3) {
+      if(![px,py,width,range,period].every(Number.isFinite)||width<=0||period<=0||range<0)
+        throw Error('Invalid moving gate');
+      T.partyObstacles.push({type:'movingGate',x:px,y:py,width,range,period});
+      return T;
+    }
+    function partyTargetRing(px,py,r) {
+      if(![px,py,r].every(Number.isFinite)||r<=0)throw Error('Invalid target');
+      T.partyObstacles.push({type:'targetRing',x:px,y:py,r});
+      return T;
+    }
+    function partyCup(px,py,width=43,maxSpeed=900) {
+      if(![px,py,width,maxSpeed].every(Number.isFinite)||width<=0||maxSpeed<=0)throw Error('Invalid golf cup');
+      T.partyObstacles.push({type:'cup',x:px,y:py,width,maxSpeed});
+      return T;
+    }
+    function partyWater(px,py,width,height) {
+      if(![px,py,width,height].every(Number.isFinite)||width<=0||height<=0)throw Error('Invalid water');
+      T.partyObstacles.push({type:'water',x:px,y:py,width,height});
+      return T;
+    }
+    function partyRetractRim(px,py,initialRadius=620,start=15,end=75,minRadius=110) {
+      if(![px,py,initialRadius,start,end,minRadius].every(Number.isFinite)||
+        initialRadius<=0||minRadius<=0||minRadius>initialRadius||end<=start)
+        throw Error('Invalid shrinking rim');
+      T.partyObstacles.push({type:'retractRim',x:px,y:py,initialRadius,start,end,minRadius});
+      return T;
+    }
     function done() {
       // cumulative distance along route
       const w = T.way;
@@ -368,7 +418,10 @@ const MR = (() => {
 
     return {
       T, line, bend, aim, face, uturn, dangerTurn, loop, jump, bumpers, pad, gems, stairs, bowl,
-      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, fork, get x() { return x; }, get y() { return y; }, get h() { return H(); },
+      start, finish, runoff, done, setMat, conveyor, slow, seesaw, lowStart, lowEnd, fork,
+      pegs:partyPegGrid, spinner:partySpinner, bucket:partyBucket, movingGate:partyMovingGate,
+      targetRing:partyTargetRing, cup:partyCup, water:partyWater, retractRim:partyRetractRim,
+      get x() { return x; }, get y() { return y; }, get h() { return H(); },
     };
   }
   const EMPTY = [];
@@ -680,7 +733,13 @@ const MR = (() => {
   class World {
     constructor(track, opts = {}) {
       this.t = track;
-      this.opts = Object.assign({ items: true, catchup: true, free: false }, opts);
+      this.opts = Object.assign({ items: true, catchup: true, free: false, passing: true }, opts);
+      // Optional Party Pack obstacle set. Existing Grand Prix worlds have none.
+      this.partyObstacles = (Array.isArray(opts.partyObstacles)
+        ? opts.partyObstacles : (Array.isArray(track.partyObstacles) ? track.partyObstacles : [])
+      ).map(o => ({ ...o }));
+      this.partySensors = new Map();
+
       this.rand = rng(opts.seed || 1234);
       this.time = 0; this.acc = 0;
       this.phase = this.opts.free ? 'free' : 'pen';
@@ -846,6 +905,7 @@ const MR = (() => {
       const ms = this.marbles;
       for (const m of ms) this.moveMarble(m, dt);
       this.marbleCollisions();
+      this.checkPartySensors(dt);
       this.features(dt);
       for (const m of ms) this.updateProgress(m);
       this.rankAndRules(dt);
@@ -908,6 +968,7 @@ const MR = (() => {
       for (let k = 0; k < sub; k++) {
         m.x += m.vx * h; m.y += m.vy * h;
         this.collideTrack(m);
+        this.collidePartyObstacles(m);
       }
       // rolling resistance
       if (m.gTime === 0) {
@@ -969,6 +1030,83 @@ const MR = (() => {
       }
     }
 
+    /** Physics for opt-in Party Pack props. No extra work in Grand Prix. */
+    collidePartyObstacles(m) {
+      if(!this.partyObstacles.length) return;
+      const bounce=(cx,cy,r,e,kind)=>{
+        let dx=m.x-cx,dy=m.y-cy,dist2=dx*dx+dy*dy;
+        const sum=r+m.r;
+        if(dist2>=sum*sum)return;
+        if(dist2<1e-8){dx=0;dy=-1;dist2=1;}
+        const d=Math.sqrt(dist2),nx=dx/d,ny=dy/d;
+        m.x+=nx*(sum-d);m.y+=ny*(sum-d);
+        const vn=m.vx*nx+m.vy*ny;
+        if(vn<0){
+          m.vx-=(1+e)*vn*nx;m.vy-=(1+e)*vn*ny;
+          if(-vn>100)this.emit('party_hit',{id:m.id,kind,x:cx,y:cy,v:-vn});
+        }
+      };
+      const segment=(x1,y1,x2,y2,r,e,kind)=>{
+        const dx=x2-x1,dy=y2-y1,len2=dx*dx+dy*dy||1;
+        const q=Math.max(0,Math.min(1,((m.x-x1)*dx+(m.y-y1)*dy)/len2));
+        bounce(x1+q*dx,y1+q*dy,r,e,kind);
+      };
+      for(const o of this.partyObstacles) {
+        if(o.type==='peg')bounce(o.x,o.y,o.r,o.restitution??.55,'peg');
+        else if(o.type==='spinner') {
+          bounce(o.x,o.y,Math.min(9,o.r*.25),.7,'spinner_hub');
+          const angle=(o.phase||0)+this.time*(o.radiansPerSecond||0);
+          for(let arm=0;arm<o.arms;arm++){
+            const a=angle+arm*2*Math.PI/o.arms;
+            segment(o.x,o.y,o.x+Math.cos(a)*o.r,o.y+Math.sin(a)*o.r,7,.7,'spinner');
+          }
+        } else if(o.type==='movingGate') {
+          const gx=o.x+o.range*Math.sin(2*Math.PI*this.time/o.period);
+          segment(gx,o.y-o.width/2,gx,o.y+o.width/2,5,.65,'movingGate');
+        } else if(o.type==='retractRim') {
+          const f=Math.max(0,Math.min(1,(this.time-o.start)/(o.end-o.start)));
+          const r=o.initialRadius-(o.initialRadius-o.minRadius)*f;
+          const dx=m.x-o.x,dy=m.y-o.y,d=Math.hypot(dx,dy);
+          if(d>r-m.r&&d>1e-8){
+            const nx=dx/d,ny=dy/d;
+            m.x=o.x+nx*(r-m.r);m.y=o.y+ny*(r-m.r);
+            const vn=m.vx*nx+m.vy*ny;
+            if(vn>0){
+              m.vx-=1.6*vn*nx;m.vy-=1.6*vn*ny;
+              if(vn>100)this.emit('party_hit',{id:m.id,kind:'rim',x:m.x,y:m.y,v:vn});
+            }
+          }
+        }
+      }
+    }
+
+    /** Entry sensors; bucket scoring requires the full 0.4 second dwell. */
+    checkPartySensors(dt = 0) {
+      if (!this.partyObstacles.length) return;
+      for (const m of this.marbles) {
+        if (m.respawnT > 0) continue;
+        for (let i=0;i<this.partyObstacles.length;i++) {
+          const o=this.partyObstacles[i];
+          if (!['bucket','targetRing','water','cup'].includes(o.type)) continue;
+          let inside=false;
+          if (o.type==='bucket') inside=m.x>=o.x-o.width/2&&m.x<=o.x+o.width/2&&m.y>=o.y&&m.y<=o.y+o.height;
+          else if (o.type==='water') inside=Math.abs(m.x-o.x)<=o.width/2&&Math.abs(m.y-o.y)<=o.height/2;
+          else if (o.type==='targetRing') inside=Math.hypot(m.x-o.x,m.y-o.y)<=o.r;
+          else if (o.type==='cup') inside=Math.abs(m.x-o.x)<=o.width/2&&Math.hypot(m.vx,m.vy)<o.maxSpeed;
+          const key=m.id+':'+i;
+          const old=this.partySensors.get(key);
+          const prev=old&&typeof old==='object'?old:{inside:!!old,dwell:0,scored:false};
+          if(inside&&!prev.inside)this.emit('party_sensor',{id:m.id,kind:o.type,index:i,points:o.points||0,x:m.x,y:m.y});
+          const dwell=inside ? prev.dwell+dt : 0;
+          const scored=inside && prev.scored;
+          const threshold=o.type==='bucket'?(o.dwell??0.4):0;
+          if(inside&&!scored && dwell >= threshold)
+            this.emit('party_score',{id:m.id,kind:o.type,index:i,points:o.points||0,x:m.x,y:m.y});
+          this.partySensors.set(key,{inside,dwell,scored:inside&&(scored||dwell>=threshold)});
+        }
+      }
+    }
+
     /** Circle vs one segment; returns contact position along it (0–1) or null. */
     hit(m, s) {
       let t = ((m.x - s.x1) * s.dx + (m.y - s.y1) * s.dy) / s.len2;
@@ -1007,7 +1145,7 @@ const MR = (() => {
           const solid = (aBig || bBig) && !(aBub || bBub); // Big Bertha always bulldozes (unless you're in a bubble)
           // A clearly faster marble goes round the outside: a glancing clack, then it is through.
           // Without this the marble in front is simply shoved along and nobody can ever overtake.
-          if (!solid && (-vr > C.PASS_V || aBub || bBub)) {
+          if (this.opts.passing !== false && !solid && (-vr > C.PASS_V || aBub || bBub)) {
             passing.add(key);
             if (vr < 0 && !(aBub || bBub)) {
               const jn = -vr * C.PASS_K * 0.5;

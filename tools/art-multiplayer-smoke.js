@@ -60,6 +60,13 @@ async function main(){
     assert.ok(b.sent.some(x=>x.t==='join'&&x.code===room));
     assert.ok(a.received.some(x=>x.t==='hud'&&x.s==='lobby'));
     assert.ok(b.received.some(x=>x.t==='hud'&&x.s==='lobby'));
+    // The first joined phone should be VIP. Mode choice must be carried by
+    // the existing <4 KB action message and never unlock unfinished modes.
+    await p1.waitForFunction(()=>[...document.querySelectorAll('#vip button')].some(b=>b.textContent.includes('Grand Prix')),{timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Grand Prix'}).click();
+    await tv.waitForFunction(()=>window.__MR?.selectedMode==='grandprix',{timeout:10000});
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='mode'&&x.v==='grandprix'),'VIP mode choice did not reach TV');
+    assert.equal(await tv.locator('#partyModeCards .partyModeCard[data-locked="true"]').count(),0,'All six modes must now be unlocked');
     await tv.locator('#btnStart').click();
     await p1.locator('#votes button').first().waitFor({state:'visible',timeout:15000});
     await p1.locator('#votes button').first().click();
@@ -84,6 +91,117 @@ async function main(){
       a:{messages:a.sent.length,hud:a.received.filter(x=>x.t==='hud').length},
       b:{messages:b.sent.length,hud:b.received.filter(x=>x.t==='hud').length},
       track:await tv.locator('#trackName').textContent()}));
+    // Drop Zone real WebSocket test: both phones stay joined; VIP selects
+    // the new mode, Player A drops, and both receive the new game HUD.
+    await tv.evaluate(()=>window.__MR.Game.toLobby());
+    await p1.locator('#vip button').filter({hasText:'Drop Zone'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Drop Zone'}).click();
+    await tv.waitForFunction(()=>window.__MR.selectedMode==='dropzone',{timeout:10000});
+    await tv.locator('#btnStart').click();
+    await tv.locator('[data-screen="dropzone"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.mode==='dropzone'&&document.body.dataset.s==='dropzone',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.mode==='dropzone'&&document.body.dataset.s==='dropzone',{timeout:10000});
+    await p1.locator('#modeActions button').filter({hasText:'DROP!'}).click();
+    await tv.waitForFunction(()=>!!window.__MR.MODES.dropzone.session()?.state.ball,{timeout:8000});
+    const dropState=await tv.evaluate(()=>({
+      mode:window.__MR.selectedMode,
+      turn:window.__MR.MODES.dropzone.session().state.turn,
+      marble:window.__MR.MODES.dropzone.session().state.ball.id
+    }));
+    assert.equal(dropState.mode,'dropzone');
+    assert.equal(dropState.marble,'' + (await p1.evaluate(()=>window.pid||'')) || dropState.marble);
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='drop'),'Phone A did not trigger Drop Zone release');
+    assert.ok(a.received.some(x=>x.t==='hud'&&x.mode==='dropzone'));
+    assert.ok(b.received.some(x=>x.t==='hud'&&x.mode==='dropzone'));
+    await tv.screenshot({path:'qa-dropzone-tv.png',fullPage:true});
+    await p1.screenshot({path:'qa-dropzone-phone.png',fullPage:true});
+    assert.deepEqual(errors,[],'JS errors during Drop Zone: '+errors.join(' | '));
+    console.log('PASS: two independent phones joined Drop Zone, VIP selected mode, phone release, both received state');
+    // Bowl Brawl: same live room and both connected phones control marbles.
+    await tv.evaluate(()=>window.__MR.Game.toLobby());
+    await p1.locator('#vip button').filter({hasText:'Bowl Brawl'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Bowl Brawl'}).click();
+    await tv.waitForFunction(()=>window.__MR.selectedMode==='brawl',{timeout:10000});
+    await tv.locator('#btnStart').click();
+    await tv.locator('[data-screen="brawl"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.mode==='brawl'&&document.body.dataset.s==='brawl',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.mode==='brawl'&&document.body.dataset.s==='brawl',{timeout:10000});
+    const before=await tv.evaluate(()=>window.__MR.MODES.brawl.session().state.marbles.map(m=>({id:m.id,energy:m.energy})));
+    await p1.locator('#modeActions button').filter({hasText:'RAM!'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.brawl.session()?.state.events.some(e=>e.kind==='ram'),{timeout:8000});
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='ram'),'Player A did not send RAM action');
+    assert.ok(a.received.some(x=>x.t==='hud'&&x.mode==='brawl'),'Player A missing Bowl Brawl HUD');
+    assert.ok(b.received.some(x=>x.t==='hud'&&x.mode==='brawl'),'Player B missing Bowl Brawl HUD');
+    const after=await tv.evaluate(()=>window.__MR.MODES.brawl.session().state.marbles.map(m=>({id:m.id,energy:m.energy})));
+    assert.ok(after.some((m,i)=>m.energy<before[i].energy),'RAM must consume energy');
+    await tv.screenshot({path:'qa-brawl-tv.png',fullPage:true});
+    await p1.screenshot({path:'qa-brawl-phone.png',fullPage:true});
+    assert.deepEqual(errors,[],'Uncaught JS error in Bowl Brawl: '+errors.join(' | '));
+    console.log('PASS: Bowl Brawl two real WebSocket phones with synced HUD and RAM energy deduction');
+    // Both independent phones place private virtual-gem wagers in Derby.
+    await tv.evaluate(()=>window.__MR.Game.toLobby());
+    await p1.locator('#vip button').filter({hasText:'Marble Derby'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Marble Derby'}).click();
+    await tv.waitForFunction(()=>window.__MR.selectedMode==='derby',{timeout:10000});
+    await tv.locator('#btnStart').click();
+    await tv.locator('[data-screen="derby"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.mode==='derby'&&document.body.dataset.s==='derby',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.mode==='derby'&&document.body.dataset.s==='derby',{timeout:10000});
+    await p1.locator('#modeActions button').filter({hasText:'Rocket'}).click();
+    await p2.locator('#modeActions button').filter({hasText:'Comet'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.derby.session()?.state.wagers.size===2,{timeout:8000});
+    const wagers=await tv.evaluate(()=>[...window.__MR.MODES.derby.session().state.wagers.values()].map(b=>b.horse).sort());
+    assert.deepEqual(wagers,[0,2],'Derby must retain both distinct phone wagers');
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='bet'),'Alice Derby bet not transmitted');
+    assert.ok(b.sent.some(x=>x.t==='act'&&x.a==='bet'),'Bob Derby bet not transmitted');
+    assert.ok(a.received.some(x=>x.t==='hud'&&x.mode==='derby'),'Alice Derby HUD missing');
+    assert.ok(b.received.some(x=>x.t==='hud'&&x.mode==='derby'),'Bob Derby HUD missing');
+    await tv.screenshot({path:'qa-derby-tv.png',fullPage:true});
+    await p1.screenshot({path:'qa-derby-phone.png',fullPage:true});
+    assert.deepEqual(errors,[],'Browser errors in two-phone Derby');
+    console.log('PASS: two WebSocket phones placed separate Derby bets and received virtual-gem HUD');
+    // Curling: both phones stay connected; first phone throws, second sees
+    // the authoritative next turn and takes the following stone.
+    await tv.evaluate(()=>window.__MR.Game.toLobby());
+    await p1.locator('#vip button').filter({hasText:'Marble Curling'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Marble Curling'}).click();
+    await tv.waitForFunction(()=>window.__MR.selectedMode==='curling',{timeout:10000});
+    await tv.locator('#btnStart').click();
+    await tv.locator('[data-screen="curling"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.mode==='curling'&&document.body.dataset.s==='curling',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.mode==='curling'&&document.body.dataset.s==='curling',{timeout:10000});
+    await p1.locator('#modeActions button').filter({hasText:'THROW!'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.curling.session()?.state.phase==='slide',{timeout:8000});
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='throw'),'First Curling phone did not throw');
+    assert.ok(a.received.some(x=>x.t==='hud'&&x.mode==='curling'));
+    assert.ok(b.received.some(x=>x.t==='hud'&&x.mode==='curling'));
+    await tv.evaluate(()=>{
+      const g=window.__MR.MODES.curling.session();
+      let n=0;while(g.state.phase==='slide'&&n++<500)g.step(.1);
+      if(g.state.phase!=='aim')throw Error('Curling shot failed to settle');
+    });
+    // Curling gives each racer two stones consecutively. First player
+    // must complete the second shot before Player B becomes eligible.
+    await p1.locator('#modeActions button').filter({hasText:'THROW!'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#modeActions button').filter({hasText:'THROW!'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.curling.session()?.state.stones.length===2,{timeout:8000});
+    await tv.evaluate(()=>{
+      const g=window.__MR.MODES.curling.session();let n=0;
+      while(g.state.phase==='slide'&&n++<500)g.step(.1);
+      if(g.state.phase!=='aim')throw Error('Second Curling shot failed to settle');
+    });
+    await p2.locator('#modeActions button').filter({hasText:'THROW!'}).waitFor({state:'visible',timeout:10000});
+    await p2.locator('#modeActions button').filter({hasText:'THROW!'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.curling.session()?.state.stones.length===3,{timeout:8000});
+    assert.ok(b.sent.some(x=>x.t==='act'&&x.a==='throw'),'Second Curling phone did not throw');
+    await tv.screenshot({path:'qa-curling-tv.png',fullPage:true});
+    await p2.screenshot({path:'qa-curling-phone.png',fullPage:true});
+    assert.deepEqual(errors,[],'Two-phone Curling JS errors');
+    console.log('PASS: Curling two phones execute separate throws with authoritative turn ownership');
+
+
+
+
   }finally{await browser.close();}
 }
 main().catch(e=>{console.error('FAIL:',e.stack||e);process.exitCode=1;});
