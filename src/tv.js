@@ -1273,6 +1273,12 @@
             original.lastPlace=ranking.indexOf(p)+1;}
         }
       }
+      // The existing winner presentation expects a racing World with a finish
+      // arch. Swap from the lobby bowl to a display-only Toy Box track before
+      // handing off, without changing the completed Drop Zone score.
+      world = new World(TRACKS.toybox(),{seed:1,free:true});
+      art = buildArt(world.t);
+      for(const p of players.values())world.addMarble(p.id,p);
       this.finale();
     },
     toVote() {
