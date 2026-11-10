@@ -1769,7 +1769,7 @@
       };
       box.appendChild(card);
     }
-    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · available modes repeat' : 'Grand Prix playable · five modes in development';
+    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · available modes repeat' : 'Grand Prix and Drop Zone playable · four modes in development';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
