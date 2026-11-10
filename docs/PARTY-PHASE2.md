@@ -4,10 +4,11 @@
 
 ## Implemented
 - Six registered game descriptors, all with a common method interface.
+- DOM-free reusable geometry primitives for peg grids, spinners, bucket sensors, moving gates, target rings, golf cups, water zones and shrinking rims (constructors and sensors only; not yet connected to World physics).
 - Grand Prix remains the sole playable mode. The previous TV race state machine is unchanged; the adapter does not yet extract its internals.
 - Five non-playable descriptors are intentionally disabled to prevent a user entering unfinished games.
 - A TV game-picker showing all six modes, visually distinguishing Grand Prix from future games.
-- Phone HUD transmits mode and phase and supports mode-specific pad labels, without activating unfinished controls.
+- Phone HUD transmits mode and phase, supports mode-specific pad labels, and lets the VIP select an available mode from the phone. Unfinished modes remain disabled.
 - Pure Party Points ledger (10/8/6/5/4/3/2/1), ranking validation, 3/5/7-game queue validation and cumulative scores.
 - World option `passing:false` disables the Grand Prix glancing-overtake special rule for future games; the default remains true.
 - Existing screen-free balance script remains intact and now rejects unfinished modes explicitly.
@@ -18,7 +19,7 @@
 - True 15-second mode-specific CPU attract demos and full settings.
 - VIP Party Night game selection and end-to-end cross-mode transitions (ledger is headless only).
 - Mode-specific betting/aim/power phone panels and cheer mechanic.
-- DOM-free physics pieces: pegs, spinners, buckets, moving gates, target ring, cup, water and shrinking rim.
+- Integrate the newly provided geometry primitives into the existing DOM-free World collision/physics routines and add per-mode tests.
 - Mode-specific deterministic bot implementations and 30+ seeded simulations.
 
 ## Safeguards
