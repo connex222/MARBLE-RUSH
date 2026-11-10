@@ -53,3 +53,22 @@ jobs:
           if(!html.includes('src="') && !html.includes('<canvas')) throw Error('TV document malformed');
           console.log('PASS: standalone TV '+Math.round(html.length/1024)+' KB');
           NODE
+      - name: Package changed Phase 2 files for review
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marble-rush-party-phase2-foundations
+          retention-days: 14
+          compression-level: 6
+          path: |
+            src/modes/
+            src/engine.js
+            src/tv.js
+            src/tv.html
+            src/play.html
+            tools/build.js
+            tools/balance-lab.js
+            tools/test-party-foundations.js
+            package.json
+            docs/PARTY-PHASE2.md
+            .github/workflows/party-foundations.yml
