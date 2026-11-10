@@ -40,12 +40,19 @@ async function main(){
     await page.locator('#partyModeCards .partyModeCard').first().waitFor({state:'visible'});
     const picker=await page.evaluate(()=>{
       const bounds=id=>{const r=document.querySelector(id).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom};};
-      return {cards:[...document.querySelectorAll('.partyModeCard')].map(x=>({disabled:x.disabled,pressed:x.getAttribute('aria-pressed')})),
+      return {cards:[...document.querySelectorAll('.partyModeCard')].map(x=>({disabled:x.getAttribute('aria-disabled')==='true',pressed:x.getAttribute('aria-pressed')})),
         picker:bounds('#partyPicker'),join:bounds('.joinCard'),settings:bounds('#lobbySettings'),controls:bounds('#lobbyBottom')};
     });
     assert.equal(picker.cards.length,6,'Six mode cards must be visible');
     assert.equal(picker.cards.filter(c=>c.disabled).length,5,'Incomplete games must not be playable');
     assert.equal(picker.cards.filter(c=>c.pressed==='true').length,1,'One mode selected');
+    const locked=page.locator('#partyModeCards .partyModeCard[aria-disabled="true"]').first();
+    await locked.click();
+    await page.waitForFunction(()=>!document.querySelector('#partyAttractPanel').hidden,{timeout:5000});
+    assert.equal(await page.evaluate(()=>window.__MR.selectedMode),'grandprix','Preview must not launch an unfinished game');
+    await page.screenshot({path:'qa-party-attract.png',fullPage:true});
+    await page.locator('#partyModeCards .partyModeCard').first().click();
+
     const overlaps=(a,b)=>a.x<b.right&&a.right>b.x&&a.y<b.bottom&&a.bottom>b.y;
     for(const [name,rect] of [['joining instructions',picker.join],['settings',picker.settings],['start controls',picker.controls]])
       assert.equal(overlaps(picker.picker,rect),false,'Party picker overlaps '+name+': '+JSON.stringify(picker));
