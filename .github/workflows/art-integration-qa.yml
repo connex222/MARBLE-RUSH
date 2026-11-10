@@ -93,6 +93,7 @@ jobs:
           name: marble-rush-compiled-art-preview
           path: |
             public/
+            qa-party-picker.png
             qa-art-race-preview.png
             qa-art-multiplayer-tv.png
             qa-art-multiplayer-phone.png
