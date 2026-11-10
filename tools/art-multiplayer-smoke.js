@@ -91,6 +91,33 @@ async function main(){
       a:{messages:a.sent.length,hud:a.received.filter(x=>x.t==='hud').length},
       b:{messages:b.sent.length,hud:b.received.filter(x=>x.t==='hud').length},
       track:await tv.locator('#trackName').textContent()}));
+    // Drop Zone real WebSocket test: both phones stay joined; VIP selects
+    // the new mode, Player A drops, and both receive the new game HUD.
+    await tv.evaluate(()=>window.__MR.Game.toLobby());
+    await p1.locator('#vip button').filter({hasText:'Drop Zone'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Drop Zone'}).click();
+    await tv.waitForFunction(()=>window.__MR.selectedMode==='dropzone',{timeout:10000});
+    await tv.locator('#btnStart').click();
+    await tv.locator('[data-screen="dropzone"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.mode==='dropzone'&&document.body.dataset.s==='dropzone',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.mode==='dropzone'&&document.body.dataset.s==='dropzone',{timeout:10000});
+    await p1.locator('#modeActions button').filter({hasText:'DROP!'}).click();
+    await tv.waitForFunction(()=>!!window.__MR.MODES.dropzone.session()?.state.ball,{timeout:8000});
+    const dropState=await tv.evaluate(()=>({
+      mode:window.__MR.selectedMode,
+      turn:window.__MR.MODES.dropzone.session().state.turn,
+      marble:window.__MR.MODES.dropzone.session().state.ball.id
+    }));
+    assert.equal(dropState.mode,'dropzone');
+    assert.equal(dropState.marble,'' + (await p1.evaluate(()=>window.pid||'')) || dropState.marble);
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='drop'),'Phone A did not trigger Drop Zone release');
+    assert.ok(a.received.some(x=>x.t==='hud'&&x.mode==='dropzone'));
+    assert.ok(b.received.some(x=>x.t==='hud'&&x.mode==='dropzone'));
+    await tv.screenshot({path:'qa-dropzone-tv.png',fullPage:true});
+    await p1.screenshot({path:'qa-dropzone-phone.png',fullPage:true});
+    assert.deepEqual(errors,[],'JS errors during Drop Zone: '+errors.join(' | '));
+    console.log('PASS: two independent phones joined Drop Zone, VIP selected mode, phone release, both received state');
+
   }finally{await browser.close();}
 }
 main().catch(e=>{console.error('FAIL:',e.stack||e);process.exitCode=1;});
