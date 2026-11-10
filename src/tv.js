@@ -217,6 +217,12 @@
           }
           break;
         }
+        case 'sfx_golf_putt': tone(420*pr,.2,'sine',.18*v,155);
+          noise(.09,1700,1.8,.11*v);break;
+        case 'sfx_curl_sweep': noise(.12,2500,1.1,.12*v,'bandpass',700);break;
+        case 'sfx_brawl_ram': tone(120,.23,'sawtooth',.16*v,55);noise(.11,900,1.5,.26*v);break;
+        case 'sfx_drop_release': tone(890,.16,'triangle',.17*v,280);break;
+        case 'sfx_derby_cheer': [0,.07,.14].forEach((d,i)=>tone([660,880,1100][i],.19,'triangle',.08*v,null,d));break;
         case 'sfx_ui_tap': tone(900, 0.05, 'sine', 0.12); break;
         default: break;
       }
@@ -230,13 +236,18 @@
     function setMusic(on) { if (music) music.gain.setTargetAtTime(on ? 0.34 : 0, ac.currentTime, 0.3); }
     function setSfx(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 0.8 : 0, ac.currentTime, 0.1); }
 
-    /* Procedural groove: 128 BPM, D major (Section 11.3) — placeholder music */
+    /* Original adaptive Web Audio Party Pack score. No external samples required. */
     const Music = (() => {
       let next = 0, step = 0, timer = null;
       const BPM = 128, SPB = 60 / BPM / 4; // sixteenth notes
       const ROOTS = [146.83, 123.47, 98.0, 110.0]; // D3 B2 G2 A2
       const CH = [[293.66, 369.99, 440], [246.94, 293.66, 369.99], [196, 246.94, 293.66], [220, 277.18, 329.63]];
       let mode = 'lobby', intensity = 0;
+      const MODE_TIMBRES={grandprix:1,derby:1.12,dropzone:1.33,brawl:.8,curling:1.5,golf:1.25,lobby:1,race:1,quiet:1};
+      const MODE_PATTERNS={
+        derby:[0,3,7,10],dropzone:[1,5,9,13],brawl:[0,4,8,12],
+        curling:[2,6,10,14],golf:[3,7,11,15]
+      };
       function kick(t) {
         const o = ac.createOscillator(), g = ac.createGain();
         o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
@@ -272,6 +283,15 @@
           const bassPat = [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0];
           if (bassPat[s]) note(t, ROOTS[bar] * (s === 13 ? 2 : 1), SPB * 1.6, 'triangle', 0.32);
           if ((s === 2 || s === 10) && mode !== 'quiet') CH[bar].forEach(f => note(t, f, SPB * 1.2, 'square', 0.035));
+          // Mode identity: distinct melodic contour and pitch colour within the
+          // existing harmonic bed, while obeying the user's music toggle.
+          const seq=MODE_PATTERNS[mode];
+          if (seq && seq.includes(s)) {
+            const voice=MODE_TIMBRES[mode], n=CH[bar][(s+bar)%3];
+            note(t,n*voice,SPB*(mode==='curling'?2.1:1.35),
+              mode==='brawl'?'sawtooth':'triangle',mode==='brawl'?.037:.075);
+            if(mode==='golf'&&s===15)note(t,n*voice*2,SPB*1.8,'sine',.035);
+          }
           if (race && intensity > 0.5 && s % 2 === 1) note(t, CH[bar][s % 3] * 2, SPB * 0.8, 'sine', 0.05);
           if (mode === 'lobby' && (s === 7 || s === 15)) note(t, CH[bar][2] * 2, SPB * 2, 'sine', 0.05);
           next += SPB; step++;
@@ -1242,23 +1262,23 @@
       if (selectedMode === 'golf') {
         MODES.golf.setup({players,seed:Date.now()>>>0,onFinish:r=>this.finishGolf(r)});
         state='golf';stateT=0;showScreen('golf');
-        Audio_.Music.mode('lobby');Audio_.play('sfx_count_go');sendHud(true);return;
+        Audio_.Music.mode('golf');Audio_.play('sfx_count_go');sendHud(true);return;
       }
       if (selectedMode === 'curling') {
         MODES.curling.setup({players,seed:Date.now()>>>0,onFinish:r=>this.finishCurling(r)});
         state='curling';stateT=0;showScreen('curling');
-        Audio_.Music.mode('lobby');sendHud(true);return;
+        Audio_.Music.mode('curling');sendHud(true);return;
       }
       if (selectedMode === 'derby') {
         if(!partyRun)this.resetNight();
         MODES.derby.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishDerby(ranking)});
-        derbyTvHorse=0;state='derby';stateT=0;showScreen('derby');Audio_.Music.mode('lobby');sendHud(true);return;
+        derbyTvHorse=0;state='derby';stateT=0;showScreen('derby');Audio_.Music.mode('derby');sendHud(true);return;
       }
       if (selectedMode === 'brawl') {
         if(!partyRun)this.resetNight();
         MODES.brawl.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishBrawl(ranking)});
         state='brawl';stateT=0;showScreen('brawl');
-        Audio_.Music.mode('lobby');sendHud(true);return;
+        Audio_.Music.mode('brawl');sendHud(true);return;
       }
       if (selectedMode === 'dropzone') {
         if (!partyRun) this.resetNight();
@@ -1268,7 +1288,7 @@
         });
         state='dropzone';stateT=0;
         showScreen('dropzone');
-        Audio_.Music.mode('lobby');
+        Audio_.Music.mode('dropzone');
         sendHud(true);
         return;
       }
@@ -1501,16 +1521,16 @@
       // Future modes receive only scoped, bounded actions from known players;
       // player choices are validated in that mode, never by the relay.
       if (state === 'golf' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','shoot'].includes(a)) {
-        if(MODES.golf.onAction(pid,a,v))Audio_.play(a==='shoot'?'sfx_boost':'sfx_ui_tap',{gap:.07,vol:.45});
+        if(MODES.golf.onAction(pid,a,v))Audio_.play(a==='shoot'?'sfx_golf_putt':'sfx_ui_tap',{gap:.07,vol:.45});
         sendHud(true);return;
       }
-      if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep'].includes(a)) {MODES.curling.onAction(pid,a,v);sendHud(true);return;}
-      if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {MODES.derby.onAction(pid,a,v);sendHud(true);return;}
+      if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep'].includes(a)) {if(MODES.curling.onAction(pid,a,v)&&['throw','sweep'].includes(a))Audio_.play(a==='throw'?'sfx_golf_putt':'sfx_curl_sweep',{gap:.15,vol:.55});sendHud(true);return;}
+      if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
       if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor'].includes(a)) {
-        MODES.brawl.onAction(pid,a,v);sendHud(true);return;
+        if(MODES.brawl.onAction(pid,a,v)&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.18,vol:.8});sendHud(true);return;
       }
       if (state === 'dropzone' && players.has(pid) && ['left','right','aim','drop'].includes(a)) {
-        MODES.dropzone.onAction(pid,a,v);
+        if(MODES.dropzone.onAction(pid,a,v)&&a==='drop')Audio_.play('sfx_drop_release',{gap:.12,vol:.75});
         sendHud(true);
         return;
       }
@@ -1867,6 +1887,7 @@
     for (const mode of Object.values(MODES)) {
       const card = document.createElement('button');
       card.className = 'partyModeCard';
+      card.dataset.mode = mode.id;
       card.type = 'button';
       card.dataset.locked = String(!mode.available);
       card.setAttribute('aria-pressed', String(mode.id === selectedMode));
