@@ -1,13 +1,14 @@
 {
   "name": "marble-rush",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Marble Rush — family marble-racing party game. TV is the track, phones are the buttons.",
   "main": "server/server.js",
   "scripts": {
     "build": "node tools/build.js",
     "start": "node server/server.js",
     "balance": "node tools/balance-lab.js",
-    "test:party": "node tools/test-party-foundations.js"
+    "test:party": "node tools/test-party-foundations.js",
+    "test:dropzone": "node tools/test-dropzone.js"
   },
   "engines": {
     "node": ">=18"
