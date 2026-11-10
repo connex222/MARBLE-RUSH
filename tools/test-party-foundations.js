@@ -19,7 +19,7 @@ for (const mode of Object.values(game.MODES)) {
   for (const fn of ['setup','startRound','tick','draw','onInput','onAction','botTick','hud','standings','roundResults','finalResults'])
     assert.equal(typeof mode[fn],'function',mode.id+'.'+fn);
 }
-assert.deepEqual([...game.partyPoints(['a','b','c'])],[['a',10],['b',8],['c',6]]);
+assert.deepEqual(Array.from(game.partyPoints(['a','b','c']), ([id, points]) => [id, points]),[['a',10],['b',8],['c',6]]);
 assert.throws(()=>game.partyPoints(['a','a']),/unique/);
 assert.throws(()=>game.PartyNight.create(['grandprix','brawl','grandprix'],2),/unavailable/);
 assert.throws(()=>game.PartyNight.create(['grandprix'],2),/3, 5 or 7/);
