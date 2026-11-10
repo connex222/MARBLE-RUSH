@@ -132,6 +132,11 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
  display:flex;gap:calc(14*var(--u));align-items:center;z-index:5}
 #dropZoneHelp .btn{font-size:calc(23*var(--u));padding:calc(11*var(--u)) calc(18*var(--u))}
 #dropZoneHelp .btn.go{font-size:calc(24*var(--u));padding:calc(13*var(--u)) calc(23*var(--u))}
+#brawlCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#brawlHelp{position:absolute;right:calc(60*var(--u));bottom:calc(20*var(--u));
+ display:flex;gap:calc(11*var(--u));align-items:center;z-index:5}
+#brawlHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(15*var(--u))}
+#brawlHelp .btn.go{font-size:calc(24*var(--u));padding:calc(12*var(--u)) calc(22*var(--u))}
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -307,6 +312,16 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
       <button class="btn" id="dropLeft">◀ Left</button>
       <button class="btn go" id="dropNow">DROP!</button>
       <button class="btn" id="dropRight">Right ▶</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="brawl" hidden>
+    <canvas id="brawlCanvas" width="1920" height="1080" aria-label="Bowl Brawl marble arena"></canvas>
+    <div id="brawlHelp">
+      <button class="btn" id="brawlLeft">◀ Turn</button>
+      <button class="btn go" id="brawlRam">RAM!</button>
+      <button class="btn" id="brawlAnchor">ANCHOR</button>
+      <button class="btn" id="brawlRight">Turn ▶</button>
     </div>
   </section>
 
