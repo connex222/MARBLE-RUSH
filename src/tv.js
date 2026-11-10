@@ -83,6 +83,7 @@
       const im = new Image();
       im.onload = () => {
         IMG[o.k] = im;
+        if (o.k.startsWith('party_thumb_') || o.k.startsWith('party_card_')) applyPartyArt();
         if (o.k === 'logo_marblerush') {
           for (const logo of document.querySelectorAll('.logo')) {
             if (logo.classList.contains('asset-logo')) continue;
@@ -99,6 +100,21 @@
     Audio_.loadFiles();
   }).catch(() => { /* no assets yet — everything is code-drawn */ });
 
+  // Approved ChatGPT artwork is applied only when built into the local asset manifest.
+  // The game still works with code-drawn fallback cards when art has not been uploaded.
+  const PARTY_ART_MODES = ['grandprix','derby','dropzone','brawl','curling','golf'];
+  function applyPartyArt() {
+    for (const id of PARTY_ART_MODES) {
+      const card=document.querySelector('.partyModeCard[data-mode="'+id+'"]');
+      const im=IMG['party_thumb_'+id];
+      if (!card || !im) continue;
+      card.style.setProperty('--party-thumb','url("'+im.src+'")');
+      card.classList.add('has-art');
+    }
+    const banner=IMG.party_header;
+    const heading=document.querySelector('#partyPicker h2');
+    if(banner && heading)heading.style.setProperty('--party-banner','url("'+banner.src+'")');
+  }
   /* ---------- Optional approved art helpers ---------- */
   // Every replacement has a code-drawn fallback for still-loading images.
   // This is presentation-only; collision geometry and physics remain unchanged.
@@ -117,6 +133,7 @@
   const Audio_ = (() => {
     let ac = null, master, music, sfx, rollGain, rollFilter, noiseBuf;
     const buffers = {};
+    let introDone=false;
     function init() {
       if (ac) return;
       ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -141,7 +158,15 @@
       for (const k in SND) {
         if (buffers[k]) continue;
         buffers[k] = 'loading';
-        fetch(SND[k]).then(r => r.arrayBuffer()).then(b => ac.decodeAudioData(b)).then(buf => { buffers[k] = buf; })
+        fetch(SND[k]).then(r => {if(!r.ok)throw Error('Sound '+k+' not found');return r.arrayBuffer();})
+          .then(b => ac.decodeAudioData(b)).then(buf => {
+            buffers[k] = buf;
+            if(k==='music_party')Music.useTrack(buf);
+            if(k==='vo_party_intro' && state==='lobby' && !introDone){
+              introDone=true;
+              if(settings.sfx)file('vo_party_intro',.7);
+            }
+          })
           .catch(() => { delete buffers[k]; });
       }
     }
@@ -233,12 +258,12 @@
       rollGain.gain.setTargetAtTime(settings.sfx ? Math.min(0.32, level) : 0, t, 0.08);
       rollFilter.frequency.setTargetAtTime(380 + pitch * 900, t, 0.1);
     }
-    function setMusic(on) { if (music) music.gain.setTargetAtTime(on ? 0.34 : 0, ac.currentTime, 0.3); }
+    function setMusic(on) { if (music && ac) music.gain.setTargetAtTime(on ? 0.34 : 0, ac.currentTime, 0.3); }
     function setSfx(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 0.8 : 0, ac.currentTime, 0.1); }
 
     /* Original adaptive Web Audio Party Pack score. No external samples required. */
     const Music = (() => {
-      let next = 0, step = 0, timer = null;
+      let next = 0, step = 0, timer = null, externalTrack = null, externalSource = null;
       const BPM = 128, SPB = 60 / BPM / 4; // sixteenth notes
       const ROOTS = [146.83, 123.47, 98.0, 110.0]; // D3 B2 G2 A2
       const CH = [[293.66, 369.99, 440], [246.94, 293.66, 369.99], [196, 246.94, 293.66], [220, 277.18, 329.63]];
@@ -274,6 +299,7 @@
         o.connect(g); g.connect(music); o.start(t); o.stop(t + dur + 0.02);
       }
       function schedule() {
+        if(externalSource)return;
         while (next < ac.currentTime + 0.12) {
           const s = step % 16, bar = Math.floor(step / 16) % 4, t = next;
           const race = mode === 'race';
@@ -299,6 +325,14 @@
       }
       return {
         start() { next = ac.currentTime + 0.1; timer = setInterval(schedule, 40); },
+        useTrack(buffer){
+          if(!ac || !buffer || externalSource)return;
+          externalTrack=buffer;
+          externalSource=ac.createBufferSource();
+          externalSource.buffer=externalTrack;externalSource.loop=true;
+          externalSource.connect(music);
+          externalSource.start();
+        },
         mode(m) { mode = m; },
         intensity(v) { intensity = v; },
       };
@@ -1878,6 +1912,8 @@
     attractFrom = performance.now();
     attractUntil = attractFrom + PartyAttract.maxSeconds * 1000;
     $('#partyAttractPanel').hidden = false;
+    const canvas=$('#partyAttractCanvas');
+    if(canvas)canvas.dataset.previewMode=id;
   }
   function renderModePicker() {
     const box = $('#partyModeCards');
@@ -1905,6 +1941,7 @@
       };
       box.appendChild(card);
     }
+    applyPartyArt();
     $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · eligible modes repeat' :
       selectedMode === 'brawl' && players.size < 2 ? 'Bowl Brawl needs two or more racers' :
       'All six Party Pack games playable · choose a mode or Party Night';
@@ -2065,6 +2102,16 @@
     if (state === 'lobby' && attractMode && now < attractUntil) {
       const c = $('#partyAttractCanvas').getContext('2d');
       PartyAttract.preview(c, attractMode, (now - attractFrom)/1000);
+      const previewArt=IMG['party_card_'+attractMode];
+      if(previewArt){
+        c.save();
+        c.fillStyle='#090d24';c.fillRect(0,0,c.canvas.width,c.canvas.height);
+        const iw=previewArt.naturalWidth,ih=previewArt.naturalHeight;
+        const scale=Math.min(c.canvas.width/iw,c.canvas.height/ih);
+        const dw=iw*scale,dh=ih*scale;
+        c.drawImage(previewArt,(c.canvas.width-dw)/2,(c.canvas.height-dh)/2,dw,dh);
+        c.restore();
+      }
     } else if (attractMode && now >= attractUntil) {
       attractMode = null; $('#partyAttractPanel').hidden = true;
     }
