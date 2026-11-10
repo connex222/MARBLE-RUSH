@@ -218,6 +218,10 @@ async function main(){
           const g=a.MODES.brawl.session();let n=0;
           while(!g.state.done&&n++<25000)g.tick(.05);
           if(!g.state.done)throw Error('Party Night Brawl did not complete');
+        }else if(mode==='curling'){
+          const g=a.MODES.curling.session();let n=0;
+          while(!g.state.done&&n++<120000)g.step(.1);
+          if(!g.state.done)throw Error('Party Night Curling failed to finish');
         }else if(mode==='derby'){
           const g=a.MODES.derby.session();let n=0;
           while(!g.state.done&&n++<30000)g.step(.05);
@@ -245,7 +249,7 @@ async function main(){
     }));
     assert.equal(party.history.length,3);
     assert.equal(new Set(party.history).size,3);
-    assert.ok(party.history.every(x=>['grandprix','derby','dropzone','brawl'].includes(x)));
+    assert.ok(party.history.every(x=>['grandprix','derby','dropzone','brawl','curling'].includes(x)));
     assert.equal(party.totals.length,2);
     assert.ok(party.totals.every(p=>p>=6&&p<=30));
     assert.equal(party.status,'complete');
@@ -288,6 +292,44 @@ async function main(){
     assert.ok(derby.gems.every(n=>n>=0));
     assert.deepEqual(errors,[],'JavaScript errors in Marble Derby');
     console.log('PASS: Five real Derby heats, virtual gems and winner presentation');
+    // Start five-end Curling, test local TV controls, complete via real
+    // deterministic ice physics and verify the approved shared finale.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();a.Game.onAction('tv','party',0);
+      a.Game.onAction('tv','mode','curling');
+      a.Game.beginCup();
+    });
+    await page.locator('[data-screen="curling"]').waitFor({state:'visible',timeout:10000});
+    assert.equal(await page.locator('#curlingCanvas').getAttribute('width'),'1920');
+    await page.screenshot({path:'qa-curling-tv.png',fullPage:true});
+    await page.locator('#curlRight').click();
+    await page.locator('#curlUp').click();
+    await page.locator('#curlThrow').click();
+    const shot=await page.evaluate(()=>{
+      const g=window.__MR.MODES.curling.session();
+      return {phase:g.state.phase,stones:g.state.stones.length,angle:g.state.stones[0]?.vy};
+    });
+    assert.equal(shot.phase,'slide');
+    assert.equal(shot.stones,1);
+    assert.ok(shot.angle>0,'TV aim control must change the throw heading');
+    await page.evaluate(()=>{
+      const g=window.__MR.MODES.curling.session();let n=0;
+      while(!g.state.done&&n++<120000)g.step(.1);
+      if(!g.state.done)throw Error('Curling never finished five ends');
+    });
+    await page.locator('[data-screen="finale"]').waitFor({state:'visible',timeout:10000});
+    const cur=await page.evaluate(()=>({
+      count:window.__MR.MODES.curling.session().state.history.length,
+      played:window.__MR.MODES.curling.session().state.roster.map(p=>p.stonesPlayed),
+      ends:window.__MR.MODES.curling.session().state.roster.map(p=>p.endPoints.length)
+    }));
+    assert.equal(cur.count,5);
+    assert.ok(cur.played.every(n=>n===10));
+    assert.ok(cur.ends.every(n=>n===5));
+    assert.deepEqual(errors,[],'Curling browser errors');
+    console.log('PASS: TV five-end Curling, throw physics, scoreboard and winner presentation');
+
 
 
 
