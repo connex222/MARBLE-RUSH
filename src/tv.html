@@ -142,6 +142,11 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 display:flex;gap:calc(12*var(--u));align-items:center;z-index:5}
 #derbyHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(16*var(--u))}
 #derbyHelp .btn.go{font-size:calc(23*var(--u))}
+#curlingCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#curlingHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));
+display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
+#curlingHelp .btn{font-size:calc(19*var(--u));padding:calc(10*var(--u)) calc(13*var(--u))}
+#curlingHelp .btn.go{font-size:calc(22*var(--u))}
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -337,6 +342,18 @@ display:flex;gap:calc(12*var(--u));align-items:center;z-index:5}
       <button class="btn" id="derbyRunner">Choose runner</button>
       <button class="btn go" id="derbyPick">Back a marble</button>
       <button class="btn" id="derbyCheer">CHEER!</button>
+    </div>
+  </section>
+
+  <section class="screen" data-screen="curling" hidden>
+    <canvas id="curlingCanvas" width="1920" height="1080" aria-label="Marble Curling ice rink and scoring house"></canvas>
+    <div id="curlingHelp">
+      <button class="btn" id="curlLeft">◀ Aim</button>
+      <button class="btn" id="curlDown">− Power</button>
+      <button class="btn go" id="curlThrow">THROW!</button>
+      <button class="btn" id="curlSweep">SWEEP!</button>
+      <button class="btn" id="curlUp">+ Power</button>
+      <button class="btn" id="curlRight">Aim ▶</button>
     </div>
   </section>
 
