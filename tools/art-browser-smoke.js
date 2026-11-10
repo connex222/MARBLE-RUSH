@@ -72,6 +72,8 @@ async function main(){
         size:window.__MR.players.size,
         hidden:document.querySelector('#partyBackLobby').hidden}));
       assert.notEqual(current.state,'lobby','Failed to start '+id+': '+JSON.stringify(current));
+      assert.equal(await page.evaluate(()=>window.__MR.Audio_.debug.introPlaying),false,
+        id+' started while narration was still playing');
       const exit=page.locator('#partyBackLobby');
       await exit.waitFor({state:'visible',timeout:10000});
       assert.match(await exit.innerText(),/Back to Lobby/);
@@ -153,6 +155,24 @@ async function main(){
     await cards.nth(choice).click();
     await page.locator('#btnSkipVote').click();
     await page.waitForSelector('#raceHud:not([hidden])',{timeout:20000});
+    const safeNav=await page.evaluate(()=>{
+      const a=document.querySelector('#partyBackLobby').getBoundingClientRect();
+      const b=document.querySelector('#standings').getBoundingClientRect();
+      const hit=document.elementFromPoint(a.left+a.width/2,a.top+a.height/2);
+      return {
+        overlap:a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top,
+        clickable:hit===document.querySelector('#partyBackLobby'),
+        button:{left:a.left,right:a.right,top:a.top,bottom:a.bottom},
+        standings:{left:b.left,right:b.right,top:b.top,bottom:b.bottom}
+      };
+    });
+    assert.equal(safeNav.overlap,false,
+      'Back to Lobby overlaps Grand Prix leaderboard: '+JSON.stringify(safeNav));
+    assert.equal(safeNav.clickable,true,'Back to Lobby has no usable hit target during race');
+    assert.equal(await page.evaluate(()=>window.__MR.Audio_.debug.introPlaying),false,
+      'Intro narration continued into Grand Prix');
+    console.log('PASS: Back to Lobby does not overlap live race leaderboard, intro gated');
+
     await page.waitForTimeout(5000);
     const stats=await page.evaluate(()=>{
       const art=window.__marbleArtDraws;

@@ -301,6 +301,21 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
 #partyBackLobby:active{transform:translateY(5px);box-shadow:0 3px 0 #54102c}
 #partyBackLobby:focus-visible{outline:5px solid #ffe67d;outline-offset:5px}
 #partyBackLobby[hidden]{display:none!important}
+/* Avoid the top-right Grand Prix standings and countdown timer. */
+#partyBackLobby[data-nav-state="race"]{
+ top:auto!important;bottom:max(16px,env(safe-area-inset-bottom))!important;
+ left:max(18px,env(safe-area-inset-left))!important;right:auto!important;
+ min-width:190px;min-height:56px;padding:8px 18px;
+ font-size:clamp(18px,1.7vw,23px)
+}
+/* Results/vote panels are centred; exit belongs outside the content area. */
+#partyBackLobby[data-nav-state="results"],
+#partyBackLobby[data-nav-state="finale"],
+#partyBackLobby[data-nav-state="vote"]{
+ top:max(16px,env(safe-area-inset-top))!important;
+ right:max(18px,env(safe-area-inset-right))!important;
+}
+
 @media(max-width:780px){#partyBackLobby{min-width:175px;min-height:52px;padding:7px 15px;font-size:19px}}
 
 </style>
