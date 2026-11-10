@@ -112,7 +112,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #partyModeCards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:calc(12*var(--u))}
 .partyModeCard{min-width:0;min-height:calc(76*var(--u));padding:calc(8*var(--u));border-radius:calc(18*var(--u));background:linear-gradient(145deg,#34336b,#181935);border:calc(3*var(--u)) solid rgba(255,255,255,.19);color:var(--cream);cursor:pointer;display:flex;align-items:center;gap:calc(8*var(--u));text-align:left}
 .partyModeCard[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 calc(18*var(--u)) rgba(255,200,61,.5)}
-.partyModeCard:disabled{opacity:.46;cursor:not-allowed}
+.partyModeCard[aria-disabled="true"]{opacity:.55;cursor:help}
 .partyModeCard .modeIcon{font-size:calc(30*var(--u))}
 .partyModeCard strong{display:block;font:700 calc(17*var(--u)) Fredoka,sans-serif}
 .partyModeCard small{display:block;font:700 calc(12*var(--u)) Nunito,sans-serif}
