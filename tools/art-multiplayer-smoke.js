@@ -180,9 +180,19 @@ async function main(){
       let n=0;while(g.state.phase==='slide'&&n++<500)g.step(.1);
       if(g.state.phase!=='aim')throw Error('Curling shot failed to settle');
     });
+    // Curling gives each racer two stones consecutively. First player
+    // must complete the second shot before Player B becomes eligible.
+    await p1.locator('#modeActions button').filter({hasText:'THROW!'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#modeActions button').filter({hasText:'THROW!'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.curling.session()?.state.stones.length===2,{timeout:8000});
+    await tv.evaluate(()=>{
+      const g=window.__MR.MODES.curling.session();let n=0;
+      while(g.state.phase==='slide'&&n++<500)g.step(.1);
+      if(g.state.phase!=='aim')throw Error('Second Curling shot failed to settle');
+    });
     await p2.locator('#modeActions button').filter({hasText:'THROW!'}).waitFor({state:'visible',timeout:10000});
     await p2.locator('#modeActions button').filter({hasText:'THROW!'}).click();
-    await tv.waitForFunction(()=>window.__MR.MODES.curling.session()?.state.stones.length===2,{timeout:8000});
+    await tv.waitForFunction(()=>window.__MR.MODES.curling.session()?.state.stones.length===3,{timeout:8000});
     assert.ok(b.sent.some(x=>x.t==='act'&&x.a==='throw'),'Second Curling phone did not throw');
     await tv.screenshot({path:'qa-curling-tv.png',fullPage:true});
     await p2.screenshot({path:'qa-curling-phone.png',fullPage:true});
