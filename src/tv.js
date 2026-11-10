@@ -1742,7 +1742,7 @@
       const card = document.createElement('button');
       card.className = 'partyModeCard';
       card.type = 'button';
-      card.setAttribute('aria-disabled', String(!mode.available));
+      card.dataset.locked = String(!mode.available);
       card.setAttribute('aria-pressed', String(mode.id === selectedMode));
       card.setAttribute('aria-label', mode.name + (mode.available ? '' : ', coming soon'));
       const icon = document.createElement('span'); icon.className = 'modeIcon'; icon.textContent = mode.icon;
