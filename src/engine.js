@@ -680,7 +680,7 @@ const MR = (() => {
   class World {
     constructor(track, opts = {}) {
       this.t = track;
-      this.opts = Object.assign({ items: true, catchup: true, free: false }, opts);
+      this.opts = Object.assign({ items: true, catchup: true, free: false, passing: true }, opts);
       this.rand = rng(opts.seed || 1234);
       this.time = 0; this.acc = 0;
       this.phase = this.opts.free ? 'free' : 'pen';
@@ -1007,7 +1007,7 @@ const MR = (() => {
           const solid = (aBig || bBig) && !(aBub || bBub); // Big Bertha always bulldozes (unless you're in a bubble)
           // A clearly faster marble goes round the outside: a glancing clack, then it is through.
           // Without this the marble in front is simply shoved along and nobody can ever overtake.
-          if (!solid && (-vr > C.PASS_V || aBub || bBub)) {
+          if (this.opts.passing !== false && !solid && (-vr > C.PASS_V || aBub || bBub)) {
             passing.add(key);
             if (vr < 0 && !(aBub || bBub)) {
               const jn = -vr * C.PASS_K * 0.5;
