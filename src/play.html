@@ -371,6 +371,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         break;
       case 'countdown':
         setText(h.cd ? `<span>${h.cd}</span>` : '', h.inRace ? 'Tap right on ROLL!' : 'You join the next race', h.inRace ? 'for a perfect start' : '');
+        if(h.vip)vip=[['lobby','Back to Lobby']];
         break;
       case 'golf':
         setText('', h.modePhase==='aim'&&h.isTurn?'YOUR SHOT':h.modePhase==='rolling'?'MARBLE IN MOTION':h.modePhase==='results'?'HOLE RESULTS':'MARBLE GOLF',
@@ -398,6 +399,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         if (h.vip) vip=[['lobby','End game & lobby']];
         break;
       case 'race':
+        if(h.vip)vip=[['lobby','Back to Lobby']];
         if (!h.inRace) { setText('', 'Watch the TV!', 'You join the next race'); break; }
         if (h.fin) setText(`${ORD(h.place)}`, 'Finished!', 'Watch the others come home');
         else if (h.off) setText(`${ORD(h.place)}<small>/${h.n}</small>`, 'Whoops!', 'Back on the track in a moment');
@@ -405,7 +407,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         break;
       case 'vote':
         setText('', h.picked >= 0 ? 'Track chosen!' : h.myVote >= 0 ? 'Vote in — change it any time' : 'Pick the next track', `Race ${h.cupRace + 1} of ${h.cupN}`);
-        if (h.vip && h.picked < 0) vip = [['skip', 'Decide now']];
+        if (h.vip) vip = h.picked < 0 ? [['lobby','Back to Lobby'],['skip','Decide now']] : [['lobby','Back to Lobby']];
         break;
       case 'results':
         setText(h.lastPlace ? ORD(h.lastPlace) : '', h.lastPlace ? `+${h.pts} points` : 'Watch the TV!', `Cup: ${h.total} points · race ${h.cupRace} of ${h.cupN}`);
@@ -413,7 +415,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         break;
       case 'finale':
         setText('🏆', h.award || 'Good Sport', `${h.total} points tonight`);
-        if (h.vip) vip = [['newnight', h.partyPending ? 'Next party game' : 'New night', true]];
+        if (h.vip) vip = [['lobby','Back to Lobby'],['newnight', h.partyPending ? 'Next party game' : 'New night', true]];
         break;
       default: setText('', 'Watch the TV!', '');
     }
