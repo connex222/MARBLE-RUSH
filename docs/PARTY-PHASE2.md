@@ -1,54 +1,37 @@
-# MARBLE RUSH Party Pack — Phase 2 (foundations)
+# MARBLE RUSH Party Pack v0.5.0 — Phase 2 acceptance record
 
-**Development branch only. Do not merge or deploy.**
+**Development only:** `dev/party-pack-phase2-foundations` / PR #38.
+**Release policy:** do not merge or deploy until separately authorised.
 
-## Implemented
-- Six registered game descriptors, all with a common method interface.
-- DOM-free reusable geometry primitives for peg grids, spinners, bucket sensors, moving gates, target rings, golf cups, water zones and shrinking rims. The World now supports opt-in peg and spinner hub collision and edge-triggered bucket, target, water and cup sensor events; spinner arms, timed sensors, moving gates and other full mechanics are not yet connected.
-- Grand Prix remains the sole playable mode. Its original cup initialisation sequence is now delegated to the mode adapter without changing call order; its race/voting/results logic remains in the existing TV state machine.
-- Five non-playable descriptors are intentionally disabled to prevent a user entering unfinished games.
-- A compact TV game-picker showing all six modes, visually distinguishing Grand Prix from future games. Browser QA now checks that the picker stays clear of the join information, settings and start buttons.
-- Phone HUD transmits mode and phase, supports mode-specific pad labels, and lets the VIP select an available mode from the phone. Unfinished modes remain disabled.
-- Pure Party Points ledger (10/8/6/5/4/3/2/1), ranking validation, seeded 3/5/7-game queue planning and cumulative scores.
-- New headless PartyCoordinator handles fixed 1–8-player rosters, the begin/complete flow, standings and score snapshots, with guardrails against duplicate scoring, invalid rankings and skipping games. Not yet wired to the TV's live multi-mode flow.
-- World option `passing:false` disables the Grand Prix glancing-overtake special rule for future games; the default remains true.
-- Existing screen-free balance script remains intact and now rejects unfinished modes explicitly.
-- Dedicated Node foundation tests and CI workflow. Browser WebSocket test now also verifies that the VIP phone can select Grand Prix without unlocking unfinished modes.
+## Delivered Phase 2 shared foundations
 
-## Still required before Phase 2 acceptance
-- Finish moving the rest of Grand Prix state transitions into its mode adapter with browser regression testing. Only initial cup setup has been extracted so far.
-- True 15-second mode-specific CPU attract demos and full settings.
-- VIP Party Night game selection and end-to-end cross-mode transitions (ledger is headless only).
-- Mode-specific betting/aim/power phone panels and cheer mechanic.
-- Complete remaining geometry physics: timed bucket dwell, rotating spinner arms, moving gates, cup and water consequences, target scoring and shrinking rim collisions; existing peg/hub collision and entry sensors are opt-in and tested.
-- Mode-specific deterministic bot implementations and 30+ seeded simulations.
+1. **Mode framework:** six registered descriptors with a common interface. Grand Prix is the only playable mode. Unfinished Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf can show previews but cannot start.
+2. **Grand Prix adapter:** legacy cup setup, track ballot generation, vote collection/resolution, CPU ballot timing, seeded race construction and grid, normal CPU behaviour, inputs, per-race scoring, final standings, race timeout and next-step decisions are delegated to `src/modes/grandprix.js`. The TV still owns visual presentation, camera, particles, sound, room network and main frame loop. This separation preserves its approved look and physics.
+3. **TV lobby:** six mode cards, selection and 15-second mode-specific code-drawn CPU concept previews. The picker is tested against other lobby controls for overlap.
+4. **Party Night:** 3/5/7-game selection on TV and VIP phone; player-eligibility validation; seeded playlist planning; fixed 1–8-player roster, protected begin/complete state transitions, 10/8/6/5/4/3/2/1 Party Points ledger, per-game standings and next-game action. Until future game releases, available Grand Prix repeats.
+5. **Phone controller:** backwards-compatible Grand Prix pad; mode-aware labels, optional aim/power/bet/turn panels, VIP game selection, VIP Party Night settings, and a 3-second rate-limited cheer for waiting/finished racers. Mode panels do not imply implemented new-game rules.
+6. **Physics foundations:** DOM-free Builder objects for pegs, spinner arms, moving gates, buckets, target rings, golf cups, water zones and shrinking rim. Opt-in World contact and sensor events; buckets score after 0.4 seconds of dwell. Grand Prix does not instantiate Party Pack obstacles.
+7. **CPU planning:** seeded skill-based decision planners for each future game, tested over at least 30 independent seeds each. These are planning **interfaces**, not substitutes for actual playable minigame bots or completed game-balance simulations.
+8. **Preservation:** all 119 approved image assets and existing audio kept unchanged. Render and GitHub main remain untouched.
 
-## Safeguards
-The source branch is isolated from Render's deployed main. Artwork files, sound files and server relay are untouched. A real TV plus 2–4 physical-phone multiplayer acceptance test remains outstanding separately from the new Party Pack work.
+## Automated acceptance gate
 
-## QA
-GitHub foundation CI runs `npm install`, `npm run test:party`, `npm run build` and source syntax checks. The browser art suite also runs on development-branch pushes and checks real-TV picker layout and two-phone mode selection. New dedicated CI check compares candidate and main Grand Prix physics over all seven tracks with four racers and identical seeded inputs; this check passed on its first run. Run `npm run balance -- grandprix 1` to compare the live race against the baseline; production has not been touched. CI also runs static syntax checks and audits that the six mode descriptors are baked into the standalone TV page. Do not claim end-to-end Party Night works until modes have been implemented and tested.
+Required CI jobs:
+- Party Pack foundation QA: syntax, six mode registry, Party Night scoring/session guards, seven-track deterministic Grand Prix physics comparison against main, geometry/sensor tests and compiled TV/phone output.
+- Approved art integration QA: approved runtime asset audit, real-browser Grand Prix race, TV lobby layout and preview, simulated TV plus two phones via local WebSocket and controller actions.
+- A browser-only short-circuit test completes 3 Grand Prix cups within a Party Night and starts an ordinary Grand Prix afterwards. This validates transitions but is **not** the same as physically completing three full races.
 
-## Current integration milestone (10 November 2026)
-- Party Night coordinator is connected to TV/phone: 3/5/7 games, cumulative
-  Party Points and a 'Next Party Game' transition.
-- End-to-end browser smoke includes three complete simulated Grand Prix cups
-  inside one Party Night, followed by an ordinary Grand Prix art smoke.
-- Grand Prix adapter now owns cup setup, physical input delegation, point
-  distribution and final rankings; track voting, rendering, countdown and
-  per-frame mechanics remain in the legacy TV controller to preserve behaviour.
-- Six mode cards support 15-second CPU *concept previews*. Locked modes cannot
-  be started or selected as a playable game.
-- Mode-specific phone controls and spectator cheering are integrated as
-  shared scaffolding. Their actual betting, aim and power rules belong to
-  each game's dedicated production phase.
-- World Builder provides all eight new obstacle families. Opt-in physics
-  includes peg, spinner-arm, moving gate and shrinking rim contacts, plus
-  bucket scoring after 0.4 seconds and one-shot sensor events.
-- Seeded bot planners are available for all five new modes; real competitive
-  bots and 30+ simulated full games per mode require those modes' rules.
+Only mark **Phase 2 engineering complete** after both CI jobs pass on the final commit. No actual multi-phone acceptance is claimed from browser simulation.
 
-**Remaining boundary:** Phase 2 establishes the shared infrastructure.
-No one should claim that the five new games are playable or balanced yet.
-Grand Prix is kept authoritative in the TV controller where required by
-the approved runtime, rather than risking an unverified complete extraction.
+## Boundaries — Phase 3 and beyond
+
+The following are **not Phase 2 foundation defects**:
+- Phase 3: implement Drop Zone rules, full physics, artwork, UI, actual scoring, deterministic bots and 30+ full-game simulations.
+- Later dedicated phases: Bowl Brawl, Marble Derby, Curling and Golf actual competitive rules, physical mechanics, animations and full bots, with independent acceptance.
+- Final art/audio production and physical-device end-to-end acceptance before Alpha release.
+
+A Mode Pack of six playable games is **not** yet complete. This distinction must remain visible in release notes.
+
+## Final status
+
+Development implementation is complete. Verify the latest *matching commit* for both GitHub Actions workflows before promoting Phase 2 to accepted. **No merge or Render deployment is authorised by this document.**
