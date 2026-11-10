@@ -140,6 +140,13 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 .partyModeCard strong{display:block;font:700 calc(21*var(--u)) Fredoka,sans-serif;text-shadow:0 calc(3*var(--u)) calc(6*var(--u)) #000e;line-height:1.05}
 .partyModeCard small{display:block;font:700 calc(13*var(--u)) Nunito,sans-serif;color:#fff9d8;text-shadow:0 calc(2*var(--u)) calc(5*var(--u)) #000;margin-top:calc(3*var(--u))}
 .partyModeCard:focus-visible{outline:calc(5*var(--u)) solid white;outline-offset:calc(4*var(--u))}
+/* Approved ChatGPT tile art is optional; keep every mode accessible without it. */
+.partyModeCard.has-art{background-image:linear-gradient(180deg,rgba(7,12,34,.06) 0%,rgba(7,12,34,.06) 35%,rgba(7,12,34,.94) 100%),var(--party-thumb);background-position:center 42%;background-size:cover}
+.partyModeCard.has-art::before,.partyModeCard.has-art::after{display:none}
+.partyModeCard.has-art .modeIcon{display:none}
+.partyModeCard.has-art strong{font-size:calc(20*var(--u))}
+.partyModeCard.has-art small{font-size:calc(12*var(--u))}
+
 @media (prefers-reduced-motion:reduce){.partyModeCard{transition:none}.partyModeCard:hover{transform:none}}
 #partyNightOptions{position:absolute;top:0;right:0;display:flex;align-items:center;justify-content:flex-end;gap:calc(7*var(--u));height:calc(29*var(--u));z-index:3}
 #partyNightOptions span{font:800 calc(14*var(--u)) Nunito,sans-serif;color:var(--gold);margin-right:calc(5*var(--u))}
