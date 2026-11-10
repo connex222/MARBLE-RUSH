@@ -8,6 +8,7 @@ on:
       - dev/party-pack-phase3-dropzone
       - dev/party-pack-phase4-bowl-brawl
       - dev/party-pack-phase5-marble-derby
+      - dev/party-pack-phase6-marble-curling
   pull_request:
     paths:
       - src/tv.js
@@ -105,6 +106,8 @@ jobs:
             qa-brawl-phone.png
             qa-derby-tv.png
             qa-derby-phone.png
+            qa-curling-tv.png
+            qa-curling-phone.png
             qa-art-race-preview.png
             qa-art-multiplayer-tv.png
             qa-art-multiplayer-phone.png
