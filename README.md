@@ -1,19 +1,16 @@
-# Marble Rush — v0.9.0 Party Pack development
+# Marble Rush — Party Pack Phase 8 integration development
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
 **This development branch is not the live release.** Grand Prix v0.4 gameplay remains intact.
-The Party Pack framework shows six games. **Grand Prix, Marble Derby, Drop Zone, Bowl Brawl and Marble Curling are playable.**
-Marble Golf remains preview-only until Phase 7.
+The Party Pack framework shows six games. **All six modes are now available in the development build:** Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. Final visual/audio acceptance and real-device multiplayer QA are still pending.
 
 ### Party Night preview (development branch only)
 In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
-start. The available modes (Grand Prix, Marble Derby, Drop Zone, and Bowl Brawl when at least two
-players are present) repeat until Curling and Golf are implemented. After each Grand Prix cup, select **Next Party Game**;
+start. The eligible modes rotate across the selected Party Night length. Bowl Brawl and Curling require two or more players. After each Grand Prix cup, select **Next Party Game**;
 Party Points 10/8/6/5/4/3/2/1 carry forward across cups.
 The host can also choose Party Night length on their phone.
-Hover or activate an unfinished game card to watch a 15-second code-drawn
-CPU concept preview; it cannot start an unfinished game.
+Hover or focus a game card to see its 15-second concept preview. All six registered modes are enabled on this development branch.
 
 
 ## Try it right now (no internet, no server)
@@ -149,3 +146,7 @@ within a 3/5/7-game Party Night.
 See [Phase 6 rules and QA](docs/PARTY-PHASE6-CURLING.md).
 This is code-rendered development art, with final AAA art/audio
 production reserved for the later visual phase.
+
+## Phase 8 — integration and release gates
+
+Marble Golf is now connected to the TV/phone UI, with gamepad and on-screen aim, power and SHOOT controls, per-player HUD, five-hole results and Party Night scoring. CI checks the integration and all earlier modes. See [Phase 8 integration record](docs/PARTY-PHASE8.md) for the **remaining AAA assets/audio and physical-device acceptance blockers**. This development branch is **not merged or deployed**.
