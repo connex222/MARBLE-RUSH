@@ -1,15 +1,15 @@
-# Marble Rush — v0.6.0 Party Pack development
+# Marble Rush — v0.7.0 Party Pack development
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
 **This development branch is not the live release.** Grand Prix v0.4 gameplay remains intact.
-The Party Pack framework shows six games. **Grand Prix and Drop Zone are playable.**
-The other four games remain preview-only until their dedicated phases.
+The Party Pack framework shows six games. **Grand Prix, Drop Zone and Bowl Brawl are playable.**
+The other three games remain preview-only until their dedicated phases.
 
 ### Party Night preview (development branch only)
 In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
-start. The available modes (Grand Prix and Drop Zone) repeat until the remaining four
-modes are implemented. After each Grand Prix cup, select **Next Party Game**;
+start. The available modes (Grand Prix, Drop Zone and Bowl Brawl when at least two
+players are present) repeat until the remaining three modes are implemented. After each Grand Prix cup, select **Next Party Game**;
 Party Points 10/8/6/5/4/3/2/1 carry forward across cups.
 The host can also choose Party Night length on their phone.
 Hover or activate an unfinished game card to watch a 15-second code-drawn
@@ -78,6 +78,7 @@ npm install
 npm run build
 npm run test:party
 npm run test:dropzone
+npm run test:brawl
 npm run balance -- grandprix 1
 ```
 
@@ -99,3 +100,18 @@ score wins. CPU players take automatic turns, and Drop Zone can appear in
 Party Night. The TV also has local Left/Drop/Right controls.
 
 Development acceptance details: [Phase 3](docs/PARTY-PHASE3-DROPZONE.md).
+
+## Bowl Brawl — Phase 4
+
+A **five-round**, simultaneous marble arena for **2–8 players**. Steer your
+marble with **TURN LEFT** and **TURN RIGHT**, launch a charged **RAM** into
+opponents or **ANCHOR** yourself to resist knockback. RAM uses 28 energy and
+ANCHOR uses 15; energy regenerates automatically. As the round progresses,
+the safe circle shrinks. The last marble standing earns the most points.
+Results are scored 10/8/6/5/4/3/2/1 each round; the highest combined
+five-round total is the winner. CPU racers compete automatically.
+
+The mode can also feature inside **Party Night**, awarding the standard
+Party Points based on the final Bowl Brawl standings. The separate
+[Phase 4 acceptance record](docs/PARTY-PHASE4-BRAWL.md) details the tests
+and limitations. Visuals are functional code-drawn art pending AAA polish.
