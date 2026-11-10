@@ -262,7 +262,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   }
   function vipButtons(list) {
     const box = $('#vip');
-    const key = list.map(b => b[0] + ':' + (b[3] || '') + ':' + b[1]).join('|');
+    const key = list.map(b => b[0] + ':' + String(b[3] ?? '') + ':' + b[1]).join('|');
     if (box.dataset.key === key) return;
     box.dataset.key = key; box.innerHTML = '';
     for (const [a, label, primary, value] of list) {
@@ -311,7 +311,9 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
       case 'lobby':
         setText('', "You're in!", h.vip ? 'You are the host. Start when everyone has joined.' : 'Practise in the bowl while everyone joins.');
         if (h.vip) {
-          vip = [['cpu', 'Add CPU racer'], ['start', 'Start race', true]];
+          vip = [['cpu', 'Add CPU racer'], ['start', h.partyLength ? 'Start Party Night' : 'Start race', true]];
+          for (const n of [0,3,5,7])
+            vip.push(['party', (h.partyLength === n ? '✓ ' : '') + (n ? n + '-game Party Night' : 'Party Night off'), false, n]);
           // Only ready modes are shown; the host's choice is relayed to TV.
           for (const mode of (h.availableModes || [])) vip.push(['mode', (mode.id === h.mode ? '✓ ' : '') + mode.name, false, mode.id]);
         }
@@ -336,7 +338,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         break;
       case 'finale':
         setText('🏆', h.award || 'Good Sport', `${h.total} points tonight`);
-        if (h.vip) vip = [['newnight', 'New night', true]];
+        if (h.vip) vip = [['newnight', h.partyPending ? 'Next party game' : 'New night', true]];
         break;
       default: setText('', 'Watch the TV!', '');
     }
