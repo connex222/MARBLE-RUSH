@@ -98,7 +98,7 @@ game.MODES.grandprix.onInput({world:{press:id=>inputCalls.push('p'+id),
 assert.deepEqual(inputCalls,['pa']);
 
 const voteA={opts:[],votes:new Map(),picked:-1};
-const voteRoster=new Map([['bot',{cpu:true,bot:{voteAt:0}}],['human',{cpu:false}]]);
+const voteRoster=new Map([['bot',{id:'bot',cpu:true,bot:{voteAt:0}}],['human',{id:'human',cpu:false}]]);
 game.MODES.grandprix.startRound({cup:{played:[]},trackInfo:[
   {id:'a'},{id:'b'},{id:'c'},{id:'d'}],
   vote:voteA,players:voteRoster,random:()=>0.25,now:10});
