@@ -44,7 +44,7 @@ async function main(){
         picker:bounds('#partyPicker'),join:bounds('.joinCard'),settings:bounds('#lobbySettings'),controls:bounds('#lobbyBottom')};
     });
     assert.equal(picker.cards.length,6,'Six mode cards must be visible');
-    assert.equal(picker.cards.filter(c=>c.disabled).length,4,'Four unfinished games must remain locked');
+    assert.equal(picker.cards.filter(c=>c.disabled).length,3,'Three unfinished games must remain locked');
     assert.equal(picker.cards.filter(c=>c.pressed==='true').length,1,'One mode selected');
     const locked=page.locator('#partyModeCards .partyModeCard[data-locked="true"]').first();
     await locked.click();
