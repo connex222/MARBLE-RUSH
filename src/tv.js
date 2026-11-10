@@ -2197,7 +2197,7 @@
       if(p)g.action(p,action,['left','right'].includes(action)?2:undefined);
     };
   }
-  $('#derbyRunner').onclick={()=>{const g=MODES.derby.session();
+  $('#derbyRunner').onclick=()=>{const g=MODES.derby.session();
     if(g?.state.phase==='betting')derbyTvHorse=(derbyTvHorse+1)%6;};
   $('#derbyStake').onclick=()=>{const g=MODES.derby.session();
     const p=g?.state.roster.find(x=>!x.cpu);if(!p)return;
