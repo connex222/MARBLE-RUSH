@@ -5,6 +5,7 @@ on:
       - dev/approved-art-integration-qa
       - dev/full-art-runtime-integration
       - dev/party-pack-phase2-foundations
+      - dev/party-pack-phase3-dropzone
   pull_request:
     paths:
       - src/tv.js
@@ -95,6 +96,9 @@ jobs:
           path: |
             public/
             qa-party-picker.png
+            qa-party-attract.png
+            qa-dropzone-tv.png
+            qa-dropzone-phone.png
             qa-art-race-preview.png
             qa-art-multiplayer-tv.png
             qa-art-multiplayer-phone.png
