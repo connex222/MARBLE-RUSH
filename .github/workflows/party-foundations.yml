@@ -1,7 +1,7 @@
 name: Party Pack foundation QA
 on:
   push:
-    branches: [dev/party-pack-phase2-foundations, dev/party-pack-phase3-dropzone]
+    branches: [dev/party-pack-phase2-foundations, dev/party-pack-phase3-dropzone, dev/party-pack-phase4-bowl-brawl]
   pull_request:
     paths:
       - 'src/modes/**'
@@ -35,12 +35,15 @@ jobs:
           node --check tools/balance-lab.js
           node --check tools/test-party-foundations.js
           node --check tools/test-dropzone.js
+          node --check tools/test-brawl.js
           node --check tools/test-grandprix-regression.js
           for f in src/modes/*.js; do node --check "$f"; done
       - name: Validate modes and score ledger
         run: npm run test:party
       - name: Validate Drop Zone 30-seed full games
         run: npm run test:dropzone
+      - name: Validate Bowl Brawl 30 seeded five-round matches
+        run: npm run test:brawl
       - name: Compare Grand Prix deterministic physics to main
         run: |
           git fetch --no-tags --depth=1 origin main
@@ -66,7 +69,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: marble-rush-phase3-dropzone
+          name: marble-rush-phase4-bowl-brawl
           retention-days: 14
           compression-level: 6
           path: |
@@ -79,10 +82,12 @@ jobs:
             tools/balance-lab.js
             tools/test-party-foundations.js
             tools/test-dropzone.js
+            tools/test-brawl.js
             tools/test-grandprix-regression.js
             package.json
             docs/PARTY-PHASE2.md
             docs/PARTY-PHASE3-DROPZONE.md
+            docs/PARTY-PHASE4-BRAWL.md
             MARBLE_RUSH_MASTER.md
             README.md
             .github/workflows/party-foundations.yml
