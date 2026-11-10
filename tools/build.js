@@ -102,10 +102,11 @@ function fontCss(names) {
   const fonts = fontCss([['Fredoka', 'fredoka.woff2', '300 700'], ['Nunito', 'nunito.woff2', '200 1000']]);
   const engine = fs.readFileSync(path.join(SRC, 'engine.js'), 'utf8');
   const tv = fs.readFileSync(path.join(SRC, 'tv.js'), 'utf8');
+  const modes = ['registry','grandprix','derby','dropzone','brawl','curling','golf'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
   const qr = fs.readFileSync(path.join(SRC, 'qr.js'), 'utf8');
   const safe = s => s.replace(/<\/script/gi, '<\\/script');
   let tvHtml = fs.readFileSync(path.join(SRC, 'tv.html'), 'utf8');
-  tvHtml = tvHtml.replace('/*FONTS*/', () => fonts).replace('/*ENGINE*/', () => safe(engine)).replace('/*QR*/', () => safe(qr)).replace('/*TV*/', () => safe(tv));
+  tvHtml = tvHtml.replace('/*FONTS*/', () => fonts).replace('/*ENGINE*/', () => safe(engine)).replace('/*MODES*/', () => safe(modes)).replace('/*QR*/', () => safe(qr)).replace('/*TV*/', () => safe(tv));
   fs.writeFileSync(path.join(PUB, 'tv.html'), tvHtml);
   let play = fs.readFileSync(path.join(SRC, 'play.html'), 'utf8');
   play = play.replace('/*FONTS*/', () => fonts);
