@@ -73,9 +73,11 @@ const DropZone = (() => {
       dt=clamp(Number.isFinite(dt)?dt:0,0,.1);
       s.elapsed+=dt;s.turnElapsed+=dt;
       if(!s.ball){
-        if(owner().cpu&&s.turnElapsed>=.75){
+        if((owner().cpu&&s.turnElapsed>=.75)||s.turnElapsed>=25){
+          // After 25 seconds of inactivity, release automatically so a
+          // disconnected or distracted player cannot stall the whole party.
           const target=owner().score<500?500:500+(random()-.5)*250;
-          s.x=clamp(Math.round(target+(random()-.5)*100),80,920);
+          if(owner().cpu)s.x=clamp(Math.round(target+(random()-.5)*100),80,920);
           action(owner().id,'drop');
         }
         return;
