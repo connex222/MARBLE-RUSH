@@ -23,6 +23,18 @@ registerMode({
     vote.endAt=now+12;
     for(const p of players.values())if(p.cpu)p.bot.voteAt=now+1+random()*5;
   },
+  createRace({WorldCtor,tracks,trackId,seed,settings,players,random}) {
+    const race = new WorldCtor(tracks[trackId](),{
+      seed,items:settings.items,catchup:settings.catchup
+    });
+    const order=[...players.values()].map(p=>({
+      p,k:p.points+random()*.5
+    })).sort((a,b)=>b.k-a.k).map(o=>o.p);
+    for(const p of order)race.addMarble(p.id,p);
+    for(const m of race.marbles){m.appearT=0;m.squash=0;}
+    race.goTime=7;
+    return race;
+  },
   castVote({state,vote,pid,index}) {
     if(state!=='vote'||vote.picked>=0||!(index>=0&&index<vote.opts.length))return false;
     vote.votes.set(pid,index);return true;
@@ -52,12 +64,33 @@ registerMode({
     else if(k==='i') world.useItem(pid);
   },
   onAction() {},
-  botTick({state,players,vote,now,castVote,random=Math.random}) {
-    if(state!=='vote')return false;
-    for(const p of players.values())
-      if(p.cpu&&p.bot.voteAt&&now>p.bot.voteAt){
-        p.bot.voteAt=0;castVote(p.id,Math.floor(random()*vote.opts.length));
+  botTick({state,players,vote,now,castVote,world,MR,random=Math.random}) {
+    if(state==='vote'){
+      for(const p of players.values())
+        if(p.cpu&&p.bot.voteAt&&now>p.bot.voteAt){
+          p.bot.voteAt=0;castVote(p.id,Math.floor(random()*vote.opts.length));
+        }
+      return true;
+    }
+    if(!world||!['race','countdown','lobby'].includes(state))return false;
+    const t=world.time;
+    for(const m of world.marbles){
+      const p=players.get(m.id);
+      if(!p||!p.cpu)continue;
+      const b=p.bot;
+      if(m.down&&t>b.rel)world.release(m.id);
+      if(state==='countdown'){
+        if(!m.down&&!m.startUsed&&Math.abs(world.goTime-t-.03)<.05&&random()<b.skill*.25){
+          world.press(m.id);b.rel=t+.05;
+        }
+        continue;
       }
+      if(state==='lobby'){
+        if(!m.down&&random()<.004){world.press(m.id);b.rel=t+.05;}
+        continue;
+      }
+      MR.botThink(world,m,b);
+    }
     return true;
   },
   hud(player) { return {place:player.lastPlace||0,total:player.points||0}; },
