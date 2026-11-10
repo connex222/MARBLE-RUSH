@@ -96,6 +96,27 @@ const MarblePartyStage = (() => {
     }
     return art[id].ready ? art[id].image : null;
   }
+  // Optional Phase 3 Batch B assets. A missing sprite is cached as missing,
+  // so there is no per-frame 404/network retry and gameplay stays playable.
+  const extraArt=Object.create(null);
+  function optionalSprite(key) {
+    if(typeof Image==='undefined'||!/^pp_(derby|dropzone|brawl|curling|golf)_(surface_main|prop_[a-z0-9_]+|obstacle_[a-z0-9_]+)$/.test(key))return null;
+    let entry=extraArt[key];
+    if(!entry){
+      const image=new Image();
+      entry=extraArt[key]={image,ready:false,failed:false};
+      image.onload=()=>{entry.ready=true;};
+      image.onerror=()=>{entry.failed=true;};
+      image.src='assets/img/'+key+'.webp';
+    }
+    return entry.ready?entry.image:null;
+  }
+  function drawSprite(ctx,key,x,y,w,h,alpha=1) {
+    const im=optionalSprite(key);if(!im)return false;
+    if(![x,y,w,h,alpha].every(Number.isFinite)||w<=0||h<=0)return false;
+    ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,alpha));
+    ctx.drawImage(im,x,y,w,h);ctx.restore();return true;
+  }
   function backdrop(ctx,id,time=0){
     const tone=TONES[id];if(!tone)return;
     ctx.save();
@@ -220,6 +241,9 @@ const MarblePartyStage = (() => {
     spec.addColorStop(.75,'rgba(0,0,0,.02)');
     spec.addColorStop(1,'rgba(0,0,0,.27)');
     ctx.fillStyle=spec;ctx.fillRect(x,y,w,h);
+    // Texture replaces the flat surface only if the approved 1024px material
+    // exists; the gradient/material fallback above remains usable otherwise.
+    drawSprite(ctx,'pp_'+id+'_surface_main',x,y,w,h,.74);
     ctx.restore();
     // Gold/chrome bevel around physically active surface.
     ctx.lineWidth=10;ctx.strokeStyle=gold;round(ctx,x,y,w,h,10);ctx.stroke();
@@ -273,5 +297,5 @@ const MarblePartyStage = (() => {
     g.addColorStop(0,'rgba(255,255,255,.65)');g.addColorStop(.18,color);g.addColorStop(1,'rgba(0,0,0,0)');
     ctx.globalAlpha=.43;ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.restore();
   }
-  return Object.freeze({backdrop,frame,surface,marble,peg,obstacle,halo});
+  return Object.freeze({backdrop,frame,surface,marble,peg,obstacle,halo,drawSprite});
 })();
