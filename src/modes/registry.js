@@ -104,7 +104,7 @@ const MarblePartyStage = (() => {
     const im=picture(id);
     if(im){
       ctx.save();
-      ctx.globalAlpha=.52;
+      ctx.globalAlpha=.82;
       const sw=1920,sh=1080,iw=im.naturalWidth||1,ih=im.naturalHeight||1;
       const scale=Math.max(sw/iw,sh/ih);
       const dw=iw*scale,dh=ih*scale;
@@ -112,9 +112,9 @@ const MarblePartyStage = (() => {
       ctx.restore();
     }
     const veil=ctx.createLinearGradient(0,0,1920,1080);
-    veil.addColorStop(0,'rgba(7,13,34,.83)');
-    veil.addColorStop(.46,'rgba(12,18,42,.58)');
-    veil.addColorStop(1,'rgba(7,13,34,.81)');
+    veil.addColorStop(0,'rgba(7,13,34,.63)');
+    veil.addColorStop(.46,'rgba(12,18,42,.43)');
+    veil.addColorStop(1,'rgba(7,13,34,.67)');
     ctx.fillStyle=veil;ctx.fillRect(0,0,1920,1080);
     // Suspended floodlights and diagonal metallic stage floor highlights.
     ctx.globalAlpha=.23;
