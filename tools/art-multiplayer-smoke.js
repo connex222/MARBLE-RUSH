@@ -160,6 +160,35 @@ async function main(){
     await p1.screenshot({path:'qa-derby-phone.png',fullPage:true});
     assert.deepEqual(errors,[],'Browser errors in two-phone Derby');
     console.log('PASS: two WebSocket phones placed separate Derby bets and received virtual-gem HUD');
+    // Curling: both phones stay connected; first phone throws, second sees
+    // the authoritative next turn and takes the following stone.
+    await tv.evaluate(()=>window.__MR.Game.toLobby());
+    await p1.locator('#vip button').filter({hasText:'Marble Curling'}).waitFor({state:'visible',timeout:10000});
+    await p1.locator('#vip button').filter({hasText:'Marble Curling'}).click();
+    await tv.waitForFunction(()=>window.__MR.selectedMode==='curling',{timeout:10000});
+    await tv.locator('#btnStart').click();
+    await tv.locator('[data-screen="curling"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.mode==='curling'&&document.body.dataset.s==='curling',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.mode==='curling'&&document.body.dataset.s==='curling',{timeout:10000});
+    await p1.locator('#modeActions button').filter({hasText:'THROW!'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.curling.session()?.state.phase==='slide',{timeout:8000});
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='throw'),'First Curling phone did not throw');
+    assert.ok(a.received.some(x=>x.t==='hud'&&x.mode==='curling'));
+    assert.ok(b.received.some(x=>x.t==='hud'&&x.mode==='curling'));
+    await tv.evaluate(()=>{
+      const g=window.__MR.MODES.curling.session();
+      let n=0;while(g.state.phase==='slide'&&n++<500)g.step(.1);
+      if(g.state.phase!=='aim')throw Error('Curling shot failed to settle');
+    });
+    await p2.locator('#modeActions button').filter({hasText:'THROW!'}).waitFor({state:'visible',timeout:10000});
+    await p2.locator('#modeActions button').filter({hasText:'THROW!'}).click();
+    await tv.waitForFunction(()=>window.__MR.MODES.curling.session()?.state.stones.length===2,{timeout:8000});
+    assert.ok(b.sent.some(x=>x.t==='act'&&x.a==='throw'),'Second Curling phone did not throw');
+    await tv.screenshot({path:'qa-curling-tv.png',fullPage:true});
+    await p2.screenshot({path:'qa-curling-phone.png',fullPage:true});
+    assert.deepEqual(errors,[],'Two-phone Curling JS errors');
+    console.log('PASS: Curling two phones execute separate throws with authoritative turn ownership');
+
 
 
 
