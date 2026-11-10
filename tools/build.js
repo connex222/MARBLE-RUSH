@@ -102,7 +102,7 @@ function fontCss(names) {
   const fonts = fontCss([['Fredoka', 'fredoka.woff2', '300 700'], ['Nunito', 'nunito.woff2', '200 1000']]);
   const engine = fs.readFileSync(path.join(SRC, 'engine.js'), 'utf8');
   const tv = fs.readFileSync(path.join(SRC, 'tv.js'), 'utf8');
-  const modes = ['registry','session','geometry','attract','grandprix','derby','dropzone','brawl','curling','golf'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
+  const modes = ['registry','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
   const qr = fs.readFileSync(path.join(SRC, 'qr.js'), 'utf8');
   const safe = s => s.replace(/<\/script/gi, '<\\/script');
   let tvHtml = fs.readFileSync(path.join(SRC, 'tv.html'), 'utf8');
