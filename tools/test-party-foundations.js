@@ -73,6 +73,30 @@ assert.deepEqual(Array.from(coord.standings(co),p=>[p.id,p.points]),[['p1',28],[
 assert.throws(()=>coord.begin(co),/cannot begin/);
 assert.throws(()=>coord.start({playlist:['grandprix','grandprix','grandprix'],playerIds:['p1','p1']}),/unique/);
 console.log('PASS: fixed-roster Party Night transitions, score accumulation, eligibility, and replay guards.');
+// Grand Prix adapter must award exactly the original points and statistics.
+const racePlayer = (id) => ({
+  id,points:0,races:0,wins:0,lastPlace:0,
+  tot:{perfect:0,offs:0,bumps:0,maxAir:0,climb:0,topSpeed:0}
+});
+const raced = new Map([['a',racePlayer('a')],['b',racePlayer('b')]]);
+const mark = (id,finished)=>({
+  id,finished,finishTime:finished?12:0,
+  stats:{perfect:1,offs:2,bumps:3,maxAir:4,climb:5,topSpeed:6}
+});
+const awarded = game.MODES.grandprix.roundResults({
+  standings:[mark('b',true),mark('a',false)],players:raced,points:[10,8,6,5,4,3,2,1]
+});
+assert.deepEqual(Array.from(awarded),['b','a']);
+assert.equal(raced.get('b').points,10);
+assert.equal(raced.get('a').points,8);
+assert.equal(raced.get('b').wins,1);
+assert.equal(raced.get('b').tot.maxAir,4);
+assert.deepEqual(Array.from(game.MODES.grandprix.finalResults(raced.values()),p=>p.id),['b','a']);
+const inputCalls=[];
+game.MODES.grandprix.onInput({world:{press:id=>inputCalls.push('p'+id),
+ release:id=>inputCalls.push('r'+id),useItem:id=>inputCalls.push('i'+id)},pid:'a',k:'p'});
+assert.deepEqual(inputCalls,['pa']);
+console.log('PASS: extracted Grand Prix input, scoring and rankings remain compatible.');
 const MR = require('../src/engine.js');
 const track = MR.TRACKS.toybox();
 const gp = new MR.World(track,{seed:17});
