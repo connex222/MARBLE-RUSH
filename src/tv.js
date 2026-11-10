@@ -1227,10 +1227,11 @@
     },
     beginCup() {
       if (players.size === 0 || !MODES[selectedMode]?.available) return;
-      // Preserve the existing, fully tested Grand Prix flow unchanged.
-      this.resetNight();
-      cup.n = settings.cup; cup.race = 0; cup.played = [];
-      this.toVote();
+      // Grand Prix start is hosted by its mode adapter; same original sequence.
+      MODES.grandprix.setup({
+        resetNight: () => this.resetNight(), cup, settings,
+        toVote: () => this.toVote()
+      });
     },
     toVote() {
       state = 'vote'; stateT = 0;
