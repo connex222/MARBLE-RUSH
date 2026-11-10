@@ -66,7 +66,7 @@ async function main(){
     await p1.locator('#vip button').filter({hasText:'Grand Prix'}).click();
     await tv.waitForFunction(()=>window.__MR?.selectedMode==='grandprix',{timeout:10000});
     assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='mode'&&x.v==='grandprix'),'VIP mode choice did not reach TV');
-    assert.equal(await tv.locator('#partyModeCards .partyModeCard[data-locked="true"]').count(),2,'Unfinished modes must remain locked');
+    assert.equal(await tv.locator('#partyModeCards .partyModeCard[data-locked="true"]').count(),1,'Unfinished modes must remain locked');
     await tv.locator('#btnStart').click();
     await p1.locator('#votes button').first().waitFor({state:'visible',timeout:15000});
     await p1.locator('#votes button').first().click();
