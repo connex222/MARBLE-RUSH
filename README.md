@@ -1,6 +1,20 @@
-# Marble Rush — v0.4
+# Marble Rush — v0.5.0 Party Pack development
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
+
+**This development branch is not the live release.** Grand Prix v0.4 gameplay remains intact.
+The Party Pack framework now shows six games, but the five new games are
+preview-only and are **not playable** until their dedicated implementation phases.
+
+### Party Night preview (development branch only)
+In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
+start. The available mode (Grand Prix) repeats until the other five modes
+are implemented. After each Grand Prix cup, select **Next Party Game**;
+Party Points 10/8/6/5/4/3/2/1 carry forward across cups.
+The host can also choose Party Night length on their phone.
+Hover or activate a locked game card to watch a 15-second code-drawn
+CPU concept preview; it cannot start an unfinished game.
+
 
 ## Try it right now (no internet, no server)
 
@@ -56,3 +70,20 @@ Anything you haven't made yet stays code-drawn, so the game always works.
 | `fonts/` | Fredoka and Nunito (free OFL fonts), baked into the pages |
 | `tools/build.js` | Resizes art and bakes everything into single files |
 | `tools/balance-lab.js` | Screen-free race tester (`npm run balance`) |
+
+## Phase 2 developer checks (development branch)
+
+```
+npm install
+npm run build
+npm run test:party
+npm run balance -- grandprix 1
+```
+
+GitHub Actions additionally compares Grand Prix physics against main over
+all seven tracks and tests a simulated TV plus two phones in Chromium.
+The physical 2–4 phone acceptance test remains outstanding.
+
+Party Pack shared systems: `src/modes/registry.js`, `session.js`,
+`bots.js`, `attract.js`, `geometry.js`, and the six individual mode files.
+Future mode files remain disabled until each game passes its own acceptance.
