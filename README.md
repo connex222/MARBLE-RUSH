@@ -1,10 +1,10 @@
-# Marble Rush — v0.8.0 Party Pack development
+# Marble Rush — v0.9.0 Party Pack development
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
 **This development branch is not the live release.** Grand Prix v0.4 gameplay remains intact.
-The Party Pack framework shows six games. **Grand Prix, Marble Derby, Drop Zone and Bowl Brawl are playable.**
-Marble Curling and Marble Golf remain preview-only until their phases.
+The Party Pack framework shows six games. **Grand Prix, Marble Derby, Drop Zone, Bowl Brawl and Marble Curling are playable.**
+Marble Golf remains preview-only until Phase 7.
 
 ### Party Night preview (development branch only)
 In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
@@ -80,6 +80,7 @@ npm run test:party
 npm run test:dropzone
 npm run test:brawl
 npm run test:derby
+npm run test:curling
 npm run balance -- grandprix 1
 ```
 
@@ -133,3 +134,18 @@ of gems. CPU runners and disconnected players are handled automatically.
 The game is available in Party Night and uses the usual final ranking
 Party Points. [Phase 5 QA and rules](docs/PARTY-PHASE5-DERBY.md).
 The track is functional code-rendered artwork pending later visual polish.
+
+## Marble Curling — Phase 6
+
+Curling is a **five-end** ice-rink contest for **2–8 players**.
+Each racer throws **two stones per end**. Aim left/right, choose power,
+THROW and SWEEP during the slide to preserve momentum.
+Stones collide and can knock rivals away from the scoring house.
+Closest stones earn the most points; stones near the central button
+earn a small bonus. The highest total after five ends wins.
+CPU racers take their turns automatically and Curling can appear
+within a 3/5/7-game Party Night.
+
+See [Phase 6 rules and QA](docs/PARTY-PHASE6-CURLING.md).
+This is code-rendered development art, with final AAA art/audio
+production reserved for the later visual phase.
