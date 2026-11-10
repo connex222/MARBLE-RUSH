@@ -160,6 +160,29 @@ sensorMarble.x=400; sensors.checkPartySensors();
 sensorMarble.x=0; sensors.checkPartySensors();
 assert.equal(sensors.events.filter(e=>e.type==='party_sensor').length,2,'re-entry can trigger a new event');
 assert.equal(new MR.World(MR.TRACKS.lobby(),{free:true}).partyObstacles.length,0,'Grand Prix worlds have no Party Pack obstacles');
+
+const dwellWorld=new MR.World(MR.TRACKS.lobby(),{seed:1,free:true,
+ partyObstacles:[{type:'bucket',x:0,y:0,width:100,height:80,points:250,dwell:.4}]});
+const dw=dwellWorld.addMarble('dw');dw.x=0;dw.y=30;
+dwellWorld.checkPartySensors(.2);
+assert.equal(dwellWorld.events.filter(e=>e.type==='party_score').length,0);
+dwellWorld.checkPartySensors(.19);
+assert.equal(dwellWorld.events.filter(e=>e.type==='party_score').length,0);
+dwellWorld.checkPartySensors(.02);
+assert.equal(dwellWorld.events.filter(e=>e.type==='party_score').length,1);
+dwellWorld.checkPartySensors(.5);
+assert.equal(dwellWorld.events.filter(e=>e.type==='party_score').length,1,'bucket must score once');
+dw.x=500;dwellWorld.checkPartySensors(.02);
+dw.x=0;dwellWorld.checkPartySensors(.41);
+assert.equal(dwellWorld.events.filter(e=>e.type==='party_score').length,2,'new entry may score again');
+const ringWorld=new MR.World(MR.TRACKS.lobby(),{free:true,partyObstacles:[{
+ type:'retractRim',x:0,y:0,initialRadius:200,start:0,end:20,minRadius:100}]});
+const rm=ringWorld.addMarble('rm');rm.x=270;rm.y=0;rm.vx=200;rm.vy=0;
+ringWorld.collidePartyObstacles(rm);
+assert.ok(rm.x<=200-rm.r+1e-6,'shrinking rim should contain marble');
+assert.ok(rm.vx<0,'moving rim must reverse outward velocity');
+console.log('PASS: 400ms bucket dwell, one-shot scores, re-entry and shrinking rim bounce.');
+
 console.log('PASS: optional peg collision and edge-triggered bucket sensor integration.');
 
 console.log('PASS: deterministic peg, spinner, bucket, goal, water and shrinking-rim geometry.');
