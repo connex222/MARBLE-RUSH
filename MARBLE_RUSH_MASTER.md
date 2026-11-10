@@ -907,3 +907,48 @@ selection and rate-limited cheering are prepared for future modes.
 **QA:** Foundation tests, seven-track deterministic main-versus-development
 Grand Prix regression, code/art audit, build, and simulated TV/two-phone
 browser checks are required. A full real-device acceptance is still pending.
+
+
+---
+
+## Phase 3 — Drop Zone v0.6.0 development appendix (10 November 2026)
+
+Drop Zone is the first new playable Party Pack game. The current approved
+Grand Prix seven-track rendering, camera, 119 art assets and audio are
+untouched. There are now two playable mode cards; the other four are locked.
+
+**Gameplay:** 1–8 participants; five turns per participant, one marble per
+turn; sequential turn order; aim LEFT/RIGHT then press DROP. The marble
+falls through an 85-peg board with an animated bumper and gate, bounces
+off the walls and settles into one of eight buckets. From left to right,
+the bucket awards are 50, 100, 200, 500, 1000, 500, 200, 100.
+The game winner has the highest total; jackpot count and roster order
+break ties. A marble's flight has a 10-second fail-safe and scoring
+requires a 0.4-second settling interval. Inactive players are
+automatically released after 25 seconds so the session cannot stall.
+
+**Devices:** TV shows a 1920×1080 board with turn, scores and Left/Drop/Right
+fallback controls. Connected phones display the active turn, controls,
+aim position and points. CPU turns are automatically resolved using
+seeded randomness; unowned or duplicate drop commands are rejected.
+No player data is transmitted to a new external service.
+
+**Party Night:** Drop Zone is a single game within a 3/5/7-game session.
+Its five-round final ranking is converted to the existing Party Points
+scale 10/8/6/5/4/3/2/1. The fixed player roster and cumulative scores
+remain controlled by Phase 2 PartyCoordinator. The shared finale displays
+the winner and offers the next game.
+
+**Art:** the functional Drop Zone pegboard is currently code-rendered,
+following the established premium colour palette. It is not a claim that
+a new 3D environment has been artistically approved; future visual
+production must preserve its physics and screen affordances.
+
+**QA:** 30 deterministic full CPU simulations with repeated seeds,
+one eight-racer capacity test, input validation, Grand Prix regression,
+local browser-rendered Drop Zone completion, and TV/two-phone WebSocket
+smoke. Physical multiplayer acceptance is a separate Alpha release gate.
+
+**Release constraint:** all development remains in
+`dev/party-pack-phase3-dropzone`, PR #39 based on the Phase 2 development
+branch. No GitHub main merge or Render production deployment.
