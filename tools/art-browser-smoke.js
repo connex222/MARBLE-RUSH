@@ -205,8 +205,8 @@ async function main(){
     assert.ok(br.totals.every(p=>p.rounds===5&&p.points>0));
     assert.equal(errors.length,0,'Browser errors after Bowl Brawl: '+errors.join(' | '));
     console.log('PASS: Bowl Brawl complete five-round TV arena, RAM energy and final standings');
-    // Mixed 3-game Party Night must include Grand Prix, Drop Zone and Brawl
-    // once each when two racers are present. Reuse deterministic simulation
+    // Three-game Party Night may select any three of the four completed games.
+    // Preserve all modes' score transitions through deterministic simulation
     // rather than waiting for several full races in real time.
     await page.evaluate(()=>{
       const a=window.__MR;
@@ -218,6 +218,10 @@ async function main(){
           const g=a.MODES.brawl.session();let n=0;
           while(!g.state.done&&n++<25000)g.tick(.05);
           if(!g.state.done)throw Error('Party Night Brawl did not complete');
+        }else if(mode==='derby'){
+          const g=a.MODES.derby.session();let n=0;
+          while(!g.state.done&&n++<30000)g.step(.05);
+          if(!g.state.done)throw Error('Party Night Derby did not complete');
         }else if(mode==='dropzone'){
           const g=a.MODES.dropzone.session();let n=0;
           while(!g.state.done&&n++<15000){
@@ -239,12 +243,44 @@ async function main(){
       totals:[...window.__MR.partyRun.session.totals.values()],
       status:window.__MR.partyRun.status
     }));
-    assert.deepEqual(party.history,['brawl','dropzone','grandprix']);
+    assert.equal(party.history.length,3);
+    assert.equal(new Set(party.history).size,3);
+    assert.ok(party.history.every(x=>['grandprix','derby','dropzone','brawl'].includes(x)));
     assert.equal(party.totals.length,2);
     assert.ok(party.totals.every(p=>p>=6&&p<=30));
     assert.equal(party.status,'complete');
     assert.equal(errors.length,0,'Mixed Party Night JS errors: '+errors.join(' | '));
     console.log('PASS: Three-mode Party Night awards correct cumulative points and exits cleanly');
+    // The actual playable Derby must run 5 heats, retain valid virtual gems
+    // and present the shared championship without errors.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();a.Game.onAction('tv','mode','derby');a.Game.beginCup();
+    });
+    await page.locator('[data-screen="derby"]').waitFor({state:'visible',timeout:10000});
+    assert.equal(await page.locator('#derbyCanvas').getAttribute('width'),'1920');
+    await page.screenshot({path:'qa-derby-tv.png',fullPage:true});
+    await page.evaluate(()=>{
+      const g=window.__MR.MODES.derby.session();
+      const human=g.state.roster.find(p=>!p.cpu);
+      if(!human)throw Error('Derby missing human player');
+      if(!g.action(human.id,'bet',{horse:0,stake:50}))throw Error('Derby wager rejected');
+      let n=0;
+      while(!g.state.done&&n++<30000)g.step(.05);
+      if(!g.state.done)throw Error('Derby failed to complete five heats');
+    });
+    await page.locator('[data-screen="finale"]').waitFor({state:'visible',timeout:10000});
+    const derby=await page.evaluate(()=>({
+      history:window.__MR.MODES.derby.session().state.history.length,
+      bets:window.__MR.MODES.derby.session().state.roster.map(p=>p.bets.length),
+      gems:window.__MR.MODES.derby.session().state.roster.map(p=>p.gems)
+    }));
+    assert.equal(derby.history,5);
+    assert.ok(derby.bets.every(n=>n===5));
+    assert.ok(derby.gems.every(n=>n>=0));
+    assert.deepEqual(errors,[],'JavaScript errors in Marble Derby');
+    console.log('PASS: Five real Derby heats, virtual gems and winner presentation');
+
 
 
 
