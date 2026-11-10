@@ -294,7 +294,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   };
   function renderModePanel(h) {
     const panel=$('#modePanel');
-    if(!h.mode || h.mode==='grandprix' || !['race','countdown','results','lobby','dropzone','brawl','derby','curling'].includes(h.s)){
+    if(!h.mode || h.mode==='grandprix' || !['race','countdown','results','lobby','dropzone','brawl','derby','curling','golf'].includes(h.s)){
       panel.hidden=true;return;
     }
     panel.hidden=false;
@@ -372,6 +372,11 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
       case 'countdown':
         setText(h.cd ? `<span>${h.cd}</span>` : '', h.inRace ? 'Tap right on ROLL!' : 'You join the next race', h.inRace ? 'for a perfect start' : '');
         break;
+      case 'golf':
+        setText('', h.modePhase==='aim'&&h.isTurn?'YOUR SHOT':h.modePhase==='rolling'?'MARBLE IN MOTION':h.modePhase==='results'?'HOLE RESULTS':'MARBLE GOLF',
+          'Hole '+(h.hole||1)+'/5 · '+(h.roundScore||0)+' strokes · '+(h.modeHint||''));
+        if(h.vip)vip=[['lobby','End game & lobby']];
+        break;
       case 'curling':
         setText('',h.modePhase==='aim'&&h.isTurn?'YOUR THROW':h.modePhase==='slide'&&h.isTurn?'SWEEP!':h.modePhase==='results'?'END RESULTS':'MARBLE CURLING',
           (h.roundScore||0)+' points · '+(h.modeHint||h.turnLabel||''));
@@ -426,7 +431,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
       derby: ['CHEER!', 'back your marble, cheer once per heat'],
       brawl: ['RAM', 'hold to anchor'],
       curling: ['SWEEP', 'hold to brake'],
-      golf: ['LOCK AIM', 'tap to lock power']
+      golf: ['SHOOT!', 'aim and set power first']
     };
     const label = labels[h.mode] || labels.grandprix;
     $('#padText b').textContent = h.mode === 'grandprix' && h.s === 'race' && h.boost < 25 ? 'WAIT' : h.mode === 'grandprix' && h.s === 'race' && h.boost >= 100 ? 'SUPER!' : label[0];
