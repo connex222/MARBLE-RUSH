@@ -1,9 +1,9 @@
-# Marble Rush — Party Pack Phase 8 integration development
+# MARBLE RUSH — Party Pack (Alpha)
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
-**This development branch is not the live release.** Grand Prix v0.4 gameplay remains intact.
-The Party Pack framework shows six games. **All six modes are now available in the development build:** Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. Final visual/audio acceptance and real-device multiplayer QA are still pending.
+Grand Prix v0.4 gameplay and approved base artwork remain intact. The Party Pack adds five more games and shared Party Night scoring.
+The Party Pack contains six games. **All six modes are now available in the development build:** Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. Final visual/audio acceptance and real-device multiplayer QA are still pending.
 
 ### Party Night preview (development branch only)
 In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
@@ -149,4 +149,8 @@ production reserved for the later visual phase.
 
 ## Phase 8 — integration and release gates
 
-Marble Golf is now connected to the TV/phone UI, with gamepad and on-screen aim, power and SHOOT controls, per-player HUD, five-hole results and Party Night scoring. CI checks the integration and all earlier modes. See [Phase 8 integration record](docs/PARTY-PHASE8.md) for the **remaining AAA assets/audio and physical-device acceptance blockers**. This development branch is **not merged or deployed**.
+Marble Golf is now connected to the TV/phone UI, with gamepad and on-screen aim, power and SHOOT controls, per-player HUD, five-hole results and Party Night scoring. CI checks the integration and all earlier modes. See [Phase 8 integration record](docs/PARTY-PHASE8.md) for the **remaining AAA assets/audio and physical-device acceptance blockers**. The code is prepared for Alpha release. New approved Party Pack card art must be uploaded separately; if absent, fallback artwork is displayed.
+
+## Consolidated Alpha release notes (10 November 2026)
+
+Six modes: Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. Party Night: 3/5/7 games, 1–8 players where mode minimums allow, phones and local CPU/keyboard controllers. The approved original graphics and avatars remain unchanged. Party Pack card thumbnails/banners are optional **until their 13 approved WebP source files are uploaded to `assets/raw`**. Audio is generated with Creative Claw only and recorded in `tools/approved-audio-sources.json`; the build bundles it when available with a playable procedural fallback when the audio provider cannot be reached. See `docs/PARTY-PHASE8.md` for the acceptance plan and outstanding physical multiplayer test. Never claim new graphics are live until the production manifest lists them.
