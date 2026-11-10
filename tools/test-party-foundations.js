@@ -26,19 +26,19 @@ assert.equal(mock.cup.n,4);
 assert.equal(mock.cup.race,0);
 assert.equal(mock.cup.played.length,0);
 
-assert.equal(ids.filter(id => game.MODES[id].available).length,4,'GP, Derby, Drop Zone and Bowl Brawl playable');
+assert.equal(ids.filter(id => game.MODES[id].available).length,5,'five playable modes, Golf locked');
 for (const mode of Object.values(game.MODES)) {
   for (const fn of ['setup','startRound','tick','draw','onInput','onAction','botTick','hud','standings','roundResults','finalResults'])
     assert.equal(typeof mode[fn],'function',mode.id+'.'+fn);
 }
 assert.deepEqual(Array.from(game.partyPoints(['a','b','c']), ([id, points]) => [id, points]),[['a',10],['b',8],['c',6]]);
 assert.throws(()=>game.partyPoints(['a','a']),/unique/);
-assert.throws(()=>game.PartyNight.create(['grandprix','curling','grandprix'],2),/unavailable/);
+assert.throws(()=>game.PartyNight.create(['grandprix','golf','grandprix'],2),/unavailable/);
 assert.throws(()=>game.PartyNight.create(['grandprix'],2),/3, 5 or 7/);
 const seedPlan = game.PartyNight.plan(7,2,42);
 assert.equal(seedPlan.length,7);
-assert.ok(seedPlan.every(id=>['grandprix','derby','dropzone','brawl'].includes(id)),'playlist must contain released modes');
-assert.ok(seedPlan.includes('derby')&&seedPlan.includes('dropzone')&&seedPlan.includes('brawl'),'Party Night includes the three released minigames');
+assert.ok(seedPlan.every(id=>['grandprix','derby','dropzone','brawl','curling'].includes(id)),'playlist must contain released modes');
+assert.ok(seedPlan.includes('curling')&&seedPlan.includes('derby')&&seedPlan.includes('dropzone')&&seedPlan.includes('brawl'),'Party Night includes all four minigames');
 assert.deepEqual(Array.from(game.PartyNight.plan(7,2,42)),Array.from(game.PartyNight.plan(7,2,42)));
 assert.throws(()=>game.PartyNight.plan(4,2,42),/configuration/);
 assert.throws(()=>game.PartyNight.plan(3,0,42),/configuration/);
