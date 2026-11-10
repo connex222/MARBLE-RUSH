@@ -1239,6 +1239,11 @@
         partyRun = PartyCoordinator.start({playlist:ids, playerIds:[...players.keys()]});
       }
       if (partyRun) selectedMode = PartyCoordinator.begin(partyRun);
+      if (selectedMode === 'golf') {
+        MODES.golf.setup({players,seed:Date.now()>>>0,onFinish:r=>this.finishGolf(r)});
+        state='golf';stateT=0;showScreen('golf');
+        Audio_.Music.mode('lobby');Audio_.play('sfx_count_go');sendHud(true);return;
+      }
       if (selectedMode === 'curling') {
         MODES.curling.setup({players,seed:Date.now()>>>0,onFinish:r=>this.finishCurling(r)});
         state='curling';stateT=0;showScreen('curling');
@@ -1276,6 +1281,21 @@
     nextPartyGame() {
       if (!partyRun || partyRun.status !== 'ready' || state !== 'finale') return;
       this.beginCup();
+    },
+    finishGolf(ranking) {
+      if (state !== 'golf') return;
+      if (partyRun && partyRun.status === 'playing') {
+        const outcome=PartyCoordinator.complete(partyRun,ranking.map(p=>p.id));
+        for (const p of players.values()) p.points=outcome.totals.get(p.id)||0;
+      } else {
+        for (let i=0;i<ranking.length;i++) {
+          const r=ranking[i],p=players.get(r.id);
+          if(p){p.points=Math.max(0,50-r.strokes);p.lastPts=r.strokes;p.lastPlace=i+1;}
+        }
+      }
+      world=new World(TRACKS.toybox(),{seed:1,free:true});art=buildArt(world.t);
+      for(const p of players.values())world.addMarble(p.id,p);
+      Audio_.play('crowd_cheer');this.finale();
     },
     finishCurling(ranking) {
       if(state!=='curling')return;
@@ -1435,7 +1455,8 @@
     onInput(pid, k) {
       if (!world) return;
       const p = players.get(pid); if (!p) return;
-      if (!['lobby','countdown','race','dropzone','brawl','derby','curling'].includes(state)) return;
+      if (!['lobby','countdown','race','dropzone','brawl','derby','curling','golf'].includes(state)) return;
+      if (state==='golf') {MODES.golf.onInput(pid,k);return;}
       if (state==='curling') {MODES.curling.onInput(pid,k);return;}
       if (state==='derby') {MODES.derby.onInput(pid,k);return;}
       if (state==='brawl') {MODES.brawl.onInput(pid,k);return;}
@@ -1460,6 +1481,7 @@
       if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
+      if (a === 'lobby' && isVip && state === 'golf') {partyLength=0;this.toLobby();sendHud(true);return;}
       if (a === 'lobby' && isVip && state === 'curling') {partyLength=0;this.toLobby();sendHud(true);return;}
       if (a === 'lobby' && isVip && state === 'derby') {partyLength=0;this.toLobby();sendHud(true);return;}
       if (a === 'lobby' && isVip && state === 'brawl') {
@@ -1478,6 +1500,10 @@
       }
       // Future modes receive only scoped, bounded actions from known players;
       // player choices are validated in that mode, never by the relay.
+      if (state === 'golf' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','shoot'].includes(a)) {
+        if(MODES.golf.onAction(pid,a,v))Audio_.play(a==='shoot'?'sfx_boost':'sfx_ui_tap',{gap:.07,vol:.45});
+        sendHud(true);return;
+      }
       if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep'].includes(a)) {MODES.curling.onAction(pid,a,v);sendHud(true);return;}
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {MODES.derby.onAction(pid,a,v);sendHud(true);return;}
       if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor'].includes(a)) {
@@ -1860,7 +1886,7 @@
     }
     $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · eligible modes repeat' :
       selectedMode === 'brawl' && players.size < 2 ? 'Bowl Brawl needs two or more racers' :
-      'Grand Prix, Derby, Drop Zone, Bowl Brawl and Curling playable · Golf in development';
+      'All six Party Pack games playable · choose a mode or Party Night';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -1891,7 +1917,10 @@
     $('#btnStart').textContent = partyLength ? 'Start Party Night' :
       players.size < required ? 'Need '+required+' players' :
       selectedMode === 'brawl' ? 'Start Bowl Brawl' :
-      selectedMode === 'dropzone' ? 'Start Drop Zone' : 'Start the Cup';
+      selectedMode === 'dropzone' ? 'Start Drop Zone' :
+      selectedMode === 'golf' ? 'Start Marble Golf' :
+      selectedMode === 'curling' ? 'Start Curling' :
+      selectedMode === 'derby' ? 'Start Derby' : 'Start the Cup';
     $('#btnCpu').disabled = players.size >= 8;
     $('#btnKb').disabled = players.size >= 8 || [...players.values()].filter(p => p.keys != null).length >= 4;
     for (const b of document.querySelectorAll('[data-set]')) {
@@ -1993,8 +2022,8 @@
         opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
         myVote: state === 'vote' && vote.votes.has(p.id) ? vote.votes.get(p.id) : -1, picked: state === 'vote' ? vote.picked : -1,
         cupRace: cup.race, cupN: cup.n, cupDone: cup.race >= cup.n,
-        modeControls: state==='curling' ? MODES.curling.hud(p).modeControls : state==='derby' ? MODES.derby.hud(p).modeControls : state==='brawl' ? MODES.brawl.hud(p).modeControls : state==='dropzone' ? MODES.dropzone.hud(p).modeControls : null,
-        ...(state==='curling' ? MODES.curling.hud(p) : state==='derby' ? MODES.derby.hud(p) : state==='brawl' ? MODES.brawl.hud(p) : state === 'dropzone' ? MODES.dropzone.hud(p) : {}),
+        modeControls: state==='golf' ? MODES.golf.hud(p).modeControls : state==='curling' ? MODES.curling.hud(p).modeControls : state==='derby' ? MODES.derby.hud(p).modeControls : state==='brawl' ? MODES.brawl.hud(p).modeControls : state==='dropzone' ? MODES.dropzone.hud(p).modeControls : null,
+        ...(state==='golf' ? MODES.golf.hud(p) : state==='curling' ? MODES.curling.hud(p) : state==='derby' ? MODES.derby.hud(p) : state==='brawl' ? MODES.brawl.hud(p) : state === 'dropzone' ? MODES.dropzone.hud(p) : {}),
         cheerReady: performance.now() - (cheerTime.get(p.id) ?? -4000) >= 3000,
         partyLength, partyIndex: partyRun ? partyRun.session.index : 0,
         partyPending: !!partyRun && partyRun.status === 'ready',
@@ -2017,6 +2046,11 @@
       PartyAttract.preview(c, attractMode, (now - attractFrom)/1000);
     } else if (attractMode && now >= attractUntil) {
       attractMode = null; $('#partyAttractPanel').hidden = true;
+    }
+    if (state==='golf') {
+      stateT+=dt;MODES.golf.tick(dt);const canvas=$('#golfCanvas');
+      MODES.golf.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='curling') {
       stateT+=dt;MODES.curling.tick(dt);const canvas=$('#curlingCanvas');
@@ -2189,6 +2223,13 @@
   }
   $('#btnBoot').onclick = bootStart;
   $('#btnStart').onclick = () => Game.onAction('tv', 'start');
+  for(const [id,action] of [['golfLeft','left'],['golfRight','right'],
+    ['golfDown','powerdown'],['golfUp','powerup'],['golfShoot','shoot']]) {
+    $('#'+id).onclick=()=>{
+      const g=MODES.golf.session(),p=g?.state.roster[g.state.turn];
+      if(p&&!p.cpu)Game.onAction(p.id,action,['left','right'].includes(action)?2:undefined);
+    };
+  }
   for(const [id,action] of [['curlLeft','left'],['curlRight','right'],
     ['curlDown','powerdown'],['curlUp','powerup'],['curlThrow','throw'],['curlSweep','sweep']]){
     $('#'+id).onclick=()=>{const g=MODES.curling.session();
