@@ -205,6 +205,47 @@ async function main(){
     assert.ok(br.totals.every(p=>p.rounds===5&&p.points>0));
     assert.equal(errors.length,0,'Browser errors after Bowl Brawl: '+errors.join(' | '));
     console.log('PASS: Bowl Brawl complete five-round TV arena, RAM energy and final standings');
+    // Mixed 3-game Party Night must include Grand Prix, Drop Zone and Brawl
+    // once each when two racers are present. Reuse deterministic simulation
+    // rather than waiting for several full races in real time.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();a.Game.onAction('tv','party',3);a.Game.beginCup();
+      let guard=0;
+      while(a.partyRun?.status!=='complete'&&guard++<3){
+        const mode=a.selectedMode;
+        if(mode==='brawl'){
+          const g=a.MODES.brawl.session();let n=0;
+          while(!g.state.done&&n++<25000)g.tick(.05);
+          if(!g.state.done)throw Error('Party Night Brawl did not complete');
+        }else if(mode==='dropzone'){
+          const g=a.MODES.dropzone.session();let n=0;
+          while(!g.state.done&&n++<15000){
+            if(!g.state.ball)g.action(g.owner().id,'drop');
+            g.step(.05);
+          }
+          if(!g.state.done)throw Error('Party Night Drop Zone did not complete');
+        }else if(mode==='grandprix'){
+          a.Game.startRace('toybox');
+          for(const p of a.players.values())p.points=10;
+          a.Game.finale();
+        }else throw Error('Unexpected Party Night mode: '+mode);
+        if(a.partyRun.status==='ready')a.Game.nextPartyGame();
+      }
+      if(a.partyRun?.status!=='complete')throw Error('Party Night did not finish all modes');
+    });
+    const party=await page.evaluate(()=>({
+      history:window.__MR.partyRun.history.map(g=>g.mode).sort(),
+      totals:[...window.__MR.partyRun.session.totals.values()],
+      status:window.__MR.partyRun.status
+    }));
+    assert.deepEqual(party.history,['brawl','dropzone','grandprix']);
+    assert.equal(party.totals.length,2);
+    assert.ok(party.totals.every(p=>p>=6&&p<=30));
+    assert.equal(party.status,'complete');
+    assert.equal(errors.length,0,'Mixed Party Night JS errors: '+errors.join(' | '));
+    console.log('PASS: Three-mode Party Night awards correct cumulative points and exits cleanly');
+
 
 
   }finally{
