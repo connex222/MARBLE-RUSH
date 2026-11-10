@@ -35,6 +35,22 @@ async function main(){
   try{
     await page.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:20000});
     await page.locator('#btnBoot').click();
+    // Party Pack picker must fit within the TV-safe lobby without covering
+    // joining instructions, settings or the start controls.
+    await page.locator('#partyModeCards .partyModeCard').first().waitFor({state:'visible'});
+    const picker=await page.evaluate(()=>{
+      const bounds=id=>{const r=document.querySelector(id).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom};};
+      return {cards:[...document.querySelectorAll('.partyModeCard')].map(x=>({disabled:x.disabled,pressed:x.getAttribute('aria-pressed')})),
+        picker:bounds('#partyPicker'),join:bounds('.joinCard'),settings:bounds('#lobbySettings'),controls:bounds('#lobbyBottom')};
+    });
+    assert.equal(picker.cards.length,6,'Six mode cards must be visible');
+    assert.equal(picker.cards.filter(c=>c.disabled).length,5,'Incomplete games must not be playable');
+    assert.equal(picker.cards.filter(c=>c.pressed==='true').length,1,'One mode selected');
+    const overlaps=(a,b)=>a.x<b.right&&a.right>b.x&&a.y<b.bottom&&a.bottom>b.y;
+    for(const [name,rect] of [['joining instructions',picker.join],['settings',picker.settings],['start controls',picker.controls]])
+      assert.equal(overlaps(picker.picker,rect),false,'Party picker overlaps '+name+': '+JSON.stringify(picker));
+    await page.screenshot({path:'qa-party-picker.png',fullPage:true});
+    console.log('PASS: six-mode picker and TV-safe lobby geometry');
     // Force full-effects art rendering on headless CI even if its framerate dips.
     await page.locator('[data-set="fx"]').click();
     await page.locator('#btnKb').click();
