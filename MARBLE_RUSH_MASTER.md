@@ -952,3 +952,45 @@ smoke. Physical multiplayer acceptance is a separate Alpha release gate.
 **Release constraint:** all development remains in
 `dev/party-pack-phase3-dropzone`, PR #39 based on the Phase 2 development
 branch. No GitHub main merge or Render production deployment.
+
+---
+
+## Party Pack Phase 4 — Bowl Brawl (development v0.7.0)
+
+**Architecture:** `src/modes/brawl.js` implements the deterministic,
+DOM-free arena simulation; `src/tv.js` handles room control, TV drawing
+and Party Night scoring, and `src/play.html` handles phone button input.
+The minimum number of Bowl Brawl players is **2** and the maximum is **8**.
+The mode is disabled at startup if too few racers have joined.
+
+**Rules:** five rounds, all players participate simultaneously in a circular
+arena. RAM consumes **28 energy**, ANCHOR consumes **15 energy**,
+energy regenerates and attack actions are cooldown-limited. RAM launches
+the marble along its selected heading. ANCHOR reduces momentum and
+resistance to incoming impacts. Human players can steer left/right; CPU
+opponents aim toward nearby surviving rivals. The 380-unit safety
+radius begins shrinking after 10 seconds, reaching 110 by 42 seconds.
+A player outside the ring is eliminated. The round ends on one survivor
+or 42 seconds. Rankings favour living racers, then survival time;
+the round points schedule is 10, 8, 6, 5, 4, 3, 2, 1.
+Five-round totals determine the winner; wins and hit counts break ties.
+
+**Party Night:** a completed Bowl Brawl counts as one game within 3/5/7-game
+Party Night, using the existing 10/8/6/5/4/3/2/1 final-game points.
+The fixed roster and cross-game totals remain controlled by
+`PartyCoordinator`. Grand Prix and Drop Zone stay playable.
+
+**TV and phone:** the TV uses a 1920×1080 code-rendered bowl, shrinking
+gold safety ring, avatar-coloured marbles, round timer and standings,
+plus optional local control buttons. Phones show current round, points,
+energy and RAM/ANCHOR/TURN buttons. The large phone pad triggers RAM.
+Unauthorised inputs and spam are rejected in the mode's logic.
+
+**Testing and release:** 30+ deterministic three-CPU full-match seeds
+with five rounds, eight-player capacity test, invalid-roster, energy,
+cooldown and elimination guards, seeded Grand Prix physics comparison,
+Drop Zone regression and browser TV + 2-phone WebSocket testing.
+The production source and 119 approved artwork assets are preserved.
+The new arena art is code-rendered until visual acceptance in a later
+production phase. Physical 2–4-phone testing remains a later release gate.
+Phase 4 remains an isolated development branch; no merge/deploy.
