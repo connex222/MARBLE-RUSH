@@ -1,7 +1,7 @@
 name: Party Pack foundation QA
 on:
   push:
-    branches: [dev/party-pack-phase2-foundations]
+    branches: [dev/party-pack-phase2-foundations, dev/party-pack-phase3-dropzone]
   pull_request:
     paths:
       - 'src/modes/**'
@@ -34,10 +34,13 @@ jobs:
           node --check tools/build.js
           node --check tools/balance-lab.js
           node --check tools/test-party-foundations.js
+          node --check tools/test-dropzone.js
           node --check tools/test-grandprix-regression.js
           for f in src/modes/*.js; do node --check "$f"; done
       - name: Validate modes and score ledger
         run: npm run test:party
+      - name: Validate Drop Zone 30-seed full games
+        run: npm run test:dropzone
       - name: Compare Grand Prix deterministic physics to main
         run: |
           git fetch --no-tags --depth=1 origin main
@@ -75,6 +78,7 @@ jobs:
             tools/build.js
             tools/balance-lab.js
             tools/test-party-foundations.js
+            tools/test-dropzone.js
             tools/test-grandprix-regression.js
             package.json
             docs/PARTY-PHASE2.md
