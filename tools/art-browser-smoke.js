@@ -260,11 +260,19 @@ async function main(){
     await page.locator('[data-screen="derby"]').waitFor({state:'visible',timeout:10000});
     assert.equal(await page.locator('#derbyCanvas').getAttribute('width'),'1920');
     await page.screenshot({path:'qa-derby-tv.png',fullPage:true});
-    await page.evaluate(()=>{
+    await page.locator('#derbyRunner').click();
+    await page.locator('#derbyStake').click();
+    await page.locator('#derbyPick').click();
+    const tvWager=await page.evaluate(()=>{
       const g=window.__MR.MODES.derby.session();
       const human=g.state.roster.find(p=>!p.cpu);
       if(!human)throw Error('Derby missing human player');
-      if(!g.action(human.id,'bet',{horse:0,stake:50}))throw Error('Derby wager rejected');
+      return g.state.wagers.get(human.id);
+    });
+    assert.equal(tvWager.horse,1,'TV runner selector must change the backed marble');
+    assert.equal(tvWager.stake,100,'TV stake selector must change virtual-gem stake');
+    await page.evaluate(()=>{
+      const g=window.__MR.MODES.derby.session();
       let n=0;
       while(!g.state.done&&n++<30000)g.step(.05);
       if(!g.state.done)throw Error('Derby failed to complete five heats');
