@@ -68,17 +68,35 @@ async function processImages() {
   }
   return list;
 }
-function processAudio() {
+async function processAudio() {
   fs.mkdirSync(OUT_AUD, { recursive: true });
   const list = [];
   const dir = path.join(RAW, 'audio');
-  if (!fs.existsSync(dir)) return list;
-  for (const f of fs.readdirSync(dir)) {
+  const existing = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+  for (const f of existing) {
     const ext = path.extname(f).toLowerCase();
     if (!['.mp3', '.ogg', '.m4a', '.wav'].includes(ext)) continue;
     const k = path.basename(f, ext).toLowerCase().replace(/[^a-z0-9_]/g, '_');
     fs.copyFileSync(path.join(dir, f), path.join(OUT_AUD, k + ext));
     list.push({ k, f: k + ext });
+  }
+  // Creative Claw was used for AUDIO ONLY. Prefer checked-in MP3s,
+  // otherwise fetch the user's approved generated recordings at build time.
+  // No live browser dependence on the external CDN after compilation.
+  const remote = require('./approved-audio-sources.json');
+  for (const [k, url] of Object.entries(remote)) {
+    if (list.some(a => a.k === k)) continue;
+    try {
+      if (!/^https:\/\/cdn\.creativeclaw\.co\//.test(url)) throw Error('Unapproved audio host');
+      const resp = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      if (!resp.ok || !/^audio\//.test(resp.headers.get('content-type') || '')) throw Error('Invalid audio response: ' + resp.status);
+      const bytes = Buffer.from(await resp.arrayBuffer());
+      if (bytes.length < 256 || bytes.length > 15000000) throw Error('Unexpected audio size');
+      const f = k + '.mp3';
+      fs.writeFileSync(path.join(OUT_AUD, f), bytes);
+      list.push({ k, f });
+      console.log('• approved Creative Claw sound: ' + k);
+    } catch (e) { console.warn('• audio fallback for ' + k + ': ' + e.message); }
   }
   return list;
 }
@@ -95,7 +113,7 @@ function fontCss(names) {
 (async () => {
   fs.mkdirSync(PUB, { recursive: true });
   const images = await processImages();
-  const audio = processAudio();
+  const audio = await processAudio();
   fs.writeFileSync(path.join(PUB, 'assets', 'manifest.json'), JSON.stringify({ images, audio }, null, 1));
   console.log(`• ${images.length} images, ${audio.length} sounds`);
 
