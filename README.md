@@ -1,15 +1,15 @@
-# Marble Rush — v0.7.0 Party Pack development
+# Marble Rush — v0.8.0 Party Pack development
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
 **This development branch is not the live release.** Grand Prix v0.4 gameplay remains intact.
-The Party Pack framework shows six games. **Grand Prix, Drop Zone and Bowl Brawl are playable.**
-The other three games remain preview-only until their dedicated phases.
+The Party Pack framework shows six games. **Grand Prix, Marble Derby, Drop Zone and Bowl Brawl are playable.**
+Marble Curling and Marble Golf remain preview-only until their phases.
 
 ### Party Night preview (development branch only)
 In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
-start. The available modes (Grand Prix, Drop Zone and Bowl Brawl when at least two
-players are present) repeat until the remaining three modes are implemented. After each Grand Prix cup, select **Next Party Game**;
+start. The available modes (Grand Prix, Marble Derby, Drop Zone, and Bowl Brawl when at least two
+players are present) repeat until Curling and Golf are implemented. After each Grand Prix cup, select **Next Party Game**;
 Party Points 10/8/6/5/4/3/2/1 carry forward across cups.
 The host can also choose Party Night length on their phone.
 Hover or activate an unfinished game card to watch a 15-second code-drawn
@@ -79,6 +79,7 @@ npm run build
 npm run test:party
 npm run test:dropzone
 npm run test:brawl
+npm run test:derby
 npm run balance -- grandprix 1
 ```
 
@@ -115,3 +116,20 @@ The mode can also feature inside **Party Night**, awarding the standard
 Party Points based on the final Bowl Brawl standings. The separate
 [Phase 4 acceptance record](docs/PARTY-PHASE4-BRAWL.md) details the tests
 and limitations. Visuals are functional code-drawn art pending AAA polish.
+
+## Marble Derby — Phase 5
+
+A **five-heat**, six-runner marble racing game for **1–8 players**.
+Each participant receives **600 entirely virtual gems** to back
+one runner per heat at odds shown on the TV and their phone. Choose
+25/50/100/200 virtual gems, select a runner and watch the race. Winning
+bets return stake × locked odds, while losing stakes are spent.
+Players can CHEER once per heat for a small temporary burst of speed.
+After five heats, the highest gem balance is champion.
+There is no real money, payout or purchasable currency. An automatic
+virtual stipend prevents players from being eliminated for running out
+of gems. CPU runners and disconnected players are handled automatically.
+
+The game is available in Party Night and uses the usual final ranking
+Party Points. [Phase 5 QA and rules](docs/PARTY-PHASE5-DERBY.md).
+The track is functional code-rendered artwork pending later visual polish.
