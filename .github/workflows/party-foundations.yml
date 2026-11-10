@@ -62,11 +62,11 @@ jobs:
           if(!html.includes('src="') && !html.includes('<canvas')) throw Error('TV document malformed');
           console.log('PASS: standalone TV '+Math.round(html.length/1024)+' KB');
           NODE
-      - name: Package changed Phase 2 files for review
+      - name: Package Phase 3 Drop Zone source and evidence for review
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: marble-rush-party-phase2-foundations
+          name: marble-rush-phase3-dropzone
           retention-days: 14
           compression-level: 6
           path: |
@@ -82,4 +82,7 @@ jobs:
             tools/test-grandprix-regression.js
             package.json
             docs/PARTY-PHASE2.md
+            docs/PARTY-PHASE3-DROPZONE.md
+            MARBLE_RUSH_MASTER.md
+            README.md
             .github/workflows/party-foundations.yml
