@@ -123,6 +123,10 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #partyNightOptions button{font:800 calc(14*var(--u)) Nunito,sans-serif;color:var(--cream);border:calc(2*var(--u)) solid rgba(255,244,224,.3);background:rgba(15,17,48,.8);border-radius:calc(12*var(--u));padding:calc(3*var(--u)) calc(9*var(--u));cursor:pointer}
 #partyNightOptions button[aria-pressed="true"]{background:#314e66;border-color:var(--gold)}
 #partyNightOptions button:focus-visible{outline:calc(4*var(--u)) solid var(--gold)}
+#partyAttractPanel{position:absolute;left:34%;top:20%;width:32%;aspect-ratio:620/360;z-index:4;
+  border:calc(5*var(--u)) solid var(--gold);border-radius:calc(22*var(--u));overflow:hidden;
+  background:#131831;box-shadow:0 calc(16*var(--u)) calc(45*var(--u)) rgba(0,0,0,.65);pointer-events:none}
+#partyAttractCanvas{display:block;width:100%;height:100%}
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -261,6 +265,9 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
     <div id="lobbyRight">
       <h2>Racers</h2>
       <div id="lobbyPlayers"></div>
+    </div>
+    <div id="partyAttractPanel" hidden aria-label="Game preview">
+      <canvas id="partyAttractCanvas" width="620" height="360"></canvas>
     </div>
     <section id="partyPicker" aria-label="Choose your Marble Rush game">
       <h2>CHOOSE YOUR GAME <span id="partyModeStatus">Grand Prix ready · more games in development</span></h2>
