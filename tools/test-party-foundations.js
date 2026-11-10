@@ -98,6 +98,25 @@ game.MODES.grandprix.onInput({world:{press:id=>inputCalls.push('p'+id),
 assert.deepEqual(inputCalls,['pa']);
 console.log('PASS: extracted Grand Prix input, scoring and rankings remain compatible.');
 const MR = require('../src/engine.js');
+// Build-native Party Pack obstacles, accessible to a World without DOM.
+const pb=MR.Builder({id:'party-qa',name:'Party QA',theme:'toybox'});
+pb.start(2);
+pb.line(200);
+pb.pegs(0,100,3,2,50,50,9);
+pb.spinner(200,100,30,3,1);
+pb.bucket(350,300,60,80,250);
+pb.movingGate(550,150,80,30,3);
+pb.targetRing(700,0,50);
+pb.cup(800,0,43,900);
+pb.water(900,0,100,30);
+pb.retractRim(0,0,620,15,75,110);
+pb.finish();pb.runoff(100);
+const partyTrack=pb.done();
+assert.equal(partyTrack.partyObstacles.length,14);
+const builtWorld=new MR.World(partyTrack,{seed:1,passing:false});
+assert.equal(builtWorld.partyObstacles.length,14);
+assert.equal(builtWorld.opts.passing,false);
+console.log('PASS: Builder exposes all eight new Party Pack obstacle families.');
 const track = MR.TRACKS.toybox();
 const gp = new MR.World(track,{seed:17});
 const solid = new MR.World(MR.TRACKS.toybox(),{seed:17,passing:false});
