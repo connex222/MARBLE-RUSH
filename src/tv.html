@@ -284,9 +284,9 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
 /* Persistent host escape from every active game, including Grand Prix. */
 /* TV host exit sits outside the game canvas and scaled UI compositor. */
 #partyBackLobby{
-  position:fixed!important;top:auto!important;
+  position:fixed!important;top:max(16px,env(safe-area-inset-top))!important;
   right:max(18px,env(safe-area-inset-right))!important;
-  bottom:max(20px,env(safe-area-inset-bottom))!important;
+  bottom:auto!important;
   z-index:2147483646!important;
   display:flex;align-items:center;justify-content:center;gap:12px;
   min-width:230px;min-height:64px;padding:12px 24px;
