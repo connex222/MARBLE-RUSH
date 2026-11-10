@@ -134,6 +134,7 @@
     let ac = null, master, music, sfx, rollGain, rollFilter, noiseBuf;
     const buffers = {};
     let introDone=false;
+    let introSource=null, introEnvelope=null, introTimer=null;
     function init() {
       if (ac) return;
       ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -162,13 +163,42 @@
           .then(b => ac.decodeAudioData(b)).then(buf => {
             buffers[k] = buf;
             if(k==='music_party')Music.useTrack(buf);
-            if(k==='vo_party_intro' && state==='lobby' && !introDone){
-              introDone=true;
-              if(settings.sfx)file('vo_party_intro',.7);
-            }
+            if(k==='vo_party_intro' && state==='lobby' && !introDone) startIntro();
           })
           .catch(() => { delete buffers[k]; });
       }
+    }
+    function stopIntro() {
+      if(introTimer){clearTimeout(introTimer);introTimer=null;}
+      if(!ac || !introSource)return;
+      try {
+        const now=ac.currentTime;
+        introEnvelope.gain.cancelScheduledValues(now);
+        introEnvelope.gain.setValueAtTime(Math.max(.0001,introEnvelope.gain.value),now);
+        introEnvelope.gain.linearRampToValueAtTime(0,now+.13);
+        introSource.stop(now+.16);
+      } catch(e) {}
+      introSource=null;introEnvelope=null;
+    }
+    function startIntro() {
+      if(introDone || state!=='lobby' || !settings.sfx || !ac)return;
+      const buf=buffers.vo_party_intro;
+      if(!buf || buf==='loading')return;
+      introDone=true;
+      stopIntro();
+      introSource=ac.createBufferSource();introSource.buffer=buf;
+      introEnvelope=ac.createGain();introEnvelope.gain.value=.55;
+      introSource.connect(introEnvelope);introEnvelope.connect(sfx);
+      introSource.onended=()=>{introSource=null;introEnvelope=null;};
+      // Keep the introduction brief: finish before 9 seconds, and taper the
+      // clip's noisy tail instead of replaying the full 26-second script.
+      const duration=Math.min(9,Math.max(.1,buf.duration));
+      const start=ac.currentTime;
+      introEnvelope.gain.setValueAtTime(.55,start);
+      introEnvelope.gain.setValueAtTime(.55,start+Math.max(0,duration-.55));
+      introEnvelope.gain.linearRampToValueAtTime(0,start+duration);
+      introSource.start(start,0,duration);
+      introTimer=setTimeout(stopIntro,Math.ceil(duration*1000)+250);
     }
     function file(k, vol = 1, rate = 1) {
       const b = buffers[k];
@@ -254,12 +284,15 @@
     }
     function setRoll(level, pitch) {
       if (!ac) return;
+      // Continuous filtered noise is ONLY used in active Grand Prix races.
+      // A stale non-zero gain on a menu/game switch sounds like broadband hiss.
+      if (!['race','countdown'].includes(state)) level=0;
       const t = ac.currentTime;
       rollGain.gain.setTargetAtTime(settings.sfx ? Math.min(0.32, level) : 0, t, 0.08);
       rollFilter.frequency.setTargetAtTime(380 + pitch * 900, t, 0.1);
     }
     function setMusic(on) { if (music && ac) music.gain.setTargetAtTime(on ? 0.34 : 0, ac.currentTime, 0.3); }
-    function setSfx(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 0.8 : 0, ac.currentTime, 0.1); }
+    function setSfx(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 0.8 : 0, ac.currentTime, 0.1); if(!on)stopIntro(); }
 
     /* Original adaptive Web Audio Party Pack score. No external samples required. */
     const Music = (() => {
@@ -338,7 +371,7 @@
       };
     })();
 
-    return { init, play, setRoll, setMusic, setSfx, loadFiles, Music: { mode: m => ac && Music.mode(m), intensity: v => ac && Music.intensity(v) }, get on() { return !!ac; } };
+    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, Music: { mode: m => ac && Music.mode(m), intensity: v => ac && Music.intensity(v) }, get on() { return !!ac; } };
   })();
 
   /* ======================================================================
@@ -1841,10 +1874,15 @@
       const preview = $('#partyAttractPanel');
       if (preview) preview.hidden = true;
     }
+    if(name!=='lobby')Audio_.stopIntro();
+    Audio_.setRoll(0,0);
     for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== name;
     $('#raceHud').hidden = !(name === 'race');
     // This is host-only TV navigation and remains available during all modes.
-    $('#partyBackLobby').hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
+    const lobbyBtn=$('#partyBackLobby');
+    lobbyBtn.hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
+    lobbyBtn.dataset.screen=name;
+    // Race leaderboard is top-right; it MUST NOT be covered by navigation.
   }
   let lastStandKey = '';
   function updateRaceHud() {
