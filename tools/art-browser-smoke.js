@@ -122,6 +122,40 @@ async function main(){
     assert.ok(stats.clatterPose&&/clatter_(reference|announce|cheer|gasp|flag|wince)\.webp/.test(stats.clatterPose),'Approved Captain Clatter pose never used');
     assert.ok(stats.imageCount>=119,'Not all 119 approved images were requested');
     console.log('PASS: real browser race rendered approved backgrounds, rails, 8 themed props, pickups, gates, bumpers, finish arch and glow');
+    // Phase 3: run a playable Drop Zone board with actual collision steps
+    // and verify a full five-round end-to-end single-player result.
+    await page.evaluate(()=>{
+      const a=window.__MR;
+      a.Game.toLobby();
+      a.Game.onAction('tv','mode','dropzone');
+      a.Game.beginCup();
+    });
+    await page.locator('[data-screen="dropzone"]').waitFor({state:'visible',timeout:10000});
+    assert.equal(await page.locator('#dropZoneCanvas').getAttribute('width'),'1920');
+    await page.screenshot({path:'qa-dropzone-tv.png',fullPage:true});
+    await page.locator('#dropNow').click();
+    const initial=await page.evaluate(()=>({
+      active:!!window.__MR.MODES.dropzone.session().state.ball,
+      turn:window.__MR.MODES.dropzone.session().state.turn
+    }));
+    assert.equal(initial.active,true,'TV DROP button did not release a marble');
+    await page.evaluate(()=>{
+      const dz=window.__MR.MODES.dropzone.session();
+      let guard=0;
+      while(!dz.state.done&&guard++<10000){
+        if(!dz.state.ball)dz.action(dz.owner().id,'drop');
+        dz.step(.05);
+      }
+      if(!dz.state.done)throw Error('Drop Zone did not complete five rounds');
+    });
+    await page.locator('[data-screen="finale"]').waitFor({state:'visible',timeout:10000});
+    const dz=await page.evaluate(()=>window.__MR.MODES.dropzone.session().state);
+    assert.equal(dz.turn,5);
+    assert.equal(dz.roster[0].drops,5);
+    assert.ok(dz.roster[0].score>=250);
+    assert.equal(errors.length,0,'Browser errors after Drop Zone: '+errors.join(' | '));
+    console.log('PASS: Drop Zone five playable rounds, 1920×1080 TV, scoring and finale');
+
   }finally{
     await browser.close();
   }
