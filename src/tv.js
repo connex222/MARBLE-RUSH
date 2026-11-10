@@ -1395,6 +1395,14 @@
       if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
+      if (a === 'lobby' && isVip && state === 'dropzone') {
+        // Aborting a Drop Zone game also cancels the current Party Night;
+        // no partial round can be incorrectly credited to the next mode.
+        partyLength=0;
+        this.toLobby();
+        sendHud(true);
+        return;
+      }
       if (a === 'party' && isVip && state === 'lobby' && [0,3,5,7].includes(v)) {
         partyLength = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
