@@ -1208,6 +1208,8 @@
      ====================================================================== */
   let world = null, state = 'boot', stateT = 0, raceNo = 0;
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
+  // Phase 2: only Grand Prix is playable; other modes remain locked until tested.
+  let selectedMode = 'grandprix';
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
   let timeScale = 1, slowUntil = 0, lastSlow = -99;
   let replayBuf = [], photo = null, photoPending = null, endAt = 0, results = null;
@@ -1224,7 +1226,8 @@
       renderLobby();
     },
     beginCup() {
-      if (players.size === 0) return;
+      if (players.size === 0 || !MODES[selectedMode]?.available) return;
+      // Preserve the existing, fully tested Grand Prix flow unchanged.
       this.resetNight();
       cup.n = settings.cup; cup.race = 0; cup.played = [];
       this.toVote();
@@ -1347,6 +1350,9 @@
       const isVip = pid === vipId() || pid === 'tv';
       if (a === 'swirl' && players.get(pid)) { players.get(pid).swirl = (v | 0) % SWIRLS.length; if (state === 'lobby') renderLobby(); return; }
       if (a === 'vote') { this.castVote(pid, v | 0); return; }
+      if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
+        selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
+      }
       if (!isVip) return;
       if (a === 'start' && state === 'lobby') this.beginCup();
       else if ((a === 'next' || a === 'again') && state === 'results') { if (cup.race >= cup.n) this.finale(); else this.toVote(); }
@@ -1690,7 +1696,30 @@
     el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   }
 
+  function renderModePicker() {
+    const box = $('#partyModeCards');
+    if (!box) return;
+    // Identical selection path for TV and VIP phone, gated against unfinished modes.
+    box.replaceChildren();
+    for (const mode of Object.values(MODES)) {
+      const card = document.createElement('button');
+      card.className = 'partyModeCard';
+      card.type = 'button';
+      card.disabled = !mode.available;
+      card.setAttribute('aria-pressed', String(mode.id === selectedMode));
+      card.setAttribute('aria-label', mode.name + (mode.available ? '' : ', coming soon'));
+      const icon = document.createElement('span'); icon.className = 'modeIcon'; icon.textContent = mode.icon;
+      const info = document.createElement('span');
+      const name = document.createElement('strong'); name.textContent = mode.name;
+      const sub = document.createElement('small'); sub.textContent = mode.available ? mode.tagline : 'Coming in a later phase';
+      info.append(name, sub); card.append(icon, info);
+      card.onclick = () => Game.onAction('tv', 'mode', mode.id);
+      box.appendChild(card);
+    }
+    $('#partyModeStatus').textContent = 'Grand Prix playable · five modes in development';
+  }
   function renderLobby() {
+    renderModePicker();
     const box = $('#lobbyPlayers'); box.innerHTML = '';
     const vip = vipId();
     for (let i = 0; i < 8; i++) {
@@ -1799,7 +1828,8 @@
       if (p.cpu || p.keys != null || !p.connected) continue;
       const m = world ? world.get(p.id) : null;
       const msg = {
-        t: 'hud', s: state === 'photo' ? 'results' : state, name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
+        t: 'hud', s: state === 'photo' ? 'results' : state, mode: selectedMode, phase: state,
+        availableModes: Object.values(MODES).filter(m => m.available).map(m => ({ id: m.id, name: m.name })), name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
         place: m ? m.rank : 0, n: world ? world.marbles.length : 0,
         boost: m ? Math.round(m.boost) : 100, item: m ? m.item : null, fin: m ? m.finished : false,
         off: m ? m.respawnT > 0 : false, prog: m && world.t.finishDist < Infinity ? Math.min(1, m.prog / world.t.finishDist) : 0,
@@ -1985,7 +2015,7 @@
     };
   }
   // test hooks for automated checks
-  window.__MR = { Game, players, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
+  window.__MR = { Game, players, MODES, PartyNight, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
 
   requestAnimationFrame(frame);
 })();
