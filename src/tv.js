@@ -1881,7 +1881,7 @@
     // This is host-only TV navigation and remains available during all modes.
     const lobbyBtn=$('#partyBackLobby');
     lobbyBtn.hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
-    lobbyBtn.dataset.screen=name;
+    lobbyBtn.dataset.navState=name;
     // Race leaderboard is top-right; it MUST NOT be covered by navigation.
   }
   let lastStandKey = '';
