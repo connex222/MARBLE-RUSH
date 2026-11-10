@@ -198,6 +198,19 @@ async function main(){
     await p2.screenshot({path:'qa-curling-phone.png',fullPage:true});
     assert.deepEqual(errors,[],'Two-phone Curling JS errors');
     console.log('PASS: Curling two phones execute separate throws with authoritative turn ownership');
+    // Physical user complaint: check real host-phone exit sends the same
+    // authoritative lobby action while the other phone remains connected.
+    await p1.locator('#hostExitGame').waitFor({state:'visible',timeout:10000});
+    const hostBounds=await p1.locator('#hostExitGame').boundingBox();
+    assert.ok(hostBounds?.width>=75 && hostBounds?.height>=40,'Host back button too small');
+    await p1.locator('#hostExitGame').click();
+    await tv.locator('[data-screen="lobby"]').waitFor({state:'visible',timeout:10000});
+    await p1.waitForFunction(()=>document.body.dataset.s==='lobby',{timeout:10000});
+    await p2.waitForFunction(()=>document.body.dataset.s==='lobby',{timeout:10000});
+    assert.ok(a.sent.some(x=>x.t==='act'&&x.a==='lobby'),'Host phone never sent lobby action');
+    assert.equal(await p1.locator('#hostExitGame').isHidden(),true);
+    console.log('PASS: host phone LOBBY exit works through real WebSocket and returns both phones');
+
 
 
 
