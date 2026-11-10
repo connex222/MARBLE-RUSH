@@ -1,18 +1,18 @@
-# Marble Rush — v0.5.0 Party Pack development
+# Marble Rush — v0.6.0 Party Pack development
 
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
 **This development branch is not the live release.** Grand Prix v0.4 gameplay remains intact.
-The Party Pack framework now shows six games, but the five new games are
-preview-only and are **not playable** until their dedicated implementation phases.
+The Party Pack framework shows six games. **Grand Prix and Drop Zone are playable.**
+The other four games remain preview-only until their dedicated phases.
 
 ### Party Night preview (development branch only)
 In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
-start. The available mode (Grand Prix) repeats until the other five modes
-are implemented. After each Grand Prix cup, select **Next Party Game**;
+start. The available modes (Grand Prix and Drop Zone) repeat until the remaining four
+modes are implemented. After each Grand Prix cup, select **Next Party Game**;
 Party Points 10/8/6/5/4/3/2/1 carry forward across cups.
 The host can also choose Party Night length on their phone.
-Hover or activate a locked game card to watch a 15-second code-drawn
+Hover or activate an unfinished game card to watch a 15-second code-drawn
 CPU concept preview; it cannot start an unfinished game.
 
 
@@ -77,6 +77,7 @@ Anything you haven't made yet stays code-drawn, so the game always works.
 npm install
 npm run build
 npm run test:party
+npm run test:dropzone
 npm run balance -- grandprix 1
 ```
 
@@ -87,3 +88,14 @@ The physical 2–4 phone acceptance test remains outstanding.
 Party Pack shared systems: `src/modes/registry.js`, `session.js`,
 `bots.js`, `attract.js`, `geometry.js`, and the six individual mode files.
 Future mode files remain disabled until each game passes its own acceptance.
+
+## Drop Zone — Phase 3
+
+Drop Zone is a five-round pegboard contest for 1–8 racers: aim using **LEFT**
+or **RIGHT** on the phone, then press **DROP** (or the big phone pad).
+One marble falls through 85 pegs and moving obstacles into an eight-bucket
+scoring tray (50/100/200/500/1000/500/200/100). The highest cumulative
+score wins. CPU players take automatic turns, and Drop Zone can appear in
+Party Night. The TV also has local Left/Drop/Right controls.
+
+Development acceptance details: [Phase 3](docs/PARTY-PHASE3-DROPZONE.md).
