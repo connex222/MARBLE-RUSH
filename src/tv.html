@@ -104,6 +104,20 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #status{position:absolute;left:50%;top:calc(30*var(--u));transform:translateX(-50%);background:rgba(15,17,48,.9);border-radius:999px;
   padding:calc(10*var(--u)) calc(24*var(--u));font-size:calc(20*var(--u));border:calc(2*var(--u)) solid rgba(255,200,61,.4)}
 
+
+/* Party Pack mode picker: entirely CSS-driven, art is optional. */
+#partyPicker{position:absolute;top:calc(745*var(--u));left:calc(55*var(--u));right:calc(55*var(--u));z-index:2}
+#partyPicker h2{font:700 calc(26*var(--u)) Fredoka,sans-serif;margin:0 0 calc(10*var(--u));color:var(--cream)}
+#partyModeStatus{font:700 calc(16*var(--u)) Nunito,sans-serif;color:var(--gold);margin-left:calc(20*var(--u))}
+#partyModeCards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:calc(12*var(--u))}
+.partyModeCard{min-width:0;min-height:calc(114*var(--u));padding:calc(9*var(--u));border-radius:calc(18*var(--u));background:linear-gradient(145deg,#34336b,#181935);border:calc(3*var(--u)) solid rgba(255,255,255,.19);color:var(--cream);cursor:pointer;display:flex;align-items:center;gap:calc(8*var(--u));text-align:left}
+.partyModeCard[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 calc(18*var(--u)) rgba(255,200,61,.5)}
+.partyModeCard:disabled{opacity:.46;cursor:not-allowed}
+.partyModeCard .modeIcon{font-size:calc(38*var(--u))}
+.partyModeCard strong{display:block;font:700 calc(20*var(--u)) Fredoka,sans-serif}
+.partyModeCard small{display:block;font:700 calc(14*var(--u)) Nunito,sans-serif}
+.partyModeCard:focus-visible{outline:calc(4*var(--u)) solid var(--gold);outline-offset:calc(3*var(--u))}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -243,6 +257,10 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
       <h2>Racers</h2>
       <div id="lobbyPlayers"></div>
     </div>
+    <section id="partyPicker" aria-label="Choose your Marble Rush game">
+      <h2>CHOOSE YOUR GAME <span id="partyModeStatus">Grand Prix ready · more games in development</span></h2>
+      <div id="partyModeCards" role="group" aria-label="Game modes"></div>
+    </section>
     <div id="lobbySettings">
       <button class="chip" data-set="cup">Cup<em>4 races</em></button>
       <button class="chip" data-set="items">Items</button>
@@ -303,6 +321,7 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
   <div id="status" hidden></div>
 </div>
 <script>/*ENGINE*/</script>
+<script>/*MODES*/</script>
 <script>/*QR*/</script>
 <script>/*TV*/</script>
 </body>
