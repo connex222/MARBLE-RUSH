@@ -54,7 +54,7 @@ jobs:
           const fs=require('fs');
           const html=fs.readFileSync('public/tv.html','utf8');
           for (const name of ['grandprix','derby','dropzone','brawl','curling','golf']) {
-            if (!html.includes("id: '"+name+"'")) throw Error('Missing mode '+name);
+            if (!new RegExp("id\\\\s*:\\\\s*['\\\"]"+name+"['\\\"]").test(html)) throw Error('Missing mode '+name);
           }
           if(html.includes('/*MODES*/')) throw Error('Uncompiled mode placeholder');
           if(html.length>1.5*1024*1024) throw Error('TV page above 1.5 MB');
