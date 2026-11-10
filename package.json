@@ -6,9 +6,12 @@
   "scripts": {
     "build": "node tools/build.js",
     "start": "node server/server.js",
-    "balance": "node tools/balance-lab.js"
+    "balance": "node tools/balance-lab.js",
+    "test:party": "node tools/test-party-foundations.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "ws": "^8.18.0",
     "sharp": "^0.33.5"
