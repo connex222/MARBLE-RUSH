@@ -54,5 +54,27 @@ assert.equal(geo.rimAt(rim,45),365);
 assert.throws(()=>geo.pegs(0,0,0,1,50,40),/grid/);
 assert.throws(()=>geo.spinner(0,0,-1),/radius/);
 assert.equal(geo.gatePosition(geo.movingGate(5,0,20,40,4),1),45);
+
+// Opt-in collision and sensor integration: no impact on Grand Prix defaults.
+const lobby = MR.TRACKS.lobby();
+const pegWorld = new MR.World(lobby,{seed:1,free:true,partyObstacles:[{type:'peg',x:0,y:0,r:9,restitution:0.55}]});
+const marble = pegWorld.addMarble('player');
+marble.x=0; marble.y=-25; marble.vx=0; marble.vy=240;
+pegWorld.collidePartyObstacles(marble);
+assert.ok(marble.y<=-27,'peg must physically separate colliding marble');
+assert.ok(marble.vy<0,'peg collision must reflect approaching velocity');
+const sensors = new MR.World(MR.TRACKS.lobby(),{seed:1,free:true,partyObstacles:[{type:'bucket',x:0,y:0,width:100,height:80,points:250}]});
+const sensorMarble=sensors.addMarble('p');
+sensorMarble.x=0; sensorMarble.y=20;
+sensors.checkPartySensors();
+assert.equal(sensors.events.filter(e=>e.type==='party_sensor').length,1,'bucket entered');
+sensors.checkPartySensors();
+assert.equal(sensors.events.filter(e=>e.type==='party_sensor').length,1,'no repeated sensor event');
+sensorMarble.x=400; sensors.checkPartySensors();
+sensorMarble.x=0; sensors.checkPartySensors();
+assert.equal(sensors.events.filter(e=>e.type==='party_sensor').length,2,'re-entry can trigger a new event');
+assert.equal(new MR.World(MR.TRACKS.lobby(),{free:true}).partyObstacles.length,0,'Grand Prix worlds have no Party Pack obstacles');
+console.log('PASS: optional peg collision and edge-triggered bucket sensor integration.');
+
 console.log('PASS: deterministic peg, spinner, bucket, goal, water and shrinking-rim geometry.');
 console.log('PASS: 6 mode descriptors, locked unfinished games, Party Points, Party Night ledger, and optional passing.');
