@@ -24,15 +24,30 @@ const DropZone = (() => {
        players.some(p=>!p||typeof p.id!=='string'||!p.id))throw Error('Drop Zone requires 1–8 distinct players');
     const random=rng(seed), roster=players.map((p,i)=>({
       id:p.id,name:String(p.name||('Player '+(i+1))).slice(0,16),
-      color:typeof p.color==='string'?p.color:COLORS[i],cpu:!!p.cpu,
+      color:typeof p.color==='string'?p.color:COLORS[i],cpu:!!p.cpu,skill:p.difficulty==='hard'?.85:p.difficulty==='easy'?.25:.55,
       score:0,drops:0,results:[]
     }));
     const s={roster,seed,random,turn:0,round:1,x:500,ball:null,balls:[],
       elapsed:0,turnElapsed:0,done:false,finishedCalled:false,steps:0,
-      activeSeed:0,autoAt:0,pegs:PEGS,last:0};
+      activeSeed:0,autoAt:0,pegs:PEGS,last:0,gold:[],jackpotBin:4,events:[],predictions:new Map()};
+    function setRoundFeatures(){
+      // Select stable gold pegs and moving jackpot using the seeded simulation RNG.
+      const first=Math.floor(random()*PEGS.length);
+      const second=(first+9+Math.floor(random()*(PEGS.length-10)))%PEGS.length;
+      s.gold=[first,second];s.jackpotBin=2+Math.floor(random()*4);
+      s.predictions=new Map();
+      s.events.push({kind:'round_start',round:s.round,gold:s.gold.slice(),jackpot:s.jackpotBin,time:s.elapsed});
+    }
+    setRoundFeatures();
     function current(){return s.roster[s.turn%s.roster.length]||null;}
     function owner(){return current();}
     function action(pid,a,v){
+      if(a==='predict'){
+        if(s.done||!s.ball||pid===owner()?.id||!s.roster.some(p=>p.id===pid)||
+           s.predictions.has(pid)||!Number.isInteger(v)||v<0||v>=BINS.length)return false;
+        s.predictions.set(pid,v);
+        s.events.push({kind:'prediction',id:pid,bin:v,round:s.round,time:s.elapsed});return true;
+      }
       if(s.done||s.ball||!owner()||pid!==owner().id)return false;
       if(a==='left'||a==='right'){
         const n=Number.isInteger(v)?clamp(v,1,5):1;
@@ -44,8 +59,9 @@ const DropZone = (() => {
       if(a==='drop'){
         const p=owner();
         const b={id:p.id,x:s.x,y:35,vx:(random()-.5)*16,vy:12,r:R,
-          t:0,settled:0,bin:-1,scored:false,color:p.color};
-        s.ball=b;s.balls.push(b);s.turnElapsed=0;return true;
+          t:0,settled:0,bin:-1,scored:false,color:p.color,multiplier:1,goldHit:[]};
+        s.ball=b;s.balls.push(b);s.turnElapsed=0;s.predictions=new Map();
+        s.events.push({kind:'release',id:p.id,x:b.x,round:s.round,time:s.elapsed});return true;
       }
       return false;
     }
@@ -60,24 +76,45 @@ const DropZone = (() => {
     function finishBall(){
       const b=s.ball;if(!b||b.scored)return;
       b.scored=true;b.bin=clamp(Math.floor((b.x-80)/105),0,BINS.length-1);
-      const score=BINS[b.bin],p=owner();
+      const base=BINS[b.bin],p=owner();
+      // Upgrade only to a valid existing bin award to preserve old game
+      // contracts and score ledger while making gold encounters worthwhile.
+      const bonus=Math.min(1000,base*2);
+      let score=b.multiplier===2&&BINS.includes(bonus)?bonus:base;
+      if(s.round===ROUNDS&&b.bin===s.jackpotBin&&score<1000){
+        b.jackpot=true;score=1000;
+        s.events.push({kind:'jackpot',x:b.x,y:b.y,score:1000,round:s.round,time:s.elapsed});
+      }
+      s.events.push({kind:'bucket',id:p.id,x:b.x,y:b.y,bin:b.bin,score,
+        multiplier:b.multiplier,round:s.round,time:s.elapsed});
       p.score+=score;p.drops++;p.results.push(score);s.last=score;
       s.ball=null;s.turn++;s.turnElapsed=0;
       if(s.turn>=s.roster.length*ROUNDS){
         s.done=true;
         if(!s.finishedCalled){s.finishedCalled=true;onFinish(standings());}
-      }else{s.round=Math.floor(s.turn/s.roster.length)+1;s.x=500;}
+      }else{const oldRound=s.round;s.round=Math.floor(s.turn/s.roster.length)+1;s.x=500;
+        if(s.round!==oldRound)setRoundFeatures();}
     }
     function step(dt){
       if(s.done)return;
       dt=clamp(Number.isFinite(dt)?dt:0,0,.1);
       s.elapsed+=dt;s.turnElapsed+=dt;
+      if(s.round===ROUNDS){
+        const bin=2+Math.round((1+Math.sin(s.elapsed*.85))*1.5);
+        if(bin!==s.jackpotBin){s.jackpotBin=bin;
+          s.events.push({kind:'jackpotMove',bin,time:s.elapsed,round:s.round});}
+      }
+      if(s.events.length>700)s.events.splice(0,s.events.length-700);
       if(!s.ball){
-        if((owner().cpu&&s.turnElapsed>=.75)||s.turnElapsed>=25){
+        if((owner().cpu&&s.turnElapsed>=.75)||s.turnElapsed>=10){
           // After 25 seconds of inactivity, release automatically so a
           // disconnected or distracted player cannot stall the whole party.
           const target=owner().score<500?500:500+(random()-.5)*250;
-          if(owner().cpu)s.x=clamp(Math.round(target+(random()-.5)*100),80,920);
+          if(owner().cpu){
+            const p=owner(),gold=PEGS[s.gold[Math.floor(random()*s.gold.length)]];
+            const focus=gold?.x||target;
+            s.x=clamp(Math.round(focus+(random()-.5)*180*(1-p.skill)),80,920);
+          }
           action(owner().id,'drop');
         }
         return;
@@ -90,7 +127,16 @@ const DropZone = (() => {
         if(b.x<80+b.r){b.x=80+b.r;b.vx=Math.abs(b.vx)*.74;}
         if(b.x>920-b.r){b.x=920-b.r;b.vx=-Math.abs(b.vx)*.74;}
         for(const peg of PEGS)if(Math.abs(b.x-peg.x)<b.r+peg.r&&Math.abs(b.y-peg.y)<b.r+peg.r)
-          collision(b,peg.x,peg.y,peg.r,.75);
+          {collision(b,peg.x,peg.y,peg.r,.75);
+            const index=PEGS.indexOf(peg);
+            if(s.gold.includes(index)&&!b.goldHit.includes(index)){
+              b.goldHit.push(index);b.multiplier=2;
+              s.events.push({kind:'goldPeg',id:b.id,x:peg.x,y:peg.y,
+                strength:1,round:s.round,time:s.elapsed});
+            } else if(b.goldHit.length<1&&b.t<8&&s.events.length<500 && s.steps%8===0){
+              s.events.push({kind:'pegImpact',x:peg.x,y:peg.y,strength:.5,time:s.elapsed});
+            }
+          }
         // A small oscillating rotating bumper and a moving gate.
         const sx=500+110*Math.sin(s.elapsed*1.2),sy=480;
         collision(b,sx,sy,19,.8);
@@ -113,14 +159,16 @@ const DropZone = (() => {
       const p=s.roster.find(x=>x.id===id),o=owner();
       if(!p)return {};
       const turn=!s.done&&o?.id===id&&!s.ball;
+      const prediction=!turn&&!s.done&&!!s.ball&&!s.predictions.has(id);
       return {turnLabel:s.done?'DROP ZONE COMPLETE':`Round ${s.round}/${ROUNDS} · ${o?.name||''}${turn?' — YOUR TURN':''}`,
         roundScore:p.score,power:null,aim:Math.round(s.x),
-        modeControls:turn?[
+        modeControls:prediction?BINS.map((value,index)=>({a:'predict',v:index,label:'◈ '+value})):turn?[
           {a:'left',label:'◀ LEFT',v:2},
           {a:'drop',label:'DROP!',v:0},
           {a:'right',label:'RIGHT ▶',v:2}
         ]:[],
-        isTurn:turn,modePhase:s.done?'finished':s.ball?'falling':'aim',totalScore:p.score};
+        isTurn:turn||prediction,modePhase:s.done?'finished':s.ball?'falling':'aim',totalScore:p.score,
+        ghostX:Math.round(s.x),goldPegs:s.gold.slice(),jackpotBin:s.jackpotBin,aimSeconds:Math.ceil(Math.max(0,10-s.turnElapsed))};
     }
     function draw(ctx,w=1920,h=1080){
       const sx=w/1920,sy=h/1080;
@@ -140,7 +188,8 @@ const DropZone = (() => {
       MarblePartyStage.surface(ctx,'dropzone',80,0,840,710,s.elapsed);
       ctx.strokeStyle='#ffe9ae';ctx.lineWidth=11;ctx.strokeRect(80,0,840,740);
       for(const peg of PEGS){
-        MarblePartyStage.peg(ctx,peg.x,peg.y,peg.r+4,'#ffe7a6');
+        MarblePartyStage.peg(ctx,peg.x,peg.y,peg.r+4,
+          s.gold.includes(PEGS.indexOf(peg))?'#ffd24d':'#ffe7a6');
       }
       const gx=500+115*Math.sin(s.elapsed*.9);
       MarblePartyStage.halo(ctx,gx,598,105,'#ffbd70');

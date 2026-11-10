@@ -1332,7 +1332,8 @@
       }
       if (partyRun) selectedMode = PartyCoordinator.begin(partyRun);
       if (selectedMode === 'golf') {
-        MODES.golf.setup({players,seed:Date.now()>>>0,onFinish:r=>this.finishGolf(r)});
+        MODES.golf.setup({players,seed:Date.now()>>>0,
+          championship: !partyRun,onFinish:r=>this.finishGolf(r)});
         state='golf';stateT=0;showScreen('golf');
         Audio_.Music.mode('golf');Audio_.play('sfx_count_go');sendHud(true);return;
       }
@@ -1588,16 +1589,16 @@
       }
       // Future modes receive only scoped, bounded actions from known players;
       // player choices are validated in that mode, never by the relay.
-      if (state === 'golf' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','shoot'].includes(a)) {
+      if (state === 'golf' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','shoot','preview','cheer'].includes(a)) {
         if(MODES.golf.onAction(pid,a,v))Audio_.play(a==='shoot'?'sfx_golf_putt':'sfx_ui_tap',{gap:.07,vol:.45});
         sendHud(true);return;
       }
-      if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep'].includes(a)) {if(MODES.curling.onAction(pid,a,v)&&['throw','sweep'].includes(a))Audio_.play(a==='throw'?'sfx_golf_putt':'sfx_curl_sweep',{gap:.15,vol:.55});sendHud(true);return;}
+      if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep','curlleft','curlright','predict'].includes(a)) {if(MODES.curling.onAction(pid,a,v)&&['throw','sweep'].includes(a))Audio_.play(a==='throw'?'sfx_golf_putt':'sfx_curl_sweep',{gap:.15,vol:.55});sendHud(true);return;}
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
-      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor'].includes(a)) {
+      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','spectate'].includes(a)) {
         if(MODES.brawl.onAction(pid,a,v)&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.18,vol:.8});sendHud(true);return;
       }
-      if (state === 'dropzone' && players.has(pid) && ['left','right','aim','drop'].includes(a)) {
+      if (state === 'dropzone' && players.has(pid) && ['left','right','aim','drop','predict'].includes(a)) {
         if(MODES.dropzone.onAction(pid,a,v)&&a==='drop')Audio_.play('sfx_drop_release',{gap:.12,vol:.75});
         sendHud(true);
         return;

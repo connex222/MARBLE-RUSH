@@ -7,6 +7,7 @@ const MarbleDerby=(()=>{
   'use strict';
   const ROUNDS=5,HORSES=6,LENGTH=1500,START_GEMS=600,MAX_HEAT=24;
   const STAKES=[25,50,100,200];
+  const COURSES=Object.freeze(['Straight Sprint','Hurdle Run','Muddy Bend','Endurance Run','Championship Dash']);
   const COLORS=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d'];
   const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
   const randomFrom=(seed)=>{let x=seed>>>0;return()=>((x=(Math.imul(1664525,x)+1013904223)>>>0)/4294967296);};
@@ -16,22 +17,26 @@ const MarbleDerby=(()=>{
       new Set(players.map(p=>p.id)).size!==players.length)throw Error('Marble Derby needs 1–8 unique racers');
     const rnd=randomFrom(seed);
     const roster=players.map((p,i)=>({id:p.id,name:String(p.name||'Player '+(i+1)).slice(0,16),
-      cpu:!!p.cpu,color:typeof p.color==='string'?p.color:COLORS[i%6],
+      cpu:!!p.cpu,skill:p.difficulty==='hard'?.85:p.difficulty==='easy'?.25:.55,color:typeof p.color==='string'?p.color:COLORS[i%6],
       gems:START_GEMS,won:0,successful:0,bets:[],totalProfit:0,stipends:0,stake:50}));
     const state={seed,roster,round:0,phase:'betting',phaseTime:0,time:0,
       horses:[],wagers:new Map(),cheers:new Set(),history:[],done:false,finishedCalled:false,
-      lastWinner:null,showResultsFor:2.5,acc:0};
+      lastWinner:null,showResultsFor:2.5,acc:0,events:[],hype:0,course:COURSES[0]};
     const getPlayer=id=>roster.find(p=>p.id===id);
     const standings=()=>roster.slice().sort((a,b)=>b.gems-a.gems||b.successful-a.successful||
       b.totalProfit-a.totalProfit||roster.indexOf(a)-roster.indexOf(b));
     function newHeat(){
       state.round++;state.phase='betting';state.phaseTime=0;state.wagers=new Map();
-      state.cheers=new Set();state.lastWinner=null;
+      state.cheers=new Set();state.lastWinner=null;state.hype=0;
+      state.course=COURSES[state.round-1];
+      state.events.push({kind:'heat_start',round:state.round,course:state.course,time:state.time});
       state.horses=Array.from({length:HORSES},(_,i)=>{
         const form=.91+rnd()*.18;
+        const speed=.86+rnd()*.24,endurance=.84+rnd()*.3,consistency=.84+rnd()*.3;
         const odds= +(clamp(3.5+(1.02-form)*9,2.0,5.5)).toFixed(1);
         return {id:i,name:['Rocket','Whirlwind','Comet','Gold Rush','Lightning','Lucky'][i],
-          color:COLORS[i],x:0,v:0,form,odds,pulse:rnd()*6.28,finishedAt:null};
+          color:COLORS[i],x:0,v:0,form,odds,speed,endurance,consistency,
+          pulse:rnd()*6.28,finishedAt:null,surgeUsed:false};
       });
       // Guarantee every player can continue; fresh gems are a controlled
       // virtual stipend, not a debit or a negative wallet.
@@ -44,6 +49,7 @@ const MarbleDerby=(()=>{
         !STAKES.includes(stake)||p.gems<stake)return false;
       p.gems-=stake;
       state.wagers.set(id,{horse,stake,odds:state.horses[horse].odds});
+      state.events.push({kind:'bet_locked',id,horse,stake,round:state.round,time:state.time});
       return true;
     }
     function action(id,type,value){
@@ -58,6 +64,8 @@ const MarbleDerby=(()=>{
         const h=state.horses[wager.horse];
         // A small one-off encouragement, capped to preserve race variance.
         if(h.finishedAt===null)h.v+=18;
+        state.hype=Math.min(100,state.hype+Math.round(100/roster.length));
+        state.events.push({kind:'cheer',id,horse:h.id,x:h.x,strength:18,time:state.time});
         return true;
       }
       return false;
@@ -68,6 +76,11 @@ const MarbleDerby=(()=>{
         b.x-a.x||a.id-b.id);
       const winner=placed[0];
       state.lastWinner=winner.id;
+      const second=placed[1];
+      if(second && winner.finishedAt!==null&&second.finishedAt!==null&&
+         second.finishedAt-winner.finishedAt<.25)
+        state.events.push({kind:'photoFinish',winner:winner.id,other:second.id,
+          gap:second.finishedAt-winner.finishedAt,time:state.time});
       for(const p of roster){
         const b=state.wagers.get(p.id);
         const payout=b&&b.horse===winner.id?Math.floor(b.stake*b.odds):0;
@@ -79,6 +92,7 @@ const MarbleDerby=(()=>{
       state.history.push({round:state.round,winner:winner.id,
         places:placed.map(h=>h.id),bets:roster.map(p=>({id:p.id,...p.bets[p.bets.length-1]}))});
       state.phase='results';state.phaseTime=0;
+      state.events.push({kind:'payout',winner:winner.id,round:state.round,time:state.time});
     }
     function complete(){
       if(state.done)return;
@@ -87,7 +101,9 @@ const MarbleDerby=(()=>{
     }
     function autoPick(){
       for(const p of roster)if(!state.wagers.has(p.id)){
-        const choice=p.cpu?Math.floor(rnd()*HORSES):Math.floor(rnd()*HORSES);
+        const choice=p.cpu?state.horses.slice().sort((a,b)=>
+          (b.speed*.45+b.endurance*.3+b.consistency*.25)-(a.speed*.45+a.endurance*.3+a.consistency*.25))[0].id:
+          Math.floor(rnd()*HORSES);
         const affordable=STAKES.filter(x=>x<=p.gems);
         const stake=p.cpu?affordable[Math.min(affordable.length-1,Math.floor(rnd()*3))]:
           affordable[0];
@@ -104,17 +120,29 @@ const MarbleDerby=(()=>{
         if(state.phase==='betting'){
           // CPU bets after a brief pause. Humans get 12 seconds to pick.
           if(state.phaseTime>=.55)for(const p of roster)if(p.cpu&&!state.wagers.has(p.id)){
-            const horse=Math.floor(rnd()*HORSES),afford=STAKES.filter(x=>x<=p.gems);
+            const maxForm=Math.max(...state.horses.map(h=>h.speed*.45+h.endurance*.3+h.consistency*.25));
+            const best=state.horses.filter(h=>Math.abs(h.speed*.45+h.endurance*.3+h.consistency*.25-maxForm)<.07);
+            const horse=(rnd()<p.skill?best[Math.floor(rnd()*best.length)]:state.horses[Math.floor(rnd()*HORSES)]).id,
+              afford=STAKES.filter(x=>x<=p.gems);
             bet(p.id,horse,afford[Math.min(afford.length-1,Math.floor(rnd()*3))]||25);
           }
           if(state.wagers.size===roster.length||state.phaseTime>=12){
             autoPick();state.phase='racing';state.phaseTime=0;
+            state.events.push({kind:'gate_open',round:state.round,course:state.course,time:state.time});
           }
         }else if(state.phase==='racing'){
           for(const horse of state.horses){
             if(horse.finishedAt!==null)continue;
             const pulse=Math.sin(state.time*3.4+horse.pulse)*7;
-            const target=145*horse.form+pulse;
+            const progress=horse.x/LENGTH;
+            const terrain=state.round===2 && progress>.34&&progress<.44?.81:
+              state.round===3&&progress>.42&&progress<.66?.84:1;
+            const endurance=state.round===4?(1+(horse.endurance-1)*progress*2):1;
+            const target=145*horse.form*horse.speed*terrain*endurance+pulse*horse.consistency;
+            if(progress>.78&&!horse.surgeUsed){
+              horse.surgeUsed=true;
+              state.events.push({kind:'lateSurge',horse:horse.id,round:state.round,x:horse.x,time:state.time});
+            }
             horse.v+=(target-horse.v)*Math.min(1,h*2.2);
             horse.v=Math.max(40,horse.v);
             horse.x+=horse.v*h;
@@ -147,7 +175,8 @@ const MarbleDerby=(()=>{
         turnLabel:`Heat ${state.round}/${ROUNDS} · ${state.phase.toUpperCase()}`,
         roundScore:p.gems,gems:p.gems,modePhase:state.phase,
         modeControls:controls,isTurn:canBet||state.phase==='racing'&&!!pick,
-        stake:p.stake,
+        stake:p.stake,course:state.course,hype:state.hype,formGuide:state.horses.map(h=>({
+          id:h.id,name:h.name,speed:h.speed,endurance:h.endurance,consistency:h.consistency,odds:h.odds})),
         modeHint:pick?`Backed ${state.horses[pick.horse].name} for ${pick.stake} gems`:
           state.phase==='betting'?'Pick a runner and place your gems':'Watch the race',
         myBet:pick?{horse:pick.horse,stake:pick.stake}:null,
@@ -164,7 +193,7 @@ const MarbleDerby=(()=>{
       ctx.fillStyle='#fff6d8';ctx.font='bold 70px Fredoka,sans-serif';
       ctx.fillText('MARBLE DERBY',65,85);
       ctx.fillStyle='#ffd46b';ctx.font='bold 30px Nunito,sans-serif';
-      ctx.fillText(`HEAT ${state.round} OF ${ROUNDS}   ·   ${state.phase.toUpperCase()}`,70,142);
+      ctx.fillText(`HEAT ${state.round} OF ${ROUNDS} · ${state.course} · ${state.phase.toUpperCase()}`,70,142);
       const tx=510,ty=210,tw=1350,lane=104;
       MarblePartyStage.surface(ctx,'derby',tx,ty,tw,628,state.time);
       for(let i=0;i<HORSES;i++){
@@ -184,6 +213,8 @@ const MarbleDerby=(()=>{
       ctx.strokeStyle='#fff5e6';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(tx+tw-60,ty);ctx.lineTo(tx+tw-60,ty+624);ctx.stroke();
       ctx.fillStyle='#fff4e0';ctx.font='bold 34px Fredoka,sans-serif';
       ctx.fillText('THE GEM CLUB',70,255);
+      ctx.font='bold 25px Nunito,sans-serif';ctx.fillStyle='#f8db95';
+      ctx.fillText('CHEER METER '+state.hype+'%',70,290);
       roster.forEach((p,i)=>{
         const y=320+i*72;
         ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(91,y-13,15,0,Math.PI*2);ctx.fill();

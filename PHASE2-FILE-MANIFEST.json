@@ -1,0 +1,71 @@
+{
+  "branch": "dev/party-pack-aaa",
+  "source_zip": "MARBLE-RUSH-main (1).zip",
+  "files": [
+    {
+      "path": "MARBLE_RUSH_MASTER.md",
+      "bytes": 144231,
+      "sha256": "add903fd190923cdcd9e1212c46f549ce7280ea2aaf91198d37f4e2b15511a59"
+    },
+    {
+      "path": "docs/PARTY-PHASE2-AAA-IMPLEMENTATION.md",
+      "bytes": 3727,
+      "sha256": "c339d0877b4bd2dcbbfab4ec5c00116d4b609cb93e7fe334802977427e331471"
+    },
+    {
+      "path": "docs/PHASE2-BALANCE-RESULTS.json",
+      "bytes": 1076,
+      "sha256": "068a1d581cebb1cbc015c29b12344bad059a270fd5468f389b405348d0a73b99"
+    },
+    {
+      "path": "src/modes/bots.js",
+      "bytes": 2513,
+      "sha256": "2d4afe449d23e76139e89000e3c646f1f14d10f26092c74f70e0f9550dd05b92"
+    },
+    {
+      "path": "src/modes/brawl.js",
+      "bytes": 15314,
+      "sha256": "d47cab5f7c787b658070950e33f0091efa78cedaebcf54c4b221b1ae25d8b8c5"
+    },
+    {
+      "path": "src/modes/curling.js",
+      "bytes": 14013,
+      "sha256": "be6259ef3bfbbd51c61bdd22c6b14f6a05f835155df2aa5858174787a12c55e1"
+    },
+    {
+      "path": "src/modes/derby.js",
+      "bytes": 14352,
+      "sha256": "06cb47592ecd77970e4e8a6775ec8b96b31bb97a0b3ec2207184aaed3e0a3dec"
+    },
+    {
+      "path": "src/modes/dropzone.js",
+      "bytes": 12662,
+      "sha256": "1ddb5896d17915c3100dafa08ba815bf48007dfa50aca2459c2b3134d0bb4fa3"
+    },
+    {
+      "path": "src/modes/golf.js",
+      "bytes": 17127,
+      "sha256": "563d86898bae530f87cd874b206e8a60354168d4b82cecd97bb72b673fbba10b"
+    },
+    {
+      "path": "src/play.html",
+      "bytes": 31580,
+      "sha256": "989ea895e791980b944ad163474fa19fb287b99e0898ddfcd1a2cdf81a28e6ba"
+    },
+    {
+      "path": "src/tv.js",
+      "bytes": 129842,
+      "sha256": "a2b206fabf7192398f1a909e6f75c22695b32d002973f8e0f2a743a63f77e1bc"
+    },
+    {
+      "path": "tools/balance-aaa-phase2.js",
+      "bytes": 1955,
+      "sha256": "42f27feea73880c4e4041ff77c2299c85cfb41ecce739cb0b767491614ef7eab"
+    },
+    {
+      "path": "tools/test-party-aaa-phase2.js",
+      "bytes": 6743,
+      "sha256": "4cea76b4e4f4f7a206222a717b0aa0bf21c9b20257571afb380c75e0c58cbf59"
+    }
+  ]
+}

@@ -84,6 +84,11 @@ input{width:100%;font-family:var(--display);font-weight:600;font-size:30px;color
 #modeActions button{font:800 16px Nunito,sans-serif;color:var(--ink);background:var(--card);
  border:2px solid var(--line);border-radius:12px;padding:8px 13px;min-width:80px}
 #modeActions button[aria-pressed="true"]{border-color:var(--gold)}
+/* Phase 2 controller: thumb-sized targets even with expanded controls. */
+#modeActions button{min-height:48px;min-width:112px;font-size:17px;padding:11px 14px;
+  box-shadow:0 4px 0 rgba(0,0,0,.25)}
+#modeActions button:active{transform:translateY(2px)}
+@media(max-width:380px){#modeActions button{min-width:98px;font-size:16px}}
 #cheer{align-self:center;margin:6px 0 8px;border:2px solid var(--gold);background:var(--card);border-radius:14px;
  font:800 16px Nunito,sans-serif;color:var(--ink);padding:8px 20px}
 #votes{display:flex;flex-direction:column;gap:10px;padding:0 18px 12px}

@@ -16,17 +16,21 @@ const BowlBrawl = (() => {
       throw Error('Bowl Brawl needs 2–8 unique players');
     const rng=randomFrom(seed), roster=players.map((p,i)=>({
       id:p.id,name:String(p.name||('Player '+(i+1))).slice(0,16),
-      color:typeof p.color==='string'?p.color:COLORS[i],cpu:!!p.cpu,
+      color:typeof p.color==='string'?p.color:COLORS[i],cpu:!!p.cpu,skill:p.difficulty==='hard'?.85:p.difficulty==='easy'?.25:.55,
       points:0,wins:0,knockouts:0,roundRanks:[],roundPoints:[]
     }));
     const state={roster,seed,round:0,elapsed:0,time:0,radius:START_RADIUS,marbles:[],
-      active:[],done:false,finishedCalled:false,lastWinner:null,events:[],roundHistory:[]};
+      active:[],done:false,finishedCalled:false,lastWinner:null,events:[],roundHistory:[],
+      hazard:'clean',hazardAngle:0,spectators:new Set()};
+    const HAZARDS=['bumpers','ice','rotor','crumbling','clean'];
     function current(id){return state.marbles.find(m=>m.id===id);}
     function alive(){return state.marbles.filter(m=>m.alive);}
     function standings(){return roster.slice().sort((a,b)=>b.points-a.points||
       b.wins-a.wins||b.knockouts-a.knockouts||roster.indexOf(a)-roster.indexOf(b));}
     function beginRound(){
       state.round++;state.elapsed=0;state.radius=START_RADIUS;state.lastWinner=null;
+      state.hazard=HAZARDS[state.round-1];state.hazardAngle=rng()*TAU;state.spectators=new Set();
+      state.events.push({kind:'hazardReveal',hazard:state.hazard,round:state.round,time:state.time});
       const n=roster.length,phase=rng()*TAU;
       state.marbles=roster.map((p,i)=>{
         const ang=TAU*i/n+phase, x=190*Math.cos(ang),y=190*Math.sin(ang);
@@ -47,6 +51,9 @@ const BowlBrawl = (() => {
     }
     function action(id,type,val){
       const m=current(id);
+      if(type==='spectate'&&!state.done&&m&&!m.alive&&!state.spectators.has(id)){
+        state.spectators.add(id);state.events.push({kind:'spectatorCheer',id,round:state.round,time:state.time});return true;
+      }
       if(state.done||!m||!m.alive)return false;
       if(type==='left'||type==='right'){
         if(val!=null && (!Number.isInteger(val)||val<1||val>5))return false;
@@ -77,14 +84,17 @@ const BowlBrawl = (() => {
         if(!p?.cpu||!m.alive)continue;
         m.cpuWait-=dt;
         if(m.cpuWait>0)continue;
-        m.cpuWait=.22+rng()*.28;
+        m.cpuWait=(.33-.15*p.skill)+rng()*.23;
         const enemy=closest(m);
         if(!enemy)continue;
         const ang=Math.atan2(enemy.y-m.y,enemy.x-m.x);
-        const spread=(rng()-.5)*.27;
-        m.heading=ang+spread;
+        const spread=(rng()-.5)*(.75-p.skill*.62);
+        const radial=Math.hypot(m.x,m.y);
+        // Strong CPU racers prioritise survival over chasing someone off the rim.
+        const retreat=radial>state.radius*(.72+.15*(1-p.skill));
+        m.heading=(retreat?Math.atan2(-m.y,-m.x):ang)+spread;
         const distance=Math.hypot(enemy.x-m.x,enemy.y-m.y);
-        if(distance<340&&m.energy>=28&&m.cooldown<=0)action(m.id,'ram');
+        if(!retreat&&distance<340&&m.energy>=28&&m.cooldown<=0)action(m.id,'ram');
         else if(Math.hypot(m.x,m.y)>state.radius*.8&&m.energy>=15&&m.cooldown<=0)
           action(m.id,'anchor');
       }
@@ -148,24 +158,38 @@ const BowlBrawl = (() => {
       while(state.acc>=1/120-1e-10&&loops++<13&&!state.done){
         const dt=1/120;
         state.acc-=dt;state.elapsed+=dt;state.time+=dt;
-        state.radius=rimRadius(state.elapsed);
+        state.radius=rimRadius(state.elapsed) - (state.hazard==='crumbling' ? 14*Math.max(0,Math.sin(state.elapsed*1.35)) : 0);
+        if(state.events.length>850)state.events.splice(0,state.events.length-850);
         cpuTick(dt);
+        // Pre-announced hazard affects only this deterministic physics step.
+        state.hazardAngle+=dt*.9;
         for(const m of state.marbles){
           if(!m.alive)continue;
           m.cooldown=Math.max(0,m.cooldown-dt);
           m.anchored=Math.max(0,m.anchored-dt);
           m.energy=clamp(m.energy+19*dt,0,100);
-          const drag=Math.exp(-(m.anchored>0?7.2:.8)*dt);
+          const onIce=state.hazard==='ice'&&Math.hypot(m.x-75,m.y+35)<140;
+          const drag=Math.exp(-(m.anchored>0?7.2:onIce?.22:.8)*dt);
           m.vx*=drag;m.vy*=drag;
           // Inherent low thrust keeps the bowl lively and provides
           // manual steering between RAMs.
           if(m.anchored<=0){m.vx+=Math.cos(m.heading)*85*dt;m.vy+=Math.sin(m.heading)*85*dt;}
           m.x+=m.vx*dt;m.y+=m.vy*dt;
+          const hazard=state.hazard==='bumpers'?[[125,60],[-110,-50]]:
+            state.hazard==='rotor'?[[Math.cos(state.hazardAngle)*95,Math.sin(state.hazardAngle)*95]]:[];
+          for(const [hx,hy] of hazard){
+            const dx=m.x-hx,dy=m.y-hy,d=Math.hypot(dx,dy)||1;
+            if(d<67){const nx=dx/d,ny=dy/d; m.x=hx+nx*67;m.y=hy+ny*67;
+              m.vx+=nx*115;m.vy+=ny*115;
+              if(m.cooldown<.1)state.events.push({kind:'hazardImpact',id:m.id,x:m.x,y:m.y,
+                hazard:state.hazard,strength:1,time:state.time});}
+          }
         }
         resolveHits();
         for(const m of state.marbles)if(m.alive&&Math.hypot(m.x,m.y)>state.radius-MARBLE_RADIUS){
           m.alive=false;m.eliminatedAt=state.elapsed;m.outs++;
-          state.events.push({kind:'out',id:m.id,round:state.round,time:state.time});
+          state.events.push({kind:'out',id:m.id,x:m.x,y:m.y,round:state.round,time:state.time});
+          if(alive().length===2)state.events.push({kind:'lastTwo',round:state.round,time:state.time});
         }
         if(alive().length<=1||state.elapsed>=ROUND_TIME){finishRound();state.acc=0;break;}
       }
@@ -178,7 +202,8 @@ const BowlBrawl = (() => {
         roundScore:p.points,energy:Math.round(m?.energy||0),
         modePhase:state.done?'finished':m?.alive?'brawling':'eliminated',
         isTurn:!!m?.alive,
-        modeControls:m?.alive&&!state.done?[
+        hazard:state.hazard,modeControls:!m?.alive&&!state.done&&!state.spectators.has(id)?
+          [{a:'spectate',label:'CHEER THE FINALISTS',v:0}]:m?.alive&&!state.done?[
           {a:'left',label:'◀ TURN',v:2},
           {a:'ram',label:'RAM!',v:0},
           {a:'right',label:'TURN ▶',v:2},
@@ -197,7 +222,7 @@ const BowlBrawl = (() => {
        MarblePartyStage.frame(ctx,628,88,905,906,'brawl');
       ctx.fillStyle='#fff4e0';ctx.font='bold 62px Fredoka,sans-serif';ctx.fillText('BOWL BRAWL',76,85);
       ctx.fillStyle='#ffd23f';ctx.font='bold 29px Nunito,sans-serif';
-      ctx.fillText(`ROUND ${state.round}/${ROUNDS}  ·  ${Math.ceil(Math.max(0,ROUND_TIME-state.elapsed))}s`,77,132);
+      ctx.fillText(`ROUND ${state.round}/${ROUNDS} · ${state.hazard.toUpperCase()} · ${Math.ceil(Math.max(0,ROUND_TIME-state.elapsed))}s`,77,132);
       const x=1080,y=540,scale=1.03;
       ctx.save();ctx.translate(x,y);
       const bg=ctx.createRadialGradient(-140,-140,30,0,0,415);

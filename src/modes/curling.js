@@ -15,12 +15,13 @@ const MarbleCurling=(()=>{
     new Set(players.map(p=>p.id)).size!==players.length)throw Error('Curling requires 2–8 distinct players');
   const random=seeded(seed),roster=players.map((p,i)=>({
     id:p.id,name:String(p.name||'Player '+(i+1)).slice(0,16),
-    cpu:!!p.cpu,color:typeof p.color==='string'?p.color:COLORS[i],
+    cpu:!!p.cpu,skill:p.difficulty==='hard'?.85:p.difficulty==='easy'?.25:.55,color:typeof p.color==='string'?p.color:COLORS[i],
     points:0,wins:0,endPoints:[],stonesPlayed:0
   }));
   const state={seed,roster,end:0,turn:0,phase:'aim',clock:0,elapsed:0,acc:0,
-    stones:[],moving:null,aim:0,power:68,sweep:0,last:null,
-    done:false,finishedCalled:false,history:[],events:[],cpuDelay:0,ends:ENDS};
+    stones:[],moving:null,aim:0,power:68,curl:0,sweep:0,last:null,sweepReadyAt:0,
+    done:false,finishedCalled:false,history:[],events:[],cpuDelay:0,ends:ENDS,
+    spectators:new Set()};
   const getPlayer=id=>roster.find(p=>p.id===id);
   function current(){return roster[Math.floor(state.turn/STONES_PER_PLAYER)%roster.length];}
   function distances(){
@@ -31,8 +32,8 @@ const MarbleCurling=(()=>{
     roster.indexOf(a)-roster.indexOf(b));}
   function startEnd(){
     state.end++;state.turn=0;state.phase='aim';state.clock=0;
-    state.stones=[];state.moving=null;state.aim=0;state.power=68;
-    state.sweep=0;state.cpuDelay=.5;state.acc=0;
+    state.stones=[];state.moving=null;state.aim=0;state.power=68;state.curl=0;
+    state.sweep=0;state.cpuDelay=.5;state.acc=0;state.spectators=new Set();
   }
   function finish(){
     if(state.done)return;
@@ -58,13 +59,21 @@ const MarbleCurling=(()=>{
       scores:order.map(x=>({id:x.p.id,score:x.p.endPoints.at(-1)})),
       stones:state.stones.map(x=>({id:x.id,x:x.x,y:x.y,order:x.order}))});
     state.last=order[0].p.id;
+    if(placed[1]&&placed[1].d-placed[0].d<35)state.events.push({kind:'measurement',
+      end:state.end,gap:placed[1].d-placed[0].d,time:state.elapsed});
     state.phase='results';state.clock=0;state.moving=null;
   }
   function action(id,kind,value){
     const p=getPlayer(id);
     if(!p||state.done)return false;
+    if(kind==='predict'&&!state.done&&state.phase!=='finished'&&!state.spectators.has(id)&&
+       Number.isInteger(value)&&value>=0&&value<roster.length){
+      state.spectators.add(id);state.events.push({kind:'prediction',id,pick:roster[value].id,end:state.end,time:state.elapsed});return true;
+    }
     if(kind==='sweep'){
       if(state.phase!=='slide'||!state.moving||state.moving.id!==id||state.sweep>=100)return false;
+      if(state.elapsed<state.sweepReadyAt)return false;
+      state.sweepReadyAt=state.elapsed+.17;
       state.sweep=Math.min(100,state.sweep+12);
       state.events.push({kind:'sweep',id,time:state.elapsed});return true;
     }
@@ -84,14 +93,20 @@ const MarbleCurling=(()=>{
     if(kind==='powerup'||kind==='powerdown'){
       state.power=clamp(state.power+(kind==='powerup'?5:-5),30,100);return true;
     }
+    if(kind==='curlleft'||kind==='curlright'){
+      state.curl=clamp(state.curl+(kind==='curlleft'?-1:1),-3,3);return true;
+    }
     if(kind==='throw'){
       const theta=state.aim*Math.PI/180;
       const speed=210+state.power*5.1;
       const stone={id:p.id,x:75,y:BUTTON_Y,vx:Math.cos(theta)*speed,
-        vy:Math.sin(theta)*speed,order:state.turn,still:0,round:state.end};
+        vy:Math.sin(theta)*speed,spin:state.curl,order:state.turn,still:0,round:state.end};
       state.stones.push(stone);state.moving=stone;state.phase='slide';
-      state.sweep=0;state.clock=0;p.stonesPlayed++;
-      state.events.push({kind:'throw',id,angle:state.aim,power:state.power});
+      state.sweep=0;state.clock=0;state.spectators=new Set();p.stonesPlayed++;
+      state.events.push({kind:'throw',id,angle:state.aim,power:state.power,spin:state.curl,
+        x:stone.x,y:stone.y,time:state.elapsed});
+      if(state.turn===roster.length*STONES_PER_PLAYER-1)
+        state.events.push({kind:'lastStone',end:state.end,id,time:state.elapsed});
       return true;
     }
     return false;
@@ -103,14 +118,17 @@ const MarbleCurling=(()=>{
     if(!p.cpu||state.cpuDelay>0)return;
     // Seeded targeting and strength. The target is in the scoring house,
     // with enough variance to remain a fair family game.
-    state.aim=clamp((random()-.5)*9,-40,40);
-    state.power=clamp(65+(random()-.5)*22,30,100);
+    state.aim=clamp((random()-.5)*(17-13*p.skill),-40,40);
+    state.power=clamp(71+(random()-.5)*(32-21*p.skill),30,100);
+    state.curl=clamp(Math.round((random()-.5)*5),-3,3);
     action(p.id,'throw');
   }
   function physics(dt){
     const drag=state.sweep>0?.995:.991;
     for(const a of state.stones){
       a.x+=a.vx*dt;a.y+=a.vy*dt;
+      if(a.spin&&Math.abs(a.vx)>8){const bend=a.spin*7*dt; a.vy+=bend;
+        a.spin*=Math.pow(.996,dt*60);}
       const f=Math.pow(drag,dt*60);
       a.vx*=f;a.vy*=f;
       if(Math.hypot(a.vx,a.vy)<2){a.vx=0;a.vy=0;}
@@ -143,7 +161,7 @@ const MarbleCurling=(()=>{
       const h=1/60;state.acc-=h;state.clock+=h;state.elapsed+=h;
       if(state.phase==='aim'){
         cpuTick(h);
-        if(state.phase==='aim'&&state.clock>=18)action(current().id,'throw');
+        if(state.phase==='aim'&&state.clock>=12)action(current().id,'throw');
       } else if(state.phase==='slide'){
         physics(h);
         // Never stall if the marble gets stuck bouncing.
@@ -151,7 +169,7 @@ const MarbleCurling=(()=>{
           for(const s of state.stones){s.vx=0;s.vy=0;}
           state.moving=null;state.turn++;state.sweep=0;state.clock=0;
           if(state.turn>=roster.length*STONES_PER_PLAYER)scoreEnd();
-          else{state.phase='aim';state.aim=0;state.power=68;state.cpuDelay=.45;}
+          else{state.phase='aim';state.aim=0;state.power=68;state.curl=0;state.cpuDelay=.45;}
         }
       } else if(state.phase==='results'&&state.clock>=2.5){
         if(state.end>=ENDS)finish();else startEnd();
@@ -163,12 +181,14 @@ const MarbleCurling=(()=>{
     const turn=state.phase==='aim'&&current()?.id===id;
     const sweeping=state.phase==='slide'&&state.moving?.id===id;
     return {turnLabel:`END ${state.end}/${ENDS} · ${state.phase.toUpperCase()}`,
-      roundScore:p.points,power:state.power,aim:state.aim,
+      roundScore:p.points,power:state.power,aim:state.aim,curl:state.curl,sweep:state.sweep,
       modePhase:state.phase,isTurn:turn||sweeping,
       modeHint:turn?'Aim your stone, set power, then THROW':sweeping?'SWEEP to keep your stone sliding':'Watch the house',
-      modeControls:turn?[
+      modeControls:!turn&&!sweeping&&!state.spectators.has(id)?
+        roster.map((r,i)=>({a:'predict',label:'PICK '+r.name,v:i})):turn?[
         {a:'left',label:'◀ AIM',v:2},{a:'right',label:'AIM ▶',v:2},
         {a:'powerdown',label:'− POWER',v:0},{a:'powerup',label:'+ POWER',v:0},
+        {a:'curlleft',label:'↶ CURL',v:0},{a:'curlright',label:'CURL ↷',v:0},
         {a:'throw',label:'THROW!',v:0}
       ]:sweeping?[{a:'sweep',label:'SWEEP!',v:0}]:[],
       end:state.end,stonesLeft:Math.max(0,STONES_PER_PLAYER-Math.floor(state.turn/roster.length)),

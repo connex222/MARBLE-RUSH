@@ -1635,3 +1635,24 @@ Audio universal requirements: clean start (no silence); no sustained hiss or noi
 **Decision A:** Golf standalone expands to nine holes, but Party Night uses three or five holes to keep its duration reasonable. **Decision B:** Derby keeps virtual gems and not actual wagering; odds lock at bet-time, and cheering is one capped decision. **Decision C:** Brawl hazards are deterministic and signalled in advance; no random rule changes during a round. **Decision D:** Curling adds curl/spin and rate-limited sweep, with proposed 12-second aim timer (subject to real-phone QA). **Decision E:** Drop Zone introduces multiplier/jackpot pegs with an explicit 2× cap and preview to first peg only. No changes should start before these decisions are approved.
 
 **Phase 1 STOP GATE.** Provide this updated complete master file, audit report and manifests for review; do not generate images/audio, modify game code, merge or deploy. Await explicit: **“Approved — start Phase 2.”**
+
+
+### 16.10 Phase 2 implementation addendum — 10 November 2026
+
+**Phase gate:** Following explicit approval of Phase 2, the gameplay and phone controls in the development-only deliverable have been implemented. This is NOT an Alpha production approval, GitHub main merge, Render deployment, or Phase 3 art approval. The old Phase 1 STOP text above describes the historical design gate, which has now been satisfied.
+
+**Marble Derby:** Five distinct seeded course profiles, individual runner speed/endurance/consistency form, improved risk-aware seeded bot choices, shared cheer meter, position-tagged late surge, bet-locked and possible photo-finish events. Virtual gems only. Five heats retained.
+
+**Drop Zone:** Seeded gold pegs, bounded 2x eligible bin multiplier, moving last-round jackpot, aim safety timeout of 10s, single spectator prediction per ball, structured release/peg/bucket/jackpot events. Five rounds and original scoring buckets retained. Previous pegs and basic collision engine unchanged.
+
+**Bowl Brawl:** Five pre-announced hazards (bumpers, ice, rotor, crumbling rim, clean), hazard physics with fixed-step seeded state, spectator cheer, hazard impact/last-two/KO events, and CPU position risk assessment. Five rounds and original award policy retained.
+
+**Marble Curling:** 3-step adjustable left/right stone curl, curve applied deterministically in fixed-step ice physics, rate-limited sweep control, 12-second aim limit, hammer/last-stone and near-tie measurement events, spectator predictions each stone, easier/harder deterministic CPU plans. Five ends and two stones per player retained.
+
+**Marble Golf:** Nine-hole standalone championship; Party Night uses five holes to prevent excessive session length. New seeded windmill, flipper, tunnel and gate holes, optional slopes, first-bounce hint, spectator cheers, hole-in-one and pre-shot cinematic event hooks. Direct `MarbleGolf.create(players,seed,callback)` remains the five-hole legacy-compatible format for old regression tests; the TV-registered game selects nine standalone or five Party Night holes explicitly.
+
+**Shared:** CPU easy/normal/hard tuning is deterministic; source event hooks carry kind, coordinates and strength where relevant; old Grand Prix rules, all seven tracks, scoring coordinator, audio source assets, and 119 approved original images are unchanged. New gameplay events are presentation **hooks** only; their cinematic effects and matching image assets are Phase 3/4 work.
+
+**QA:** Legacy games' unit tests, Phase 7 Golf, Phase 8 integration, 30 x 2 seeded full-game replay tests per mode, eight-player cases, action ownership, invalid input, nine-hole/Party Night variant checks and exploratory 30-seed CPU balance lab passed locally on Node v22.16.0. Grand Prix regression compared an identical current-engine baseline and passed. Full TV browser/real-phone acceptance still requires GitHub CI and physical testing.
+
+**Outstanding:** Original AAA graphics complaint is intentionally not resolved in Phase 2. Phase 3 will use only ChatGPT for art; Creative Claw is restricted to sound/voice. Hissing and narrator mix should be independently checked during the planned Phase 5 audio gate. No merge or Render deployment until acceptance.
