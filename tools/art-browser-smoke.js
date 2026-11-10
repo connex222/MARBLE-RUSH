@@ -64,8 +64,14 @@ async function main(){
     for (const id of ['dropzone','brawl','derby','curling','golf','grandprix']) {
       await page.evaluate(mode=>{
         const a=window.__MR;a.Game.toLobby();a.Game.onAction('tv','party',0);
+        if(a.players.size<2) a.addCpu();
         a.Game.onAction('tv','mode',mode);a.Game.beginCup();
       },id);
+      const current=await page.evaluate(()=>({state:window.__MR.state,
+        selected:window.__MR.selectedMode,
+        size:window.__MR.players.size,
+        hidden:document.querySelector('#partyBackLobby').hidden}));
+      assert.notEqual(current.state,'lobby','Failed to start '+id+': '+JSON.stringify(current));
       const exit=page.locator('#partyBackLobby');
       await exit.waitFor({state:'visible',timeout:10000});
       assert.match(await exit.innerText(),/Back to Lobby/);
