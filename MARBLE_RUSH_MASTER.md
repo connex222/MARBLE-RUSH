@@ -870,3 +870,40 @@ Built after Marble Rush, reusing the same **Party Core**: lobby and room codes, 
 | 1.1 | 8 Nov 2026 | Build v0.1: Toy Box Tumble playable end to end; TV lobby has a QR code; local test mode (open tv.html, keyboard + CPU racers); manifest now lists each asset's file, so sounds can be MP3, OGG, M4A or WAV; music and sound are code-generated until real files arrive |
 
 *Rule: any change to filenames, sizes, rules or scoring gets a new line here. Both AIs work from the latest version only.*
+
+---
+
+## Party Pack v0.5.0 development appendix — 10 November 2026
+
+The existing Grand Prix retains its approved seven tracks, artwork, audio,
+camera and core race rules. This appendix documents the **Phase 2 foundation**
+only. It does not supersede the existing approved graphics bible.
+
+**Mode registration:** `src/modes/registry.js` registers Grand Prix, Marble
+Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf with a shared
+interface. The five new games are deliberately unavailable until built.
+
+**Party Night:** The TV and VIP phone support 3-, 5- and 7-game selections.
+An isolated, fixed-roster session coordinator awards 10/8/6/5/4/3/2/1
+Party Points to each game's final ranking. The live development prototype
+repeats Grand Prix until other games are available. Reconnection uses the
+existing TV/phone relay; new players cannot join a session already in progress.
+
+**Mode previews:** A 15-second code-drawn CPU concept animation can be
+opened for any game. This is a preview, not a playable or calibrated
+demonstration of an unfinished mode.
+
+**Shared engine options:** `passing:false` disables Grand Prix's special
+glancing overtakes; default `passing:true` preserves Grand Prix. A new
+Builder API supports peg grids, spinners, buckets, moving gates, target rings,
+golf cups, water zones and shrinking rims. The World supports opt-in
+collisions and scoring sensor events, including 0.4s bucket dwell. Future
+game modes retain responsibility for detailed score/rule consequences.
+
+**Phone UI:** Existing Grand Prix pad remains unchanged. Mode-specific HUD
+labels, optional betting/aim/power control panels, VIP mode/Party Night
+selection and rate-limited cheering are prepared for future modes.
+
+**QA:** Foundation tests, seven-track deterministic main-versus-development
+Grand Prix regression, code/art audit, build, and simulated TV/two-phone
+browser checks are required. A full real-device acceptance is still pending.
