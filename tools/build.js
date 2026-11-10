@@ -19,6 +19,8 @@ try { sharp = require('sharp'); } catch (e) { console.log('• sharp not install
 
 // Game sizes from Section 9 (longest edge or exact box)
 const SIZES = [
+  [/^pp_(derby|dropzone|brawl|curling|golf)_surface_main$/, { w: 1024, h: 1024, fit: 'cover' }],
+  [/^pp_(derby|dropzone|brawl|curling|golf)_(prop_|obstacle_)/, { box: 768 }],
   [/^pp_(derby|dropzone|brawl|curling|golf)_bg$/, { w: 1920, h: 1080, fit: 'cover' }],
   [/^logo_/, { w: 1200 }],
   [/^bg_phone$/, { w: 780, h: 1688, fit: 'cover' }],
@@ -54,12 +56,12 @@ async function processImages() {
     if (sharp) {
       const s = sizeFor(k);
       let img = sharp(src).ensureAlpha();
-      if (!/^bg_|^pp_.*_bg$|^tex_/.test(k)) img = img.trim({ threshold: 2 });
+      if (!/^bg_|^pp_.*_bg$|^pp_.*_surface_main$|^tex_/.test(k)) img = img.trim({ threshold: 2 });
       if (s.fit === 'cover') img = img.resize(s.w, s.h, { fit: 'cover' });
       else if (s.box) img = img.resize(s.box, s.box, { fit: 'inside', withoutEnlargement: true });
       else img = img.resize({ width: s.w, withoutEnlargement: true });
       // keep a tiny transparent border so edges never clip
-      if (!/^bg_|^pp_.*_bg$|^tex_|^marble_/.test(k)) img = sharp(await img.png().toBuffer()).extend({ top: 4, bottom: 4, left: 4, right: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } });
+      if (!/^bg_|^pp_.*_bg$|^pp_.*_surface_main$|^tex_|^marble_/.test(k)) img = sharp(await img.png().toBuffer()).extend({ top: 4, bottom: 4, left: 4, right: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } });
       await img.webp({ quality: 86, alphaQuality: 90 }).toFile(path.join(OUT_IMG, k + '.webp'));
       list.push({ k, f: k + '.webp' });
     } else {
