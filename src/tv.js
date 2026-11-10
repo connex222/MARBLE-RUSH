@@ -1591,38 +1591,40 @@
       sx += m.x * w; sy += m.y * w; wsum += w;
       minX = Math.min(minX, m.x); maxX = Math.max(maxX, m.x); minY = Math.min(minY, m.y); maxY = Math.max(maxY, m.y);
     }
-    // Closer camera: frame the main pack, not the whole field. Anyone left out of
-    // shot gets an edge arrow with their gap, so the marbles stay big enough to
-    // read from the sofa.
+    // Elastic broadcast framing: retain the close v0.4 pack shot when racers
+    // are together, but expand to include the whole field if one falls behind.
     const aspect = W / H;
-    // follow the biggest bunch of racers (front-most bunch on a tie), not a lone runaway leader
+    const allMinX = minX, allMaxX = maxX, allMinY = minY, allMaxY = maxY;
+    const ahead = Math.max(...consider.map(m => m.prog));
+    const behind = Math.min(...consider.map(m => m.prog));
+    const separation = ahead - behind;
+    const wide = Math.max(0, Math.min(1, (separation - 650) / 950));
+    // Retain the largest close group as the zoom-in target.
     let anchor = leader, bestN = 0;
     for (const a of consider) {
       const n = consider.filter(m => a.prog - m.prog >= 0 && a.prog - m.prog < 1100).length;
       if (n > bestN || (n === bestN && a.prog > anchor.prog)) { bestN = n; anchor = a; }
     }
     const pack = consider.filter(m => anchor.prog - m.prog >= -60 && anchor.prog - m.prog < 1100);
-    if (pack.length) {
-      minX = Infinity; maxX = -Infinity; minY = Infinity; maxY = -Infinity; sx = 0; sy = 0; wsum = 0;
-      for (const m of pack) {
-        const w = m === leader ? 2 : 1; sx += m.x * w; sy += m.y * w; wsum += w;
-        minX = Math.min(minX, m.x); maxX = Math.max(maxX, m.x); minY = Math.min(minY, m.y); maxY = Math.max(maxY, m.y);
-      }
+    let packMinX = Infinity, packMaxX = -Infinity, packMinY = Infinity, packMaxY = -Infinity;
+    let packX = 0, packY = 0, packW = 0;
+    for (const m of pack) {
+      const w = m === leader ? 2 : 1;
+      packX += m.x * w; packY += m.y * w; packW += w;
+      packMinX = Math.min(packMinX, m.x); packMaxX = Math.max(packMaxX, m.x);
+      packMinY = Math.min(packMinY, m.y); packMaxY = Math.max(packMaxY, m.y);
     }
-    const spanX = maxX - minX, spanY = maxY - minY;
-    const z = Math.min((1080 * aspect * 0.84) / (spanX + 300), (1080 * 0.8) / (spanY + 260));
-    // Bias the shot towards the leader while racing tightly, but shift to
-    // the pack's bounding-box centre when anyone falls behind.
-    const spread = Math.max(spanX, spanY);
-    const wide = Math.max(0, Math.min(1, (spread - 500) / 1300));
-    const focusX = sx / wsum, focusY = sy / wsum;
+    // Blend both camera centre and bounds so that zooming remains smooth.
+    const lerp = (a, b) => a + (b - a) * wide;
+    minX = lerp(packMinX, allMinX); maxX = lerp(packMaxX, allMaxX);
+    minY = lerp(packMinY, allMinY); maxY = lerp(packMaxY, allMaxY);
+    const z = Math.min((1080 * aspect * 0.8) / (maxX - minX + 360),
+                       (1080 * 0.78) / (maxY - minY + 300));
     const look = 0.25 * (1 - wide);
-    cam.tx = focusX * (1 - wide) + (minX + maxX) * 0.5 * wide + anchor.vx * look * 0.6;
-    cam.ty = focusY * (1 - wide) + (minY + maxY) * 0.5 * wide + anchor.vy * look * 0.6;
+    cam.tx = lerp(packX / packW, (allMinX + allMaxX) * 0.5) + anchor.vx * look * 0.6;
+    cam.ty = lerp(packY / packW, (allMinY + allMaxY) * 0.5) + anchor.vy * look * 0.6;
     const sp = Math.hypot(leader.vx, leader.vy);
-    // Wider minimum framing lets a trailing marble remain visible; the
-    // existing damped camera springs make the zoom-out and return seamless.
-    cam.tz = Math.max(0.68, Math.min(1.3, z)) * (1 - Math.min(0.06, sp / 30000));
+    cam.tz = Math.max(0.42, Math.min(1.3, z)) * (1 - Math.min(0.06, sp / 30000));
     void dt;
   }
 
