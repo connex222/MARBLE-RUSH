@@ -1270,14 +1270,9 @@
       raceNo++;
       cup.trackId = trackId || cup.trackId || 'toybox';
       const seed = (Date.now() & 0xffff) + raceNo * 977;
-      world = new World(TRACKS[cup.trackId](), { seed, items: settings.items, catchup: settings.catchup });
+      world = MODES.grandprix.createRace({WorldCtor:World,tracks:TRACKS,
+        trackId:cup.trackId,seed,settings,players,random:rng(seed)});
       art = buildArt(world.t);
-      // reverse-grid start: lowest points at the front (ties random)
-      const r = rng(seed);
-      const order = [...players.values()].map(p => ({ p, k: p.points + r() * 0.5 })).sort((a, b) => b.k - a.k).map(o => o.p);
-      for (const p of order) world.addMarble(p.id, p);
-      for (const m of world.marbles) { m.appearT = 0; m.squash = 0; }
-      world.goTime = 7.0;
       state = 'countdown'; stateT = 0;
       replayBuf = []; photo = null; photoPending = null; endAt = 0; results = null;
       $('#trackName').textContent = world.t.meta.name;
@@ -1416,22 +1411,8 @@
 
   /* ---------- CPU racers ---------- */
   function botTick() {
-    if(MODES.grandprix.botTick({state,players,vote,now:performance.now()/1000,
-      castVote:(pid,i)=>Game.castVote(pid,i)}))return;
-    if (!world || !['race', 'countdown', 'lobby'].includes(state)) return;
-    const t = world.time;
-    for (const m of world.marbles) {
-      const p = players.get(m.id);
-      if (!p || !p.cpu) continue;
-      const b = p.bot;
-      if (m.down && t > b.rel) world.release(m.id);
-      if (state === 'countdown') {
-        if (!m.down && !m.startUsed && Math.abs(world.goTime - t - 0.03) < 0.05 && Math.random() < b.skill * 0.25) { world.press(m.id); b.rel = t + 0.05; }
-        continue;
-      }
-      if (state === 'lobby') { if (!m.down && Math.random() < 0.004) { world.press(m.id); b.rel = t + 0.05; } continue; }
-      MR.botThink(world, m, b); // track-aware brain shared with the balance lab (engine.js)
-    }
+    MODES.grandprix.botTick({state,players,vote,world,MR,
+      now:performance.now()/1000,castVote:(pid,i)=>Game.castVote(pid,i)});
   }
 
   /* ---------- keyboard racers (local testing) ---------- */
