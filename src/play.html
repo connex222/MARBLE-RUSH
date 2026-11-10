@@ -286,6 +286,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     $('#pad').classList.toggle('empty', h.boost < 25 && (h.s === 'race'));
     $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
+    document.body.dataset.mode = h.mode || 'grandprix';
     const it = $('#item');
     if (h.s !== 'race') h = Object.assign({}, h, { item: null });
     it.disabled = !h.item;
@@ -310,6 +311,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
       case 'lobby':
         setText('', "You're in!", h.vip ? 'You are the host. Start when everyone has joined.' : 'Practise in the bowl while everyone joins.');
         if (h.vip) vip = [['cpu', 'Add CPU racer'], ['start', 'Start race', true]];
+        // Selection stays on the TV until the additional mode implementations pass QA.
         break;
       case 'countdown':
         setText(h.cd ? `<span>${h.cd}</span>` : '', h.inRace ? 'Tap right on ROLL!' : 'You join the next race', h.inRace ? 'for a perfect start' : '');
@@ -335,8 +337,18 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
       default: setText('', 'Watch the TV!', '');
     }
     vipButtons(vip);
-    $('#padText b').textContent = h.s === 'race' && h.boost < 25 ? 'WAIT' : h.s === 'race' && h.boost >= 100 ? 'SUPER!' : 'TAP';
-    $('#padText span').textContent = h.s === 'race' && h.boost < 25 ? 'meter is filling' : h.s === 'race' && h.boost >= 100 ? 'full meter · tap now' : 'boost · hold to grip';
+    // Phone layout adapter. New mode controls are activated only as their modes ship.
+    const labels = {
+      grandprix: ['TAP', 'boost · hold to grip'],
+      derby: ['NUDGE', 'cheer your pick'],
+      dropzone: ['DROP', 'tap to release'],
+      brawl: ['RAM', 'hold to anchor'],
+      curling: ['SWEEP', 'hold to brake'],
+      golf: ['LOCK AIM', 'tap to lock power']
+    };
+    const label = labels[h.mode] || labels.grandprix;
+    $('#padText b').textContent = h.mode === 'grandprix' && h.s === 'race' && h.boost < 25 ? 'WAIT' : h.mode === 'grandprix' && h.s === 'race' && h.boost >= 100 ? 'SUPER!' : label[0];
+    $('#padText span').textContent = h.mode === 'grandprix' && h.s === 'race' && h.boost < 25 ? 'meter is filling' : h.mode === 'grandprix' && h.s === 'race' && h.boost >= 100 ? 'full meter · tap now' : label[1];
   }
 
   function renderVotes(h) {
