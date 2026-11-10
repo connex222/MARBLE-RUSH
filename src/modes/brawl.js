@@ -202,18 +202,26 @@ const BowlBrawl = (() => {
       ctx.save();ctx.translate(x,y);
       const bg=ctx.createRadialGradient(-140,-140,30,0,0,415);
       bg.addColorStop(0,'#d2a2b5');bg.addColorStop(.72,'#956881');bg.addColorStop(1,'#433758');
-      ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(0,0,430,430,0,0,TAU);ctx.fill();
-      ctx.lineWidth=30;ctx.strokeStyle='#e4bd77';ctx.stroke();
-      ctx.lineWidth=8;ctx.strokeStyle='#fff2cf';ctx.stroke();
+      ctx.shadowColor='#000c';ctx.shadowBlur=48;ctx.shadowOffsetY=22;
+      ctx.fillStyle='#2b1538';ctx.beginPath();ctx.ellipse(0,24,442,442,0,0,TAU);ctx.fill();
+      ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+      const bowl=ctx.createRadialGradient(-200,-230,30,0,0,440);
+      bowl.addColorStop(0,'#ffe5ee');bowl.addColorStop(.22,'#d7a2cd');
+      bowl.addColorStop(.56,'#a05b8d');bowl.addColorStop(.83,'#533763');bowl.addColorStop(1,'#281739');
+      ctx.fillStyle=bowl;ctx.beginPath();ctx.ellipse(0,0,430,430,0,0,TAU);ctx.fill();
+      for(let ring=400;ring>130;ring-=90){ctx.beginPath();ctx.arc(0,0,ring,0,TAU);
+        ctx.lineWidth=3;ctx.strokeStyle='rgba(255,240,196,.17)';ctx.stroke();}
+      const rim=ctx.createLinearGradient(-390,-390,400,400);
+      rim.addColorStop(0,'#fff9d7');rim.addColorStop(.26,'#ffc85d');rim.addColorStop(.65,'#ab5a66');rim.addColorStop(1,'#fff1a4');
+      ctx.lineWidth=31;ctx.strokeStyle=rim;ctx.beginPath();ctx.arc(0,0,416,0,TAU);ctx.stroke();
+      ctx.lineWidth=6;ctx.strokeStyle='#fffcdf';ctx.beginPath();ctx.arc(0,0,428,Math.PI*1.12,Math.PI*1.88);ctx.stroke();
       ctx.beginPath();ctx.arc(0,0,state.radius*scale,0,TAU);
       ctx.strokeStyle='#ffdb73';ctx.lineWidth=13;ctx.stroke();
       for(const m of state.marbles){
         if(!m.alive)continue;
         const p=roster.find(a=>a.id===m.id),px=m.x*scale,py=m.y*scale;
         ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.ellipse(px+5,py+10,23,12,0,0,TAU);ctx.fill();
-        const g=ctx.createRadialGradient(px-11,py-14,2,px,py,24);
-        g.addColorStop(0,'#fff8e0');g.addColorStop(.24,p.color);g.addColorStop(1,'#272a53');
-        ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,24,0,TAU);ctx.fill();
+        MarblePartyStage.marble(ctx,px,py,24,p.color);
         ctx.strokeStyle=m.anchored>0?'#ffe58e':'#fff';ctx.lineWidth=m.anchored>0?6:2;ctx.stroke();
         ctx.strokeStyle='#fff';ctx.lineWidth=2;
         ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+Math.cos(m.heading)*33,py+Math.sin(m.heading)*33);ctx.stroke();
