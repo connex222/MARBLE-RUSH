@@ -43,6 +43,10 @@ for(let seed=1;seed<=30;seed++){
  completed++;
 }
 assert.equal(completed,30);
+const capacity=run(999,8);
+assert.equal(capacity.finished.length,8,'eight-player maximum must complete');
+assert.throws(()=>DZ.create([],1),/1–8/);
+assert.throws(()=>DZ.create(Array.from({length:9},(_,i)=>({id:'x'+i,cpu:true})),1),/1–8/);
 assert.ok(grandTotals>0);
 const human=DZ.create([{id:'h',cpu:false}],7);
 assert.equal(human.action('impostor','drop'),false);
