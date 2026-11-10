@@ -82,6 +82,8 @@ input{width:100%;font-family:var(--display);font-weight:600;font-size:30px;color
 #modeActions button{font:800 16px Nunito,sans-serif;color:var(--ink);background:var(--card);
  border:2px solid var(--line);border-radius:12px;padding:8px 13px;min-width:80px}
 #modeActions button[aria-pressed="true"]{border-color:var(--gold)}
+#cheer{margin-top:6px;border:2px solid var(--gold);background:var(--card);border-radius:14px;
+ font:800 16px Nunito,sans-serif;color:var(--ink);padding:8px 20px}
 #votes{display:flex;flex-direction:column;gap:10px;padding:0 18px 12px}
 #votes button{display:flex;align-items:center;gap:12px;font-weight:600;font-size:24px;color:#fff;border:3px solid transparent;border-radius:20px;padding:14px 16px;
   background:var(--vc);box-shadow:0 5px 0 rgba(0,0,0,.3);text-align:left;text-shadow:0 2px 0 rgba(0,0,0,.3)}
@@ -155,6 +157,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     <div id="modeTurn"></div>
     <div id="modeReadout"></div>
     <div id="modeActions"></div>
+    <button id="cheer" type="button" hidden>CHEER!</button>
   </section>
   <div id="padZone">
     <button id="pad" aria-label="Tap to boost, hold to grip">
@@ -286,6 +289,9 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   }
   // Shared phone panels are driven by validated HUD descriptors from the TV.
   // Grand Prix is unchanged. Future modes provide their own button actions.
+  $('#cheer').onclick=()=>{
+    audio();buzz(30);send({t:'act',a:'cheer'});
+  };
   function renderModePanel(h) {
     const panel=$('#modePanel');
     if(!h.mode || h.mode==='grandprix' || !['race','countdown','results','lobby'].includes(h.s)){
@@ -297,6 +303,9 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     const power=Number.isFinite(h.power)?Math.max(0,Math.min(100,Math.round(h.power))):null;
     const aim=Number.isFinite(h.aim)?Math.round(h.aim):null;
     $('#modeReadout').textContent=[pts===null?'':pts+' pts',power===null?'':'Power '+power+'%',aim===null?'':'Aim '+aim+'°'].filter(Boolean).join(' · ');
+    const cheer=$('#cheer');
+    cheer.hidden=!(h.s==='race' && (!h.inRace || h.fin));
+    cheer.disabled=!h.cheerReady;
     const controls=Array.isArray(h.modeControls)?h.modeControls.slice(0,8):[];
     const key=JSON.stringify(controls);
     const box=$('#modeActions');
