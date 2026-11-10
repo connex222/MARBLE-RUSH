@@ -1212,6 +1212,7 @@
   let selectedMode = 'grandprix';
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
+  let attractMode = null, attractUntil = 0, attractFrom = 0;
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
   let timeScale = 1, slowUntil = 0, lastSlow = -99;
   let replayBuf = [], photo = null, photoPending = null, endAt = 0, results = null;
@@ -1220,6 +1221,7 @@
     toLobby() {
       state = 'lobby'; stateT = 0;
       partyRun = null;
+      attractMode = null; $('#partyAttractPanel').hidden = true;
       world = new World(TRACKS.lobby(), { free: true, seed: 1 });
       art = buildArt(world.t);
       for (const p of players.values()) world.addMarble(p.id, p);
@@ -1650,6 +1652,11 @@
 
   /* ---------- HUD ---------- */
   function showScreen(name) {
+    if (name !== 'lobby') {
+      attractMode = null;
+      const preview = $('#partyAttractPanel');
+      if (preview) preview.hidden = true;
+    }
     for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== name;
     $('#raceHud').hidden = !(name === 'race');
   }
@@ -1710,6 +1717,14 @@
     el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
   }
 
+  function showAttract(id) {
+    if (state !== 'lobby' || !MODES[id]) return;
+    if (attractMode === id && performance.now() < attractUntil) return;
+    attractMode = id;
+    attractFrom = performance.now();
+    attractUntil = attractFrom + PartyAttract.maxSeconds * 1000;
+    $('#partyAttractPanel').hidden = false;
+  }
   function renderModePicker() {
     const box = $('#partyModeCards');
     if (!box) return;
@@ -1719,7 +1734,7 @@
       const card = document.createElement('button');
       card.className = 'partyModeCard';
       card.type = 'button';
-      card.disabled = !mode.available;
+      card.setAttribute('aria-disabled', String(!mode.available));
       card.setAttribute('aria-pressed', String(mode.id === selectedMode));
       card.setAttribute('aria-label', mode.name + (mode.available ? '' : ', coming soon'));
       const icon = document.createElement('span'); icon.className = 'modeIcon'; icon.textContent = mode.icon;
@@ -1727,7 +1742,12 @@
       const name = document.createElement('strong'); name.textContent = mode.name;
       const sub = document.createElement('small'); sub.textContent = mode.available ? mode.tagline : 'Coming in a later phase';
       info.append(name, sub); card.append(icon, info);
-      card.onclick = () => Game.onAction('tv', 'mode', mode.id);
+      card.onmouseenter = () => showAttract(mode.id);
+      card.onfocus = () => showAttract(mode.id);
+      card.onclick = () => {
+        showAttract(mode.id);
+        if (mode.available) Game.onAction('tv', 'mode', mode.id);
+      };
       box.appendChild(card);
     }
     $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · available modes repeat' : 'Grand Prix playable · five modes in development';
@@ -1873,6 +1893,12 @@
     requestAnimationFrame(frame);
     let dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     perfTick(dt);
+    if (state === 'lobby' && attractMode && now < attractUntil) {
+      const c = $('#partyAttractCanvas').getContext('2d');
+      PartyAttract.preview(c, attractMode, (now - attractFrom)/1000);
+    } else if (attractMode && now >= attractUntil) {
+      attractMode = null; $('#partyAttractPanel').hidden = true;
+    }
     if (!world) { drawBackground(); return; }
     timeScale = performance.now() / 1000 < slowUntil ? 0.3 : 1;
     const sdt = dt * timeScale;
