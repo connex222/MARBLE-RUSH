@@ -905,7 +905,7 @@ const MR = (() => {
       const ms = this.marbles;
       for (const m of ms) this.moveMarble(m, dt);
       this.marbleCollisions();
-      this.checkPartySensors();
+      this.checkPartySensors(dt);
       this.features(dt);
       for (const m of ms) this.updateProgress(m);
       this.rankAndRules(dt);
@@ -1054,8 +1054,8 @@ const MR = (() => {
       }
     }
 
-    /** Sensor events only on first entry; no repeat-scoring while held inside. */
-    checkPartySensors() {
+    /** Entry sensors; bucket scoring requires the full 0.4 second dwell. */
+    checkPartySensors(dt = 0) {
       if (!this.partyObstacles.length) return;
       for (const m of this.marbles) {
         if (m.respawnT > 0) continue;
@@ -1068,9 +1068,15 @@ const MR = (() => {
           else if (o.type==='targetRing') inside=Math.hypot(m.x-o.x,m.y-o.y)<=o.r;
           else if (o.type==='cup') inside=Math.abs(m.x-o.x)<=o.width/2&&Math.hypot(m.vx,m.vy)<o.maxSpeed;
           const key=m.id+':'+i;
-          const wasInside=this.partySensors.get(key)||false;
-          if (inside&&!wasInside) this.emit('party_sensor',{id:m.id,kind:o.type,index:i,points:o.points||0,x:m.x,y:m.y});
-          if (inside!==wasInside) this.partySensors.set(key,inside);
+          const old=this.partySensors.get(key);
+          const prev=old&&typeof old==='object'?old:{inside:!!old,dwell:0,scored:false};
+          if(inside&&!prev.inside)this.emit('party_sensor',{id:m.id,kind:o.type,index:i,points:o.points||0,x:m.x,y:m.y});
+          const dwell=inside ? prev.dwell+dt : 0;
+          const scored=inside && prev.scored;
+          const threshold=o.type==='bucket'?(o.dwell??0.4):0;
+          if(inside&&!scored && dwell >= threshold)
+            this.emit('party_score',{id:m.id,kind:o.type,index:i,points:o.points||0,x:m.x,y:m.y});
+          this.partySensors.set(key,{inside,dwell,scored:inside&&(scored||dwell>=threshold)});
         }
       }
     }
