@@ -814,7 +814,8 @@ const labelProjection=new T.Vector3();
 function frame(time){
  requestAnimationFrame(frame);
  const dt=time-last;
- if(dt<15)return;
+ // Cap normal TV rendering near 30 FPS before spending GPU time on excess frames.
+  if(dt<25)return;
  last=time;
  const mr=window.__MR,mode=mr?.state;
  const active=enabled&&!unsupported&&supported.includes(mode);
