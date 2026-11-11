@@ -3,14 +3,14 @@
 The TV is the track, phones are the buttons. Tap to boost, hold to grip.
 
 Grand Prix v0.4 gameplay and approved base artwork remain intact. The Party Pack adds five more games and shared Party Night scoring.
-The Party Pack contains six games. **All six modes are now available in the development build:** Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. Final visual/audio acceptance and real-device multiplayer QA are still pending.
+The Party Pack contains six games, all now merged into `main`: Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. The premium Phase 2–4 production assets and code are integrated. Physical TV visual/audio acceptance and real-device multiplayer QA are still pending.
 
-### Party Night preview (development branch only)
+### Party Night (production)
 In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
 start. The eligible modes rotate across the selected Party Night length. Bowl Brawl and Curling require two or more players. After each Grand Prix cup, select **Next Party Game**;
 Party Points 10/8/6/5/4/3/2/1 carry forward across cups.
 The host can also choose Party Night length on their phone.
-Hover or focus a game card to see its 15-second concept preview. All six registered modes are enabled on this development branch.
+Hover or focus a game card to see its 15-second concept preview. All six registered modes are available in this release.
 
 
 ## Try it right now (no internet, no server)
@@ -144,13 +144,27 @@ CPU racers take their turns automatically and Curling can appear
 within a 3/5/7-game Party Night.
 
 See [Phase 6 rules and QA](docs/PARTY-PHASE6-CURLING.md).
-This is code-rendered development art, with final AAA art/audio
-production reserved for the later visual phase.
+The Phase 3 premium diorama presentation has since been integrated; the original Grand Prix visuals and physics are preserved.
 
 ## Phase 8 — integration and release gates
 
-Marble Golf is now connected to the TV/phone UI, with gamepad and on-screen aim, power and SHOOT controls, per-player HUD, five-hole results and Party Night scoring. CI checks the integration and all earlier modes. See [Phase 8 integration record](docs/PARTY-PHASE8.md) for the **remaining AAA assets/audio and physical-device acceptance blockers**. The code is prepared for Alpha release. New approved Party Pack card art must be uploaded separately; if absent, fallback artwork is displayed.
+Marble Golf is now connected to the TV/phone UI, with gamepad and on-screen aim, power and SHOOT controls, per-player HUD, five-hole results and Party Night scoring. CI checks the integration and all earlier modes. See [Phase 8 integration record](docs/PARTY-PHASE8.md) for the **remaining AAA assets/audio and physical-device acceptance blockers**. The code is prepared for Alpha release. The approved card art was uploaded, and the Phase 3 environment, surface, prop and cinematic-effect art is included in the production build.
 
 ## Consolidated Alpha release notes (10 November 2026)
 
-Six modes: Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. Party Night: 3/5/7 games, 1–8 players where mode minimums allow, phones and local CPU/keyboard controllers. The approved original graphics and avatars remain unchanged. Party Pack card thumbnails/banners are optional **until their 13 approved WebP source files are uploaded to `assets/raw`**. Audio is generated with Creative Claw only and recorded in `tools/approved-audio-sources.json`; the build bundles it when available with a playable procedural fallback when the audio provider cannot be reached. See `docs/PARTY-PHASE8.md` for the acceptance plan and outstanding physical multiplayer test. Never claim new graphics are live until the production manifest lists them.
+Six modes: Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. Party Night: 3/5/7 games, 1–8 players where mode minimums allow, phones and local CPU/keyboard controllers. The approved original graphics and avatars remain unchanged. The 13 approved Party Pack cards and banners are included in `assets/raw`. Audio is generated with Creative Claw only and recorded in `tools/approved-audio-sources.json`; the build bundles it when available with a playable procedural fallback when the audio provider cannot be reached. See `docs/PARTY-PHASE8.md` for the acceptance plan and outstanding physical multiplayer test. Never claim new graphics are live until the production manifest lists them.
+
+
+## Consolidated premium Party Pack release (11 November 2026)
+
+Merged via [PR #49](https://github.com/connex222/MARBLE-RUSH/pull/49) to `main`.
+
+- **Grand Prix protected:** its seven tracks, existing art, camera and deterministic physics were not redesigned.
+- **Five premium modes:** Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf include Phase 2 gameplay enhancements, existing Party Night scoring and phone controller improvements.
+- **Phase 3 graphics:** 5 approved game backgrounds, 5 materials, 10 props and 48 cinematic effect sprites (68 additions, 200 images in the full build), all generated with ChatGPT rather than Creative Claw. Art falls back to canvas-rendered effects when a new asset is unavailable.
+- **Results and presentation:** five themed winner podiums, reduced-motion stage transitions and winner/score text drawn in code.
+- **Audio:** approved Creative Claw tracks are audio-only. Existing narrator and rolling-noise gating fixes retained.
+- **QA:** GitHub Party Pack foundation, Phase 8 integration and approved-art browser / two-phone simulated multiplayer suites all passed on the release candidate. This is *not* a claim of real TV or physical 2–4-phone acceptance.
+- **Release documents:** [Phase 3 acceptance](docs/PARTY-PHASE3-FINAL-ACCEPTANCE.md) and [Phase 4 readiness and rollback](docs/PARTY-PHASE4-RELEASE-READINESS.md).
+- **Hosting:** production <https://marble-rush.onrender.com>, deployed from `main` by Render automatic deployment.
+- **Remaining checks:** real TV premium-quality review, physical phone multiplayer, narration/hiss listening and dependency vulnerability review before wider distribution.
