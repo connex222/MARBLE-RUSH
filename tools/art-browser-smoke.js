@@ -100,6 +100,20 @@ async function main(){
           });
           assert.ok(premium.surface>=1,id+' lacks approved physical playfield texture');
           assert.ok(premium.props>=2,id+' lacks approved in-world scene props');
+          const perf=await page.evaluate(()=>{
+            const el=document.querySelector('#party3d');
+            return {
+              quality:el.dataset.quality,
+              fps:Number(el.dataset.fps||0),
+              gpuTextures:Number(el.dataset.gpuTextures||0)
+            };
+          });
+          assert.ok(['cinematic','balanced'].includes(perf.quality),
+            id+' needs adaptive GPU quality and fallback');
+          assert.ok(perf.fps>0&&perf.fps<=120,id+' FPS diagnostic invalid');
+          assert.ok(perf.gpuTextures<160,
+            id+' potential GPU texture leak '+JSON.stringify(perf));
+          console.log('PASS '+id+' runtime quality / memory diagnostics: '+JSON.stringify(perf));
           assert.ok(premium.width>=(id==='dropzone'?.43:.58),
             id+' board occupies too little screen width: '+JSON.stringify(premium));
           assert.ok(premium.height>=(id==='dropzone'?.54:.46),
