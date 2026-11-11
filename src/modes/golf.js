@@ -172,7 +172,8 @@ const MarbleGolf = (() => {
       for(const w of state.layout.walls)ricochetRect(b,w);
       if(state.layout.water.some(w=>b.x>w[0]&&b.x<w[0]+w[2]&&b.y>w[1]&&b.y<w[1]+w[3])){
         state.strokes=Math.min(MAX_STROKES,state.strokes+1);
-        state.events.push({kind:'water',id:current().id,hole:state.hole});
+        state.events.push({kind:'water',id:current().id,hole:state.hole,
+           x:b.x,y:b.y,time:state.elapsed});
         b.x=state.shotFrom.x;b.y=state.shotFrom.y;b.vx=0;b.vy=0;
         if(state.strokes>=MAX_STROKES)endTurn(false);
         else {state.phase='aim';state.clock=0;}
