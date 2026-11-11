@@ -6,7 +6,7 @@ const BowlBrawl = (() => {
   'use strict';
   const ROUNDS=5, ROUND_TIME=42, START_RADIUS=380, END_RADIUS=110;
   // Telegraph before each force pulse: players can anchor or retreat.
-  const SHOCK_TIMES=[8,20,32], SHOCK_WARNING=3;
+  const SHOCK_TIMES=[4,12,24], SHOCK_WARNING=3;
   const RECOVER_COST=35, RECOVER_MARGIN=85, KO_BONUS=3;
   const MARBLE_RADIUS=22, TAU=2*Math.PI;
   const COLORS=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d','#a7deed','#ffd4a2'];
