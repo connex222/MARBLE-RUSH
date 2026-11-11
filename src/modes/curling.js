@@ -194,7 +194,6 @@ const MarbleCurling=(()=>{
       end:state.end,stonesLeft:Math.max(0,STONES_PER_PLAYER-Math.floor(state.turn/roster.length)),
       activePlayer:current()?.name||''};
   }
-  function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
   startEnd();
   return {state,action,step,hud,draw,standings,current,distances,scoreEnd};
  }
@@ -208,7 +207,6 @@ registerMode({
  setup({players,seed,onFinish}){marbleCurlingGame=MarbleCurling.create([...players.values()],seed,onFinish);return marbleCurlingGame;},
  startRound(){return marbleCurlingGame;},
  tick(dt){marbleCurlingGame?.step(dt);},
- draw(ctx,w,h){marbleCurlingGame?.draw(ctx,w,h);},
  onInput(id,k){if(k==='p'){const g=marbleCurlingGame;if(g){const action=g.state.phase==='slide'?'sweep':'throw';g.action(id,action);}}},
  onAction(id,a,v){return marbleCurlingGame?.action(id,a,v)||false;},
  botTick(){},
