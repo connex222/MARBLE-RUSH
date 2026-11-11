@@ -19,8 +19,8 @@ const {chromium}=require('playwright');
    mode:b.dataset.mode,disabled:b.disabled,locked:b.dataset.locked
   })));
   assert.equal(menu.length,6);
-  assert.deepEqual(menu.filter(c=>!c.disabled).map(c=>c.mode),['grandprix','derby'],
-   'Only Grand Prix and rebuilt Derby may be selected');
+  assert.deepEqual(menu.filter(c=>!c.disabled).map(c=>c.mode),['grandprix','derby','dropzone'],
+   'Only Grand Prix and rebuilt Derby/Drop Zone may be selected');
   await page.screenshot({path:'qa-ui-v2-lobby.png'});
   const old=await page.evaluate(()=>['derbyCanvas','dropZoneCanvas','brawlCanvas','curlingCanvas',
    'golfCanvas','derbyHelp','dropZoneHelp','brawlHelp','curlingHelp','golfHelp'].filter(id=>document.getElementById(id)));
@@ -43,7 +43,7 @@ const {chromium}=require('playwright');
    return {mode:stage.dataset.mode,area:[r.width,r.height],colors:brightness.size,
     heat:document.getElementById('ppHeat').textContent,
     title:document.getElementById('ppModeTitle').textContent,
-    buttons:[...stage.querySelectorAll('button')].map(b=>b.id)};
+    buttons:[...stage.querySelectorAll('button')].filter(b=>b.getClientRects().length>0).map(b=>b.id)};
   });
   assert.equal(view.mode,'derby');
   assert.ok(view.area[0]>=1900&&view.area[1]>=1050,'Derby no longer fills TV screen');
@@ -79,6 +79,60 @@ const {chromium}=require('playwright');
   assert.ok(finish.results.every(x=>x===5));
   assert.ok(finish.winner,'Finale winner missing');
   await page.screenshot({path:'qa-ui-v2-derby-finale.png'});
+  // Drop Zone is a second entirely independent presentation, not the old board.
+  await page.evaluate(()=>window.__MR.Game.toLobby());
+  await page.locator('#partyModeCards .partyModeCard[data-mode="dropzone"]').click();
+  await page.waitForFunction(()=>window.__MR.selectedMode==='dropzone');
+  await page.locator('#btnStart').click();
+  await page.locator('#partyStage').waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.getElementById('partyStage')?.dataset.mode==='dropzone'&&
+    document.getElementById('ppDropRankRows')?.children.length>=1,{timeout:12000});
+  const dzView=await page.evaluate(()=>{
+    const stage=document.getElementById('partyStage');
+    const canvas=document.getElementById('partyStageCanvas');
+    const rect=canvas.getBoundingClientRect();
+    const ctx=canvas.getContext('2d'),p=ctx.getImageData(850,540,45,45).data,colors=new Set();
+    for(let i=0;i<p.length;i+=4)colors.add(p[i]+':'+p[i+1]+':'+p[i+2]);
+    const ids=[...stage.querySelectorAll('button')].filter(b=>b.getClientRects().length>0).map(b=>b.id);
+    return {mode:stage.dataset.mode,rect:[rect.width,rect.height],colors:colors.size,
+      ids,rankRows:document.getElementById('ppDropRankRows').children.length,
+      jackpot:document.getElementById('ppDropJackpot').textContent};
+  });
+  assert.equal(dzView.mode,'dropzone');
+  assert.ok(dzView.rect[0]>=1900&&dzView.rect[1]>=1050,'New Drop Zone not full-TV');
+  assert.ok(dzView.colors>10,'New Drop Zone board appears blank or flat');
+  assert.deepEqual(dzView.ids,['dropLeft','dropRight','dropNow'],
+    'Old Derby buttons must not bleed through into Drop Zone');
+  assert.ok(dzView.rankRows>=1,'Drop Zone standings not shown');
+  assert.ok(Number(dzView.jackpot)>=50,'Live jackpot value missing');
+  assert.equal(await page.locator('#ppDropPanel').isVisible(),true);
+  await page.screenshot({path:'qa-ui-v2-dropzone-aim.png'});
+  const x0=await page.evaluate(()=>window.__MR.MODES.dropzone.session().state.x);
+  await page.locator('#dropLeft').click();
+  const x1=await page.evaluate(()=>window.__MR.MODES.dropzone.session().state.x);
+  assert.ok(x1<x0,'New TV LEFT button did not use real game action');
+  await page.locator('#dropRight').click();
+  await page.locator('#dropNow').click();
+  await page.waitForFunction(()=>!!window.__MR.MODES.dropzone.session().state.ball,{timeout:8000});
+  await page.screenshot({path:'qa-ui-v2-dropzone-falling.png'});
+  await page.evaluate(()=>{
+    const g=window.__MR.MODES.dropzone.session();
+    let guard=0;while(!g.state.done&&guard++<18000)g.step(.05);
+    if(!g.state.done)throw Error('New Drop Zone never finished its five rounds');
+  });
+  await page.waitForFunction(()=>window.__MR.state==='finale',{timeout:12000});
+  const dzFinal=await page.evaluate(()=>{
+    const s=window.__MR.MODES.dropzone.session().state;
+    return {turns:s.turn,round:s.round,players:s.roster.length,
+      drops:s.roster.map(p=>p.drops),total:s.roster.map(p=>p.score),
+      champion:document.getElementById('champName')?.textContent};
+  });
+  assert.equal(dzFinal.turns,dzFinal.players*5,'Drop Zone missing turns');
+  assert.ok(dzFinal.drops.every(n=>n===5),'Drop Zone scoring changed');
+  assert.ok(dzFinal.total.every(n=>n>=0),'Negative score');
+  assert.ok(dzFinal.champion,'Drop Zone finale missing');
+  await page.screenshot({path:'qa-ui-v2-dropzone-finale.png'});
+
   // A second mode start must still reach original Grand Prix, untouched by the reset.
   await page.evaluate(()=>window.__MR.Game.toLobby());
   await page.locator('#partyModeCards .partyModeCard[data-mode="grandprix"]').click();
@@ -86,7 +140,7 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>['vote','countdown','race'].includes(window.__MR.state),{timeout:12000});
   assert.ok(await page.locator('#raceHud').count(),'Original Grand Prix screen was deleted');
   assert.deepEqual(errors,[],'Uncaught browser errors');
-  console.log('PASS: exclusive 1920×1080 Derby stage, old canvases absent, real wager, five heat finale, Grand Prix preserved');
+  console.log('PASS: exclusive new Derby and Drop Zone full-TV stages, actual betting/drops and five-round scoring, two complete finales, Grand Prix intact');
  }catch(e){
   console.error('FAIL Party Pack v2 browser smoke:',e);
   await page.screenshot({path:'qa-ui-v2-error.png'}).catch(()=>{});
