@@ -90,9 +90,15 @@ const MarbleCurlingUI=(()=>{
    c.fillStyle=sheen;c.fillRect(x,y,w,h);
    c.restore();
    rr(c,x-4,y-4,w+8,h+8,13,null,'#f5fffb',5);
-   c.fillStyle='#fff5e0';c.font='900 22px Nunito,sans-serif';c.textAlign='left';
-   c.fillText('HACK / RELEASE',x+15,y+h+67);
-   c.textAlign='right';c.fillText('THE HOUSE · BUTTON',x+w-14,y+h+67);
+   // Clear in-rink location markers; do not draw letters underneath the thick
+   // lower ice rail where they become clipped at TV scale.
+   c.save();
+   rr(c,x+17,y+16,179,39,11,'rgba(14,79,107,.78)','#c5f7ed',2);
+   rr(c,x+w-223,y+16,204,39,11,'rgba(14,79,107,.78)','#c5f7ed',2);
+   c.fillStyle='#fffbea';c.font='900 20px Nunito,sans-serif';
+   c.textAlign='left';c.fillText('RELEASE ZONE',x+28,y+42);
+   c.textAlign='right';c.fillText('THE HOUSE',x+w-35,y+42);
+   c.restore();
    return {tx,ty};
  }
  function marble(c,m,p,im,t,reduce){
@@ -187,8 +193,10 @@ const MarbleCurlingUI=(()=>{
    $('ppCurlCurl').textContent=s.curl<0?'LEFT '+Math.abs(s.curl):s.curl>0?'RIGHT '+s.curl:'STRAIGHT';
    $('ppCurlSweep').textContent=Math.round(s.sweep)+'%';
    $('ppCurlSweepBar').style.width=Math.min(100,Math.max(0,s.sweep))+'%';
-   $('ppCurlPlayed').textContent=Math.min(s.turn,s.roster.length*2)+' / '+(s.roster.length*2);
+   $('ppCurlPlayed').textContent=Math.min(s.turn+(s.phase==='slide'?1:0),s.roster.length*2)+' / '+(s.roster.length*2);
    $('ppCurlOwner').textContent=p?.name||'—';
+   $('ppCurlShotStatus').textContent=s.phase==='aim'?'AIMING':
+     s.phase==='slide'?'IN MOTION':s.phase==='results'?'MEASURING':'COMPLETE';
    for(const id of ['ppCurlLeft','ppCurlRight','ppCurlPowerDown','ppCurlPowerUp','ppCurlLeftSpin','ppCurlRightSpin','ppCurlThrow'])
      $(id).disabled=!isHuman;
    $('ppCurlSweepBtn').disabled=!active||s.sweep>=100||s.elapsed<s.sweepReadyAt;
