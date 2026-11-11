@@ -344,12 +344,15 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
 }
 #ui{z-index:2}
 #party3dToggle{
-  position:fixed;z-index:90;left:50%;top:max(10px,env(safe-area-inset-top));
-  transform:translateX(-50%);min-width:150px;min-height:45px;
-  padding:8px 16px;border-radius:14px;
-  border:2px solid #ffe7ac;background:linear-gradient(180deg,#327e92,#193952);
-  color:#fff;font:800 clamp(15px,1.15vw,20px) Fredoka,sans-serif;
-  cursor:pointer;box-shadow:0 5px 0 #091f39;pointer-events:auto
+  position:fixed;z-index:90;left:50%;top:max(12px,env(safe-area-inset-top));
+  transform:translateX(-50%);
+  min-width:137px;min-height:43px;padding:6px 14px;
+  border:2px solid #fff1bd;border-radius:22px;
+  background:linear-gradient(160deg,rgba(41,55,87,.96),rgba(8,22,42,.98));
+  color:#fff5ce;font:800 clamp(14px,1.05vw,18px) Fredoka,sans-serif;
+  letter-spacing:.03em;text-shadow:0 2px 4px #0009;
+  cursor:pointer;box-shadow:inset 0 2px 3px #ffffff36,0 5px 12px #0009;
+  pointer-events:auto
 }
 #party3dToggle[hidden]{display:none!important}
 #party3dToggle:focus-visible{outline:4px solid #fff8c1;outline-offset:3px}
