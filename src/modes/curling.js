@@ -194,55 +194,7 @@ const MarbleCurling=(()=>{
       end:state.end,stonesLeft:Math.max(0,STONES_PER_PLAYER-Math.floor(state.turn/roster.length)),
       activePlayer:current()?.name||''};
   }
-  function draw(ctx,w=1920,h=1080){
-    ctx.save();ctx.scale(w/1920,h/1080);
-    const bg=ctx.createLinearGradient(0,0,1920,1080);
-    bg.addColorStop(0,'#161b44');bg.addColorStop(1,'#394b73');
-    ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
-     MarblePartyStage.backdrop(ctx,'curling',state.elapsed);
-     MarblePartyStage.frame(ctx,485,225,1370,575,'curling');
-    ctx.fillStyle='#fff7df';ctx.font='bold 68px Fredoka,sans-serif';ctx.fillText('MARBLE CURLING',62,92);
-    ctx.fillStyle='#ffd576';ctx.font='bold 27px Nunito,sans-serif';ctx.fillText(`END ${state.end} OF ${ENDS}  ·  ${state.phase.toUpperCase()}`,66,142);
-    const ox=495,oy=235,sc=1.04;
-    ctx.save();ctx.translate(ox,oy);ctx.scale(sc,sc);
-    MarblePartyStage.surface(ctx,'curling',0,0,WIDTH,HEIGHT,state.elapsed);
-    ctx.strokeStyle='#f6f9fa';ctx.lineWidth=14;ctx.strokeRect(0,0,WIDTH,HEIGHT);
-    for(let x=100;x<WIDTH;x+=140){
-      ctx.strokeStyle='rgba(72,115,167,.13)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,HEIGHT);ctx.stroke();
-    }
-    for(const [r,c] of [[140,'#297ab9'],[100,'#f4f6f7'],[65,'#dc4e5c'],[27,'#f4f6f7']]){
-      ctx.save();ctx.shadowColor='#193b64a8';ctx.shadowBlur=9;
-      const ring=ctx.createRadialGradient(BUTTON_X-r*.38,BUTTON_Y-r*.4,1,BUTTON_X,BUTTON_Y,r*1.17);
-      ring.addColorStop(0,'#fff');ring.addColorStop(.22,c);ring.addColorStop(.72,c);ring.addColorStop(1,'#173d61');
-      ctx.fillStyle=ring;ctx.beginPath();ctx.arc(BUTTON_X,BUTTON_Y,r,0,Math.PI*2);ctx.fill();ctx.restore();
-    }
-    ctx.fillStyle='#235585';ctx.beginPath();ctx.arc(BUTTON_X,BUTTON_Y,7,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='#4964a0';ctx.lineWidth=3;
-    ctx.beginPath();ctx.moveTo(BUTTON_X,0);ctx.lineTo(BUTTON_X,HEIGHT);ctx.stroke();
-    if(state.phase==='aim'){
-      const theta=state.aim*Math.PI/180,px=75,py=BUTTON_Y;
-      ctx.setLineDash([12,9]);ctx.strokeStyle='#e5a44b';ctx.lineWidth=4;
-      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+Math.cos(theta)*390,py+Math.sin(theta)*390);ctx.stroke();ctx.setLineDash([]);
-    }
-    for(const stone of state.stones){
-      const p=getPlayer(stone.id);
-      ctx.fillStyle='rgba(17,35,63,.2)';ctx.beginPath();ctx.ellipse(stone.x+4,stone.y+8,21,12,0,0,Math.PI*2);ctx.fill();
-      MarblePartyStage.marble(ctx,stone.x,stone.y,STONE_R,p.color);
-    }
-    ctx.restore();
-    ctx.fillStyle='#fff7e6';ctx.font='bold 33px Fredoka,sans-serif';ctx.fillText('END STANDINGS',67,242);
-    standings().forEach((p,i)=>{
-      const y=304+i*80;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(90,y-12,14,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#fff7e6';ctx.font='bold 24px Nunito,sans-serif';ctx.fillText(p.name,117,y);
-      ctx.fillStyle='#ffdc83';ctx.fillText(`${p.points} pts · ${p.wins} ends`,117,y+29);
-    });
-    ctx.font='bold 29px Nunito,sans-serif';ctx.fillStyle='#fff7df';
-    ctx.fillText(state.done?'CURLING CHAMPION CROWNED':
-      state.phase==='aim'?`UP NEXT: ${current().name}`:
-      state.phase==='slide'?'SWEEP!  Guide your stone towards the button':
-      `END ${state.end} RESULTS`,520,960);
-    ctx.restore();
-  }
+  function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
   startEnd();
   return {state,action,step,hud,draw,standings,current,distances,scoreEnd};
  }
@@ -252,7 +204,7 @@ if(typeof module!=='undefined')module.exports=MarbleCurling;
 let marbleCurlingGame=null;
 registerMode({
  id:'curling',name:'Marble Curling',tagline:'Sweep to the button',icon:'🥌',
- minPlayers:2,maxPlayers:8,roundsDefault:5,available:true,awards:[],
+ minPlayers:2,maxPlayers:8,roundsDefault:5,available:false,awards:[],
  setup({players,seed,onFinish}){marbleCurlingGame=MarbleCurling.create([...players.values()],seed,onFinish);return marbleCurlingGame;},
  startRound(){return marbleCurlingGame;},
  tick(dt){marbleCurlingGame?.step(dt);},
