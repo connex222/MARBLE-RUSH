@@ -1,0 +1,67 @@
+{
+  "derby": {
+    "wins": {
+      "easy": 9,
+      "normal": 9,
+      "hard": 12
+    },
+    "meanScore": {
+      "easy": 509.9,
+      "normal": 535.3,
+      "hard": 590.7
+    },
+    "maxSimulatedSeconds": 81.3
+  },
+  "dropzone": {
+    "wins": {
+      "easy": 10,
+      "normal": 10,
+      "hard": 10
+    },
+    "meanScore": {
+      "easy": 1796.7,
+      "normal": 1718.3,
+      "hard": 1858.3
+    },
+    "maxSimulatedSeconds": 105.3
+  },
+  "brawl": {
+    "wins": {
+      "easy": 9,
+      "normal": 6,
+      "hard": 15
+    },
+    "meanScore": {
+      "easy": 39.9,
+      "normal": 39.4,
+      "hard": 40.7
+    },
+    "maxSimulatedSeconds": 58.3
+  },
+  "curling": {
+    "wins": {
+      "easy": 5,
+      "normal": 8,
+      "hard": 17
+    },
+    "meanScore": {
+      "easy": 44.1,
+      "normal": 48.3,
+      "hard": 53.3
+    },
+    "maxSimulatedSeconds": 345.2
+  },
+  "golf": {
+    "wins": {
+      "easy": 9,
+      "normal": 9,
+      "hard": 12
+    },
+    "meanScore": {
+      "easy": 46.5,
+      "normal": 46.3,
+      "hard": 44.8
+    },
+    "maxSimulatedSeconds": 431.8
+  }
+}

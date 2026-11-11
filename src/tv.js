@@ -1332,7 +1332,8 @@
       }
       if (partyRun) selectedMode = PartyCoordinator.begin(partyRun);
       if (selectedMode === 'golf') {
-        MODES.golf.setup({players,seed:Date.now()>>>0,onFinish:r=>this.finishGolf(r)});
+        MODES.golf.setup({players,seed:Date.now()>>>0,
+          championship: !partyRun,onFinish:r=>this.finishGolf(r)});
         state='golf';stateT=0;showScreen('golf');
         Audio_.Music.mode('golf');Audio_.play('sfx_count_go');sendHud(true);return;
       }
@@ -1588,16 +1589,16 @@
       }
       // Future modes receive only scoped, bounded actions from known players;
       // player choices are validated in that mode, never by the relay.
-      if (state === 'golf' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','shoot'].includes(a)) {
+      if (state === 'golf' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','shoot','preview','cheer'].includes(a)) {
         if(MODES.golf.onAction(pid,a,v))Audio_.play(a==='shoot'?'sfx_golf_putt':'sfx_ui_tap',{gap:.07,vol:.45});
         sendHud(true);return;
       }
-      if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep'].includes(a)) {if(MODES.curling.onAction(pid,a,v)&&['throw','sweep'].includes(a))Audio_.play(a==='throw'?'sfx_golf_putt':'sfx_curl_sweep',{gap:.15,vol:.55});sendHud(true);return;}
+      if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep','curlleft','curlright','predict'].includes(a)) {if(MODES.curling.onAction(pid,a,v)&&['throw','sweep'].includes(a))Audio_.play(a==='throw'?'sfx_golf_putt':'sfx_curl_sweep',{gap:.15,vol:.55});sendHud(true);return;}
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
-      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor'].includes(a)) {
+      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','spectate'].includes(a)) {
         if(MODES.brawl.onAction(pid,a,v)&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.18,vol:.8});sendHud(true);return;
       }
-      if (state === 'dropzone' && players.has(pid) && ['left','right','aim','drop'].includes(a)) {
+      if (state === 'dropzone' && players.has(pid) && ['left','right','aim','drop','predict'].includes(a)) {
         if(MODES.dropzone.onAction(pid,a,v)&&a==='drop')Audio_.play('sfx_drop_release',{gap:.12,vol:.75});
         sendHud(true);
         return;
@@ -1883,6 +1884,12 @@
     Audio_.setRoll(0,0);
     for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== name;
     $('#raceHud').hidden = !(name === 'race');
+    // Phase 3 presentation lives only in the five added modes.
+    // Grand Prix gameplay, tracks, camera and results are untouched.
+    if (typeof PartyPresentation !== 'undefined' &&
+        ['derby','dropzone','brawl','curling','golf'].includes(name)) {
+      PartyPresentation.enter(name,settings.reduce);
+    }
     // This is host-only TV navigation and remains available during all modes.
     const lobbyBtn=$('#partyBackLobby');
     lobbyBtn.hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
@@ -2091,6 +2098,12 @@
     $('#champName').textContent = champ ? champ.name : '';
     $('#champName').style.color = champ ? champ.color : '';
     const box = $('#awardRows'); box.innerHTML = '';
+    if(typeof PartyPresentation !== 'undefined'){
+      const root=$('[data-screen="finale"]');
+      if(['derby','dropzone','brawl','curling','golf'].includes(selectedMode))
+        PartyPresentation.applyFinale(root,selectedMode,list,settings.reduce);
+      else PartyPresentation.clear(root);
+    }
     for (const p of list) {
       const row = document.createElement('div'); row.className = 'arow'; row.style.setProperty('--pc', p.color);
       row.innerHTML = `<img alt="" src="${shapeImg(p.shape, p.color)}"><span class="aname"></span><span class="aaward"></span><span class="apts">${p.points} pts</span>`;
@@ -2159,16 +2172,19 @@
     if (state==='golf') {
       stateT+=dt;MODES.golf.tick(dt);const canvas=$('#golfCanvas');
       MODES.golf.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      {const active=MODES.golf.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'golf',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='curling') {
       stateT+=dt;MODES.curling.tick(dt);const canvas=$('#curlingCanvas');
       MODES.curling.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      {const active=MODES.curling.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'curling',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='derby') {
       stateT+=dt;MODES.derby.tick(dt);const canvas=$('#derbyCanvas');
       MODES.derby.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      {const active=MODES.derby.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'derby',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
       const derby=MODES.derby.session();
       const local=derby.state.roster.find(p=>!p.cpu);
       if(local){
@@ -2183,6 +2199,7 @@
       stateT+=dt;MODES.brawl.tick(dt);
       const canvas=$('#brawlCanvas');
       MODES.brawl.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      {const active=MODES.brawl.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'brawl',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='dropzone') {
@@ -2190,6 +2207,7 @@
       MODES.dropzone.tick(dt);
       const dzCanvas=$('#dropZoneCanvas');
       MODES.dropzone.draw(dzCanvas.getContext('2d'),dzCanvas.width,dzCanvas.height);
+      {const active=MODES.dropzone.session()?.state; if(active)PartyFX.draw(dzCanvas.getContext('2d'),'dropzone',active,active.elapsed??active.time??0,settings.reduce,dzCanvas.width,dzCanvas.height);}
       hudAcc+=dt;
       if(hudAcc>0.1){hudAcc=0;sendHud(false);}
       return;

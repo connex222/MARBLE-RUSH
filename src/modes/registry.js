@@ -83,10 +83,39 @@ const MarblePartyStage = (() => {
       const slot = { image: im, ready: false };
       im.onload=()=>{slot.ready=true;};
       im.onerror=()=>{slot.ready=false;};
-      im.src='assets/img/party_card_'+id+'.webp';
+      // Phase 3 approved cinematic background. Fallback to the original
+      // mode card when the optional new asset is not yet present.
+      im.onerror=()=>{
+        if(!slot.fallback){
+          slot.fallback=true;
+          im.src='assets/img/party_card_'+id+'.webp';
+        } else slot.ready=false;
+      };
+      im.src='assets/img/pp_'+id+'_bg.webp';
       art[id]=slot;
     }
     return art[id].ready ? art[id].image : null;
+  }
+  // Optional Phase 3 Batch B assets. A missing sprite is cached as missing,
+  // so there is no per-frame 404/network retry and gameplay stays playable.
+  const extraArt=Object.create(null);
+  function optionalSprite(key) {
+    if(typeof Image==='undefined'||!/^pp_(derby|dropzone|brawl|curling|golf)_(surface_main|prop_[a-z0-9_]+|obstacle_[a-z0-9_]+)$/.test(key))return null;
+    let entry=extraArt[key];
+    if(!entry){
+      const image=new Image();
+      entry=extraArt[key]={image,ready:false,failed:false};
+      image.onload=()=>{entry.ready=true;};
+      image.onerror=()=>{entry.failed=true;};
+      image.src='assets/img/'+key+'.webp';
+    }
+    return entry.ready?entry.image:null;
+  }
+  function drawSprite(ctx,key,x,y,w,h,alpha=1) {
+    const im=optionalSprite(key);if(!im)return false;
+    if(![x,y,w,h,alpha].every(Number.isFinite)||w<=0||h<=0)return false;
+    ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,alpha));
+    ctx.drawImage(im,x,y,w,h);ctx.restore();return true;
   }
   function backdrop(ctx,id,time=0){
     const tone=TONES[id];if(!tone)return;
@@ -96,7 +125,7 @@ const MarblePartyStage = (() => {
     const im=picture(id);
     if(im){
       ctx.save();
-      ctx.globalAlpha=.52;
+      ctx.globalAlpha=.82;
       const sw=1920,sh=1080,iw=im.naturalWidth||1,ih=im.naturalHeight||1;
       const scale=Math.max(sw/iw,sh/ih);
       const dw=iw*scale,dh=ih*scale;
@@ -104,9 +133,9 @@ const MarblePartyStage = (() => {
       ctx.restore();
     }
     const veil=ctx.createLinearGradient(0,0,1920,1080);
-    veil.addColorStop(0,'rgba(7,13,34,.83)');
-    veil.addColorStop(.46,'rgba(12,18,42,.58)');
-    veil.addColorStop(1,'rgba(7,13,34,.81)');
+    veil.addColorStop(0,'rgba(7,13,34,.63)');
+    veil.addColorStop(.46,'rgba(12,18,42,.43)');
+    veil.addColorStop(1,'rgba(7,13,34,.67)');
     ctx.fillStyle=veil;ctx.fillRect(0,0,1920,1080);
     // Suspended floodlights and diagonal metallic stage floor highlights.
     ctx.globalAlpha=.23;
@@ -134,6 +163,19 @@ const MarblePartyStage = (() => {
       const q=ctx.createRadialGradient(x,1028,2,x,1028,26);
       q.addColorStop(0,i%2?gold:accent);q.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=q;ctx.beginPath();ctx.arc(x,1028,26,0,Math.PI*2);ctx.fill();
+    }
+    // Batch B: optional high-resolution toy props sit outside the active
+    // physics board and the left-side standings, retaining sofa readability.
+    // Missing image files simply skip the decorations.
+    const props={
+      derby:[['grandstand',1125,17,290,181],['hay_bales',1610,868,190,142]],
+      dropzone:[['glass_chute',1170,7,180,189],['gold_bucket',1642,870,181,138]],
+      brawl:[['spin_hazard',1158,17,205,167],['striped_bumper',1651,877,190,137]],
+      curling:[['alpine_lodge',1085,14,295,190],['ice_blocks',1622,855,201,155]],
+      golf:[['windmill',1144,18,202,185],['stone_bridge',1581,865,243,157]]
+    };
+    for(const [name,x,y,w,h] of props[id]||[]){
+      drawSprite(ctx,'pp_'+id+'_prop_'+name,x,y,w,h,.97);
     }
     ctx.restore();
   }
@@ -212,6 +254,9 @@ const MarblePartyStage = (() => {
     spec.addColorStop(.75,'rgba(0,0,0,.02)');
     spec.addColorStop(1,'rgba(0,0,0,.27)');
     ctx.fillStyle=spec;ctx.fillRect(x,y,w,h);
+    // Texture replaces the flat surface only if the approved 1024px material
+    // exists; the gradient/material fallback above remains usable otherwise.
+    drawSprite(ctx,'pp_'+id+'_surface_main',x,y,w,h,.58);
     ctx.restore();
     // Gold/chrome bevel around physically active surface.
     ctx.lineWidth=10;ctx.strokeStyle=gold;round(ctx,x,y,w,h,10);ctx.stroke();
@@ -265,5 +310,5 @@ const MarblePartyStage = (() => {
     g.addColorStop(0,'rgba(255,255,255,.65)');g.addColorStop(.18,color);g.addColorStop(1,'rgba(0,0,0,0)');
     ctx.globalAlpha=.43;ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.restore();
   }
-  return Object.freeze({backdrop,frame,surface,marble,peg,obstacle,halo});
+  return Object.freeze({backdrop,frame,surface,marble,peg,obstacle,halo,drawSprite});
 })();

@@ -19,6 +19,10 @@ try { sharp = require('sharp'); } catch (e) { console.log('• sharp not install
 
 // Game sizes from Section 9 (longest edge or exact box)
 const SIZES = [
+  [/^pp_(derby|dropzone|brawl|curling|golf|shared)_fx_/, { box: 384 }],
+  [/^pp_(derby|dropzone|brawl|curling|golf)_surface_main$/, { w: 1024, h: 1024, fit: 'cover' }],
+  [/^pp_(derby|dropzone|brawl|curling|golf)_(prop_|obstacle_)/, { box: 768 }],
+  [/^pp_(derby|dropzone|brawl|curling|golf)_bg$/, { w: 1920, h: 1080, fit: 'cover' }],
   [/^logo_/, { w: 1200 }],
   [/^bg_phone$/, { w: 780, h: 1688, fit: 'cover' }],
   [/^bg_/, { w: 1920, h: 1080, fit: 'cover' }],
@@ -53,12 +57,12 @@ async function processImages() {
     if (sharp) {
       const s = sizeFor(k);
       let img = sharp(src).ensureAlpha();
-      if (!/^bg_|^tex_/.test(k)) img = img.trim({ threshold: 2 });
+      if (!/^bg_|^pp_.*_bg$|^pp_.*_surface_main$|^tex_/.test(k)) img = img.trim({ threshold: 2 });
       if (s.fit === 'cover') img = img.resize(s.w, s.h, { fit: 'cover' });
       else if (s.box) img = img.resize(s.box, s.box, { fit: 'inside', withoutEnlargement: true });
       else img = img.resize({ width: s.w, withoutEnlargement: true });
       // keep a tiny transparent border so edges never clip
-      if (!/^bg_|^tex_|^marble_/.test(k)) img = sharp(await img.png().toBuffer()).extend({ top: 4, bottom: 4, left: 4, right: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } });
+      if (!/^bg_|^pp_.*_bg$|^pp_.*_surface_main$|^tex_|^marble_/.test(k)) img = sharp(await img.png().toBuffer()).extend({ top: 4, bottom: 4, left: 4, right: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } });
       await img.webp({ quality: 86, alphaQuality: 90 }).toFile(path.join(OUT_IMG, k + '.webp'));
       list.push({ k, f: k + '.webp' });
     } else {
@@ -120,7 +124,7 @@ function fontCss(names) {
   const fonts = fontCss([['Fredoka', 'fredoka.woff2', '300 700'], ['Nunito', 'nunito.woff2', '200 1000']]);
   const engine = fs.readFileSync(path.join(SRC, 'engine.js'), 'utf8');
   const tv = fs.readFileSync(path.join(SRC, 'tv.js'), 'utf8');
-  const modes = ['registry','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
+  const modes = ['registry','party-fx','party-presentation','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
   const qr = fs.readFileSync(path.join(SRC, 'qr.js'), 'utf8');
   const safe = s => s.replace(/<\/script/gi, '<\\/script');
   let tvHtml = fs.readFileSync(path.join(SRC, 'tv.html'), 'utf8');

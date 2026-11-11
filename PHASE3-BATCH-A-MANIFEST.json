@@ -1,0 +1,81 @@
+{
+  "batch": "Phase 3 A \u2014 five approved cinematic environment plates",
+  "branch": "dev/party-pack-aaa",
+  "files": [
+    {
+      "mode": "derby",
+      "name": "Marble Derby",
+      "file": "assets/raw/pp_derby_bg.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "role": "cinematic illustration behind interactive playfield",
+      "original_approved_source": "sunset_marble_race_through_waterfalls.png",
+      "sha256": "faa5b3ea5d6b90444b9ed54db14e9c1cad5f2694b6b358aa5a2635bcc7dd744c"
+    },
+    {
+      "mode": "dropzone",
+      "name": "Drop Zone",
+      "file": "assets/raw/pp_dropzone_bg.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "role": "cinematic illustration behind interactive playfield",
+      "original_approved_source": "cinematic_marble_drop_zone_arcade.png",
+      "sha256": "c6c9020855adfce2a30d20b779e543420dce3d002ed83570756fffc6c19d5a59"
+    },
+    {
+      "mode": "brawl",
+      "name": "Bowl Brawl",
+      "file": "assets/raw/pp_brawl_bg.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "role": "cinematic illustration behind interactive playfield",
+      "original_approved_source": "bowl_brawl_neon_arena_clash.png",
+      "sha256": "47e28b773848efd7df36ce2f5bff16bfbae56d35e1b7cd71604ba0aa11582db0"
+    },
+    {
+      "mode": "curling",
+      "name": "Marble Curling",
+      "file": "assets/raw/pp_curling_bg.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "role": "cinematic illustration behind interactive playfield",
+      "original_approved_source": "alpine_marble_curling_at_sunset.png",
+      "sha256": "9323d73de7b104a61b411d20cf9be1b69022590df8c897048d822f95c6273888"
+    },
+    {
+      "mode": "golf",
+      "name": "Marble Golf",
+      "file": "assets/raw/pp_golf_bg.png",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "role": "cinematic illustration behind interactive playfield",
+      "original_approved_source": "golden_hour_marble_rush_miniature_course.png",
+      "sha256": "926a605712e9cbf3a9cfe211785b66d7c7af35d23bc992f9436ae175bea25583"
+    }
+  ],
+  "integration_files": [
+    "src/modes/registry.js",
+    "tools/build.js"
+  ],
+  "limitations": [
+    "Decorative cinematic plate backgrounds only: not separate geometry, interactive props, transparent layers or 3D scenes",
+    "Marbles are baked into approved concept imagery; do not treat as physics objects",
+    "The other requested 85 assets and full Phase 3 integration are outstanding"
+  ],
+  "checklist": [
+    "Image names and 1920\u00d71080 dimensions",
+    "Code fallback to existing party_card_[mode] when asset missing",
+    "Grand Prix source and 119 approved art assets untouched",
+    "Node syntax check passed"
+  ]
+}
