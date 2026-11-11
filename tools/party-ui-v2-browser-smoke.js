@@ -4,6 +4,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
+const fs=require('node:fs');
 (async()=>{
  const base=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -520,6 +521,13 @@ const {chromium}=require('playwright');
   assert.ok(finalHost.history.length>=5);
   console.log('REAL-REBUILD-RESTART '+JSON.stringify(finalHost));
   console.log('REAL-REBUILD-PERFORMANCE '+JSON.stringify(perfSnapshots));
+  fs.writeFileSync('qa-real-performance.json',JSON.stringify({
+   environment:'Headless Playwright Chromium GitHub Actions Linux, simulated 1920x1080 TV',
+   physicalDevicesTested:false,
+   results:perfSnapshots,
+   camera:{closeZoom,wide,caught,reducedMotionZoom:1},
+   restart:{history:finalHost.history,active:finalHost.active,oldCanvasHidden:finalHost.oldCanvasHidden}
+  },null,2));
   console.log('PASS: all five independent full-TV mode screens, real Golf 9-hole shots and scoring, four other modes, original Grand Prix intact');
  }catch(e){
   console.error('FAIL Party Pack v2 browser smoke:',e);
