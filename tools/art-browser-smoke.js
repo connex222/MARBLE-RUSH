@@ -91,6 +91,20 @@ async function main(){
           },id,{timeout:10000});
           const where=await page.evaluate(()=>document.querySelector('#party3d').closest('[data-screen]')?.dataset.screen);
           assert.equal(where,id,'3D renderer is behind the active 2D screen');
+          const premium=await page.evaluate(()=>{
+            const el=document.getElementById('party3d'),rect=el.getBoundingClientRect();
+            return {surface:Number(el.dataset.surfaceCount||0),
+              props:Number(el.dataset.propCount||0),
+              width:rect.width/window.innerWidth,
+              height:rect.height/window.innerHeight};
+          });
+          assert.ok(premium.surface>=1,id+' lacks approved physical playfield texture');
+          assert.ok(premium.props>=2,id+' lacks approved in-world scene props');
+          assert.ok(premium.width>=(id==='dropzone'?.43:.58),
+            id+' board occupies too little screen width: '+JSON.stringify(premium));
+          assert.ok(premium.height>=(id==='dropzone'?.54:.46),
+            id+' board occupies too little screen height: '+JSON.stringify(premium));
+          console.log('PASS '+id+': textured 3D playfield, stage props, readable camera framing '+JSON.stringify(premium));
           if(id!=='brawl')await page.screenshot({path:'qa-true-3d-'+id+'.png',fullPage:true});
           assert.equal(status3d.stage,true,id+' 3D canvas not visible');
           assert.equal(status3d.canvas,true,id+' 3D renderer did not start');
