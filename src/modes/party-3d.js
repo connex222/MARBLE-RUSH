@@ -333,6 +333,13 @@ function frame(time){
  toggle.textContent=enabled?'3D VIEW: ON':'3D VIEW: OFF';
  if(!active){if(worldMode){clean();worldMode='';}return;}
  boot();if(!renderer)return;
+ // The original game-mode canvas belongs to a #ui screen above the global
+ // canvas. Mount the new renderer immediately after THAT canvas so it really
+ // replaces the flat playfield instead of being hidden underneath it.
+ const activeScreen=document.querySelector('[data-screen="'+mode+'"]');
+ const oldCanvas=activeScreen?.querySelector('canvas');
+ if(activeScreen&&oldCanvas&&root.parentElement!==activeScreen)
+   activeScreen.insertBefore(root,oldCanvas.nextSibling);
  const game=mr.MODES?.[mode]?.session?.(),s=game?.state;
  if(!s)return;
  if(worldMode!==mode || (mode==='golf'&&world?.hole!==s.hole)){
