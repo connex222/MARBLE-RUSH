@@ -47,7 +47,7 @@ function performanceFallback(){
  clean();worldMode='';
 }
 function trackFrameTime(dt,now){
- if(document.visibilityState==='hidden'||!Number.isFinite(dt))return;
+ if(document.visibilityState==='hidden'||!Number.isFinite(dt)||dt>1000)return;
  frameRate=frameRate*.88+(1000/Math.max(1,dt))*.12;
  root.dataset.fps=String(Math.max(1,Math.min(120,Math.round(frameRate))));
  // The first seconds of a new scene compile shaders and upload artwork.
@@ -161,7 +161,11 @@ const material=(color,metal=.12,rough=.29)=>new T.MeshPhysicalMaterial({
 const pale=material('#fff5cd',.66,.23);
 function mesh(geom,mat,x=0,y=0,z=0){
  const m=new T.Mesh(geom,mat);m.position.set(x,y,z);
- m.receiveShadow=true;m.castShadow=true;scene.add(m);return m;
+ // Tiny bulbs, pegs and lane marks cost extra shadow draws without useful silhouettes.
+ const param=geom.parameters||{};
+ const tinySphere=geom.type==='SphereGeometry'&&param.radius<22;
+ const flatMark=geom.type==='BoxGeometry'&&param.height<12;
+ m.receiveShadow=true;m.castShadow=!tinySphere&&!flatMark;scene.add(m);return m;
 }
 function box(w,h,d,color,x=0,y=0,z=0,metal=.12){
  return mesh(new T.BoxGeometry(w,h,d),material(color,metal),x,y,z);
@@ -283,8 +287,9 @@ function stageDressing(mode){
    for(let i=0;i<16;i++){
      const y=-365+i*48;
      for(const x of [-513,513]){
-       const light=box(10,20,16,i%2?'#ffd476':'#8fe1ff',x,y,72,.12);
-       light.material=lit(i%2?'#ffc15a':'#62beff');
+       const light=mesh(new T.BoxGeometry(10,20,16),
+         lit(i%2?'#ffc15a':'#62beff'),x,y,72);
+       light.castShadow=false;
      }
    }
    for(let i=0;i<8;i++){
@@ -747,6 +752,7 @@ function boot(){
    console.warn('[MARBLE RUSH] WebGL unavailable; 2D fallback retained:',e.message);
  }
 }
+const labelProjection=new T.Vector3();
 function frame(time){
  requestAnimationFrame(frame);
  const dt=time-last;
@@ -756,9 +762,12 @@ function frame(time){
  const active=enabled&&!unsupported&&supported.includes(mode);
  root.hidden=!active;toggle.hidden=!supported.includes(mode)||unsupported;
  if(!active){delete root.dataset.rendered;delete root.dataset.mode;}
- toggle.setAttribute('aria-pressed',String(enabled));
- toggle.textContent=enabled?'✦ CINEMATIC':'◇ CLASSIC VIEW';
- toggle.title=enabled?'Switch to the classic 2D board':'Switch to the cinematic 3D board';
+ const pressed=String(enabled);
+ if(toggle.getAttribute('aria-pressed')!==pressed)toggle.setAttribute('aria-pressed',pressed);
+ const label=enabled?'✦ CINEMATIC':root.dataset.fallback==='low-frame-rate'?'◇ CLASSIC VIEW (AUTO)':'◇ CLASSIC VIEW';
+ if(toggle.textContent!==label)toggle.textContent=label;
+ const title=enabled?'Switch to the classic 2D board':'Switch to the cinematic 3D board';
+ if(toggle.title!==title)toggle.title=title;
  if(!active){
    if(worldMode){clean();worldMode='';}
    slowFrames=0;fastFrames=0;return;
@@ -772,16 +781,25 @@ function frame(time){
  if(activeScreen&&oldCanvas&&root.parentElement!==activeScreen)
    activeScreen.insertBefore(root,oldCanvas.nextSibling);
  const game=mr.MODES?.[mode]?.session?.(),s=game?.state;
- if(!s)return;
+ if(!s){
+   // Room transitions can temporarily have no active session: restore the 2D board.
+   root.hidden=true;delete root.dataset.rendered;delete root.dataset.mode;
+   if(worldMode){clean();worldMode='';}
+   return;
+ }
  if(worldMode!==mode || (mode==='golf'&&world?.hole!==s.hole)){
    clean();world={hole:s.hole};worldMode=mode;stage(mode,s);
    stageStartedAt=time;slowFrames=0;fastFrames=0;
  }
- const [left,top,width,height]=frames[mode];
- root.style.left='calc('+left+'*var(--u))';
- root.style.top='calc('+top+'*var(--u))';
- root.style.width='calc('+width+'*var(--u))';
- root.style.height='calc('+height+'*var(--u))';
+ if(root.dataset.layoutMode!==mode){
+   // CSS var(--u) handles TV resize without rewriting geometry styles per frame.
+   const [left,top,width,height]=frames[mode];
+   root.style.left='calc('+left+'*var(--u))';
+   root.style.top='calc('+top+'*var(--u))';
+   root.style.width='calc('+width+'*var(--u))';
+   root.style.height='calc('+height+'*var(--u))';
+   root.dataset.layoutMode=mode;
+ }
  const ww=Math.max(64,Math.round(root.clientWidth)),hh=Math.max(64,Math.round(root.clientHeight));
  if(renderer.domElement.width!==Math.round(ww*renderer.getPixelRatio())||
     renderer.domElement.height!==Math.round(hh*renderer.getPixelRatio())){
@@ -802,16 +820,19 @@ function frame(time){
    root.dataset.gpuTextures=String(renderer.info.memory.textures);
    const cw=root.clientWidth,ch=root.clientHeight;
    for(const it of ballMap.values()){
-     const v=it.sphere.position.clone();v.y+=55;v.project(camera);
-     it.el.style.left=(v.x*.5+.5)*cw+'px';
-     it.el.style.top=(-v.y*.5+.5)*ch+'px';
-     it.el.hidden=(!it.el.textContent||v.z>1||v.z< -1);
+     labelProjection.copy(it.sphere.position);labelProjection.y+=55;labelProjection.project(camera);
+     it.el.style.left=(labelProjection.x*.5+.5)*cw+'px';
+     it.el.style.top=(-labelProjection.y*.5+.5)*ch+'px';
+     it.el.hidden=(!it.el.textContent||labelProjection.z>1||labelProjection.z< -1);
    }
  }catch(e){
    console.warn('[MARBLE RUSH] 3D frame failed; restoring 2D:',e.message);
    unsupported=true;root.hidden=true;toggle.hidden=true;clean();
  }
 }
-toggle.addEventListener('click',()=>{enabled=!enabled;if(enabled)boot();});
+toggle.addEventListener('click',()=>{
+ enabled=!enabled;
+ if(enabled){delete root.dataset.fallback;boot();}
+});
 requestAnimationFrame(frame);
 })();
