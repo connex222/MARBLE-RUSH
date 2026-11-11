@@ -327,6 +327,9 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
   background:#101830;
 }
 #party3d[hidden]{display:none!important}
+/* In-screen 3D board stays below interactive TV controls and captions. */
+#dropZoneHelp,#brawlHelp,#derbyHelp,#curlingHelp,#golfHelp{z-index:5}
+
 #party3d canvas{display:block;width:100%;height:100%}
 #party3d .p3bin{position:absolute;top:91%;transform:translateX(-50%);z-index:4;
  color:#fff6d6;background:#152347e6;border:2px solid #ffdc6a;
