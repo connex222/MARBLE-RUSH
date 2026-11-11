@@ -46,7 +46,7 @@ function trackFrameTime(dt,now){
  if(quality==='cinematic'&&slowFrames>45)chooseQuality('balanced');
  else if(quality==='balanced'&&fastFrames>190)chooseQuality('cinematic');
 }
-const ballGeo=new T.SphereGeometry(24,32,24);
+const ballGeo=new T.SphereGeometry(29,32,24);
 // The marble swirl is generated once at runtime: actual painted detail on a
 // 3D sphere, not a 2D overlay or a third-party graphics service.
 const marblePaint=(()=>{
@@ -66,7 +66,8 @@ const marblePaint=(()=>{
  tex.wrapS=T.RepeatWrapping;tex.anisotropy=2;return tex;
 })();
 const ringGeo=new T.TorusGeometry(34,4,8,40);
-const shadowGeo=new T.CircleGeometry(25,24);
+const shadowGeo=new T.CircleGeometry(30,28);
+const trailGeo=new T.BoxGeometry(1,1,1);
 const defaultColors=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d','#a7deed','#ffd4a2'];
 const FXKINDS={
  derby:{heat_start:'speed',cheer:'confetti',photoFinish:'photo',lateSurge:'surge',payout:'laurel',gate_open:'dust'},
@@ -514,19 +515,22 @@ function getBall(id,color,label){
  shadow.rotation.x=-Math.PI/2;shadow.position.y=5;scene.add(shadow);
  const glow=new T.Mesh(ringGeo,new T.MeshBasicMaterial({color:mat.color,transparent:true,opacity:.28,depthWrite:false}));
  glow.rotation.x=Math.PI/2;glow.position.y=9;scene.add(glow);
+ const trail=new T.Mesh(trailGeo,
+   new T.MeshBasicMaterial({color:mat.color,transparent:true,opacity:.3,depthWrite:false}));
+ trail.visible=false;trail.position.y=5;trail.renderOrder=2;scene.add(trail);
  const arrow=new T.ArrowHelper(new T.Vector3(1,0,0),
    new T.Vector3(0,63,0),48,0xfff3ae,16,9);
  arrow.visible=false;scene.add(arrow);
  const el=document.createElement('div');el.className='p3label';el.textContent=String(label||'').slice(0,17);
  el.style.setProperty('--tagcolor',color||'#ffdf78');root.appendChild(el);
- item={sphere,shadow,glow,arrow,el};ballMap.set(id,item);
+ item={sphere,shadow,glow,trail,arrow,el};ballMap.set(id,item);
  return item;
 }
 function releaseBall(it){
  if(!it)return;
- if(scene)scene.remove(it.sphere,it.shadow,it.glow,it.arrow);
+ if(scene)scene.remove(it.sphere,it.shadow,it.glow,it.trail,it.arrow);
  it.el.remove();
- for(const mat of [it.sphere.material,it.shadow.material,it.glow.material])mat.dispose();
+ for(const mat of [it.sphere.material,it.shadow.material,it.glow.material,it.trail.material])mat.dispose();
  // ArrowHelper owns per-instance materials but shares Three.js geometries.
  it.arrow.traverse(o=>{
    if(o.material){
@@ -538,9 +542,20 @@ function placeBall(id,x,y,z,color,label,seen){
  const it=getBall(id,color,label);seen.add(id);
  if(it.seen){
    const dx=x-it.sphere.position.x,dz=z-it.sphere.position.z;
-   if(Math.abs(dx)+Math.abs(dz)<140){
-     it.sphere.rotation.z-=dx/24*.35;
-     it.sphere.rotation.x+=dz/24*.35;
+   const dist=Math.hypot(dx,dz);
+   if(dist>0&&dist<140){
+     it.sphere.rotation.z-=dx/29*.35;
+     it.sphere.rotation.x+=dz/29*.35;
+   }
+   // Physical three-dimensional speed ribbon, not an animated GIF.
+   // Teleports and reduced-motion settings never generate a false trail.
+   it.trail.visible=!lowMotion&&dist>1.8&&dist<90;
+   if(it.trail.visible){
+     const length=Math.min(105,22+dist*2.5);
+     it.trail.scale.set(length,1.8,8);
+     it.trail.position.set(x-dx/dist*length*.55,6,z-dz/dist*length*.55);
+     it.trail.rotation.y=-Math.atan2(dz,dx);
+     it.trail.material.opacity=Math.min(.48,.13+dist*.016);
    }
  }
  it.seen=true;
@@ -672,7 +687,7 @@ function clean(){
  const shared=new Set([marblePaint,...assetTextures.values(),...fxTextures.values()]);
  const disposedMat=new Set(),disposedGeo=new Set(),disposedTex=new Set();
  scene.traverse(o=>{
-   if(o.geometry && ![ballGeo,ringGeo,shadowGeo].includes(o.geometry)
+   if(o.geometry && ![ballGeo,ringGeo,shadowGeo,trailGeo].includes(o.geometry)
        && o.parent?.type!=='ArrowHelper' && !disposedGeo.has(o.geometry)){
      o.geometry.dispose();disposedGeo.add(o.geometry);
    }
