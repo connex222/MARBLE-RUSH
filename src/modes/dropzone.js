@@ -170,61 +170,7 @@ const DropZone = (() => {
         isTurn:turn||prediction,modePhase:s.done?'finished':s.ball?'falling':'aim',totalScore:p.score,
         ghostX:Math.round(s.x),goldPegs:s.gold.slice(),jackpotBin:s.jackpotBin,aimSeconds:Math.ceil(Math.max(0,10-s.turnElapsed))};
     }
-    function draw(ctx,w=1920,h=1080){
-      const sx=w/1920,sy=h/1080;
-      ctx.save();ctx.scale(sx,sy);
-      const bg=ctx.createLinearGradient(0,0,1920,1080);
-      bg.addColorStop(0,'#14173b');bg.addColorStop(1,'#393065');
-      ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
-       MarblePartyStage.backdrop(ctx,'dropzone',s.elapsed);
-       MarblePartyStage.frame(ctx,523,112,935,818,'dropzone');
-      ctx.fillStyle='#fff4e0';ctx.font='bold 66px Fredoka,sans-serif';ctx.fillText('DROP ZONE',75,92);
-      ctx.fillStyle='#ffd23f';ctx.font='bold 27px Nunito,sans-serif';
-      ctx.fillText(`ROUND ${Math.min(s.round,ROUNDS)} / ${ROUNDS}    ·    ${s.turn}/${s.roster.length*ROUNDS} DROPS`,77,138);
-      ctx.save();ctx.translate(445,130);ctx.scale(1.08,1.02);
-      const wood=ctx.createLinearGradient(0,0,1000,800);
-      wood.addColorStop(0,'#e5b577');wood.addColorStop(1,'#ab784b');
-      ctx.fillStyle=wood;ctx.fillRect(73,0,854,740);
-      MarblePartyStage.surface(ctx,'dropzone',80,0,840,710,s.elapsed);
-      ctx.strokeStyle='#ffe9ae';ctx.lineWidth=11;ctx.strokeRect(80,0,840,740);
-      for(const peg of PEGS){
-        MarblePartyStage.peg(ctx,peg.x,peg.y,peg.r+4,
-          s.gold.includes(PEGS.indexOf(peg))?'#ffd24d':'#ffe7a6');
-      }
-      const gx=500+115*Math.sin(s.elapsed*.9);
-      MarblePartyStage.halo(ctx,gx,598,105,'#ffbd70');
-      ctx.strokeStyle='#f7a76c';ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(gx-55,598);ctx.lineTo(gx+55,598);ctx.stroke();
-      MarblePartyStage.peg(ctx,500+110*Math.sin(s.elapsed*1.2),480,24,'#e4b3ff');
-      for(let i=0;i<BINS.length;i++){
-        const x=80+i*105;
-        ctx.fillStyle=i===4?'#a24f57':'#3c6381';ctx.fillRect(x,712,105,65);
-        ctx.fillStyle='#ffe8c0';ctx.fillRect(x,710,4,67);
-        ctx.fillStyle='#fff4e0';ctx.textAlign='center';ctx.font='bold 24px Nunito,sans-serif';
-        ctx.fillText(String(BINS[i]),x+52,748);
-      }
-      if(!s.done&&!s.ball){
-        ctx.strokeStyle='#ffe083';ctx.lineWidth=5;
-        ctx.beginPath();ctx.moveTo(s.x,8);ctx.lineTo(s.x,90);ctx.stroke();
-        MarblePartyStage.marble(ctx,s.x,35,R,'#ff3b5c');
-      }
-      const balls=s.ball?[s.ball]:[];
-      for(const b of balls){
-        MarblePartyStage.marble(ctx,b.x,b.y,R,b.color);
-      }
-      ctx.restore();
-      ctx.fillStyle='#fff4e0';ctx.font='bold 36px Fredoka,sans-serif';
-      ctx.fillText(s.done?'FINAL SCORES':`NOW DROPPING: ${owner()?.name||''}`,55,260);
-      ctx.font='bold 28px Nunito,sans-serif';
-      for(let i=0;i<s.roster.length;i++){
-        const p=s.roster[i],y=318+i*72;
-        ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(78,y-10,16,0,2*Math.PI);ctx.fill();
-        ctx.fillStyle='#fff4e0';ctx.fillText(p.name.slice(0,13),108,y);
-        ctx.fillStyle='#ffd23f';ctx.fillText(p.score+' pts',108,y+32);
-      }
-      ctx.fillStyle='#fff4e0';ctx.font='bold 28px Nunito,sans-serif';
-      ctx.fillText(s.done?'Game complete':s.ball?'Bouncing through the pegs…':'Move left or right, then DROP',53,1010);
-      ctx.restore();
-    }
+    function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     return {state:s,owner,action,step,standings,hud,draw,finishBall};
   }
   return Object.freeze({create,PEGS,BINS,ROUNDS,WIDTH,HEIGHT});
@@ -233,7 +179,7 @@ if(typeof module!=='undefined')module.exports=DropZone;
 let dropZoneGame=null;
 registerMode({
   id:'dropzone',name:'Drop Zone',tagline:'Drop, bounce, bank it',icon:'🎯',
-  minPlayers:1,maxPlayers:8,roundsDefault:5,available:true,awards:[],
+  minPlayers:1,maxPlayers:8,roundsDefault:5,available:false,awards:[],
   setup({players,seed,onFinish}) {
     dropZoneGame=DropZone.create([...players.values()],seed,onFinish);
     return dropZoneGame;
