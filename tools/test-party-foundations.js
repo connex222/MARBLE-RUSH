@@ -29,8 +29,12 @@ assert.equal(mock.cup.played.length,0);
 assert.deepEqual(ids.filter(id=>game.MODES[id].available),['grandprix','derby','dropzone','brawl','curling','golf'],
   'UI v2 milestone: only fully rebuilt modes must be selectable');
 for (const mode of Object.values(game.MODES)) {
-  for (const fn of ['setup','startRound','tick','draw','onInput','onAction','botTick','hud','standings','roundResults','finalResults'])
+  // Screen ownership has moved out of game rules. The Grand Prix adapter
+  // alone retains its original optional draw() for legacy compatibility.
+  for (const fn of ['setup','startRound','tick','onInput','onAction','botTick','hud','standings','roundResults','finalResults'])
     assert.equal(typeof mode[fn],'function',mode.id+'.'+fn);
+  if(mode.id!=='grandprix')
+    assert.equal(mode.draw,undefined,mode.id+' has a stale canvas API');
 }
 assert.deepEqual(Array.from(game.partyPoints(['a','b','c']), ([id, points]) => [id, points]),[['a',10],['b',8],['c',6]]);
 assert.throws(()=>game.partyPoints(['a','a']),/unique/);
