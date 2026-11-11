@@ -340,7 +340,7 @@
         if(externalSource)return;
         while (next < ac.currentTime + 0.12) {
           const s = step % 16, bar = Math.floor(step / 16) % 4, t = next;
-          const race = mode === 'race';
+          const race = mode === 'race' || (mode === 'brawl' && intensity > 0.58);
           if (s % 4 === 0) kick(t);
           if (s === 4 || s === 12) clap(t);
           if (s % 2 === 0 || (race && intensity > 0.5)) hat(t, s % 4 === 2 ? 0.14 : 0.07);
@@ -357,6 +357,8 @@
             if(mode==='golf'&&s===15)note(t,n*voice*2,SPB*1.8,'sine',.035);
           }
           if (race && intensity > 0.5 && s % 2 === 1) note(t, CH[bar][s % 3] * 2, SPB * 0.8, 'sine', 0.05);
+          if (mode === 'brawl' && intensity > .78 && (s === 7 || s === 15))
+            note(t, CH[bar][2]*1.55, SPB*.85, 'sawtooth', .025);
           if (mode === 'lobby' && (s === 7 || s === 15)) note(t, CH[bar][2] * 2, SPB * 2, 'sine', 0.05);
           next += SPB; step++;
         }
@@ -2195,6 +2197,11 @@
       const combat=MODES.brawl.session();
       if(combat){
         const st=combat.state,pulseIn=st.pulseAt==null?null:st.pulseAt-st.elapsed;
+        const survivors=st.marbles.filter(m=>m.alive).length;
+        // The existing adaptive score intensifies ONLY as actual jeopardy rises.
+        Audio_.Music.intensity(Math.max(
+          (380-st.radius)/270, survivors===2?.86:0,
+          pulseIn!=null&&pulseIn<=3?1:0));
         const warningKey=st.round+':'+st.pulseIndex;
         if(pulseIn!=null&&pulseIn<=3&&pulseIn>0&&brawlWarningKey!==warningKey){
           brawlWarningKey=warningKey;
