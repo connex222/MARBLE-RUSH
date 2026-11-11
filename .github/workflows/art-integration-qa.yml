@@ -15,6 +15,8 @@ on:
       - src/tv.html
       - tools/art-browser-smoke.js
       - tools/art-multiplayer-smoke.js
+      - tools/party-ui-v2-browser-smoke.js
+      - tools/party-ui-v2-multiplayer-smoke.js
       - tools/audit-art.js
       - tools/build.js
       - assets/raw/**
@@ -44,6 +46,9 @@ jobs:
           node --check tools/audit-art.js
           node --check tools/art-browser-smoke.js
           node --check tools/art-multiplayer-smoke.js
+          node --check tools/party-ui-v2-browser-smoke.js
+          node --check tools/party-ui-v2-multiplayer-smoke.js
+          node tools/test-party-ui-v2.js
           node --check server/server.js
       - name: Build game, resized art and HTML
         run: npm run build
@@ -74,7 +79,7 @@ jobs:
       - name: Install headless Chromium for actual canvas-drawing QA
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.57.0
-          npx playwright install --with-deps chromium
+          npx playwright install --only-shell chromium
       - name: Test a real race in the browser and capture screenshot
         run: |
           set -e
@@ -85,7 +90,7 @@ jobs:
             if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
             sleep 1
           done
-          node tools/art-browser-smoke.js
+          node tools/party-ui-v2-browser-smoke.js
       - name: Validate one TV and two phones over local WebSocket (no deployment)
         run: |
           set -e
@@ -96,27 +101,15 @@ jobs:
             if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
             sleep 1
           done
-          node tools/art-multiplayer-smoke.js
+          node tools/party-ui-v2-multiplayer-smoke.js
       - name: Save compiled preview for offline visual acceptance
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: marble-rush-compiled-art-preview
+          name: marble-rush-five-mode-ui-v2-art-review
           path: |
             public/
-            qa-party-picker.png
-            qa-party-attract.png
-            qa-dropzone-tv.png
-            qa-dropzone-phone.png
-            qa-brawl-tv.png
-            qa-brawl-phone.png
-            qa-derby-tv.png
-            qa-derby-phone.png
-            qa-curling-tv.png
-            qa-curling-phone.png
-            qa-art-race-preview.png
-            qa-art-multiplayer-tv.png
-            qa-art-multiplayer-phone.png
+            qa-ui-v2-*.png
             qa-art-audit.json
           compression-level: 6
           retention-days: 7
