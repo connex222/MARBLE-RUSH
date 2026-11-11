@@ -19,8 +19,8 @@ const {chromium}=require('playwright');
    mode:b.dataset.mode,disabled:b.disabled,locked:b.dataset.locked
   })));
   assert.equal(menu.length,6);
-  assert.deepEqual(menu.filter(c=>!c.disabled).map(c=>c.mode),['grandprix','derby','dropzone'],
-   'Only Grand Prix and rebuilt Derby/Drop Zone may be selected');
+  assert.deepEqual(menu.filter(c=>!c.disabled).map(c=>c.mode),['grandprix','derby','dropzone','brawl'],
+   'Grand Prix, Derby, Drop Zone and new Brawl must be selectable');
   await page.screenshot({path:'qa-ui-v2-lobby.png'});
   const old=await page.evaluate(()=>['derbyCanvas','dropZoneCanvas','brawlCanvas','curlingCanvas',
    'golfCanvas','derbyHelp','dropZoneHelp','brawlHelp','curlingHelp','golfHelp'].filter(id=>document.getElementById(id)));
@@ -135,6 +135,72 @@ const {chromium}=require('playwright');
   assert.ok(dzFinal.champion,'Drop Zone finale missing');
   await page.screenshot({path:'qa-ui-v2-dropzone-finale.png'});
 
+  // BRAWL v2 has its own arena and combat HUD, not an old Brawl canvas.
+  await page.evaluate(()=>window.__MR.Game.toLobby());
+  await page.locator('#partyModeCards .partyModeCard[data-mode="brawl"]').click();
+  await page.waitForFunction(()=>window.__MR.selectedMode==='brawl',{timeout:10000});
+  await page.locator('#btnStart').click();
+  await page.locator('#partyStage').waitFor({state:'visible',timeout:10000});
+  await page.waitForFunction(()=>window.__MR.state==='brawl'&&
+    document.getElementById('ppBrawlRankRows')?.children.length>=2,{timeout:12000});
+  const brawlView=await page.evaluate(()=>{
+    const stage=document.getElementById('partyStage');
+    const canvas=document.getElementById('partyStageCanvas'),r=canvas.getBoundingClientRect();
+    const data=canvas.getContext('2d').getImageData(870,520,36,36).data,cols=new Set();
+    for(let i=0;i<data.length;i+=4)cols.add(data[i]+':'+data[i+1]+':'+data[i+2]);
+    const ids=[...stage.querySelectorAll('button')].filter(b=>b.getClientRects().length>0).map(b=>b.id);
+    return {mode:stage.dataset.mode,rect:[r.width,r.height],colors:cols.size,
+      ids,rankRows:document.getElementById('ppBrawlRankRows').children.length,
+      hazard:document.getElementById('ppBrawlPhase').textContent,
+      radius:document.getElementById('ppBrawlRadius').textContent};
+  });
+  assert.equal(brawlView.mode,'brawl');
+  assert.ok(brawlView.rect[0]>=1900&&brawlView.rect[1]>=1050,'Brawl not full TV');
+  assert.ok(brawlView.colors>10,'Brawl stadium rendering blank or flat');
+  assert.deepEqual(brawlView.ids,['ppBrawlLeft','ppBrawlRight','ppBrawlRam','ppBrawlAnchor'],
+    'Previous-game controls leaked into Brawl');
+  assert.ok(brawlView.rankRows>=2);
+  assert.match(brawlView.hazard,/BUMPER/);
+  assert.equal(Number(brawlView.radius),380);
+  await page.screenshot({path:'qa-ui-v2-brawl-live.png'});
+  // Verify real physics and energy are being controlled by the newly mounted buttons.
+  const beforeBrawl=await page.evaluate(()=>{
+    const g=window.__MR.MODES.brawl.session();
+    const p=g.state.roster.find(x=>!x.cpu&&g.current(x.id)?.alive);
+    const m=g.current(p.id);
+    return {id:p.id,energy:m.energy,heading:m.heading};
+  });
+  await page.locator('#ppBrawlLeft').click();
+  const turned=await page.evaluate(id=>{
+    return window.__MR.MODES.brawl.session().current(id).heading;
+  },beforeBrawl.id);
+  assert.ok(turned<beforeBrawl.heading,'New TURN control did not steer actual marble');
+  await page.locator('#ppBrawlRam').click();
+  const ramAction=await page.evaluate(id=>{
+    const s=window.__MR.MODES.brawl.session().state,m=window.__MR.MODES.brawl.session().current(id);
+    return {energy:m.energy,ram:!!s.events.find(e=>e.kind==='ram'&&e.id===id)};
+  },beforeBrawl.id);
+  assert.ok(ramAction.ram,'New RAM button did not trigger authorised action');
+  assert.ok(ramAction.energy<beforeBrawl.energy,'RAM did not consume energy');
+  await page.screenshot({path:'qa-ui-v2-brawl-ram.png'});
+  await page.evaluate(()=>{
+    const g=window.__MR.MODES.brawl.session();
+    let n=0;while(!g.state.done&&n++<50000)g.tick(.05);
+    if(!g.state.done)throw Error('Brawl did not finish all five rounds');
+  });
+  await page.waitForFunction(()=>window.__MR.state==='finale',{timeout:12000});
+  const result=await page.evaluate(()=>{
+    const s=window.__MR.MODES.brawl.session().state;
+    return {round:s.round,history:s.roundHistory.length,
+      points:s.roster.map(p=>p.roundPoints.length),
+      champs:document.getElementById('champName')?.textContent};
+  });
+  assert.equal(result.round,5);
+  assert.equal(result.history,5);
+  assert.ok(result.points.every(v=>v===5),'Brawl round scoring regressed');
+  assert.ok(result.champs,'Brawl results winner missing');
+  await page.screenshot({path:'qa-ui-v2-brawl-finale.png'});
+
   // A second mode start must still reach original Grand Prix, untouched by the reset.
   await page.evaluate(()=>window.__MR.Game.toLobby());
   await page.locator('#partyModeCards .partyModeCard[data-mode="grandprix"]').click();
@@ -142,7 +208,7 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>['vote','countdown','race'].includes(window.__MR.state),{timeout:12000});
   assert.ok(await page.locator('#raceHud').count(),'Original Grand Prix screen was deleted');
   assert.deepEqual(errors,[],'Uncaught browser errors');
-  console.log('PASS: exclusive new Derby and Drop Zone full-TV stages, actual betting/drops and five-round scoring, two complete finales, Grand Prix intact');
+  console.log('PASS: three exclusive full-TV mode stages, Derby betting, Drop Zone scoring, Brawl physics/energy, three five-round finales, GP intact');
  }catch(e){
   console.error('FAIL Party Pack v2 browser smoke:',e);
   await page.screenshot({path:'qa-ui-v2-error.png'}).catch(()=>{});
