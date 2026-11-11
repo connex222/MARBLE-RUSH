@@ -157,30 +157,87 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
   border:calc(5*var(--u)) solid var(--gold);border-radius:calc(22*var(--u));overflow:hidden;
   background:#131831;box-shadow:0 calc(16*var(--u)) calc(45*var(--u)) rgba(0,0,0,.65);pointer-events:none}
 #partyAttractCanvas{display:block;width:100%;height:100%}
-#dropZoneCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#dropZoneHelp{position:absolute;right:calc(65*var(--u));bottom:calc(20*var(--u));
- display:flex;gap:calc(14*var(--u));align-items:center;z-index:5}
-#dropZoneHelp .btn{font-size:calc(23*var(--u));padding:calc(11*var(--u)) calc(18*var(--u))}
-#dropZoneHelp .btn.go{font-size:calc(24*var(--u));padding:calc(13*var(--u)) calc(23*var(--u))}
-#brawlCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#brawlHelp{position:absolute;right:calc(60*var(--u));bottom:calc(20*var(--u));
- display:flex;gap:calc(11*var(--u));align-items:center;z-index:5}
-#brawlHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(15*var(--u))}
-#brawlHelp .btn.go{font-size:calc(24*var(--u));padding:calc(12*var(--u)) calc(22*var(--u))}
-#derbyCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#derbyHelp{position:absolute;right:calc(60*var(--u));bottom:calc(20*var(--u));
-display:flex;gap:calc(12*var(--u));align-items:center;z-index:5}
-#derbyHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(16*var(--u))}
-#derbyHelp .btn.go{font-size:calc(23*var(--u))}
-#golfCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#golfHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));display:flex;gap:calc(9*var(--u));z-index:5}
-#golfHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(14*var(--u))}
-#golfHelp .btn.go{font-size:calc(24*var(--u))}
-#curlingCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#curlingHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));
-display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
-#curlingHelp .btn{font-size:calc(19*var(--u));padding:calc(10*var(--u)) calc(13*var(--u))}
-#curlingHelp .btn.go{font-size:calc(22*var(--u))}
+/* PARTY PACK UI v2 — shared full-screen stage, independent from Grand Prix. */
+#partyStage{position:fixed;inset:0;isolation:isolate;overflow:hidden;background:#0b142a}
+#partyStageCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}
+#partyStage:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+ background:linear-gradient(90deg,rgba(6,12,29,.65) 0%,transparent 30%),
+ linear-gradient(0deg,rgba(6,11,30,.93) 0%,transparent 16%)}
+.ppHud{position:absolute;inset:0;z-index:2;pointer-events:none;color:#fff6df}
+.ppKicker{font:900 calc(19*var(--u)) Nunito,sans-serif;letter-spacing:.16em;color:#ffe5aa}
+#ppTitleArea{position:absolute;left:calc(58*var(--u));top:calc(44*var(--u));max-width:calc(1080*var(--u))}
+#ppTitleArea h1{font:900 calc(84*var(--u)) Fredoka,sans-serif;line-height:.94;letter-spacing:-.02em;
+ color:#fff6df;-webkit-text-stroke:calc(2*var(--u)) #f6d48c;
+ text-shadow:0 calc(8*var(--u)) calc(6*var(--u)) #14162e,0 0 calc(46*var(--u)) #ffe3a653;
+ margin:calc(9*var(--u)) 0}
+#ppTitleArea .ppSubtitle{display:flex;gap:calc(19*var(--u));align-items:center;
+ font:800 calc(22*var(--u)) Nunito,sans-serif;color:#fff2bf}
+#ppTitleArea .ppSubtitle span{padding:calc(6*var(--u)) calc(17*var(--u));border:calc(2*var(--u)) solid #ffdca7a8;
+ border-radius:999px;background:#111a38dc}
+#ppBoardLabel{position:absolute;top:calc(242*var(--u));left:calc(444*var(--u));
+ font:900 calc(21*var(--u)) Nunito,sans-serif;letter-spacing:.08em;color:#ffe6a9;
+ text-shadow:0 4px 6px #030713}
+#ppTicker{position:absolute;top:calc(248*var(--u));left:calc(1250*var(--u));
+ display:flex;gap:calc(13*var(--u));align-items:center;
+ font:900 calc(21*var(--u)) Nunito,sans-serif;color:#fff5db}
+#ppTicker .ppClock{min-width:calc(88*var(--u));font:900 calc(35*var(--u)) Fredoka,sans-serif;
+ color:#ffdc78;text-align:center;background:#151d39db;border:2px solid #ffd5917a;
+ border-radius:calc(15*var(--u));padding:calc(5*var(--u))}
+#ppBetPanel{position:absolute;top:calc(307*var(--u));left:calc(50*var(--u));
+ width:calc(330*var(--u));min-height:calc(545*var(--u));padding:calc(26*var(--u));
+ border:calc(3*var(--u)) solid #ffe2a8;border-radius:calc(34*var(--u));
+ background:linear-gradient(156deg,rgba(26,38,69,.95),rgba(24,22,49,.97) 68%,rgba(74,41,51,.97));
+ box-shadow:0 calc(16*var(--u)) calc(50*var(--u)) #0009,inset 0 0 calc(32*var(--u)) #f9c98516}
+#ppBetPanel .ppPanelName{display:block;font:900 calc(24*var(--u)) Fredoka,sans-serif;color:#ffdf8d;
+ border-bottom:calc(2*var(--u)) solid #f5d68c62;padding-bottom:calc(13*var(--u));margin-bottom:calc(15*var(--u))}
+#ppRunnerName{font:900 calc(43*var(--u)) Fredoka,sans-serif;display:block;color:#fff7e0;line-height:1.08;
+ overflow-wrap:break-word}
+#ppOdds{font:900 calc(23*var(--u)) Nunito,sans-serif;color:#ffc86b;display:block;
+ margin-top:calc(8*var(--u))}
+#ppBetPanel .ppDivider{height:calc(2*var(--u));background:#ffffff30;margin:calc(18*var(--u)) 0}
+#ppBetPanel .ppActions{display:grid;grid-template-columns:1fr 1fr;gap:calc(10*var(--u));pointer-events:auto}
+#ppBetPanel .ppAction{border:2px solid #f6dfb1;border-radius:calc(15*var(--u));
+ background:linear-gradient(160deg,#344971,#17203e);color:#fff9e8;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;padding:calc(13*var(--u)) calc(7*var(--u));
+ min-height:calc(59*var(--u));cursor:pointer;box-shadow:0 calc(4*var(--u)) 0 #090e22}
+#ppBetPanel .ppAction.ppPrimary{grid-column:span 2;background:linear-gradient(165deg,#ffca67,#e86f3d);
+ color:#2c1630;font:900 calc(21*var(--u)) Fredoka,sans-serif;border-color:#fff0b6;
+ box-shadow:0 calc(6*var(--u)) 0 #78382e}
+#ppBetPanel .ppAction.ppCheer{grid-column:span 2;border-color:#c6f4e3;
+ background:linear-gradient(140deg,#307d7d,#164563)}
+#ppBetPanel .ppAction:focus-visible{outline:4px solid white;outline-offset:2px}
+#ppBetPanel .ppAction:disabled{opacity:.54;filter:saturate(.5);cursor:default;box-shadow:none}
+#ppBetHint{font:700 calc(18*var(--u)) Nunito,sans-serif;line-height:1.3;
+ color:#e4e8f4;margin-top:calc(18*var(--u))}
+#ppLeaderPanel{position:absolute;bottom:calc(22*var(--u));left:calc(410*var(--u));
+ width:calc(1455*var(--u));min-height:calc(147*var(--u));border-radius:calc(26*var(--u));
+ border:calc(3*var(--u)) solid #ffdf9e8b;background:linear-gradient(115deg,#101a35ee,#1b2446ee,#141d39ee);
+ box-shadow:0 8px 40px #000b;padding:calc(10*var(--u)) calc(22*var(--u))}
+#ppLeaderPanel .ppLeaderHead{display:flex;align-items:center;justify-content:space-between;
+ color:#ffdc96;font:900 calc(22*var(--u)) Nunito,sans-serif;letter-spacing:.09em}
+#ppRankRows{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:calc(6*var(--u)) calc(16*var(--u));margin-top:calc(8*var(--u))}
+.ppRankRow{display:flex;align-items:center;gap:calc(11*var(--u));min-width:0;
+ font:800 calc(19*var(--u)) Nunito,sans-serif;background:#28304e93;
+ border-radius:calc(12*var(--u));border-left:calc(4*var(--u)) solid var(--runner);
+ padding:calc(6*var(--u))}
+.ppRankPos{color:#ffdc85;min-width:calc(23*var(--u))}
+.ppRankBall{display:block;flex:none;width:calc(16*var(--u));height:calc(16*var(--u));
+ border-radius:50%;background:radial-gradient(circle at 25% 20%,white,var(--runner) 45%,#16192b 90%)}
+.ppRankRow b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppRankRow strong{color:#ffe0a7;white-space:nowrap}
+.ppHype{display:flex;align-items:center;gap:calc(9*var(--u));font:800 calc(19*var(--u)) Nunito,sans-serif;color:#fff5dd}
+.ppHypeTrack{height:calc(12*var(--u));width:calc(120*var(--u));border:1px solid #ffffff6a;
+ border-radius:999px;overflow:hidden;background:#0c1428}
+#ppHypeFill{display:block;height:100%;width:0;background:linear-gradient(90deg,#f65b7a,#ffc15b,#fef0af)}
+#ppWorkInProgress{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+ width:calc(1050*var(--u));padding:calc(60*var(--u));border:5px solid #ffdd9e;
+ background:#101a37ed;border-radius:calc(40*var(--u));text-align:center;
+ box-shadow:0 35px 90px #000c}
+#ppWorkInProgress h2{font:900 calc(75*var(--u)) Fredoka,sans-serif}
+#ppWorkInProgress p{font:800 calc(30*var(--u)) Nunito,sans-serif;margin-top:calc(20*var(--u));line-height:1.4}
+#ppWorkInProgress .ppKicker{display:block;margin-bottom:calc(12*var(--u))}
+@media(prefers-reduced-motion:reduce){#partyStage *{animation:none!important;transition:none!important}}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -387,55 +444,47 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
     </div>
   </section>
 
-  <section class="screen" data-screen="dropzone" hidden>
-    <canvas id="dropZoneCanvas" width="1920" height="1080" aria-label="Drop Zone pegboard game"></canvas>
-    <div id="dropZoneHelp">
-      <button class="btn" id="dropLeft">◀ Left</button>
-      <button class="btn go" id="dropNow">DROP!</button>
-      <button class="btn" id="dropRight">Right ▶</button>
-    </div>
-  </section>
-
-  <section class="screen" data-screen="brawl" hidden>
-    <canvas id="brawlCanvas" width="1920" height="1080" aria-label="Bowl Brawl marble arena"></canvas>
-    <div id="brawlHelp">
-      <button class="btn" id="brawlLeft">◀ Turn</button>
-      <button class="btn go" id="brawlRam">RAM!</button>
-      <button class="btn" id="brawlAnchor">ANCHOR</button>
-      <button class="btn" id="brawlRight">Turn ▶</button>
-    </div>
-  </section>
-
-  <section class="screen" data-screen="derby" hidden>
-    <canvas id="derbyCanvas" width="1920" height="1080" aria-label="Marble Derby race and virtual gems scoreboard"></canvas>
-    <div id="derbyHelp">
-      <button class="btn" id="derbyStake">Change stake</button>
-      <button class="btn" id="derbyRunner">Choose runner</button>
-      <button class="btn go" id="derbyPick">Back a marble</button>
-      <button class="btn" id="derbyCheer">CHEER!</button>
-    </div>
-  </section>
-
-  <section class="screen" data-screen="golf" hidden>
-    <canvas id="golfCanvas" width="1920" height="1080" aria-label="Marble Golf five-hole miniature course"></canvas>
-    <div id="golfHelp">
-      <button class="btn" id="golfLeft">◀ Aim</button>
-      <button class="btn" id="golfDown">− Power</button>
-      <button class="btn go" id="golfShoot">SHOOT!</button>
-      <button class="btn" id="golfUp">+ Power</button>
-      <button class="btn" id="golfRight">Aim ▶</button>
-    </div>
-  </section>
-
-  <section class="screen" data-screen="curling" hidden>
-    <canvas id="curlingCanvas" width="1920" height="1080" aria-label="Marble Curling ice rink and scoring house"></canvas>
-    <div id="curlingHelp">
-      <button class="btn" id="curlLeft">◀ Aim</button>
-      <button class="btn" id="curlDown">− Power</button>
-      <button class="btn go" id="curlThrow">THROW!</button>
-      <button class="btn" id="curlSweep">SWEEP!</button>
-      <button class="btn" id="curlUp">+ Power</button>
-      <button class="btn" id="curlRight">Aim ▶</button>
+  <!-- Party Pack v2: ONE fully independent full-screen stage.
+       The five legacy mode screens, buttons, canvases and duplicate UI are gone. -->
+  <section class="screen" id="partyStage" data-screen="party-stage" hidden>
+    <canvas id="partyStageCanvas" width="1920" height="1080" role="img" aria-label="Marble Derby animated racing world"></canvas>
+    <div class="ppHud">
+      <header id="ppTitleArea">
+        <div class="ppKicker">MARBLE RUSH PRESENTS · THE PARTY PACK</div>
+        <h1 id="ppModeTitle">MARBLE DERBY</h1>
+        <div class="ppSubtitle">
+          <span id="ppHeat">HEAT 1 / 5</span><span id="ppCourse">GRANDSTAND CIRCUIT</span>
+        </div>
+      </header>
+      <div id="ppBoardLabel">THE GRANDSTAND · LIVE RACING</div>
+      <div id="ppTicker"><span id="ppPhase">PLACE YOUR VIRTUAL GEMS</span><span class="ppClock" id="ppClock">12s</span></div>
+      <aside id="ppBetPanel" aria-label="Marble Derby controls">
+        <span class="ppPanelName">THE GEM CLUB · YOUR PICK</span>
+        <strong id="ppRunnerName">Rocket</strong>
+        <span id="ppOdds">3.5× RETURN</span>
+        <div class="ppDivider"></div>
+        <div class="ppActions">
+          <button type="button" class="ppAction" id="derbyRunner">NEXT RUNNER ▶</button>
+          <button type="button" class="ppAction" id="derbyStake">STAKE · 50 ◆</button>
+          <button type="button" class="ppAction ppPrimary" id="derbyPick">BACK ROCKET</button>
+          <button type="button" class="ppAction ppCheer" id="derbyCheer">CHEER YOUR MARBLE!</button>
+        </div>
+        <p id="ppBetHint">Choose your runner and stake. All gems are virtual game points.</p>
+      </aside>
+      <aside id="ppLeaderPanel" aria-label="Live Derby standings">
+        <div class="ppLeaderHead">
+          <span>◆ THE GEM CLUB · LEADERBOARD</span>
+          <div class="ppHype">CROWD ENERGY
+            <div class="ppHypeTrack"><span id="ppHypeFill"></span></div><span id="ppHypeText">0%</span>
+          </div>
+        </div>
+        <div id="ppRankRows"></div>
+      </aside>
+      <div id="ppWorkInProgress" hidden aria-live="polite">
+        <div class="ppKicker">PARTY PACK · UI REBUILD v2</div>
+        <h2>NEW ARENA IN PRODUCTION</h2>
+        <p>This mode's old interface has been retired. Its new game stage will arrive in a separate development phase.</p>
+      </div>
     </div>
   </section>
 
