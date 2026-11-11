@@ -74,6 +74,30 @@ async function main(){
       assert.notEqual(current.state,'lobby','Failed to start '+id+': '+JSON.stringify(current));
       assert.equal(await page.evaluate(()=>window.__MR.Audio_.debug.introPlaying),false,
         id+' started while narration was still playing');
+      if(id!=='grandprix'){
+        // On a WebGL-capable browser the mode now renders actual illuminated
+        // geometry and physics-driven 3D marbles. 2D remains the fallback.
+        await page.waitForTimeout(160);
+        const status3d=await page.evaluate(()=>{
+          const b=document.querySelector('#party3dToggle'),stage=document.querySelector('#party3d');
+          return {toggle:!b.hidden,stage:!stage.hidden,
+                  canvas:!!stage.querySelector('canvas'),
+                  inside:stage.getBoundingClientRect().width>300};
+        });
+        if(status3d.toggle){
+          assert.equal(status3d.stage,true,id+' 3D canvas not visible');
+          assert.equal(status3d.canvas,true,id+' 3D renderer did not start');
+          assert.equal(status3d.inside,true,id+' 3D camera viewport too small');
+          if(id==='brawl'){
+            await page.screenshot({path:'qa-true-3d-brawl.png',fullPage:true});
+            await page.locator('#party3dToggle').click();
+            await page.waitForTimeout(50);
+            assert.equal(await page.locator('#party3d').isHidden(),true,
+              '2D fallback toggle must restore original canvas');
+            await page.locator('#party3dToggle').click();
+          }
+        }else console.log('INFO: '+id+' uses safe 2D fallback (WebGL unavailable)');
+      }
       const exit=page.locator('#partyBackLobby');
       await exit.waitFor({state:'visible',timeout:10000});
       assert.match(await exit.innerText(),/Back to Lobby/);
