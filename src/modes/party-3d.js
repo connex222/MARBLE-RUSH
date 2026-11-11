@@ -609,7 +609,8 @@ function frame(time){
  root.hidden=!active;toggle.hidden=!supported.includes(mode)||unsupported;
  if(!active){delete root.dataset.rendered;delete root.dataset.mode;}
  toggle.setAttribute('aria-pressed',String(enabled));
- toggle.textContent=enabled?'3D VIEW: ON':'3D VIEW: OFF';
+ toggle.textContent=enabled?'✦ CINEMATIC':'◇ CLASSIC VIEW';
+ toggle.title=enabled?'Switch to the classic 2D board':'Switch to the cinematic 3D board';
  if(!active){if(worldMode){clean();worldMode='';}return;}
  boot();if(!renderer)return;
  // The original game-mode canvas belongs to a #ui screen above the global
