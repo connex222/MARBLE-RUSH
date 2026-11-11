@@ -170,7 +170,6 @@ const DropZone = (() => {
         isTurn:turn||prediction,modePhase:s.done?'finished':s.ball?'falling':'aim',totalScore:p.score,
         ghostX:Math.round(s.x),goldPegs:s.gold.slice(),jackpotBin:s.jackpotBin,aimSeconds:Math.ceil(Math.max(0,10-s.turnElapsed))};
     }
-    function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     return {state:s,owner,action,step,standings,hud,draw,finishBall};
   }
   return Object.freeze({create,PEGS,BINS,ROUNDS,WIDTH,HEIGHT});
@@ -186,7 +185,6 @@ registerMode({
   },
   startRound(){return dropZoneGame;},
   tick(dt){dropZoneGame?.step(dt);},
-  draw(ctx,w,h){dropZoneGame?.draw(ctx,w,h);},
   onInput(pid,k){if(k==='p')dropZoneGame?.action(pid,'drop');},
   onAction(pid,a,v){return dropZoneGame?.action(pid,a,v)||false;},
   botTick(){},
