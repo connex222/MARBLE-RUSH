@@ -1892,12 +1892,15 @@
     // No previous finale announcement may cover the next game's new UI.
     if(name!=='finale'&&name!=='results')Clatter.clear();
     Audio_.setRoll(0,0);
-    const isPartyStage=['derby','dropzone','brawl','curling','golf'].includes(name);
+    const isPartyStage=MarblePartyScreen.isMode(name);
     const visibleScreen=isPartyStage?'party-stage':name;
-    for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== visibleScreen;
+    for (const el of document.querySelectorAll('.screen'))
+      el.hidden = el.dataset.screen !== visibleScreen;
     $('#raceHud').hidden = !(name === 'race');
-    // A single new stage is exclusive: no legacy game canvas exists behind it.
-    if(isPartyStage)MarblePartyUI.enter(name);
+    // The compositor is now the ONLY owner of stage mount, visibility and
+    // the active renderer. Grand Prix gets its original #cv back on unmount.
+    if(isPartyStage)MarblePartyScreen.mount(name);
+    else MarblePartyScreen.unmount();
     // This is host-only TV navigation and remains available during all modes.
     const lobbyBtn=$('#partyBackLobby');
     lobbyBtn.hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
@@ -2178,29 +2181,17 @@
     } else if (attractMode && now >= attractUntil) {
       attractMode = null; $('#partyAttractPanel').hidden = true;
     }
-    if (state==='derby') {
-      stateT+=dt;MODES.derby.tick(dt);
-      const derby=MODES.derby.session();
-      if(derby)MarblePartyUI.drawDerby(derby.state,IMG,{selectedHorse:derbyTvHorse,reduce:settings.reduce});
-      Clatter.tick();
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='dropzone') {
-      stateT+=dt;MODES.dropzone.tick(dt);
-      const drop=MODES.dropzone.session();
-      if(drop)MarblePartyUI.drawDropZone(drop.state,IMG,{reduce:settings.reduce});
-      Clatter.tick();
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='brawl') {
-      stateT+=dt;MODES.brawl.tick(dt);
-      const combat=MODES.brawl.session();
-      if(combat){
-        const st=combat.state,pulseIn=st.pulseAt==null?null:st.pulseAt-st.elapsed;
+    // Only one Party Pack visual renderer can own one canvas per TV frame.
+    // The authoritative per-mode rules still tick independently of the UI.
+    if(MarblePartyScreen.isMode(state)){
+      const mode=state;
+      stateT+=dt;MODES[mode].tick(dt);
+      const session=MODES[mode].session();
+      if(mode==='brawl'&&session&&!session.state.done){
+        const st=session.state,pulseIn=st.pulseAt==null?null:st.pulseAt-st.elapsed;
         const survivors=st.marbles.filter(m=>m.alive).length;
-        // The existing adaptive score intensifies ONLY as actual jeopardy rises.
         Audio_.Music.intensity(Math.max(
-          (380-st.radius)/270, survivors===2?.86:0,
+          (380-st.radius)/270,survivors===2?.86:0,
           pulseIn!=null&&pulseIn<=3?1:0));
         const warningKey=st.round+':'+st.pulseIndex;
         if(pulseIn!=null&&pulseIn<=3&&pulseIn>0&&brawlWarningKey!==warningKey){
@@ -2226,22 +2217,14 @@
             }
           }
         }
-        MarbleBrawlUI.draw(st,IMG,{reduce:settings.reduce});
       }
-      Clatter.tick();
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='curling') {
-      stateT+=dt;MODES.curling.tick(dt);
-      const ice=MODES.curling.session();
-      if(ice)MarbleCurlingUI.draw(ice.state,IMG,{reduce:settings.reduce});
-      Clatter.tick();
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='golf') {
-      stateT+=dt;MODES.golf.tick(dt);
-      const putting=MODES.golf.session();
-      if(putting)MarbleGolfUI.draw(putting.state,IMG,{reduce:settings.reduce});
+      // Game finishes may synchronously advance to the finale. Never draw
+      // a dead match over a newly mounted result or another Party Night game.
+      if(state===mode&&session){
+        MarblePartyScreen.render(mode,session.state,IMG,{
+          reduce:settings.reduce,selectedHorse:derbyTvHorse
+        });
+      }
       Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
