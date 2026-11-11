@@ -53,6 +53,44 @@ const {chromium}=require('playwright');
   await tv.screenshot({path:'qa-ui-v2-derby-two-phones-tv.png'});
   await p1.screenshot({path:'qa-ui-v2-derby-phone.png'});
   console.log('PASS: one TV + two independently joined phones, VIP Derby selection, synced HUD and distinct bets.');
+  // Same room and two connected phones must survive the new Drop Zone swap.
+  await tv.evaluate(()=>window.__MR.Game.toLobby());
+  await p1.waitForFunction(()=>[...document.querySelectorAll('#vip button')]
+    .some(b=>b.textContent.includes('Drop Zone')),{timeout:10000});
+  await p1.locator('#vip button').filter({hasText:'Drop Zone'}).click();
+  await tv.waitForFunction(()=>window.__MR.selectedMode==='dropzone',{timeout:10000});
+  await tv.locator('#btnStart').click();
+  await tv.waitForFunction(()=>window.__MR.state==='dropzone' &&
+    document.getElementById('partyStage').dataset.mode==='dropzone',{timeout:10000});
+  await p1.waitForFunction(()=>document.body.dataset.mode==='dropzone' &&
+    document.body.dataset.dropPhase==='aim',{timeout:10000});
+  await p2.waitForFunction(()=>document.body.dataset.mode==='dropzone',{timeout:10000});
+  const before=await tv.evaluate(()=>window.__MR.MODES.dropzone.session().state.x);
+  await p1.locator('#modeActions button[data-action="left"]').click();
+  await tv.waitForFunction(x=>window.__MR.MODES.dropzone.session().state.x<x,before,{timeout:8000});
+  // User controls travel through the original authenticated phone channel.
+  await p1.locator('#modeActions button[data-action="drop"]').click();
+  await tv.waitForFunction(()=>!!window.__MR.MODES.dropzone.session().state.ball,{timeout:8000});
+  await p2.waitForFunction(()=>document.body.dataset.dropPhase==='falling',{timeout:8000});
+  const predictions=p2.locator('#modeActions button[data-action="predict"]');
+  if(await predictions.count())await predictions.first().click();
+  const drop=await tv.evaluate(()=>{
+    const s=window.__MR.MODES.dropzone.session().state;
+    return {mode:document.getElementById('partyStage').dataset.mode,
+      round:s.round,turn:s.turn,ball:!!s.ball,pegs:s.pegs.length,owner:s.ball?.id};
+  });
+  assert.equal(drop.mode,'dropzone');
+  assert.equal(drop.pegs,85);
+  assert.ok(actions.get(p1).some(m=>m.t==='act'&&m.a==='left'));
+  assert.ok(actions.get(p1).some(m=>m.t==='act'&&m.a==='drop'));
+  assert.ok(actions.get(p2).some(m=>m.t==='act'&&m.a==='predict'),
+    'Second phone did not send a prize prediction');
+  await tv.screenshot({path:'qa-ui-v2-dropzone-two-phones-tv.png'});
+  await p1.screenshot({path:'qa-ui-v2-dropzone-phone.png'});
+  await p2.screenshot({path:'qa-ui-v2-dropzone-predict.png'});
+  assert.deepEqual(errs,[],'JS errors during new Drop Zone: '+errs.join(' | '));
+  console.log('PASS: same TV plus two connected phones used new Drop Zone UI, live aim/drop and spectator prediction.');
+
  }catch(e){console.error('FAIL Derby UI v2 2-phone smoke:',e);process.exitCode=1;}
  finally{await browser.close();}
 })();
