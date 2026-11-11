@@ -55,13 +55,30 @@ const FXKINDS={
 };
 const vfx=new Map(),fxTextures=new Map(),fxClock=()=>performance.now();
 function fxPosition(mode,e,state){
- const ex=Number.isFinite(e.x)?e.x:null,ey=Number.isFinite(e.y)?e.y:null;
- if(mode==='brawl')return [ex===null?0:ex*1.03,55,ey===null?0:ey*1.03];
- if(mode==='curling')return [ex===null?290:ex-650,39,ey===null?0:ey-265];
- if(mode==='golf')return [ex===null?0:ex-620,39,ey===null?0:ey-290];
+ let ex=Number.isFinite(e.x)?e.x:null,ey=Number.isFinite(e.y)?e.y:null;
+ if(mode==='brawl'){
+   // Hit, RAM and knockout effects belong on the physical marble, rather
+   // than flashing inexplicably in the empty middle of the arena.
+   const who=(state.marbles||[]).find(m=>m.id===e.id)||null;
+   if(ex===null&&who)ex=who.x;if(ey===null&&who)ey=who.y;
+   return [ex===null?0:ex*1.03,55,ey===null?0:ey*1.03];
+ }
+ if(mode==='curling'){
+   const stone=(state.stones||[]).find(m=>m.id===e.id)||null;
+   if(ex===null&&stone)ex=stone.x;if(ey===null&&stone)ey=stone.y;
+   return [ex===null?290:ex-650,39,ey===null?0:ey-265];
+ }
+ if(mode==='golf'){
+   if(ex===null&&state.ball)ex=state.ball.x;
+   if(ey===null&&state.ball)ey=state.ball.y;
+   return [ex===null?0:ex-620,39,ey===null?0:ey-290];
+ }
  if(mode==='dropzone')return [ex===null?0:ex-500,ey===null?0:350-ey,82];
  const length=Math.max(1,Number(state.length)||1300);
- return [ex===null?0:-630+Math.max(0,Math.min(1,ex/length))*1230,48,Number.isInteger(e.horse)?-260+104*e.horse:0];
+ const lane=Number.isInteger(e.horse)?e.horse:
+   (state.horses||[]).findIndex(h=>h.id===(e.horse??e.winner));
+ return [ex===null?0:-630+Math.max(0,Math.min(1,ex/length))*1230,48,
+   lane<0?0:-260+104*lane];
 }
 function fxTexture(mode,kind){
  const key=mode+'_'+kind;
