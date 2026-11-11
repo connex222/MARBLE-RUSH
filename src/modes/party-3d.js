@@ -54,7 +54,7 @@ function addBackdrop(mode) {
    t.colorSpace=T.SRGBColorSpace;t.anisotropy=2;
  },undefined,()=>{});
  const bg=new T.Mesh(new T.PlaneGeometry(2600,1500),
-   new T.MeshBasicMaterial({map:tex,transparent:true,opacity:.78,depthWrite:false}));
+   new T.MeshBasicMaterial({map:tex,transparent:true,opacity:mode==='brawl'?.32:.70,depthWrite:false}));
  if(mode==='dropzone')bg.position.set(0,90,-260);
  else bg.position.set(0,360,-760);
  bg.receiveShadow=false;scene.add(bg);
@@ -72,6 +72,19 @@ function stage(mode,s) {
  addBackdrop(mode);
  const p=palettes[mode];
  if(mode==='brawl'){
+   // Real stadium deck beneath the curved play bowl; fills the foreground
+   // rather than leaving a large empty navy rectangle.
+   box(1450,55,1480,'#243951',0,-92,0,.46);
+   for(let n=-650;n<=650;n+=130){
+     box(3,3,1430,'#4e6480',n,-63,0,.54);
+     box(1430,3,3,'#4e6480',0,-63,n,.54);
+   }
+   for(let k=0;k<8;k++){
+     const a=k*Math.PI/4,x=Math.cos(a)*605,z=Math.sin(a)*605;
+     const pad=box(106,32,90,k%2?'#ef4f68':'#ffbd4b',x,-47,z,.55);
+     pad.rotation.y=-a;
+     box(38,65,38,'#fff5b8',x,-4,z,.68);
+   }
    const profile=[
      [0,-11],[310,-11],[350,-5],[380,14],[402,34],[419,66],[440,78]
    ].map(a=>new T.Vector2(a[0],a[1]));
@@ -88,6 +101,18 @@ function stage(mode,s) {
      lamp.position.set(x,115,z);scene.add(lamp);
    }
    cylinder(44,35,'#e0a53a',0,7,0,.82);
+   world.rotor=new T.Group();scene.add(world.rotor);
+   for(let arm=0;arm<4;arm++){
+     const m=new T.Mesh(new T.BoxGeometry(195,16,24),
+       material(arm%2?'#ffcb5c':'#d04e63',.78,.2));
+     m.rotation.y=arm*Math.PI/2;m.position.y=43;world.rotor.add(m);
+   }
+   world.rotor.visible=false;
+   for(let i=0;i<8;i++){
+     const a=i*Math.PI/4,px=Math.cos(a)*308,pz=Math.sin(a)*308;
+     const bumper=box(53,38,45,i%2?'#ffdd83':'#db4867',px,24,pz,.75);
+     bumper.rotation.y=a;
+   }
  } else if(mode==='dropzone'){
    box(1005,850,65,'#4d2957',0,0,-35,.78);
    box(950,790,5,'#17264d',0,5,5,.45);
@@ -180,8 +205,7 @@ function stage(mode,s) {
      const tower=cylinder(13,180,'#a7906b',x,85,z);
      const spotlight=mesh(new T.SphereGeometry(26,12,12),
        new T.MeshBasicMaterial({color:i%2?0xffd57f:0x90dfff}),x,188,z);
-     const light=new T.PointLight(i%2?0xffc46a:0x85d0ff,4800,360);
-     light.position.copy(spotlight.position);scene.add(light);
+     // Emissive floodlight fixtures instead of seven expensive point lights.
    }
  }
  const aspect=(frames[mode][2]/frames[mode][3]);
@@ -211,6 +235,8 @@ function getBall(id,color,label){
 }
 function placeBall(id,x,y,z,color,label,seen){
  const it=getBall(id,color,label);seen.add(id);
+ it.sphere.scale.setScalar(worldMode==='brawl'?1.5:1);
+ it.shadow.scale.setScalar(worldMode==='brawl'?1.35:1);
  it.sphere.position.set(x,y,z);it.shadow.position.set(x,5,z);it.glow.position.set(x,6,z);
  it.el.textContent=String(label||'').slice(0,17);
 }
@@ -218,6 +244,8 @@ function update(mode,s){
  const seen=new Set();
  if(mode==='brawl'){
    const radius=s.radius||390;if(world.rim)world.rim.scale.setScalar(radius/360);
+   if(world.rotor){world.rotor.visible=s.hazard==='rotor';
+     world.rotor.rotation.y=(Number(s.elapsed)||0)*1.8+Number(s.hazardAngle||0);}
    for(const m of s.marbles||[]){
      if(!m.alive)continue;
      const player=(s.roster||[]).find(p=>p.id===m.id)||{};
