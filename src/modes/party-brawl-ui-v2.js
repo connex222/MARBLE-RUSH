@@ -308,8 +308,12 @@ const MarbleBrawlUI=(()=>{
         'FINAL DUEL · ONE SURVIVOR TAKES THE ROUND':
         'CHARGE YOUR RAM · KNOCK OUT RIVALS FOR BONUS POINTS';
     }
-    const ranking=players.slice().sort((a,b)=>b.points-a.points||b.wins-a.wins||a.name.localeCompare(b.name));
-    const sig=ranking.map(p=>p.id+':'+p.points+':'+!!get(p.id)?.alive).join('|')+'|'+s.round;
+    // Award the visual KO bonus instantly; the authoritative points ledger
+    // finalises it together with round placement when the round ends.
+    const livePoints=p=>p.points+(get(p.id)?.glory||0);
+    const ranking=players.slice().sort((a,b)=>livePoints(b)-livePoints(a)||
+      b.wins-a.wins||a.name.localeCompare(b.name));
+    const sig=ranking.map(p=>p.id+':'+livePoints(p)+':'+!!get(p.id)?.alive).join('|')+'|'+s.round;
     if(sig!==rankSignature){
       rankSignature=sig;const box=$('ppBrawlRankRows');box.replaceChildren();
       for(const [i,p] of ranking.entries()){
@@ -319,7 +323,9 @@ const MarbleBrawlUI=(()=>{
         const ix=document.createElement('b');ix.textContent=String(i+1).padStart(2,'0');
         const sphere=document.createElement('i');
         const name=document.createElement('strong');name.textContent=p.name;
-        const points=document.createElement('span');points.textContent=p.points+' PTS';
+        const points=document.createElement('span');
+        const gain=get(p.id)?.glory||0;
+        points.textContent=livePoints(p)+' PTS'+(gain?' · +'+gain:'');
         row.append(ix,sphere,name,points);box.appendChild(row);
       }
     }
