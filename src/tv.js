@@ -1994,7 +1994,7 @@
     }
     applyPartyArt();
     $('#partyModeStatus').textContent = partyLength ? 'Party Night preview: '+partyLength+' rounds · ready modes repeat' :
-      'UI REBUILD v2 · Grand Prix, Derby, Drop Zone, Brawl and Curling ready · Golf rebuilding';
+      'UI REBUILD v2 · all five Party Pack modes rebuilt · final visual QA pending';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -2199,11 +2199,14 @@
       Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
-    // Golf is the final retired view and cannot be selected until rebuilt.
     if (state==='golf') {
-      stateT+=dt;MODES[state].tick(dt);
+      stateT+=dt;MODES.golf.tick(dt);
+      const putting=MODES.golf.session();
+      if(putting)MarbleGolfUI.draw(putting.state,IMG,{reduce:settings.reduce});
+      Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
+
     if (!world) { drawBackground(); return; }
     timeScale = performance.now() / 1000 < slowUntil ? 0.3 : 1;
     const sdt = dt * timeScale;
@@ -2394,6 +2397,18 @@
         ?g.state.roster.find(q=>q.id===g.state.moving.id)
         :g.current();
       if(p&&!p.cpu)Game.onAction(p.id,action,value);
+    };
+  }
+  // Marble Golf v2 TV controls use the unchanged authorised player-action
+  // router. A CPU turn never accepts fake human TV input.
+  for(const [id,action,value] of [
+    ['ppGolfLeft','left',1],['ppGolfRight','right',1],
+    ['ppGolfPowerDown','powerdown',0],['ppGolfPowerUp','powerup',0],
+    ['ppGolfPreview','preview',0],['ppGolfShoot','shoot',0]
+  ]){
+    $('#'+id).onclick=()=>{
+      const g=MODES.golf.session(),player=g?.current();
+      if(player&&!player.cpu)Game.onAction(player.id,action,value);
     };
   }
   for (const b of document.querySelectorAll('[data-party]')) {
