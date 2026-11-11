@@ -192,7 +192,7 @@ const MarbleCurlingUI=(()=>{
    $('ppCurlPower').textContent=Math.round(s.power)+'%';
    $('ppCurlCurl').textContent=s.curl<0?'LEFT '+Math.abs(s.curl):s.curl>0?'RIGHT '+s.curl:'STRAIGHT';
    $('ppCurlSweep').textContent=Math.round(s.sweep)+'%';
-   $('ppCurlSweepBar').style.width=Math.min(100,Math.max(0,s.sweep))+'%';
+   // The old sweep bar has been replaced by the live shot-status readout.
    $('ppCurlPlayed').textContent=Math.min(s.turn+(s.phase==='slide'?1:0),s.roster.length*2)+' / '+(s.roster.length*2);
    $('ppCurlOwner').textContent=p?.name||'—';
    $('ppCurlShotStatus').textContent=s.phase==='aim'?'AIMING':
