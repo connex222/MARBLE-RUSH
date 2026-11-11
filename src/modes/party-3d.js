@@ -8,11 +8,8 @@ import * as T from '../vendor/three.module.js';
 (()=>{
 'use strict';
 const supported=['derby','dropzone','brawl','curling','golf'];
-const frames={
- derby:[485,190,1410,680],dropzone:[515,110,1030,810],
- brawl:[490,75,1390,930],curling:[480,212,1415,662],
- golf:[480,212,1415,670]
-};
+// Full-TV 3D arena, not a framed WebGL insert over a 2D game board.
+const frames=Object.fromEntries(['derby','dropzone','brawl','curling','golf'].map(m=>[m,[0,0,1920,1080]]));
 const root=document.getElementById('party3d');
 const toggle=document.getElementById('party3dToggle');
 if(!root||!toggle)return;
@@ -26,6 +23,33 @@ let enabled=true,renderer=null,world=null,camera=null,scene=null,worldMode='',
   ballMap=new Map(),last=0,lowMotion=false,unsupported=false;
 let quality='cinematic',slowFrames=0,fastFrames=0,qualityHold=0,frameRate=30,stageStartedAt=0;
 const assetTextures=new Map();
+let active3dScreen=null,lastHudAt=0;
+const hud=document.createElement('aside');hud.id='party3dHud';
+hud.setAttribute('aria-label','Current game and live standings');
+const title=document.createElement('div'),scoreboard=document.createElement('div');
+title.className='p3dTitle';scoreboard.className='p3dStanding';
+hud.append(title,scoreboard);root.appendChild(hud);
+function replaceClassic(mode,live){
+ if(active3dScreen&&(!live||active3dScreen.dataset.screen!==mode)){
+  active3dScreen.classList.remove('p3d-live');active3dScreen=null;
+ }
+ if(live&&!active3dScreen){
+  const el=document.querySelector('.screen[data-screen="'+mode+'"]');
+  if(el){el.classList.add('p3d-live');active3dScreen=el;}
+ }
+}
+function refreshHud(mode,s,now){
+ if(now-lastHudAt<200)return;
+ lastHudAt=now;
+ const names={derby:'MARBLE DERBY',dropzone:'DROP ZONE',brawl:'BOWL BRAWL',curling:'MARBLE CURLING',golf:'MARBLE GOLF'};
+ const round=mode==='curling'?'END '+(s.end||1)+'/5':mode==='golf'?'HOLE '+(s.hole||1)+'/'+(s.holes||5):mode==='derby'?'HEAT '+(s.round||1)+'/5':'ROUND '+(s.round||1)+'/5';
+ title.textContent=names[mode]+' · '+round+(mode==='golf'?' · PAR '+(s.layout?.par||'–'):'');
+ const roster=Array.isArray(s.roster)?s.roster.slice():[];
+ const value=p=>Number(mode==='golf'?p.strokes:mode==='derby'?p.gems:p.points??p.score??0)||0;
+ roster.sort((a,b)=>mode==='golf'?value(a)-value(b):value(b)-value(a));
+ const ranking=roster.map((p,i)=>(i+1)+'. '+String(p.name||'Player').slice(0,14)+'  '+value(p)).join('   ·   ');
+ if(scoreboard.textContent!==ranking)scoreboard.textContent=ranking;
+}
  // Opt-in diagnostic on the separate Windows development preview only.
  // Players never see this badge on a normal TV URL.
  const perfDebug=new URLSearchParams(window.location.search).get('marblePerf')==='1'
@@ -57,7 +81,7 @@ function chooseQuality(next){
  if(!renderer || quality===next)return;
  quality=next;slowFrames=0;fastFrames=0;
  qualityHold=performance.now()+5500;
- renderer.setPixelRatio(Math.min(next==='cinematic'?1.3:.85,window.devicePixelRatio||1));
+ renderer.setPixelRatio(Math.min(next==='cinematic'?1.3:next==='balanced'?.85:.65,window.devicePixelRatio||1));
  renderer.shadowMap.enabled=next==='cinematic';
  renderer.shadowMap.needsUpdate=true;
  root.dataset.quality=quality;
@@ -66,6 +90,7 @@ function performanceFallback(){
  if(!enabled)return;
  enabled=false;slowFrames=0;fastFrames=0;
  root.dataset.fallback='low-frame-rate';
+  replaceClassic(worldMode,false);
  root.dataset.quality='classic';
  root.hidden=true;
  toggle.hidden=false;toggle.setAttribute('aria-pressed','false');
@@ -86,9 +111,13 @@ function trackFrameTime(dt,now){
  if(quality==='cinematic' && slowFrames>=9){
    chooseQuality('balanced');
  }else if(quality==='balanced'){
-   if(slowFrames>=12 && window.__MR_CAPTURE_3D_QA!==true)performanceFallback();
+   if(slowFrames>=12)chooseQuality('performance');
    else if(fastFrames>220 && now>qualityHold)chooseQuality('cinematic');
- }
+  }else if(quality==='performance'){
+   if(slowFrames>=30 && now-stageStartedAt>10000 && now>qualityHold &&
+      window.__MR_CAPTURE_3D_QA!==true)performanceFallback();
+   else if(fastFrames>280 && now>qualityHold)chooseQuality('balanced');
+  }
 }
 const ballGeo=new T.SphereGeometry(29,32,24);
 // The marble swirl is generated once at runtime: actual painted detail on a
@@ -769,12 +798,14 @@ function boot(){
    root.dataset.quality=quality;
    renderer.domElement.addEventListener('webglcontextlost',event=>{
      event.preventDefault();unsupported=true;enabled=false;
+      replaceClassic(worldMode,false);
      root.hidden=true;toggle.hidden=true;
    },{passive:false});
    renderer.domElement.setAttribute('aria-hidden','true');
    root.insertBefore(renderer.domElement,root.firstChild);
  }catch(e){
    unsupported=true;enabled=false;root.hidden=true;
+    replaceClassic(worldMode,false);
    toggle.hidden=true;
    console.warn('[MARBLE RUSH] WebGL unavailable; 2D fallback retained:',e.message);
  }
@@ -783,7 +814,7 @@ const labelProjection=new T.Vector3();
 function frame(time){
  requestAnimationFrame(frame);
  const dt=time-last;
- if(dt<30)return;
+ if(dt<15)return;
  last=time;
  const mr=window.__MR,mode=mr?.state;
  const active=enabled&&!unsupported&&supported.includes(mode);
@@ -796,7 +827,8 @@ function frame(time){
  const title=enabled?'Switch to the classic 2D board':'Switch to the cinematic 3D board';
  if(toggle.title!==title)toggle.title=title;
  if(!active){
-   showPerformance(mode,false);
+   replaceClassic(mode,false);
+    showPerformance(mode,false);
    if(worldMode){clean();worldMode='';}
    slowFrames=0;fastFrames=0;return;
  }
@@ -812,7 +844,8 @@ function frame(time){
  if(!s){
    // Room transitions can temporarily have no active session: restore the 2D board.
    root.hidden=true;delete root.dataset.rendered;delete root.dataset.mode;
-   showPerformance(mode,false);
+   replaceClassic(mode,false);
+    showPerformance(mode,false);
    if(worldMode){clean();worldMode='';}
    return;
  }
@@ -842,7 +875,9 @@ function frame(time){
    showPerformance(mode,enabled&&!unsupported);
    if(!enabled){delete root.dataset.rendered;return;}
    root.dataset.rendered='true';
-   root.dataset.mode=mode;
+    root.dataset.mode=mode;
+    replaceClassic(mode,true);
+    refreshHud(mode,s,time);
    // Read-only acceptance diagnostics to prove premium visuals are genuine
    // textured physical geometry with independent scene props.
    root.dataset.surfaceCount=String(world?.surfaceCount||0);
@@ -857,13 +892,15 @@ function frame(time){
    }
  }catch(e){
    console.warn('[MARBLE RUSH] 3D frame failed; restoring 2D:',e.message);
-   unsupported=true;root.hidden=true;toggle.hidden=true;clean();
+   unsupported=true;root.hidden=true;toggle.hidden=true;
+    replaceClassic(mode,false);clean();
    showPerformance(mode,false);
  }
 }
 toggle.addEventListener('click',()=>{
  enabled=!enabled;
  if(enabled){delete root.dataset.fallback;boot();}
+  else replaceClassic(worldMode,false);
 });
 requestAnimationFrame(frame);
 })();
