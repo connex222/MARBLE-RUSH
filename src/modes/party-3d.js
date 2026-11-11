@@ -135,6 +135,11 @@ function stage(mode,s) {
      cylinder(8,3,'#285ea6',cx,8,cz);
      for(const z of [-190,190])box(1300,1,5,'#e7fcff',0,10,z);
    }
+   if(mode==='curling'){
+     world.guide=new T.ArrowHelper(new T.Vector3(1,0,0),
+       new T.Vector3(-575,25,0),300,0xffe38e,32,14);
+     scene.add(world.guide);world.guide.visible=false;
+   }
    if(mode==='golf') {
      // Miniature golf holes come from the existing authoritative layout.
      const layout=s.layout||{};
@@ -149,12 +154,23 @@ function stage(mode,s) {
        cylinder(a[2],25,'#df8d4b',a[0]-620,22,a[1]-290,.65);
        lineRing(a[2],5,'#ffedaa',a[0]-620,36,a[1]-290);
      }
+     world.guide=new T.ArrowHelper(new T.Vector3(1,0,0),
+       new T.Vector3(-500,30,0),200,0xffef8c,26,13);
+     scene.add(world.guide);world.guide.visible=false;
      if(layout.cup){
        cylinder(27,3,'#101a20',layout.cup[0]-620,9,layout.cup[1]-290,.1);
        lineRing(32,4,'#ffd56a',layout.cup[0]-620,11,layout.cup[1]-290);
        const pole=cylinder(4,110,'#fff4d9',layout.cup[0]-620,68,layout.cup[1]-290);
        const flag=box(54,35,3,'#e94659',layout.cup[0]-592,111,layout.cup[1]-290);
      }
+   }
+ }
+ if(mode==='dropzone'){
+   for(let i=0;i<8;i++){
+     const tag=document.createElement('div');
+     tag.className='p3bin';tag.style.left=(11+i*11.1)+'%';
+     tag.textContent=[50,100,200,500,1000,500,200,100][i];
+     root.appendChild(tag);
    }
  }
  // Add actual miniature-diorama depth outside the board.
@@ -185,9 +201,12 @@ function getBall(id,color,label){
  shadow.rotation.x=-Math.PI/2;shadow.position.y=5;scene.add(shadow);
  const glow=new T.Mesh(ringGeo,new T.MeshBasicMaterial({color:mat.color,transparent:true,opacity:.28,depthWrite:false}));
  glow.rotation.x=Math.PI/2;glow.position.y=9;scene.add(glow);
+ const arrow=new T.ArrowHelper(new T.Vector3(1,0,0),
+   new T.Vector3(0,63,0),48,0xfff3ae,16,9);
+ arrow.visible=false;scene.add(arrow);
  const el=document.createElement('div');el.className='p3label';el.textContent=String(label||'').slice(0,17);
  el.style.setProperty('--tagcolor',color||'#ffdf78');root.appendChild(el);
- item={sphere,shadow,glow,el};ballMap.set(id,item);
+ item={sphere,shadow,glow,arrow,el};ballMap.set(id,item);
  return item;
 }
 function placeBall(id,x,y,z,color,label,seen){
@@ -203,11 +222,15 @@ function update(mode,s){
      if(!m.alive)continue;
      const player=(s.roster||[]).find(p=>p.id===m.id)||{};
      placeBall(m.id,m.x*1.03,26,m.y*1.03,player.color,player.name,seen);
+     const arrow=ballMap.get(m.id).arrow;
+     arrow.visible=true;arrow.position.set(m.x*1.03,62,m.y*1.03);
+     arrow.setDirection(new T.Vector3(Math.cos(m.heading),0,Math.sin(m.heading)));
    }
  }else if(mode==='derby'){
    for(let i=0;i<(s.horses||[]).length;i++){
      const h=s.horses[i];
-     placeBall(h.id||'horse'+i,-630+clamp(h.x/1500,0,1)*1230,27,-260+i*104,h.color,h.name,seen);
+     placeBall(h.id||'horse'+i,-630+clamp(h.x/1500,0,1)*1230,27,-260+i*104,
+       h.color,h.name+' · '+(Number(h.odds)||0).toFixed(1)+'×',seen);
    }
  }else if(mode==='dropzone'){
    const balls=s.ball?[s.ball]:[];
@@ -218,12 +241,31 @@ function update(mode,s){
      const b=s.stones[i],p=(s.roster||[]).find(p=>p.id===b.id)||{};
      placeBall('stone'+i,b.x-650,26,b.y-265,p.color,p.name,seen);
    }
- }else if(mode==='golf'&&s.ball){
+ }
+ if(mode==='curling'&&world.guide){
+   world.guide.visible=s.phase==='aim';
+   if(s.phase==='aim'){
+     const ang=(Number(s.aim)||0)*Math.PI/180;
+     world.guide.position.set(-575,32,0);
+     world.guide.setDirection(new T.Vector3(Math.cos(ang),0,Math.sin(ang)));
+     world.guide.setLength(360,38,16);
+   }
+ }
+ if(mode==='golf'&&world.guide){
+   world.guide.visible=s.phase==='aim';
+   if(s.phase==='aim'&&s.ball){
+     const ang=(Number(s.angle)||0)*Math.PI/180;
+     world.guide.position.set(s.ball.x-620,40,s.ball.y-290);
+     world.guide.setDirection(new T.Vector3(Math.cos(ang),0,Math.sin(ang)));
+     world.guide.setLength(120+clamp(Number(s.power)||0,0,100)*2,29,15);
+   }
+ }
+ if(mode==='golf'&&s.ball){
    const p=(s.roster||[])[s.turn%Math.max(1,(s.roster||[]).length)]||{};
    placeBall('golfball',s.ball.x-620,27,s.ball.y-290,p.color,p.name,seen);
  }
  for(const [id,it] of ballMap)if(!seen.has(id)){
-   scene.remove(it.sphere,it.shadow,it.glow);
+   scene.remove(it.sphere,it.shadow,it.glow,it.arrow);
    it.el.remove();it.sphere.material.dispose();it.shadow.material.dispose();it.glow.material.dispose();
    ballMap.delete(id);
  }
@@ -248,6 +290,7 @@ function update(mode,s){
 }
 function clean(){
  if(!scene)return;
+ root.querySelectorAll('.p3bin').forEach(el=>el.remove());
  for(const x of ballMap.values()){x.el.remove();x.sphere.material.dispose();x.shadow.material.dispose();x.glow.material.dispose();}
  ballMap.clear();
  scene.traverse(o=>{
