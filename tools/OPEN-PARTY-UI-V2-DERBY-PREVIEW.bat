@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions
-title MARBLE RUSH - PARTY PACK UI V2 - DERBY DEVELOPMENT
+title MARBLE RUSH - PARTY PACK UI V2 - DERBY AND DROP ZONE DEVELOPMENT
 echo ===========================================================
-echo MARBLE RUSH - CLEAN PARTY PACK UI V2 - MARBLE DERBY
+echo MARBLE RUSH - CLEAN PARTY PACK UI V2 - DERBY AND DROP ZONE
 echo ===========================================================
 echo.
 echo This tests a separate DEVELOPMENT branch only.
@@ -34,19 +34,21 @@ cd /d "%PREVIEW%" || goto failed
 echo [2/4] Installing build dependencies (this repository has no package-lock.json) ...
 call npm install --no-audit --no-fund
 if errorlevel 1 goto failed
-echo [3/4] Checking Derby and compiling approved art ...
+echo [3/4] Checking Derby, Drop Zone and compiling approved art ...
 call node tools/test-party-ui-v2.js
 if errorlevel 1 goto failed
 call node tools/test-derby.js
 if errorlevel 1 goto failed
+call node tools/test-dropzone.js
+if errorlevel 1 goto failed
 call npm run build
 if errorlevel 1 goto failed
-echo [4/4] Starting Derby preview. Open the address below if needed:
+echo [4/4] Starting Derby and Drop Zone preview. Open the address below if needed:
 echo.
 echo    http://localhost:35995/tv
 echo.
-echo Grand Prix and Derby are available in this build.
-echo Drop Zone, Brawl, Curling and Golf remain unavailable pending rebuild.
+echo Grand Prix, Derby and Drop Zone are available in this build.
+echo Bowl Brawl, Curling and Golf remain unavailable pending rebuild.
 echo Join phones using the lobby QR and the same Wi-Fi network.
 echo Permit Node.js on PRIVATE networks if Windows Firewall asks.
 echo Close the separate server window when finished.
