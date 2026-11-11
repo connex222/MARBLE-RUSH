@@ -23,7 +23,29 @@ const palettes={
 };
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let enabled=true,renderer=null,world=null,camera=null,scene=null,worldMode='',
-  ballMap=new Map(),labels=new Map(),halos=new Map(),last=0,lowMotion=false,unsupported=false;
+  ballMap=new Map(),last=0,lowMotion=false,unsupported=false;
+let quality='cinematic',slowFrames=0,fastFrames=0,qualityHold=0,frameRate=30;
+const assetTextures=new Map();
+function chooseQuality(next){
+ if(!renderer || quality===next)return;
+ quality=next;slowFrames=0;fastFrames=0;
+ qualityHold=performance.now()+5500;
+ renderer.setPixelRatio(Math.min(next==='cinematic'?1.3:.85,window.devicePixelRatio||1));
+ renderer.shadowMap.enabled=next==='cinematic';
+ renderer.shadowMap.needsUpdate=true;
+ root.dataset.quality=quality;
+}
+function trackFrameTime(dt,now){
+ if(document.visibilityState==='hidden'||!Number.isFinite(dt))return;
+ frameRate=frameRate*.94+(1000/Math.max(1,dt))*.06;
+ root.dataset.fps=String(Math.max(1,Math.min(120,Math.round(frameRate))));
+ if(now<qualityHold)return;
+ if(dt>46){slowFrames++;fastFrames=0;}
+ else if(dt<38){fastFrames++;slowFrames=Math.max(0,slowFrames-2);}
+ else {slowFrames=Math.max(0,slowFrames-1);fastFrames=0;}
+ if(quality==='cinematic'&&slowFrames>45)chooseQuality('balanced');
+ else if(quality==='balanced'&&fastFrames>190)chooseQuality('cinematic');
+}
 const ballGeo=new T.SphereGeometry(24,32,24);
 // The marble swirl is generated once at runtime: actual painted detail on a
 // 3D sphere, not a 2D overlay or a third-party graphics service.
@@ -53,7 +75,7 @@ const FXKINDS={
  curling:{throw:'sweep',sweep:'scrape',hit:'impact',measurement:'target',lastStone:'aurora',end_result:'victory'},
  golf:{shot:'putt',water:'ricochet',holeInOne:'holeinone',cup:'cup',tunnel:'roll',flyThrough:'flag',spectatorCheer:'confetti'}
 };
-const vfx=new Map(),fxTextures=new Map(),fxClock=()=>performance.now();
+const vfx=new Map(),fxTextures=new Map();
 function fxPosition(mode,e,state){
  let ex=Number.isFinite(e.x)?e.x:null,ey=Number.isFinite(e.y)?e.y:null;
  if(mode==='brawl'){
@@ -289,13 +311,13 @@ function stageDressing(mode){
 function stage(mode,s) {
  scene=new T.Scene();
  scene.background=new T.Color('#111b31');
- const ambient=new T.HemisphereLight(0xdbf3ff,0x38202b,2.1);scene.add(ambient);
- const key=new T.DirectionalLight(0xffd5a3,3.3);key.position.set(-490,950,690);
- key.castShadow=true;key.shadow.mapSize.set(512,512);key.shadow.camera.left=-1000;
+ const ambient=new T.HemisphereLight(0xd8edff,0x302337,1.35);scene.add(ambient);
+ const key=new T.DirectionalLight(0xffdfb1,3.1);key.position.set(-490,950,690);
+ key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=-1000;
  key.shadow.camera.right=1000;key.shadow.camera.top=1000;key.shadow.camera.bottom=-1000;
  key.shadow.bias=-.00025;scene.add(key);
- const rim=new T.PointLight(0x67caff,230000,2100,2);rim.position.set(680,580,-380);scene.add(rim);
- const gold=new T.PointLight(0xffc061,150000,1500,2);gold.position.set(-650,500,250);scene.add(gold);
+ const rim=new T.PointLight(0x67caff,105000,2100,2);rim.position.set(680,580,-380);scene.add(rim);
+ const gold=new T.PointLight(0xffc061,90000,1500,2);gold.position.set(-650,500,250);scene.add(gold);
  addBackdrop(mode);
  const p=palettes[mode];
  if(mode==='brawl'){
@@ -328,8 +350,10 @@ function stage(mode,s) {
      const ang=i*2*Math.PI/12;
      const x=455*Math.cos(ang),z=455*Math.sin(ang);
      cylinder(13,62,i%2?'#e6526a':'#ffd67a',x,67,z);
-     const lamp=new T.PointLight(i%2?0xff467b:0xffbb4d,3200,240);
-     lamp.position.set(x,115,z);scene.add(lamp);
+     if(i%3===0){
+       const lamp=new T.PointLight(i%2?0xff467b:0xffbb4d,5800,310);
+       lamp.position.set(x,115,z);scene.add(lamp);
+     }
    }
    cylinder(44,35,'#e0a53a',0,7,0,.82);
    world.rotor=new T.Group();scene.add(world.rotor);
@@ -638,12 +662,17 @@ function boot(){
  if(renderer||unsupported)return;
  try{
    renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
-   renderer.setPixelRatio(Math.min(1.25,window.devicePixelRatio||1));
+   renderer.setPixelRatio(Math.min(1.3,window.devicePixelRatio||1));
    renderer.outputColorSpace=T.SRGBColorSpace;
    renderer.toneMapping=T.ACESFilmicToneMapping;
-   renderer.toneMappingExposure=1.22;
+   renderer.toneMappingExposure=1.15;
    renderer.shadowMap.enabled=true;
-   renderer.shadowMap.type=T.PCFShadowMap;
+   renderer.shadowMap.type=T.PCFSoftShadowMap;
+   root.dataset.quality=quality;
+   renderer.domElement.addEventListener('webglcontextlost',event=>{
+     event.preventDefault();unsupported=true;enabled=false;
+     root.hidden=true;toggle.hidden=true;
+   },{passive:false});
    renderer.domElement.setAttribute('aria-hidden','true');
    root.insertBefore(renderer.domElement,root.firstChild);
  }catch(e){
@@ -654,7 +683,9 @@ function boot(){
 }
 function frame(time){
  requestAnimationFrame(frame);
- if(time-last<30)return;last=time;
+ const dt=time-last;
+ if(dt<30)return;
+ last=time;
  const mr=window.__MR,mode=mr?.state;
  const active=enabled&&!unsupported&&supported.includes(mode);
  root.hidden=!active;toggle.hidden=!supported.includes(mode)||unsupported;
@@ -662,7 +693,10 @@ function frame(time){
  toggle.setAttribute('aria-pressed',String(enabled));
  toggle.textContent=enabled?'✦ CINEMATIC':'◇ CLASSIC VIEW';
  toggle.title=enabled?'Switch to the classic 2D board':'Switch to the cinematic 3D board';
- if(!active){if(worldMode){clean();worldMode='';}return;}
+ if(!active){
+   if(worldMode){clean();worldMode='';}
+   slowFrames=0;fastFrames=0;return;
+ }
  boot();if(!renderer)return;
  // The original game-mode canvas belongs to a #ui screen above the global
  // canvas. Mount the new renderer immediately after THAT canvas so it really
@@ -690,6 +724,7 @@ function frame(time){
  try{
    update(mode,s);
    renderer.render(scene,camera);
+   trackFrameTime(dt,time);
    root.dataset.rendered='true';
    root.dataset.mode=mode;
    // Read-only acceptance diagnostics to prove premium visuals are genuine
