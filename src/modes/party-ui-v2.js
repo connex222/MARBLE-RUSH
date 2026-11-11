@@ -1,7 +1,7 @@
 /* MARBLE RUSH Party Pack UI v2 — full replacement presentation.
  * Scope: TV artwork and HUD. Never mutates game engine, bets, scoring or phones.
  * The five legacy Canvas2D draw functions and per-mode markup are retired.
- * Derby is the first production-ready implementation; remaining modes are gated.
+ * Derby and Drop Zone have independent replacement screens; the other modes remain gated.
  */
 const MarblePartyUI=(()=>{
  'use strict';
@@ -25,12 +25,16 @@ const MarblePartyUI=(()=>{
    stage.dataset.mode=next;
    const title=document.getElementById('ppModeTitle');
    if(title)title.textContent=NAMES[next];
-   const derby=next==='derby';
-   for(const id of ['ppBetPanel','ppLeaderPanel','ppBoardLabel','ppTicker']){
+   const derby=next==='derby',drop=next==='dropzone';
+   for(const id of ['ppBetPanel','ppLeaderPanel','ppBoardLabel','ppTicker','ppTitleArea']){
      const node=document.getElementById(id);if(node)node.hidden=!derby;
    }
+   for(const id of ['ppDropHeader','ppDropPanel','ppDropStandings','ppDropStats']){
+     const node=document.getElementById(id);if(node)node.hidden=!drop;
+   }
    const wip=document.getElementById('ppWorkInProgress');
-   if(wip)wip.hidden=derby;
+   if(wip)wip.hidden=derby||drop;
+   if(canvas)canvas.setAttribute('aria-label',drop?'Drop Zone glass pegboard and live score bins':'Marble Derby animated racing world');
    return true;
  }
  function picture(ctx,art,x,y,w,h,opacity=1){
@@ -307,5 +311,239 @@ const MarblePartyUI=(()=>{
      });
    }
  }
- return Object.freeze({enter,drawDerby,modes:MODES.slice()});
+
+ // DROP ZONE UI v2 — original 1920×1080 scene, never the old pegboard canvas.
+ // Coordinates reflect DropZone.state (1000x800), not a second physics engine.
+ const DZ_PRIZES=Object.freeze([50,100,200,500,1000,500,200,100]);
+ const DZ_VIEW=Object.freeze({left:453,right:1445,top:195,bottom:926});
+ const dzX=x=>DZ_VIEW.left+(clamp(Number(x)||0,80,920)-80)/840*(DZ_VIEW.right-DZ_VIEW.left);
+ const dzY=y=>DZ_VIEW.top+(Number(y)-35)*.98;
+ let dzHudSignature='';
+ function dropBackdrop(c,assets,time){
+   c.fillStyle='#071927';c.fillRect(0,0,W,H);
+   const im=assets?.pp_dropzone_bg;
+   if(im?.complete&&im.naturalWidth){
+     const sc=Math.max(W/im.naturalWidth,H/im.naturalHeight)*1.07;
+     const w=im.naturalWidth*sc,h=im.naturalHeight*sc;
+     picture(c,im,(W-w)/2+Math.sin(time*.09)*11,(H-h)/2,w,h,.94);
+   }else{
+     c.fillStyle=gradient(c,0,0,W,H,[[0,'#064e53'],[.5,'#143954'],[1,'#091224']]);
+     c.fillRect(0,0,W,H);
+   }
+   const vignette=c.createRadialGradient(980,500,180,960,580,1300);
+   vignette.addColorStop(0,'rgba(3,18,32,.10)');
+   vignette.addColorStop(1,'rgba(2,9,26,.92)');
+   c.fillStyle=vignette;c.fillRect(0,0,W,H);
+   // Miniature prize-show lighting and gold trusses.
+   for(let j=0;j<6;j++){
+     const x=130+j*310;
+     const beam=c.createRadialGradient(x,110,0,x,180,245);
+     beam.addColorStop(0,'rgba(255,218,130,.16)');beam.addColorStop(1,'rgba(255,218,130,0)');
+     c.fillStyle=beam;c.fillRect(x-240,-60,480,500);
+   }
+   picture(c,assets?.pp_dropzone_prop_glass_chute,1275,102,280,260,.70);
+   picture(c,assets?.pp_dropzone_prop_gold_bucket,1460,766,305,217,.78);
+ }
+ function dzCabinet(c,assets,s,time){
+   const {left,right,top,bottom}=DZ_VIEW;
+   const w=right-left;
+   c.save();c.shadowColor='#000b';c.shadowBlur=58;c.shadowOffsetY=34;
+   roundBox(c,left-53,top-47,w+106,bottom-top+128,42,'#092b38','#ffdd88',14);
+   c.restore();
+   roundBox(c,left-42,top-39,w+84,bottom-top+110,35,
+     gradient(c,left-40,top-39,0,bottom-top+110,
+       [[0,'#fce09d'],[.10,'#926d47'],[.55,'#52495a'],[1,'#9c6939']]),'#ffefbe',6);
+   roundBox(c,left-24,top-17,w+48,bottom-top+73,20,'#081e31','#61c1bc',5);
+   c.save();c.beginPath();c.roundRect(left,top,w,bottom-top+22,9);c.clip();
+   c.fillStyle=gradient(c,left,top,0,bottom-top+22,
+     [[0,'#0c4259'],[.40,'#124c58'],[.76,'#0c3047'],[1,'#041e32']]);
+   c.fillRect(left,top,w,bottom-top+22);
+   const tile=assets?.pp_dropzone_surface_main;
+   if(tile?.complete&&tile.naturalWidth)picture(c,tile,left,top,w,bottom-top+22,.44);
+   // Shimmer of real glass: strong rim light, subtle internal reflection.
+   c.fillStyle=gradient(c,left,top,w,0,
+     [[0,'rgba(151,243,250,.32)'],[.12,'rgba(255,255,255,.04)'],
+      [.74,'rgba(255,255,255,0)'],[1,'rgba(172,244,255,.28)']],false);
+   c.fillRect(left,top,w,bottom-top+22);
+   c.restore();
+   // Structural columns and scene depth: the board, not a UI sprite layered over rules.
+   for(const [x,side] of [[left-41,-1],[right+28,1]]){
+     c.fillStyle=gradient(c,x,top,18,0,
+       [[0,'#ffedb5'],[.34,'#7e6c69'],[.72,'#182f41'],[1,'#b08c51']],false);
+     roundBox(c,x,top,19,bottom-top+44,6,c.fillStyle,'#f7da9d',1.5);
+     for(let k=0;k<6;k++){
+       const y=top+49+k*123;
+       c.fillStyle='#ffe7a8';c.beginPath();c.arc(x+9,y,4,0,2*Math.PI);c.fill();
+     }
+   }
+   // LED marquee / mechanical launch rail.
+   roundBox(c,left-18,top-37,w+36,48,16,'#102739','#ffe9a6',4);
+   c.textAlign='center';c.font='900 24px Nunito,sans-serif';
+   c.fillStyle='#ffeaaf';c.fillText('THE GOLDEN DROP · LIVE JACKPOT',left+w/2,top-5);
+   c.save();c.strokeStyle='rgba(162,242,235,.22)';c.lineWidth=3;
+   c.beginPath();c.moveTo(dzX(s.x),top+13);c.lineTo(dzX(s.x),dzY(105));c.stroke();c.restore();
+   const launch=dzX(s.x);
+   c.save();c.shadowColor='#ffe9b1';c.shadowBlur=25;
+   roundBox(c,launch-30,top+23,60,26,11,'#ffda84','#fff4ce',3);c.restore();
+   const active=s.ball;
+   if(!active){
+     ball(c,launch,dzY(52),22,s.roster?.[s.turn%s.roster.length]?.color||'#ffcf70',
+       time,assets?.marble_swirl_01);
+     c.strokeStyle='#ffe0a3';c.lineWidth=3;c.beginPath();
+     c.moveTo(launch-19,dzY(91));c.lineTo(launch,dzY(102));c.lineTo(launch+19,dzY(91));c.stroke();
+   }
+   // Fixed pegs from the authoritative model, with the chosen gold pegs distinguished.
+   const gold=new Set(s.gold||[]);
+   for(let i=0;i<(s.pegs||[]).length;i++){
+     const peg=s.pegs[i],x=dzX(peg.x),y=dzY(peg.y);
+     const lit=gold.has(i);
+     if(lit){
+       const shine=c.createRadialGradient(x,y,0,x,y,31);
+       shine.addColorStop(0,'rgba(255,233,151,.55)');
+       shine.addColorStop(1,'rgba(255,201,69,0)');
+       c.fillStyle=shine;c.fillRect(x-31,y-31,62,62);
+     }
+     c.fillStyle='rgba(0,0,0,.64)';c.beginPath();c.ellipse(x+4,y+7,13,7,0,0,Math.PI*2);c.fill();
+     const material=c.createRadialGradient(x-4,y-5,1,x+2,y+3,15);
+     material.addColorStop(0,'#fff9e2');
+     material.addColorStop(.21,lit?'#ffe876':'#b1efeb');
+     material.addColorStop(.65,lit?'#d48f2b':'#458494');
+     material.addColorStop(1,'#172b40');
+     c.fillStyle=material;c.beginPath();c.arc(x,y,11.5,0,2*Math.PI);c.fill();
+     c.strokeStyle=lit?'rgba(255,221,105,.95)':'rgba(213,255,248,.55)';
+     c.lineWidth=1.2;c.stroke();
+   }
+   // Physical spinner and oscillating gate match collision coordinates.
+   const spinX=dzX(500+110*Math.sin(time*1.2)),spinY=dzY(480);
+   c.save();c.translate(spinX,spinY);c.rotate(time*1.8);
+   c.shadowColor='#3ce8d6';c.shadowBlur=15;
+   roundBox(c,-51,-9,102,18,8,'#f8aa52','#fff4be',3);
+   roundBox(c,-10,-47,20,94,8,'#157e88','#e1fff1',3);
+   c.restore();
+   const gateX=dzX(500+115*Math.sin(time*.9)),gateY=dzY(598);
+   c.save();c.translate(gateX,gateY);c.rotate(Math.sin(time*2)*.17);
+   roundBox(c,-61,-11,122,22,9,'#e59754','#ffe5a3',3);
+   c.restore();
+   // Jackpot bins sit on a raised mechanical prize rail. Values are the REAL scores.
+   const unit=w/8,binY=dzY(710)+14;
+   roundBox(c,left-4,binY-5,w+8,107,11,'#102b3c','#fff0ba',4);
+   for(let i=0;i<8;i++){
+     const x=left+i*unit,prize=DZ_PRIZES[i],jack=i===s.jackpotBin;
+     c.save();c.shadowColor=jack?'#ffcf73':'transparent';c.shadowBlur=jack?20:0;
+     roundBox(c,x+4,binY+3,unit-8,91,9,
+       jack?gradient(c,x,binY,0,91,[[0,'#ffedaa'],[1,'#ad4a50']]):
+       gradient(c,x,binY,0,91,[[0,'#225c6b'],[1,'#0d2d43']]),
+       jack?'#fff5ba':'#6daeb4',jack?3:1.5);
+     c.restore();
+     c.textAlign='center';c.fillStyle=jack?'#3b1732':'#fff5de';
+     c.font='900 '+(prize===1000?28:25)+'px Fredoka,sans-serif';
+     c.fillText(String(prize),x+unit/2,binY+49);
+     c.font='900 13px Nunito,sans-serif';
+     c.fillText(jack?'★ JACKPOT ★':'POINTS',x+unit/2,binY+71);
+   }
+   // Keeper cup rim appears above the scoring plane.
+   c.strokeStyle='#ffe5a3';c.lineWidth=4;c.beginPath();
+   c.moveTo(left,binY-8);c.lineTo(right,binY-8);c.stroke();
+   // Real, simulated falling marble: nothing here changes its position or payout.
+   if(active){
+     const x=dzX(active.x),y=dzY(active.y);
+     if(!Number.isFinite(x)||!Number.isFinite(y))return;
+     if(!s.reduceMotion){
+       const tail=c.createLinearGradient(x,y-110,x,y+12);
+       tail.addColorStop(0,'rgba(199,255,240,0)');
+       tail.addColorStop(1,'rgba(255,232,153,.46)');
+       c.fillStyle=tail;roundBox(c,x-10,y-110,20,116,10,tail,null);
+     }
+     ball(c,x,y,22,active.color,(Number(active.t)||0)*5,assets?.marble_swirl_01);
+     if(active.multiplier===2){
+       c.save();c.strokeStyle='#ffe783';c.shadowColor='#ffd254';c.shadowBlur=25;c.lineWidth=4;
+       c.beginPath();c.arc(x,y,31,0,2*Math.PI);c.stroke();c.restore();
+     }
+   }
+   // Time-bounded event FX; only already-approved particle sprite materials.
+   for(const e of (s.events||[]).slice(-14)){
+     const age=(Number(s.elapsed)||0)-(Number(e.time)||0);
+     if(age<0||age>1.05)continue;
+     const kind=e.kind;
+     const im=assets?.[kind==='goldPeg'?'pp_dropzone_fx_multiplier':
+       kind==='pegImpact'?'pp_dropzone_fx_peg':
+       kind==='jackpot'?'pp_dropzone_fx_jackpot':
+       kind==='bucket'?'pp_dropzone_fx_coins':null];
+     if(!im?.complete||!im.naturalWidth)continue;
+     const xx=dzX(Number(e.x)||500),yy=dzY(Number(e.y)||440);
+     const size=kind==='jackpot'?250:150;
+     picture(c,im,xx-size/2,yy-size/2,size,size,(1-age/1.05)*.82);
+   }
+   // Metal rim, clear glass specular edge.
+   roundBox(c,left-4,top-2,w+8,bottom-top+99,14,null,'rgba(198,255,247,.56)',3);
+ }
+ function dropDramatics(c,assets,s){
+   const event=(s.events||[]).slice().reverse().find(e=>e.kind==='bucket'||e.kind==='jackpot');
+   if(!event)return;
+   const age=(Number(s.elapsed)||0)-event.time;
+   if(age<0||age>1.6)return;
+   const alpha=clamp(1-age/1.6,0,1);
+   c.save();c.globalAlpha=alpha;
+   c.shadowColor='#ffe5a2';c.shadowBlur=28;
+   roundBox(c,668,406,582,182,28,'rgba(5,28,48,.95)','#ffdb84',6);
+   c.textAlign='center';c.fillStyle='#fff3c7';
+   c.font='900 39px Fredoka,sans-serif';
+   c.fillText(event.kind==='jackpot'?'MEGA JACKPOT!':'BUCKET BANKED!',959,466);
+   c.font='900 83px Fredoka,sans-serif';c.fillStyle='#ffce67';
+   c.fillText('+'+String(event.score||s.last)+' POINTS',959,548);
+   picture(c,assets?.pp_dropzone_fx_confetti,1110,370,250,235,.40);
+   c.restore();
+ }
+ function drawDropZone(state,assets,opts={}){
+   if(mode!=='dropzone'||!ctx||!state||!Array.isArray(state.pegs))return false;
+   const t=Number(state.elapsed)||0;
+   ctx.save();ctx.setTransform(1,0,0,1,0,0);
+   dropBackdrop(ctx,assets,t);
+   dzCabinet(ctx,assets,Object.assign({reduceMotion:!!opts.reduce},state),t);
+   if(!opts.reduce)dropDramatics(ctx,assets,state);
+   ctx.restore();
+   updateDropZone(state);
+   return true;
+ }
+ function updateDropZone(s){
+   if(!stage||mode!=='dropzone')return;
+   const now=performance.now();if(now-lastHud<100)return;lastHud=now;
+   const $=id=>document.getElementById(id);
+   const current=s.roster?.[s.turn%s.roster.length];
+   const isHuman=!!current&&!current.cpu&&!s.ball&&!s.done;
+   const drop=s.ball;
+   $('ppDropRound').textContent='ROUND '+Math.min(5,s.round)+' / 5';
+   $('ppDropTurn').textContent=s.done?'SHOW COMPLETE':drop?'MARBLE IN FLIGHT':'UP NEXT: '+String(current?.name||'Player').toUpperCase();
+   $('ppDropTimer').textContent=drop?Math.min(10,Number(drop.t)||0).toFixed(1)+'s':
+     s.done?'—':Math.max(0,Math.ceil(10-s.turnElapsed))+'s';
+   $('ppDropAim').textContent=String(Math.round(s.x||500));
+   $('ppDropJackpot').textContent=String(DZ_PRIZES[s.jackpotBin]||1000);
+   $('ppDropLast').textContent=(Number(s.last)||0)+' PTS';
+   $('ppDropOnDeck').textContent=String(current?.name||'—');
+   $('ppDropCount').textContent=Math.min(s.turn+1,s.roster.length*5)+' / '+(s.roster.length*5);
+   $('dropLeft').disabled=!isHuman;
+   $('dropRight').disabled=!isHuman;
+   $('dropNow').disabled=!isHuman;
+   $('ppDropHint').textContent=s.done?'All rounds complete. See the winner screen.':
+     drop?'MARBLE IN MOTION · predict a prize bin from your phone!':
+     isHuman?'Move your release chute, then drop into the jackpot bins.':
+     'CPU is lining up its next marble…';
+   const ranking=(s.roster||[]).slice().sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+   const signature=ranking.map(p=>p.id+':'+p.score+':'+p.drops).join('|');
+   if(signature!==dzHudSignature){
+     dzHudSignature=signature;
+     const list=$('ppDropRankRows');list.replaceChildren();
+     for(const [i,p] of ranking.entries()){
+       const row=document.createElement('div');row.className='ppDropRankRow';
+       row.style.setProperty('--drop-color',isColour(p.color)?p.color:'#ffd783');
+       const n=document.createElement('span');n.textContent=String(i+1).padStart(2,'0');
+       const m=document.createElement('i');m.className='ppDropMarble';
+       const name=document.createElement('strong');name.textContent=p.name;
+       const score=document.createElement('b');score.textContent=Number(p.score).toLocaleString('en-GB');
+       row.append(n,m,name,score);list.appendChild(row);
+     }
+   }
+ }
+
+ return Object.freeze({enter,drawDerby,drawDropZone,modes:MODES.slice()});
 })();
