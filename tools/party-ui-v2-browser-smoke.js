@@ -9,6 +9,39 @@ const {chromium}=require('playwright');
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const page=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1});
  const errors=[];
+ const perfSnapshots=[];
+ async function verifyExclusive(mode){
+   // Browser-rendered proof: exact renderer, one screen, one canvas,
+   // the original GP canvas actually hidden, and measured draw times.
+   await page.waitForTimeout(450);
+   const report=await page.evaluate(m=>{
+     const host=window.__MR?.partyScreen;
+     const stage=document.getElementById('partyStage');
+     return {
+       selected:host?.active,ok:host?.assertExclusive(),
+       renderer:stage?.dataset.renderer,owner:stage?.dataset.owner,
+       screens:[...document.querySelectorAll('.screen:not([hidden])')]
+         .map(e=>e.dataset.screen),
+       partyCanvas:stage?.querySelectorAll('canvas').length,
+       oldGrandPrixCanvasHidden:document.getElementById('cv')?.hidden,
+       performance:host?.telemetry()
+     };
+   },mode);
+   const expected={derby:'derby-track-v3',dropzone:'dropzone-cabinet-v3',
+     brawl:'brawl-arena-v3',curling:'curling-rink-v3',golf:'golf-course-v3'}[mode];
+   assert.equal(report.selected,mode,mode+' wrong mounted mode');
+   assert.equal(report.ok,true,mode+' has competing legacy screen or wrong HUD');
+   assert.equal(report.renderer,expected,mode+' wrong renderer');
+   assert.equal(report.owner,'marble-party-screen-v3');
+   assert.deepEqual(report.screens,['party-stage']);
+   assert.equal(report.partyCanvas,1);
+   assert.equal(report.oldGrandPrixCanvasHidden,true);
+   assert.ok(report.performance.frames>=2,mode+' rendered no continuous frames');
+   assert.equal(report.performance.renderFailures,0,mode+' renderer failed to paint');
+   perfSnapshots.push(report.performance);
+   console.log('REAL-REBUILD-FRAME-METRICS '+JSON.stringify(report.performance));
+ }
+
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:30000});
@@ -33,6 +66,7 @@ const {chromium}=require('playwright');
   await page.locator('#partyStage').waitFor({state:'visible'});
   await page.waitForFunction(()=>window.__MR?.state==='derby'&&
    document.getElementById('ppRankRows')?.children.length>=1,{timeout:12000});
+  await verifyExclusive('derby');
   const view=await page.evaluate(()=>{
    const stage=document.getElementById('partyStage');
    const canvas=document.getElementById('partyStageCanvas');
@@ -87,6 +121,7 @@ const {chromium}=require('playwright');
   await page.locator('#partyStage').waitFor({state:'visible'});
   await page.waitForFunction(()=>document.getElementById('partyStage')?.dataset.mode==='dropzone'&&
     document.getElementById('ppDropRankRows')?.children.length>=1,{timeout:12000});
+  await verifyExclusive('dropzone');
   const dzView=await page.evaluate(()=>{
     const stage=document.getElementById('partyStage');
     const canvas=document.getElementById('partyStageCanvas');
@@ -143,6 +178,7 @@ const {chromium}=require('playwright');
   await page.locator('#partyStage').waitFor({state:'visible',timeout:10000});
   await page.waitForFunction(()=>window.__MR.state==='brawl'&&
     document.getElementById('ppBrawlRankRows')?.children.length>=2,{timeout:12000});
+  await verifyExclusive('brawl');
   const brawlView=await page.evaluate(()=>{
     const stage=document.getElementById('partyStage');
     const canvas=document.getElementById('partyStageCanvas'),r=canvas.getBoundingClientRect();
@@ -260,6 +296,7 @@ const {chromium}=require('playwright');
   await page.locator('#partyStage').waitFor({state:'visible',timeout:10000});
   await page.waitForFunction(()=>window.__MR.state==='curling'&&
     document.getElementById('ppCurlRankRows')?.children.length>=2,{timeout:12000});
+  await verifyExclusive('curling');
   const curlingView=await page.evaluate(()=>{
     const stage=document.getElementById('partyStage');
     const canvas=document.getElementById('partyStageCanvas'),rect=canvas.getBoundingClientRect();
@@ -331,6 +368,7 @@ const {chromium}=require('playwright');
   await page.locator('#partyStage').waitFor({state:'visible'});
   await page.waitForFunction(()=>window.__MR.state==='golf'&&
     document.getElementById('ppGolfRankRows')?.children.length>=2);
+  await verifyExclusive('golf');
   const golfView=await page.evaluate(()=>{
     const stage=document.getElementById('partyStage');
     const rect=document.getElementById('partyStageCanvas').getBoundingClientRect();
@@ -404,6 +442,38 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>['vote','countdown','race'].includes(window.__MR.state),{timeout:12000});
   assert.ok(await page.locator('#raceHud').count(),'Original Grand Prix screen was deleted');
   assert.deepEqual(errors,[],'Uncaught browser errors');
+  // Full exit/re-entry matrix: no stale state, no hidden old screen,
+  // no doubled compositor after a second game starts.
+  for(const m of ['derby','dropzone','brawl','curling','golf']){
+    await page.evaluate(()=>window.__MR.Game.toLobby());
+    const clean=await page.evaluate(()=>{
+      const host=window.__MR.partyScreen;
+      return {mode:host.active,gpHidden:document.getElementById('cv').hidden,
+        stageHidden:document.getElementById('partyStage').hidden,
+        owner:document.getElementById('partyStage').dataset.owner};
+    });
+    assert.equal(clean.mode,null,'Old mode survived reset before '+m);
+    assert.equal(clean.gpHidden,false,'Grand Prix original canvas not restored');
+    assert.equal(clean.stageHidden,true);
+    assert.equal(clean.owner,undefined);
+    await page.locator('#partyModeCards .partyModeCard[data-mode="'+m+'"]').click();
+    await page.locator('#btnStart').click();
+    await page.waitForFunction(mode=>window.__MR.state===mode,m,{timeout:11000});
+    await page.waitForFunction(mode=>window.__MR.partyScreen.active===mode,m);
+    assert.equal(await page.evaluate(()=>window.__MR.partyScreen.assertExclusive()),true,
+      'Game restart produced old UI or double renderer: '+m);
+  }
+  await page.evaluate(()=>window.__MR.Game.toLobby());
+  const finalHost=await page.evaluate(()=>({
+    active:window.__MR.partyScreen.active,
+    oldCanvasHidden:document.getElementById('cv').hidden,
+    history:window.__MR.partyScreen.retiredHistory
+  }));
+  assert.equal(finalHost.active,null);
+  assert.equal(finalHost.oldCanvasHidden,false);
+  assert.ok(finalHost.history.length>=5);
+  console.log('REAL-REBUILD-RESTART '+JSON.stringify(finalHost));
+  console.log('REAL-REBUILD-PERFORMANCE '+JSON.stringify(perfSnapshots));
   console.log('PASS: all five independent full-TV mode screens, real Golf 9-hole shots and scoring, four other modes, original Grand Prix intact');
  }catch(e){
   console.error('FAIL Party Pack v2 browser smoke:',e);
