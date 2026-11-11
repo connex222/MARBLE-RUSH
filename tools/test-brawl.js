@@ -56,4 +56,60 @@ const out=human.current('a');out.x=1000;out.y=1000;
 human.tick(.05);
 assert.equal(out.alive,false,'outside marble must be eliminated');
 assert.equal(human.action('a','ram'),false,'eliminated player cannot ram');
+// MAYHEM v3: every new moment of danger is authoritative and deterministic.
+assert.deepEqual(Array.from(B.SHOCK_TIMES),[8,20,32]);
+assert.equal(B.RECOVER_COST,35);
+assert.equal(B.KO_BONUS,3);
+const roster=[{id:'alpha'},{id:'bravo'}];
+const pulse=B.create(roster,100);
+assert.equal(pulse.state.pulseAt,8);
+const aa=pulse.current('alpha'),bb=pulse.current('bravo');
+aa.x=200;aa.y=0;aa.vx=0;aa.vy=0;aa.anchored=.7;
+bb.x=-200;bb.y=0;bb.vx=0;bb.vy=0;bb.anchored=0;
+pulse.state.elapsed=7.99;pulse.state.time=7.99;
+pulse.tick(.05);
+assert.equal(pulse.state.pulseIndex,1);
+assert.equal(pulse.state.pulseAt,20);
+assert.ok(pulse.state.events.some(e=>e.kind==='shockwave'&&e.pulse===1));
+assert.ok(Math.abs(bb.vx)>Math.abs(aa.vx)*2,
+  'A pre-timed anchor must mitigate the pulse, not merely add a visual effect');
+pulse.tick(.05);
+assert.equal(pulse.state.events.filter(e=>e.kind==='shockwave').length,1,
+  'Pulses must not repeat over multiple fixed steps');
+const safe=B.create(roster,121);
+const target=safe.current('alpha');
+assert.equal(safe.action('alpha','recover'),false,'Recover only near the rim');
+target.x=safe.state.radius-22-45;target.y=0;target.vx=120;target.vy=0;
+assert.equal(safe.hud('alpha').recoverReady,true);
+assert.equal(safe.action('bravo','recover'),false,'Cannot recover someone else');
+assert.equal(safe.action('alpha','recover'),true);
+assert.equal(target.energy,75-B.RECOVER_COST);
+assert.ok(target.vx<0,'Recovery must provide real inward momentum');
+assert.equal(target.recoverUsed,true);
+assert.equal(safe.action('alpha','recover'),false,'Only one recovery per round');
+assert.ok(safe.state.events.some(e=>e.kind==='recover'&&e.id==='alpha'));
+assert.equal(safe.hud('alpha').recoveryUsed,true);
+const hit=B.create(roster,14);
+const attacker=hit.current('alpha'),victim=hit.current('bravo');
+attacker.x=0;attacker.y=0;attacker.vx=0;attacker.vy=0;attacker.heading=0;
+victim.x=43;victim.y=0;victim.vx=0;victim.vy=0;victim.heading=Math.PI;
+assert.equal(hit.action('alpha','ram'),true);
+hit.tick(.04);
+assert.equal(victim.lastHitBy,'alpha','Charged collision must identify attacker');
+victim.x=410;victim.y=0;
+hit.tick(.04);
+assert.ok(hit.state.events.some(e=>e.kind==='knockout'&&e.id==='alpha'&&e.victim==='bravo'&&e.bonus===3),
+ 'Only confirmed RAM knockouts earn bounty');
+assert.equal(hit.state.roster[0].roundPoints[0],13,
+ 'First-place 10 and knockout 3 must count together');
+assert.equal(hit.state.roster[0].knockouts,1);
+const noCredit=B.create(roster,16);
+noCredit.current('bravo').x=999;noCredit.current('bravo').y=999;
+noCredit.tick(.05);
+assert.equal(noCredit.state.events.some(e=>e.kind==='knockout'),false,
+ 'Falling off without a credited RAM must not award bonus points');
+assert.ok(!noCredit.state.roster[0].roundPoints[0] ||
+  noCredit.state.roster[0].roundPoints[0]===10,'Free knockouts forbidden');
+console.log('PASS MAYHEM: telegraphed deterministic shockwave, anchor counterplay, one energy-funded edge save, credited +3 knockout and no unearned points.');
+
 console.log('PASS: Bowl Brawl 30 seeded 3-CPU full games × 2 deterministic replays, five rounds, eight-player capacity, rim, ownership and energy.');
