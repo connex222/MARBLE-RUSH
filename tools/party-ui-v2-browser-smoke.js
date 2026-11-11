@@ -186,12 +186,26 @@ const {chromium}=require('playwright');
   // Real recovery must become available only when danger is genuine.
   await page.evaluate(id=>{
     const g=window.__MR.MODES.brawl.session(),m=g.current(id),s=g.state;
+    s.elapsed=.6;s.pulseIndex=0;s.pulseAt=4;
+    for(const opponent of s.marbles)if(opponent!==m){
+      opponent.x=-150;opponent.y=0;opponent.vx=0;opponent.vy=0;
+      opponent.cpuWait=100;
+    }
     m.x=s.radius-22-40;m.y=0;m.vx=0;m.vy=0;m.heading=Math.PI;
-    m.energy=100;m.cooldown=0;
+    m.energy=100;m.cooldown=0;m.edgeHanging=false;m.edgeGrace=0;
   },beforeBrawl.id);
   await page.waitForFunction(()=>!document.getElementById('ppBrawlRecover').disabled);
   await page.screenshot({path:'qa-ui-v2-brawl-edge-panic.png'});
+  // Keep the position stable after screenshot overhead so this measures the
+  // real action, not whether Chromium captured a frame before the edge passed.
+  await page.evaluate(id=>{
+    const g=window.__MR.MODES.brawl.session(),m=g.current(id);
+    m.x=g.state.radius-22-30;m.y=0;m.vx=0;m.vy=0;
+    m.cooldown=0;m.energy=100;m.heading=Math.PI;
+  },beforeBrawl.id);
   await page.locator('#ppBrawlRecover').click();
+  await page.waitForFunction(id=>window.__MR.MODES.brawl.session()
+    .current(id)?.recoverUsed,beforeBrawl.id,{timeout:2500});
   const rescue=await page.evaluate(id=>{
     const g=window.__MR.MODES.brawl.session(),m=g.current(id);
     return {used:m.recoverUsed,energy:m.energy,
