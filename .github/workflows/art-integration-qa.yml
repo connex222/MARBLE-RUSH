@@ -113,6 +113,10 @@ jobs:
             qa-dropzone-phone.png
             qa-brawl-tv.png
             qa-true-3d-brawl.png
+            qa-true-3d-derby.png
+            qa-true-3d-dropzone.png
+            qa-true-3d-curling.png
+            qa-true-3d-golf.png
             qa-brawl-phone.png
             qa-derby-tv.png
             qa-derby-phone.png
