@@ -25,7 +25,7 @@ const MarblePartyUI=(()=>{
    stage.dataset.mode=next;
    const title=document.getElementById('ppModeTitle');
    if(title)title.textContent=NAMES[next];
-   const derby=next==='derby',drop=next==='dropzone',brawl=next==='brawl';
+   const derby=next==='derby',drop=next==='dropzone',brawl=next==='brawl',curling=next==='curling';
    for(const id of ['ppBetPanel','ppLeaderPanel','ppBoardLabel','ppTicker','ppTitleArea']){
      const node=document.getElementById(id);if(node)node.hidden=!derby;
    }
@@ -35,9 +35,11 @@ const MarblePartyUI=(()=>{
    for(const id of ['ppBrawlHeader','ppBrawlStats','ppBrawlPanel','ppBrawlStandings']){
      const node=document.getElementById(id);if(node)node.hidden=!brawl;
    }
+   const ice=document.getElementById('ppCurlHud');if(ice)ice.hidden=!curling;
    const wip=document.getElementById('ppWorkInProgress');
-   if(wip)wip.hidden=derby||drop||brawl;
+   if(wip)wip.hidden=derby||drop||brawl||curling;
    if(canvas)canvas.setAttribute('aria-label',
+     curling?'Marble Curling Alpine ice rink and live scoring stones':
      brawl?'Bowl Brawl elimination stadium and active marbles':
      drop?'Drop Zone glass pegboard and live score bins':'Marble Derby animated racing world');
    return true;
