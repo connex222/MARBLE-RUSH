@@ -1306,6 +1306,7 @@
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
   let derbyTvHorse = 0;
+  let brawlLastCue='',brawlWarningKey='';
   let attractMode = null, attractUntil = 0, attractFrom = 0;
   const cheerTime = new Map();
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
@@ -1349,6 +1350,7 @@
         derbyTvHorse=0;state='derby';stateT=0;showScreen('derby');Audio_.Music.mode('derby');sendHud(true);return;
       }
       if (selectedMode === 'brawl') {
+        brawlLastCue='';brawlWarningKey='';
         if(!partyRun)this.resetNight();
         MODES.brawl.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishBrawl(ranking)});
         state='brawl';stateT=0;showScreen('brawl');
@@ -1596,8 +1598,11 @@
       }
       if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep','curlleft','curlright','predict'].includes(a)) {if(MODES.curling.onAction(pid,a,v)&&['throw','sweep'].includes(a))Audio_.play(a==='throw'?'sfx_golf_putt':'sfx_curl_sweep',{gap:.15,vol:.55});sendHud(true);return;}
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
-      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','spectate'].includes(a)) {
-        if(MODES.brawl.onAction(pid,a,v)&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.18,vol:.8});sendHud(true);return;
+      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','recover','spectate'].includes(a)) {
+        const accepted=MODES.brawl.onAction(pid,a,v);
+        if(accepted&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.16,vol:.85});
+        if(accepted&&a==='recover')Audio_.play('sfx_bumper',{gap:.14,vol:.95});
+        sendHud(true);return;
       }
       if (state === 'dropzone' && players.has(pid) && ['left','right','aim','drop','predict'].includes(a)) {
         if(MODES.dropzone.onAction(pid,a,v)&&a==='drop')Audio_.play('sfx_drop_release',{gap:.12,vol:.75});
@@ -2188,7 +2193,34 @@
     if (state==='brawl') {
       stateT+=dt;MODES.brawl.tick(dt);
       const combat=MODES.brawl.session();
-      if(combat)MarbleBrawlUI.draw(combat.state,IMG,{reduce:settings.reduce});
+      if(combat){
+        const st=combat.state,pulseIn=st.pulseAt==null?null:st.pulseAt-st.elapsed;
+        const warningKey=st.round+':'+st.pulseIndex;
+        if(pulseIn!=null&&pulseIn<=3&&pulseIn>0&&brawlWarningKey!==warningKey){
+          brawlWarningKey=warningKey;
+          Clatter.say('announce',"Shockwave incoming! Brace yourselves!",2);
+        }
+        const cue=(st.events||[]).slice(-30).reverse().find(e=>
+          ['shockwave','knockout','recover'].includes(e.kind)&&
+          typeof e.time==='number'&&st.time-e.time<.9);
+        if(cue){
+          const key=st.round+':'+cue.kind+':'+cue.time;
+          if(key!==brawlLastCue){
+            brawlLastCue=key;
+            if(cue.kind==='shockwave'){
+              Audio_.play('sfx_bumper',{gap:.2,vol:.95});
+              Clatter.say('gasp',"The shockwave's hit the bowl!",2);
+            }else if(cue.kind==='knockout'){
+              const winner=st.roster.find(p=>p.id===cue.id)?.name||'Someone';
+              Audio_.play('crowd_cheer',{gap:.15,vol:.9});
+              Clatter.say('winner',winner+" earns a knockout bonus!",2);
+            }else if(cue.kind==='recover'){
+              Clatter.say('gasp',"What a save! Right off the edge!",2);
+            }
+          }
+        }
+        MarbleBrawlUI.draw(st,IMG,{reduce:settings.reduce});
+      }
       Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
@@ -2375,7 +2407,8 @@
   }
   // New Bowl Brawl combat controls use the original authoritative action router.
   for(const [id,action] of [['ppBrawlLeft','left'],['ppBrawlRight','right'],
-                             ['ppBrawlRam','ram'],['ppBrawlAnchor','anchor']]){
+                             ['ppBrawlRam','ram'],['ppBrawlAnchor','anchor'],
+                             ['ppBrawlRecover','recover']]){
     $('#'+id).onclick=()=>{
       const g=MODES.brawl.session();
       const p=g?.state.roster.find(x=>!x.cpu&&g.current(x.id)?.alive);
