@@ -130,6 +130,35 @@ const {chromium}=require('playwright');
   assert.deepEqual(errs,[],'Uncaught error in new Bowl Brawl '+errs.join(' | '));
   console.log('PASS: two authenticated phones control newly rendered Brawl, RAM and ANCHOR, shared TV synced.');
 
+  // Curling keeps the two-phone room and uses the old authorised action protocol.
+  await tv.evaluate(()=>window.__MR.Game.toLobby());
+  await p1.waitForFunction(()=>[...document.querySelectorAll('#vip button')].some(b=>b.textContent.includes('Marble Curling')),{timeout:10000});
+  await p1.locator('#vip button').filter({hasText:'Marble Curling'}).click();
+  await tv.waitForFunction(()=>window.__MR.selectedMode==='curling',{timeout:8000});
+  await tv.locator('#btnStart').click();
+  await tv.waitForFunction(()=>window.__MR.state==='curling'&&document.getElementById('partyStage').dataset.mode==='curling',{timeout:10000});
+  await p1.waitForFunction(()=>document.body.dataset.mode==='curling',{timeout:10000});
+  await p2.waitForFunction(()=>document.body.dataset.mode==='curling',{timeout:10000});
+  await p1.screenshot({path:'qa-ui-v2-curling-phone-aim.png'});
+  await p1.locator('#modeActions button[data-action="right"]').click();
+  await tv.waitForFunction(()=>window.__MR.MODES.curling.session().state.aim>0,{timeout:8000});
+  await p1.locator('#modeActions button[data-action="throw"]').click();
+  await tv.waitForFunction(()=>window.__MR.MODES.curling.session().state.phase==='slide',{timeout:8000});
+  await p1.locator('#modeActions button[data-action="sweep"]').click();
+  await tv.waitForFunction(()=>window.__MR.MODES.curling.session().state.events.some(e=>e.kind==='sweep'),{timeout:8000});
+  await p2.locator('#modeActions button[data-action="predict"]').first().click();
+  await tv.waitForFunction(()=>window.__MR.MODES.curling.session().state.events.some(e=>e.kind==='prediction'),{timeout:8000});
+  assert.ok(actions.get(p1).some(m=>m.t==='act'&&m.a==='throw'));
+  assert.ok(actions.get(p1).some(m=>m.t==='act'&&m.a==='sweep'));
+  assert.ok(actions.get(p2).some(m=>m.t==='act'&&m.a==='predict'));
+  assert.equal(await p1.locator('#padZone').isVisible(),false);
+  await tv.screenshot({path:'qa-ui-v2-curling-two-phones-tv.png'});
+  await p1.screenshot({path:'qa-ui-v2-curling-phone-sweep.png'});
+  await p2.screenshot({path:'qa-ui-v2-curling-phone-predict.png'});
+  assert.deepEqual(errs,[],'Curling browser error');
+  console.log('PASS: two phones correctly throw, sweep and predict on the new Curling rink.');
+
+
  }catch(e){console.error('FAIL Derby UI v2 2-phone smoke:',e);process.exitCode=1;}
  finally{await browser.close();}
 })();
