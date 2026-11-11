@@ -10,7 +10,7 @@ const ROOT=path.resolve(__dirname,'..');
 const get=(p)=>fs.readFileSync(path.join(ROOT,p),'utf8');
 const manifest=JSON.parse(get('public/assets/manifest.json'));
 const images=new Map(manifest.images.map(v=>[v.k,v.f]));
-const audio=new Set((manifest.sounds||[]).map(v=>v.k));
+const audio=new Set((manifest.audio||[]).map(v=>v.k));
 const modes=['derby','dropzone','brawl','curling','golf'];
 let checked=0;
 function exists(key){
@@ -48,10 +48,9 @@ const phone=get('public/play.html');
 for(const id of ['partyBackLobby','partyFinaleStage','partyPresentationCSS','pp_shared_fx_confetti'])
  assert.ok(tv.includes(id),'Missing TV navigation/visual feature: '+id);
 assert.ok(phone.includes('hostExitGame'),'Missing host-phone lobby action');
-for(const mode of modes){
- assert.ok(tv.includes('pp_'+mode+'_bg'),'Missing '+mode+' background integration');
- assert.ok(tv.includes('pp_'+mode+'_fx_'),'Missing '+mode+' FX integration');
-}
+assert.ok(tv.includes('PartyFX.draw'),'Missing cinematic FX drawing integration');
+assert.ok(tv.includes('MarblePartyStage'),'Missing premium stage renderer');
+assert.ok(tv.includes('PartyPresentation.applyFinale'),'Missing thematic podium integration');
 const stage=require('../src/modes/party-presentation.js');
 assert.equal(stage.theme('grandprix'),null,'Grand Prix must not receive Party Pack podium');
 for(const mode of modes)assert.ok(stage.theme(mode),'No themed podium for '+mode);
