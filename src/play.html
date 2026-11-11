@@ -592,6 +592,110 @@ body[data-mode="curling"][data-s="curling"] #curlGuide:not([hidden]){
  #curlGuide img{height:108px}
 }
 
+
+/* GOLF V2 · refined miniature-masters putting controller, not the old boost UI. */
+body[data-mode="golf"][data-s="golf"]:not(.hc){
+ --bg:#122d38;--bg2:#214a46;--card:#2b5f53;--ink:#fff8e2;
+ --dim:#d9f8de;--line:#b9e4bd9e;--gold:#ffdb98;
+ background-image:linear-gradient(175deg,#102f34df,#12352de9 54%,#112b3df8),
+ url('assets/img/pp_golf_bg.webp');
+ background-size:cover;background-position:center
+}
+body[data-mode="golf"][data-s="golf"] #top{
+ background:linear-gradient(130deg,#2d6150f8,#263947f3);
+ padding:10px 11px;border-bottom:2px solid #ffe5ab;
+ box-shadow:0 9px 25px #0008;gap:7px
+}
+body[data-mode="golf"][data-s="golf"] #meMarble{width:40px;height:40px}
+body[data-mode="golf"][data-s="golf"] #meName{
+ font:900 18px Fredoka,sans-serif;max-width:140px;color:#fffae6
+}
+body[data-mode="golf"][data-s="golf"] #hostExitGame{
+ font-size:13px;min-height:38px;padding:5px 9px;border:2px solid #fff0c1
+}
+body[data-mode="golf"][data-s="golf"] #hcBtn{
+ height:37px;padding:4px 8px;font-size:12px;color:#fff8df;border-color:#dfefcc
+}
+body[data-mode="golf"][data-s="golf"] #look{
+ flex:0 0 auto;margin:12px 12px 7px;padding:13px 11px;
+ background:linear-gradient(130deg,#3c6650eb,#1d4450ee);
+ border:2px solid #ffdfa8;border-radius:21px;box-shadow:0 12px 26px #0008
+}
+body[data-mode="golf"][data-s="golf"] #msg{
+ font:900 clamp(23px,7vw,32px) Fredoka,sans-serif;
+ color:#ffe1a4;line-height:1.12;margin:0;text-shadow:0 3px 5px #0009
+}
+body[data-mode="golf"][data-s="golf"] #sub{
+ font:800 15px Nunito,sans-serif;color:#e8fbdf;line-height:1.3;margin-top:7px
+}
+body[data-mode="golf"][data-s="golf"] #vip{gap:6px;padding:0 11px}
+body[data-mode="golf"][data-s="golf"] #vip button{
+ padding:7px 10px;font-size:14px;border-radius:11px
+}
+body[data-mode="golf"][data-s="golf"] #modePanel{
+ flex:0 1 auto;max-height:min(68vh,590px);overflow-y:auto;
+ padding:13px;margin:7px 12px 3px;
+ background:linear-gradient(146deg,#3a7054ed,#183b4ff0);
+ border:2px solid #fbe7b5;border-radius:21px;
+ box-shadow:0 13px 35px #0009
+}
+body[data-mode="golf"][data-s="golf"] #modeTurn{
+ font:900 20px Fredoka,sans-serif;color:#fff1b6
+}
+body[data-mode="golf"][data-s="golf"] #modeReadout{
+ margin:8px 0 13px;padding:10px;background:#153c41e3;
+ border:1px solid #c9ecca;border-radius:12px;
+ font:900 15px Nunito,sans-serif;color:#eff9df
+}
+body[data-mode="golf"][data-s="golf"] #modeActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button{
+ min-width:0;min-height:66px;padding:9px 5px;
+ border:2px solid #dff1ca;border-radius:14px;
+ background:linear-gradient(155deg,#448978,#245666);
+ box-shadow:0 5px 0 #143745;color:#fffbe8;
+ font:900 17px Nunito,sans-serif;white-space:normal
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button[data-action="preview"]{
+ grid-column:span 2;background:linear-gradient(150deg,#4a647b,#203d58);
+ border-color:#d5eaf0
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button[data-action="shoot"]{
+ grid-column:span 2;min-height:105px;
+ background:linear-gradient(155deg,#fff4d3,#efc173 66%,#d98756);
+ border:3px solid #fffbe4;color:#33413c;
+ font:900 38px Fredoka,sans-serif;box-shadow:0 7px 0 #99593e
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button[data-action="cheer"]{
+ grid-column:span 2;min-height:87px;
+ background:linear-gradient(155deg,#f4d6a2,#d97d62);
+ color:#342f3c;font:900 26px Fredoka,sans-serif
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button:focus-visible{
+ outline:3px solid #fff;outline-offset:3px
+}
+body[data-mode="golf"][data-s="golf"] #padZone{display:none!important}
+body[data-mode="golf"][data-s="golf"] #golfGuide:not([hidden]){
+ flex:1;min-height:0;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:9px;text-align:center;
+ margin:8px 13px 22px;padding:13px;
+ background:linear-gradient(148deg,#386c55e8,#1c4453e8);
+ border:2px solid #ffe1a8;border-radius:23px;
+ box-shadow:0 13px 28px #0009
+}
+#golfGuide img{height:min(23vh,165px);max-width:min(60vw,225px);
+ object-fit:contain;filter:drop-shadow(0 8px 19px #0008)}
+#golfGuide strong{font:900 25px Fredoka,sans-serif;color:#ffe9ae}
+#golfGuide p{font:800 14px Nunito,sans-serif;color:#e7f9e6;line-height:1.3}
+@media(max-height:700px){
+ body[data-mode="golf"][data-s="golf"] #look{margin:5px 10px;padding:8px}
+ body[data-mode="golf"][data-s="golf"] #modePanel{padding:9px;max-height:66vh}
+ body[data-mode="golf"][data-s="golf"] #modeActions button{min-height:54px}
+ body[data-mode="golf"][data-s="golf"] #modeActions button[data-action="shoot"]{min-height:83px}
+ #golfGuide img{height:min(17vh,110px)}
+}
+
 </style>
 </head>
 <body>
@@ -639,6 +743,11 @@ body[data-mode="curling"][data-s="curling"] #curlGuide:not([hidden]){
     <img src="assets/img/pp_curling_prop_ice_blocks.webp" alt="" loading="lazy">
     <strong id="curlGuideTitle">WATCH THE ICE</strong>
     <p id="curlGuideText">Choose the nearest stone and prepare for your next end.</p>
+  </aside>
+  <aside id="golfGuide" hidden aria-label="Marble Golf clubhouse spectator display">
+    <img src="assets/img/pp_golf_prop_windmill.webp" alt="" loading="lazy">
+    <strong id="golfGuideTitle">THE CLUBHOUSE</strong>
+    <p id="golfGuideBody">Watch the putt on the TV and prepare for your shot.</p>
   </aside>
   <button id="cheer" type="button" hidden>CHEER!</button>
   <div id="padZone">
@@ -825,6 +934,15 @@ body[data-mode="curling"][data-s="curling"] #curlGuide:not([hidden]){
     document.body.dataset.mode = h.mode || 'grandprix';
     if(h.mode==='brawl'&&h.s==='brawl')document.body.dataset.brawlPhase=h.modePhase||'';
     else delete document.body.dataset.brawlPhase;
+    const golfGuide=$('#golfGuide');
+    if(h.mode==='golf'&&h.s==='golf'&&!h.isTurn){
+      golfGuide.hidden=false;
+      $('#golfGuideTitle').textContent=h.modePhase==='results'?'HOLE COMPLETE':'THE CLUBHOUSE';
+      $('#golfGuideBody').textContent=h.modePhase==='results'?
+        'Check your strokes. Fewest total shots wins the Masters!':
+        h.modePhase==='rolling'?'Follow the marble and watch the cup!':
+        'Your next putt is coming. Cheer the golfer or watch the course.';
+    }else golfGuide.hidden=true;
     const curlGuide=$('#curlGuide');
     if(h.mode==='curling'&&h.s==='curling'&&!h.isTurn){
       curlGuide.hidden=false;
@@ -894,9 +1012,12 @@ body[data-mode="curling"][data-s="curling"] #curlGuide:not([hidden]){
         if(h.vip)vip=[['lobby','Back to Lobby']];
         break;
       case 'golf':
-        setText('', h.modePhase==='aim'&&h.isTurn?'YOUR SHOT':h.modePhase==='rolling'?'MARBLE IN MOTION':h.modePhase==='results'?'HOLE RESULTS':'MARBLE GOLF',
-          'Hole '+(h.hole||1)+'/5 · '+(h.roundScore||0)+' strokes · '+(h.modeHint||''));
-        if(h.vip)vip=[['lobby','End game & lobby']];
+        setText('',h.modePhase==='aim'&&h.isTurn?'LINE UP THE PUTT':
+          h.modePhase==='rolling'?'MARBLE ON THE GREEN':
+          h.modePhase==='results'?'HOLE SCORECARD':'MARBLE GOLF',
+          'Hole '+(h.hole||1)+'/'+(h.holes||9)+' · PAR '+(h.par||2)+
+          ' · '+(h.roundScore||0)+' total strokes · '+(h.modeHint||''));
+        // Persistent header Lobby button is the only host exit.
         break;
       case 'curling':
         setText('',h.modePhase==='aim'&&h.isTurn?'LINE UP YOUR STONE':
