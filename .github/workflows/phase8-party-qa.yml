@@ -27,10 +27,12 @@ jobs:
           node --check src/tv.js
           node --check tools/test-phase8-integration.js
           for f in src/modes/*.js; do node --check "$f"; done
-      - name: Verify Golf browser integration contract
+      - name: Verify five replacement stages and legacy screen removal
         run: node tools/test-phase8-integration.js
-      - name: Simulate five-hole Golf
-        run: node tests/phase7-golf.test.js
+      - name: Simulate both five- and nine-hole Golf championships
+        run: |
+          node tests/phase7-golf.test.js
+          node tools/test-golf.js
       - name: Validate all previous Party Pack modes
         run: |
           npm run test:party
@@ -45,12 +47,13 @@ jobs:
           node - <<'NODE'
           const fs=require('fs'), assert=require('assert');
           const tv=fs.readFileSync('public/tv.html','utf8'), phone=fs.readFileSync('public/play.html','utf8');
-          assert(tv.includes('data-screen="golf"'));
+          assert(tv.includes('data-screen="party-stage"'));
           assert(tv.includes('MODES.golf.tick(dt)'));
-          assert(tv.includes('id="golfShoot"'));
+          assert(tv.includes('id="ppGolfShoot"'));
+          assert(tv.includes('MarbleGolfUI.draw'));
           assert(phone.includes("case 'golf':"));
           assert(!tv.includes('/*MODES*/'));
-          console.log('PASS: compiled Golf TV/phone integration');
+          console.log('PASS: compiled exclusive Golf v2 TV/phone controls and no retired screen');
           NODE
       - name: Preserve build artefacts for acceptance
         uses: actions/upload-artifact@v4
