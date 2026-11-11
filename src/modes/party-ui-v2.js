@@ -428,7 +428,10 @@ const MarblePartyUI=(()=>{
    const unit=w/8,binY=dzY(710)+14;
    roundBox(c,left-4,binY-5,w+8,107,11,'#102b3c','#fff0ba',4);
    for(let i=0;i<8;i++){
-     const x=left+i*unit,prize=DZ_PRIZES[i],jack=i===s.jackpotBin;
+     const x=left+i*unit,prize=DZ_PRIZES[i];
+     // The moving 1,000-point jackpot only unlocks in the final round.
+     const jack=s.round===5?i===s.jackpotBin:i===4;
+     const displayedPrize=(s.round===5&&jack)?1000:prize;
      c.save();c.shadowColor=jack?'#ffcf73':'transparent';c.shadowBlur=jack?20:0;
      roundBox(c,x+4,binY+3,unit-8,91,9,
        jack?gradient(c,x,binY,0,91,[[0,'#ffedaa'],[1,'#ad4a50']]):
@@ -437,7 +440,7 @@ const MarblePartyUI=(()=>{
      c.restore();
      c.textAlign='center';c.fillStyle=jack?'#3b1732':'#fff5de';
      c.font='900 '+(prize===1000?28:25)+'px Fredoka,sans-serif';
-     c.fillText(String(prize),x+unit/2,binY+49);
+     c.fillText(String(displayedPrize),x+unit/2,binY+49);
      c.font='900 13px Nunito,sans-serif';
      c.fillText(jack?'★ JACKPOT ★':'POINTS',x+unit/2,binY+71);
    }
@@ -517,10 +520,11 @@ const MarblePartyUI=(()=>{
    $('ppDropTimer').textContent=drop?Math.min(10,Number(drop.t)||0).toFixed(1)+'s':
      s.done?'—':Math.max(0,Math.ceil(10-s.turnElapsed))+'s';
    $('ppDropAim').textContent=String(Math.round(s.x||500));
-   $('ppDropJackpot').textContent=String(DZ_PRIZES[s.jackpotBin]||1000);
+   $('ppDropJackpot').textContent='1000';
+   $('ppDropJackpotLabel').textContent=s.round===5?'LIVE JACKPOT':'FINAL JACKPOT';
    $('ppDropLast').textContent=(Number(s.last)||0)+' PTS';
    $('ppDropOnDeck').textContent=String(current?.name||'—');
-   $('ppDropCount').textContent=Math.min(s.turn+1,s.roster.length*5)+' / '+(s.roster.length*5);
+   $('ppDropCount').textContent=Math.min(s.turn,s.roster.length*5)+' / '+(s.roster.length*5);
    $('dropLeft').disabled=!isHuman;
    $('dropRight').disabled=!isHuman;
    $('dropNow').disabled=!isHuman;
