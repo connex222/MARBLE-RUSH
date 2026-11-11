@@ -10,7 +10,7 @@ import * as T from '../vendor/three.module.js';
 const supported=['derby','dropzone','brawl','curling','golf'];
 const frames={
  derby:[485,190,1410,680],dropzone:[515,110,1030,810],
- brawl:[490,164,1390,756],curling:[480,212,1415,662],
+ brawl:[490,75,1390,930],curling:[480,212,1415,662],
  golf:[480,212,1415,670]
 };
 const root=document.getElementById('party3d');
@@ -120,15 +120,37 @@ function lineRing(r,t,color,x=0,y=2,z=0){
 // plane was foreshortened into a distracting trapezoid behind the boards.
 // Keeping it aligned to the camera lets the *real* 3D world be the focus.
 function addBackdrop(mode) {
- const texture=new T.TextureLoader().load('assets/img/pp_'+mode+'_bg.webp',t=>{
-   t.colorSpace=T.SRGBColorSpace;t.anisotropy=2;
- },undefined,()=>{});
  const mat=new T.MeshBasicMaterial({
-   map:texture,color:0xb1bccf,depthWrite:true,depthTest:true
+   color:0xb1bccf,depthWrite:true,depthTest:true
  });
  const plane=new T.Mesh(new T.PlaneGeometry(6450,3650),mat);
  plane.receiveShadow=false;plane.castShadow=false;
  world.backdrop=plane;
+ new T.TextureLoader().load('assets/img/pp_'+mode+'_bg.webp',t=>{
+   // The approved posters contain some large stationary marbles and playfields.
+   // Those must NOT appear behind live 3D marble action as duplicate game
+   // objects. A shallow depth-of-field and bottom matte keep the attractive
+   // scenery but make it read as background, not a second live board.
+   const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=576;
+   const ctx=canvas.getContext('2d');
+   if(!ctx){mat.map=t;t.colorSpace=T.SRGBColorSpace;mat.needsUpdate=true;return;}
+   ctx.filter='blur(6px)';
+   ctx.drawImage(t.image,-15,-15,1054,606);
+   ctx.filter='none';
+   ctx.save();ctx.beginPath();ctx.rect(0,210,1024,366);ctx.clip();
+   ctx.filter='blur(30px)';ctx.drawImage(t.image,-30,-32,1084,640);
+   ctx.restore();ctx.filter='none';
+   const fade=ctx.createLinearGradient(0,170,0,576);
+   fade.addColorStop(0,'rgba(7,13,30,0)');
+   fade.addColorStop(.42,'rgba(8,13,29,.28)');
+   fade.addColorStop(.76,'rgba(8,13,29,.68)');
+   fade.addColorStop(1,'rgba(8,13,29,.86)');
+   ctx.fillStyle=fade;ctx.fillRect(0,160,1024,416);
+   const texture=new T.CanvasTexture(canvas);
+   texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=2;
+   mat.map=texture;mat.color.set('#ffffff');mat.needsUpdate=true;
+   t.dispose();
+ },undefined,()=>{});
 }
 function surfaceTexture(object,mode,repeatX=1,repeatY=1){
  world.surfaceCount=(world.surfaceCount||0)+1;
