@@ -198,7 +198,7 @@ const {chromium}=require('playwright');
       event:g.state.events.some(e=>e.kind==='recover'&&e.id===id)};
   },beforeBrawl.id);
   assert.equal(rescue.used,true,'Brawl did not consume the one-time escape');
-  assert.ok(rescue.energy<=65&&rescue.event,'Brawl escape must have an energy cost');
+  assert.ok(rescue.energy<70&&rescue.event,'Brawl escape must cost 35 energy (with slight frame regeneration)');
   // Telegraphed danger needs a visible countdown and an actual outward shockwave.
   await page.evaluate(()=>{
     const g=window.__MR.MODES.brawl.session(),s=g.state;
