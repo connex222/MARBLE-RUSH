@@ -1994,7 +1994,7 @@
     }
     applyPartyArt();
     $('#partyModeStatus').textContent = partyLength ? 'Party Night preview: '+partyLength+' rounds · ready modes repeat' :
-      'UI REBUILD v2 · Grand Prix, Derby and Drop Zone ready · three modes rebuilding';
+      'UI REBUILD v2 · Grand Prix, Derby, Drop Zone and Brawl ready · two modes rebuilding';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -2185,8 +2185,15 @@
       Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
-    // The three unfinished engines cannot start until their own scenes exist.
-    if (['brawl','curling','golf'].includes(state)) {
+    if (state==='brawl') {
+      stateT+=dt;MODES.brawl.tick(dt);
+      const combat=MODES.brawl.session();
+      if(combat)MarbleBrawlUI.draw(combat.state,IMG,{reduce:settings.reduce});
+      Clatter.tick();
+      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
+    }
+    // Curling and Golf are still gated until their own replacement views exist.
+    if (['curling','golf'].includes(state)) {
       stateT+=dt;MODES[state].tick(dt);
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
@@ -2354,6 +2361,15 @@
     $('#'+id).onclick=()=>{
       const g=MODES.dropzone.session(),owner=g?.owner();
       if(owner&&!owner.cpu)Game.onAction(owner.id,action,action==='drop'?undefined:2);
+    };
+  }
+  // New Bowl Brawl combat controls use the original authoritative action router.
+  for(const [id,action] of [['ppBrawlLeft','left'],['ppBrawlRight','right'],
+                             ['ppBrawlRam','ram'],['ppBrawlAnchor','anchor']]){
+    $('#'+id).onclick=()=>{
+      const g=MODES.brawl.session();
+      const p=g?.state.roster.find(x=>!x.cpu&&g.current(x.id)?.alive);
+      if(p)Game.onAction(p.id,action,action==='left'||action==='right'?2:0);
     };
   }
   for (const b of document.querySelectorAll('[data-party]')) {
