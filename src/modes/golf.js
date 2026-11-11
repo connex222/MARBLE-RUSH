@@ -102,6 +102,7 @@ const MarbleGolf = (() => {
           y:state.ball.y+Math.sin(a)*115};return true;
       }
       if(kind==='shoot') {
+        state.ghost=null; // Hint is for the selected stroke only.
         state.shotFrom={x:state.ball.x,y:state.ball.y};
         const theta=state.angle*Math.PI/180, speed=240+state.power*8.5;
         state.ball.vx=Math.cos(theta)*speed;
