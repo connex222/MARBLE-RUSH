@@ -9,9 +9,9 @@ import * as T from '../vendor/three.module.js';
 'use strict';
 const supported=['derby','dropzone','brawl','curling','golf'];
 const frames={
- derby:[502,204,1358,638],dropzone:[528,115,927,813],
- brawl:[635,94,895,889],curling:[489,227,1361,570],
- golf:[550,235,1301,620]
+ derby:[485,190,1410,680],dropzone:[515,110,1030,810],
+ brawl:[490,164,1390,756],curling:[480,212,1415,662],
+ golf:[480,212,1415,670]
 };
 const root=document.getElementById('party3d');
 const toggle=document.getElementById('party3dToggle');
@@ -28,6 +28,57 @@ const ballGeo=new T.SphereGeometry(24,28,20);
 const ringGeo=new T.TorusGeometry(34,4,8,40);
 const shadowGeo=new T.CircleGeometry(25,24);
 const defaultColors=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d','#a7deed','#ffd4a2'];
+const FXKINDS={
+ derby:{heat_start:'speed',cheer:'confetti',photoFinish:'photo',lateSurge:'surge',payout:'laurel',gate_open:'dust'},
+ dropzone:{release:'fall',goldPeg:'multiplier',pegImpact:'peg',jackpot:'superjackpot',bucket:'coins',jackpotMove:'jackpot'},
+ brawl:{hit:'impact',ram:'shockwave',out:'ko',lastTwo:'warning',hazardReveal:'spin',hazardImpact:'ricochet',round_end:'victory'},
+ curling:{throw:'sweep',sweep:'scrape',hit:'impact',measurement:'target',lastStone:'aurora',end_result:'victory'},
+ golf:{shot:'putt',water:'ricochet',holeInOne:'holeinone',cup:'cup',tunnel:'roll',flyThrough:'flag',spectatorCheer:'confetti'}
+};
+const vfx=new Map(),fxTextures=new Map(),fxClock=()=>performance.now();
+function fxPosition(mode,e,state){
+ const ex=Number.isFinite(e.x)?e.x:null,ey=Number.isFinite(e.y)?e.y:null;
+ if(mode==='brawl')return [ex===null?0:ex*1.03,55,ey===null?0:ey*1.03];
+ if(mode==='curling')return [ex===null?290:ex-650,39,ey===null?0:ey-265];
+ if(mode==='golf')return [ex===null?0:ex-620,39,ey===null?0:ey-290];
+ if(mode==='dropzone')return [ex===null?0:ex-500,ey===null?0:350-ey,82];
+ const length=Math.max(1,Number(state.length)||1300);
+ return [ex===null?0:-630+Math.max(0,Math.min(1,ex/length))*1230,48,Number.isInteger(e.horse)?-260+104*e.horse:0];
+}
+function fxTexture(mode,kind){
+ const key=mode+'_'+kind;
+ if(fxTextures.has(key))return fxTextures.get(key);
+ const texture=new T.TextureLoader().load('assets/img/pp_'+mode+'_fx_'+kind+'.webp',t=>{t.colorSpace=T.SRGBColorSpace;},undefined,()=>{});
+ fxTextures.set(key,texture);return texture;
+}
+function updateEffects(mode,state){
+ const now=Number(state.elapsed??state.time??0),duration=lowMotion?.25:.88;
+ const live=new Set();
+ if(Array.isArray(state.events)){
+  for(const e of state.events.slice(-12)){
+   const kind=FXKINDS[mode]?.[e.kind],t=e.time;
+   if(!kind||!Number.isFinite(t))continue;
+   const age=now-t;if(age<0||age>duration)continue;
+   const key=mode+'|'+e.kind+'|'+t+'|'+(e.x??'')+'|'+(e.y??'');
+   live.add(key);
+   let sprite=vfx.get(key);
+   if(!sprite){
+     const mat=new T.SpriteMaterial({map:fxTexture(mode,kind),color:0xffffff,transparent:true,
+       depthWrite:false,opacity:1,blending:T.NormalBlending});
+     sprite=new T.Sprite(mat);sprite.position.set(...fxPosition(mode,e,state));
+     scene.add(sprite);vfx.set(key,sprite);
+   }
+   const big=/jackpot|holeinone|victory|photo|laurel|ko/.test(kind);
+   const size=(big?240:152)*(lowMotion?1:.8+age/duration*.35);
+   sprite.scale.set(size,size,1);
+   sprite.material.opacity=Math.max(0,.95*(1-age/duration));
+  }
+ }
+ for(const [key,sprite] of vfx)if(!live.has(key)){
+  scene.remove(sprite);sprite.material.dispose();vfx.delete(key);
+ }
+}
+
 const material=(color,metal=.12,rough=.29)=>new T.MeshPhysicalMaterial({
  color:new T.Color(color),metalness:metal,roughness:rough,clearcoat:.8,
  clearcoatRoughness:.13
@@ -211,15 +262,23 @@ function stage(mode,s) {
  const aspect=(frames[mode][2]/frames[mode][3]);
  camera=new T.PerspectiveCamera(mode==='dropzone'?41:mode==='brawl'?42:45,aspect,1,4500);
  if(mode==='dropzone')camera.position.set(0,0,1350);
- else if(mode==='brawl')camera.position.set(0,890,1060);
- else camera.position.set(0,850,1280);
+ else if(mode==='brawl')camera.position.set(0,765,1045);
+ else if(mode==='derby')camera.position.set(0,810,1250);
+ else camera.position.set(0,850,1240);
  camera.lookAt(0,0,0);
+}
+function marbleSkin(color){
+  // Painted glass swirl under a clear glossy physical coating. This is an
+  // inexpensive repeatable shader texture, not a static image billboard.
+  const mat=material(/^#[a-f\d]{6}$/i.test(color||'')?color:'#ff526c',.14,.095);
+  mat.clearcoat=1;mat.clearcoatRoughness=.025;
+  mat.iridescence=.35;mat.iridescenceIOR=1.3;
+  return mat;
 }
 function getBall(id,color,label){
  let item=ballMap.get(id);
  if(item)return item;
- const mat=material(/^#[a-f\d]{6}$/i.test(color||'')?color:'#ff526c',.18,.08);
- mat.clearcoat=1;mat.clearcoatRoughness=.03;
+ const mat=marbleSkin(color);
  const sphere=new T.Mesh(ballGeo,mat);sphere.castShadow=true;scene.add(sphere);
  const shadow=new T.Mesh(shadowGeo,new T.MeshBasicMaterial({color:0x071125,transparent:true,opacity:.43,depthWrite:false}));
  shadow.rotation.x=-Math.PI/2;shadow.position.y=5;scene.add(shadow);
@@ -303,21 +362,25 @@ function update(mode,s){
    cx.divideScalar(seen.size);
  }
  lowMotion=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+ updateEffects(mode,s);
  const sec=performance.now()/1000;
  if(mode==='dropzone'){
    camera.position.set(lowMotion?0:20*Math.sin(sec*.16),0,1350);
    camera.lookAt(0,0,0);
  }else{
-   const spread=mode==='brawl'?0.19:mode==='derby'?.10:.07;
+   const spread=mode==='brawl'?.12:mode==='derby'?.08:.06;
    const px=lowMotion?0:Math.sin(sec*.21)*spread*600;
    camera.position.x+=(px+cx.x*.07-camera.position.x)*.022;
-   camera.position.y+=(((mode==='brawl'?890:850)+(mode==='derby'&&s.phase==='racing'?80:0))-camera.position.y)*.018;
-   camera.position.z+=((mode==='brawl'?1060:1280)-camera.position.z)*.018;
-   camera.lookAt(cx.x*.08,0,cx.z*.08);
+   const targetY=mode==='brawl'?765:mode==='derby'?810:850;
+   camera.position.y+=((targetY+(mode==='derby'&&s.phase==='racing'?30:0))-camera.position.y)*.018;
+   camera.position.z+=((mode==='brawl'?1045:mode==='derby'?1250:1240)-camera.position.z)*.018;
+   camera.lookAt(cx.x*(mode==='derby'?.13:.11),0,cx.z*.11);
  }
 }
 function clean(){
  if(!scene)return;
+ for(const sprite of vfx.values()){scene.remove(sprite);sprite.material.dispose();}
+ vfx.clear();
  root.querySelectorAll('.p3bin').forEach(el=>el.remove());
  for(const x of ballMap.values()){x.el.remove();x.sphere.material.dispose();x.shadow.material.dispose();x.glow.material.dispose();}
  ballMap.clear();
