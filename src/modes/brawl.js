@@ -87,7 +87,14 @@ const BowlBrawl = (() => {
       }
       if(type==='anchor'){
         if(m.energy<15||m.cooldown>0)return false;
-        m.energy-=15;m.anchored=.75;m.cooldown=.65;
+        m.energy-=15;
+        // A warning is a real choice: brace at any point in the three-second
+        // countdown and stay protected through the blast. The trade-off is
+        // remaining almost stationary while enemies may still RAM you.
+        const incoming=state.pulseAt==null?Infinity:state.pulseAt-state.elapsed;
+        m.anchored=incoming>0&&incoming<=SHOCK_WARNING?
+          incoming+.32:.75;
+        m.cooldown=.65;
         state.events.push({kind:'anchor',id:m.id,time:state.time});return true;
       }
       if(type==='ram'){
