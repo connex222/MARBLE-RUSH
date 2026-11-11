@@ -184,7 +184,7 @@ const MarbleDerby=(()=>{
       };
     }
     newHeat();
-    return {state,bet,action,step,hud,draw,standings,getPlayer};
+    return {state,bet,action,step,hud,standings,getPlayer};
   }
   return Object.freeze({create,ROUNDS,HORSES,LENGTH,STAKES,START_GEMS});
 })();
