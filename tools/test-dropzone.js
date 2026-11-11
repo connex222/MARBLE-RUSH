@@ -9,7 +9,7 @@ for(const mode of ['registry','session','geometry','attract','bots','grandprix',
 }
 const DZ=vm.runInContext('DropZone',ctx);
 const MODES=vm.runInContext('MODES',ctx);
-assert.equal(MODES.dropzone.available,false,'Rules remain tested, but legacy UI is gated pending the new presentation');
+assert.equal(MODES.dropzone.available,true,'New independent Drop Zone UI v2 must be launchable');
 assert.equal(DZ.PEGS.length,85);
 assert.deepEqual(Array.from(DZ.BINS),[50,100,200,500,1000,500,200,100]);
 function run(seed,n=3){
