@@ -246,6 +246,116 @@ body[data-mode="derby"][data-s="derby"] #ringBg{stroke:#ffdf8e6e}
  body[data-mode="derby"][data-s="derby"] #padZone{min-height:105px}
 }
 
+
+/* DROP ZONE v2 — phone is the chute controller and spectator prize predictor.
+   Existing WebSocket action names and player identity remain untouched. */
+body[data-mode="dropzone"][data-s="dropzone"]:not(.hc){
+ --bg:#081d30;--bg2:#0b2941;--card:#103e55;--ink:#fff3ce;
+ --dim:#c8ebde;--line:#62d4c27d;--gold:#ffd67c;
+ background-image:linear-gradient(170deg,rgba(6,25,40,.91),rgba(5,27,42,.90) 47%,rgba(5,16,38,.97)),
+ url('assets/img/pp_dropzone_bg.webp');
+ background-position:center;background-size:cover
+}
+body[data-mode="dropzone"][data-s="dropzone"] #top{
+ background:linear-gradient(130deg,#0b3650fa,#12263df1);
+ padding:10px 11px;border-bottom:2px solid #ffdb8d9e;
+ box-shadow:0 7px 24px #000a;gap:7px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #meName{
+ font:900 18px Fredoka,sans-serif;color:#fff4d4;max-width:140px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #meMarble{height:38px;width:38px}
+body[data-mode="dropzone"][data-s="dropzone"] #hostExitGame{
+ min-height:38px;padding:4px 8px;font-size:13px;border:2px solid #ffe5af
+}
+body[data-mode="dropzone"][data-s="dropzone"] #hcBtn{
+ height:37px;font-size:12px;padding:3px 8px;color:#fff4d4;border-color:#70d4c0
+}
+body[data-mode="dropzone"][data-s="dropzone"] #look{
+ flex:0 0 auto;margin:14px 13px 7px;padding:17px 11px;
+ background:linear-gradient(135deg,#0e4a5feb,#142a45f0);
+ border:2px solid #ffe2a7;border-radius:21px;box-shadow:0 12px 26px #0009
+}
+body[data-mode="dropzone"][data-s="dropzone"] #msg{
+ margin:0;font:900 clamp(23px,6.9vw,31px) Fredoka,sans-serif;
+ color:#ffe2a0;line-height:1.1;text-shadow:0 3px 5px #0009
+}
+body[data-mode="dropzone"][data-s="dropzone"] #sub{
+ color:#d8faf0;font:800 15px Nunito,sans-serif;line-height:1.35;margin-top:7px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #vip{gap:7px;padding:0 12px}
+body[data-mode="dropzone"][data-s="dropzone"] #vip button{
+ font-size:14px;padding:7px 9px;border-radius:11px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modePanel{
+ flex:0 1 auto;max-height:min(48vh,410px);overflow-y:auto;overscroll-behavior:contain;
+ padding:13px;margin:7px 13px 3px;
+ background:linear-gradient(160deg,#0b3b51f1,#152942f1);
+ border:2px solid #ffe2a7;border-radius:20px;box-shadow:0 10px 26px #0009
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeTurn{
+ font:900 19px Fredoka,sans-serif;color:#ffe49e
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeReadout{
+ font:800 15px Nunito,sans-serif;color:#d8f9eb;margin:7px 0 12px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions button{
+ min-width:0;min-height:58px;padding:9px 5px;font:900 16px Nunito,sans-serif;
+ color:#fff5db;border-radius:14px;border:2px solid #90e6d5;
+ background:linear-gradient(165deg,#286d7b,#0e3953);
+ box-shadow:0 5px 0 #082438
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions button[data-action="drop"]{
+ grid-column:span 2;background:linear-gradient(165deg,#ffedb2,#eda94d 70%,#c47746);
+ color:#282334;font:900 27px Fredoka,sans-serif;border-color:#fff5d6;
+ min-height:78px;box-shadow:0 6px 0 #9b5634
+}
+body[data-mode="dropzone"][data-s="dropzone"][data-drop-phase="falling"] #modeActions{
+ grid-template-columns:repeat(4,minmax(0,1fr));gap:7px
+}
+body[data-mode="dropzone"][data-s="dropzone"][data-drop-phase="falling"] #modeActions button[data-action="predict"]{
+ min-height:56px;padding:8px 2px;font-size:15px;border-color:#ffdd8b;
+ background:linear-gradient(150deg,#805d4a,#26465c)
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions button:focus-visible{
+ outline:3px solid #fff7db;outline-offset:3px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions button[aria-pressed="true"]{
+ border-color:#fff9bc;box-shadow:0 0 0 3px #ffd98a8c,0 4px 0 #082438
+}
+body[data-mode="dropzone"][data-s="dropzone"] #padZone{
+ flex:1 1 auto;min-height:140px;padding:12px 16px 29px
+}
+body[data-mode="dropzone"][data-s="dropzone"]:not([data-drop-phase="aim"]) #padZone,
+body[data-mode="dropzone"][data-s="dropzone"][data-drop-turn="false"] #padZone{
+ display:none!important
+}
+body[data-mode="dropzone"][data-s="dropzone"] #pad{
+ height:min(100%,min(63vw,235px));max-height:255px;
+ width:auto;border:8px solid #ffe29d;
+ background:radial-gradient(circle at 30% 24%,#fff5ca 0%,#fcd573 18%,#b9814e 43%,#3b8c96 76%,#165269 100%);
+ box-shadow:0 11px 0 #705a3d,0 23px 36px #0009,inset 0 10px 16px #fffae4a1;
+}
+body[data-mode="dropzone"][data-s="dropzone"] #padText{
+ color:#152f42;text-shadow:0 1px 0 #fff3c7
+}
+body[data-mode="dropzone"][data-s="dropzone"] #padText b{
+ font:900 min(13vw,54px) Fredoka,sans-serif
+}
+body[data-mode="dropzone"][data-s="dropzone"] #padText span{
+ font:900 min(4.4vw,16px) Nunito,sans-serif
+}
+body[data-mode="dropzone"][data-s="dropzone"] #ringFg{stroke:#fff6cf}
+body[data-mode="dropzone"][data-s="dropzone"] #ringBg{stroke:#c8f9ed81}
+@media(max-height:680px){
+ body[data-mode="dropzone"][data-s="dropzone"] #look{margin:5px 10px;padding:9px}
+ body[data-mode="dropzone"][data-s="dropzone"] #modePanel{max-height:42vh}
+ body[data-mode="dropzone"][data-s="dropzone"] #padZone{min-height:100px}
+}
+
 </style>
 </head>
 <body>
@@ -439,7 +549,7 @@ body[data-mode="derby"][data-s="derby"] #ringBg{stroke:#ffdf8e6e}
         button.type='button';
         button.textContent=String(control.label||control.a).slice(0,30);
         button.setAttribute('aria-pressed',String(!!control.selected));
-        button.dataset.action=control.a; // Derby-only CSS state; messages unchanged
+        button.dataset.action=control.a; // Mode-specific appearance; action messages unchanged
         button.onclick=()=>{audio();buzz(14);send({t:'act',a:control.a,v:control.v});};
         box.appendChild(button);
       }
@@ -462,6 +572,13 @@ body[data-mode="derby"][data-s="derby"] #ringBg{stroke:#ffdf8e6e}
     $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
     document.body.dataset.mode = h.mode || 'grandprix';
+    if(h.mode==='dropzone'&&h.s==='dropzone'){
+      document.body.dataset.dropPhase=h.modePhase||'';
+      document.body.dataset.dropTurn=String(!!h.isTurn);
+    }else{
+      delete document.body.dataset.dropPhase;
+      delete document.body.dataset.dropTurn;
+    }
     if(h.mode==='derby'&&h.s==='derby'){
       document.body.dataset.derbyPhase=h.modePhase||'';
       $('#pad').disabled=!(h.modePhase==='racing'&&h.myBet&&h.isTurn);
@@ -525,11 +642,14 @@ body[data-mode="derby"][data-s="derby"] #ringBg{stroke:#ffdf8e6e}
           (h.roundScore||0)+' points · '+(h.turnLabel||'Bowl Brawl'));
         if(h.vip)vip=[['lobby','End game & lobby']];
         break;
-      case 'dropzone':
-        setText('', h.isTurn?'YOUR DROP':h.modePhase==='falling'?'MARBLE IN PLAY':'WAIT FOR YOUR TURN',
+      case 'dropzone': {
+        const dropping=h.modePhase==='aim'&&h.isTurn;
+        const predicting=h.modePhase==='falling'&&h.isTurn;
+        setText('', dropping?'LINE UP YOUR DROP':predicting?'PREDICT THE PRIZE':h.modePhase==='falling'?'MARBLE IN PLAY':'WATCH THE JACKPOT',
           (h.roundScore||0)+' points · '+(h.turnLabel||'Drop Zone'));
-        if (h.vip) vip=[['lobby','End game & lobby']];
+        // The top header already has the VIP's persistent Lobby button.
         break;
+      }
       case 'race':
         if(h.vip)vip=[['lobby','Back to Lobby']];
         if (!h.inRace) { setText('', 'Watch the TV!', 'You join the next race'); break; }
