@@ -307,8 +307,8 @@ const BowlBrawl = (() => {
           // Keep the emergency button FIRST so it is visible without scrolling.
           ...(recoverReady?[{a:'recover',label:'SAVE YOUR MARBLE!',v:0}]:[]),
           {a:'left',label:'◀ TURN',v:2},
-          {a:'ram',label:'RAM!',v:0},
           {a:'right',label:'TURN ▶',v:2},
+          {a:'ram',label:'RAM!',v:0},
           {a:'anchor',label:'ANCHOR',v:0}
         ]:[],
         modeHint:m?.alive?(
