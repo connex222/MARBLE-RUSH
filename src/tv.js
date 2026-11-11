@@ -1991,7 +1991,7 @@
     }
     applyPartyArt();
     $('#partyModeStatus').textContent = partyLength ? 'Party Night preview: '+partyLength+' rounds · ready modes repeat' :
-      'UI REBUILD v2 · Grand Prix and new Derby ready · four modes under reconstruction';
+      'UI REBUILD v2 · Grand Prix, Derby and Drop Zone ready · three modes rebuilding';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -2174,9 +2174,14 @@
       if(derby)MarblePartyUI.drawDerby(derby.state,IMG,{selectedHorse:derbyTvHorse,reduce:settings.reduce});
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
-    // Other four engines are preserved but their withdrawn interfaces cannot
-    // be started until rebuilt; never silently render the old boards.
-    if (['dropzone','brawl','curling','golf'].includes(state)) {
+    if (state==='dropzone') {
+      stateT+=dt;MODES.dropzone.tick(dt);
+      const drop=MODES.dropzone.session();
+      if(drop)MarblePartyUI.drawDropZone(drop.state,IMG,{reduce:settings.reduce});
+      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
+    }
+    // The three unfinished engines cannot start until their own scenes exist.
+    if (['brawl','curling','golf'].includes(state)) {
       stateT+=dt;MODES[state].tick(dt);
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
@@ -2338,6 +2343,14 @@
   $('#derbyCheer').onclick=()=>{const g=MODES.derby.session();
     const p=g?.state.roster.find(x=>!x.cpu&&g.state.wagers.has(x.id));
     if(p)g.action(p.id,'cheer');};
+  // New Drop Zone controls send the same authorised actions as phones.
+  // They are part of the replacement stage, not the withdrawn legacy bar.
+  for(const [id,action] of [['dropLeft','left'],['dropRight','right'],['dropNow','drop']]){
+    $('#'+id).onclick=()=>{
+      const g=MODES.dropzone.session(),owner=g?.owner();
+      if(owner&&!owner.cpu)Game.onAction(owner.id,action,action==='drop'?undefined:2);
+    };
+  }
   for (const b of document.querySelectorAll('[data-party]')) {
     b.onclick = () => Game.onAction('tv', 'party', Number(b.dataset.party));
   }
