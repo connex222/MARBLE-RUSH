@@ -1279,7 +1279,8 @@
       Audio_.play('vo_' + key, { gap: 0.5 });
     }
     function tick() { if (performance.now() / 1000 > hideAt) el.classList.remove('show'); }
-    return { say, tick };
+    function clear() {hideAt=0;el.classList.remove('show');}
+    return { say, tick, clear };
   })();
 
   /* ======================================================================
@@ -1881,6 +1882,8 @@
       if (preview) preview.hidden = true;
     }
     if(name!=='lobby')Audio_.stopIntro();
+    // No previous finale announcement may cover the next game's new UI.
+    if(name!=='finale'&&name!=='results')Clatter.clear();
     Audio_.setRoll(0,0);
     const isPartyStage=['derby','dropzone','brawl','curling','golf'].includes(name);
     const visibleScreen=isPartyStage?'party-stage':name;
@@ -2172,12 +2175,14 @@
       stateT+=dt;MODES.derby.tick(dt);
       const derby=MODES.derby.session();
       if(derby)MarblePartyUI.drawDerby(derby.state,IMG,{selectedHorse:derbyTvHorse,reduce:settings.reduce});
+      Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='dropzone') {
       stateT+=dt;MODES.dropzone.tick(dt);
       const drop=MODES.dropzone.session();
       if(drop)MarblePartyUI.drawDropZone(drop.state,IMG,{reduce:settings.reduce});
+      Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     // The three unfinished engines cannot start until their own scenes exist.
