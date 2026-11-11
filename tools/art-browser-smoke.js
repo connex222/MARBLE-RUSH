@@ -89,6 +89,22 @@ async function main(){
           assert.equal(status3d.canvas,true,id+' 3D renderer did not start');
           assert.equal(status3d.inside,true,id+' 3D camera viewport too small');
           if(id==='brawl'){
+            await page.waitForFunction(()=>{
+              const b=document.querySelector('#party3dToggle'),s=document.querySelector('#party3d');
+              return b.hidden||s.dataset.rendered==='true';
+            },{timeout:10000});
+            if(await page.evaluate(()=>document.querySelector('#party3d').dataset.rendered==='true')){
+              const sceneCapture=await page.evaluate(()=>{
+                const s=document.querySelector('#party3d'),c=s.querySelector('canvas');
+                return {mode:s.dataset.mode,
+                  webglSize:[c?.width||0,c?.height||0],
+                  stageVisible:!s.hidden};
+              });
+              assert.equal(sceneCapture.mode,'brawl','3D frame never rendered correct mode');
+              assert.ok(sceneCapture.webglSize[0]>200&&sceneCapture.webglSize[1]>200,
+                '3D framebuffer unexpectedly small');
+              console.log('PASS: genuine 3D WebGL Bowl Brawl frame rendered '+JSON.stringify(sceneCapture));
+            }else console.log('INFO: no WebGL available for true-3D screenshot; 2D fallback retained');
             await page.screenshot({path:'qa-true-3d-brawl.png',fullPage:true});
             await page.locator('#party3dToggle').click();
             await page.waitForTimeout(50);
