@@ -99,6 +99,8 @@ const {chromium}=require('playwright');
       jackpot:document.getElementById('ppDropJackpot').textContent};
   });
   assert.equal(dzView.mode,'dropzone');
+  assert.equal(await page.locator('#clatter').evaluate(el=>el.classList.contains('show')),false,
+    'Previous Derby finale commentary covers the new Drop Zone UI');
   assert.ok(dzView.rect[0]>=1900&&dzView.rect[1]>=1050,'New Drop Zone not full-TV');
   assert.ok(dzView.colors>10,'New Drop Zone board appears blank or flat');
   assert.deepEqual(dzView.ids,['dropLeft','dropRight','dropNow'],
