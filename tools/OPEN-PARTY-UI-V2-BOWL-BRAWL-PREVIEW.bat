@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions
-title MARBLE RUSH - PARTY PACK UI V2 - BOWL BRAWL PREVIEW
+title MARBLE RUSH - BOWL BRAWL MAYHEM PREVIEW
 echo ==========================================================
-echo MARBLE RUSH - BOWL BRAWL NEW UI - SAFE DEVELOPMENT PREVIEW
+echo MARBLE RUSH - BOWL BRAWL MAYHEM - SAFE DEVELOPMENT PREVIEW
 echo ==========================================================
 echo.
 echo Runs a separate development copy. LIVE RENDER IS NOT CHANGED.
@@ -20,7 +20,7 @@ if not exist "%PREVIEW%\.git" (
  git clone --single-branch --branch "%BRANCH%" "https://github.com/connex222/MARBLE-RUSH.git" "%PREVIEW%"
  if errorlevel 1 goto failed
 ) else (
- echo [1/4] Pulling latest new Brawl, Derby and Drop Zone UIs ...
+ echo [1/4] Pulling latest Brawl Mayhem mechanics and all five rebuilt game UIs ...
  git -C "%PREVIEW%" fetch origin "%BRANCH%"
  if errorlevel 1 goto failed
  git -C "%PREVIEW%" switch "%BRANCH%"
@@ -43,8 +43,9 @@ echo [4/4] Starting your independent TV preview ...
 echo.
 echo URL: http://localhost:35996/tv
 echo.
-echo Select BOWL BRAWL, or choose the rebuilt Derby or Drop Zone.
-echo Grand Prix is unchanged. Curling and Golf remain locked.
+echo Select BOWL BRAWL to test: live shockwaves, charged KO bonuses,
+echo one-use emergency edge rescue, and adaptive arena music.
+echo Grand Prix, Derby, Drop Zone, Curling and Golf are also available.
 echo Join up to 8 phones with the QR; use same local Wi-Fi.
 echo Leave the server window open during play.
 echo If firewall asks, allow Node.js access on PRIVATE networks.
