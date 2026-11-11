@@ -35,6 +35,7 @@ jobs:
       - name: Validate source syntax
         run: |
           node --check src/modes/party-presentation.js
+          node --check src/modes/party-3d.js
           node --check src/modes/party-fx.js
           node tools/test-party-presentation.js
           node tools/test-party-fx.js
@@ -51,6 +52,8 @@ jobs:
         run: node tools/audit-art.js
       - name: Phase 4 release candidate gate (200 assets, five audio, TV and phone)
         run: node tools/test-phase4-release.js
+      - name: Verify opt-in WebGL 3D packaging without changing physics
+        run: node tools/test-3d-visuals.js
       - name: Smoke-test HTTP and generated assets without deploying
         run: |
           set -e
