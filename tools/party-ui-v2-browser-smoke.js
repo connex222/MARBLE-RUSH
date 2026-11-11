@@ -463,6 +463,49 @@ const {chromium}=require('playwright');
     assert.equal(await page.evaluate(()=>window.__MR.partyScreen.assertExclusive()),true,
       'Game restart produced old UI or double renderer: '+m);
   }
+  // Elastic Derby camera proof using real runner progress, no independent
+  // decorative scene and no physics code change. These mutations exist only
+  // in this browser QA restart and cannot affect any scored playthrough.
+  await page.evaluate(()=>window.__MR.Game.toLobby());
+  await page.locator('#partyModeCards .partyModeCard[data-mode="derby"]').click();
+  await page.locator('#btnStart').click();
+  await page.waitForFunction(()=>window.__MR.state==='derby');
+  await page.evaluate(()=>{
+    const g=window.__MR.MODES.derby.session();
+    g.state.phase='racing';
+    g.state.horses.forEach(h=>{h.x=600;h.v=0;});
+  });
+  await page.waitForTimeout(400);
+  const closeZoom=await page.evaluate(()=>window.__MR.derbyCamera.zoom);
+  await page.screenshot({path:'qa-real-derby-tight-pack.png'});
+  await page.evaluate(()=>{
+    const g=window.__MR.MODES.derby.session();
+    g.state.horses[0].x=1480;
+    for(let i=1;i<g.state.horses.length;i++)g.state.horses[i].x=150;
+  });
+  await page.waitForTimeout(850);
+  const wide=await page.evaluate(()=>window.__MR.derbyCamera);
+  await page.screenshot({path:'qa-real-derby-straggler-wide.png'});
+  assert.ok(wide.spread>900,'Camera test never created a genuine straggler');
+  assert.ok(wide.target<.92,'Wide camera did not respond to large separation');
+  assert.ok(wide.zoom<closeZoom-.015,'Derby failed to ease OUT when a marble falls behind');
+  await page.evaluate(()=>{
+    const g=window.__MR.MODES.derby.session();
+    g.state.horses.forEach(h=>{h.x=1200;h.v=0;});
+  });
+  await page.waitForTimeout(850);
+  const caught=await page.evaluate(()=>window.__MR.derbyCamera);
+  await page.screenshot({path:'qa-real-derby-catch-up-tight.png'});
+  assert.ok(caught.target>1.0&&caught.zoom>wide.zoom+.015,
+    'Derby camera did not smoothly return IN after the straggler caught up');
+  await page.evaluate(()=>{window.__MR.settings.reduce=true;});
+  await page.waitForTimeout(180);
+  assert.ok(Math.abs((await page.evaluate(()=>window.__MR.derbyCamera.zoom))-1)<.002,
+    'Reduced-motion setting must freeze the TV zoom');
+  await page.evaluate(()=>{window.__MR.settings.reduce=false;});
+  console.log('REAL-REBUILD-DERBY-CAMERA '+JSON.stringify({closeZoom,wide,caught,
+    reducedMotion:'zoom held at 1.0'}));
+
   await page.evaluate(()=>window.__MR.Game.toLobby());
   const finalHost=await page.evaluate(()=>({
     active:window.__MR.partyScreen.active,
