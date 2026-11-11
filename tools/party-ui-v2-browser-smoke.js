@@ -206,8 +206,8 @@ const {chromium}=require('playwright');
       m.x=i===0?175:-175;m.y=0;m.vx=0;m.vy=0;
       m.anchored=0;m.cooldown=0;m.heading=i===0?Math.PI:0;
     }
-    s.elapsed=6.4;s.time=6.4;
-    s.pulseIndex=0;s.pulseAt=8;
+    s.elapsed=2.4;s.time=2.4;
+    s.pulseIndex=0;s.pulseAt=4;
   });
   await page.waitForFunction(()=>document.getElementById('ppBrawlShockBox').classList.contains('danger'));
   await page.screenshot({path:'qa-ui-v2-brawl-shockwave-warning.png'});
@@ -218,7 +218,7 @@ const {chromium}=require('playwright');
       next:g.state.pulseAt,warning:document.getElementById('ppBrawlShockLabel').textContent};
   });
   assert.equal(danger.pulses,1,'Scripted shockwave did not actually fire');
-  assert.equal(danger.next,20,'No upcoming escalation');
+  assert.equal(danger.next,12,'No upcoming escalation');
   await page.screenshot({path:'qa-ui-v2-brawl-shockwave.png'});
   await page.evaluate(()=>{
     const g=window.__MR.MODES.brawl.session();
