@@ -116,19 +116,32 @@ function lineRing(r,t,color,x=0,y=2,z=0){
  const m=mesh(new T.TorusGeometry(r,t,8,96),material(color,.55,.2),x,y,z);
  m.rotation.x=Math.PI/2;return m;
 }
+// Camera-aligned environmental art. Previously this giant photographed
+// plane was foreshortened into a distracting trapezoid behind the boards.
+// Keeping it aligned to the camera lets the *real* 3D world be the focus.
 function addBackdrop(mode) {
- // The approved game artwork is scenery behind genuine 3D surfaces,
- // not pasted over active marbles.
- const tex=new T.TextureLoader().load('assets/img/pp_'+mode+'_bg.webp',t=>{
+ const texture=new T.TextureLoader().load('assets/img/pp_'+mode+'_bg.webp',t=>{
    t.colorSpace=T.SRGBColorSpace;t.anisotropy=2;
  },undefined,()=>{});
- const bg=new T.Mesh(new T.PlaneGeometry(2600,1500),
-   new T.MeshBasicMaterial({map:tex,transparent:true,opacity:mode==='brawl'?.32:.70,depthWrite:false}));
- if(mode==='dropzone')bg.position.set(0,90,-260);
- else bg.position.set(0,360,-760);
- bg.receiveShadow=false;scene.add(bg);
+ const mat=new T.MeshBasicMaterial({
+   map:texture,color:0xb1bccf,depthWrite:true,depthTest:true
+ });
+ const plane=new T.Mesh(new T.PlaneGeometry(6450,3650),mat);
+ plane.receiveShadow=false;plane.castShadow=false;
+ world.backdrop=plane;
 }
-
+function surfaceTexture(object,mode,repeatX=1,repeatY=1){
+ const tex=new T.TextureLoader().load(
+   'assets/img/pp_'+mode+'_surface_main.webp',t=>{
+     t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;t.needsUpdate=true;
+   },undefined,()=>{});
+ tex.wrapS=T.RepeatWrapping;tex.wrapT=T.RepeatWrapping;
+ tex.repeat.set(repeatX,repeatY);
+ object.material.map=tex;
+ object.material.color.set('#ffffff');
+ object.material.needsUpdate=true;
+ return object;
+}
 function stageDressing(mode){
  // Physical sets, not flat backdrops: all outside authoritative collision
  // shapes. Keep the active marbles and score panel entirely unobstructed.
@@ -234,6 +247,10 @@ function stage(mode,s) {
      [0,-11],[310,-11],[350,-5],[380,14],[402,34],[419,66],[440,78]
    ].map(a=>new T.Vector2(a[0],a[1]));
    const shell=mesh(new T.LatheGeometry(profile,96),material(p[0],.5,.24));
+   // Tactile arena felt is a top-facing material INSIDE the raised rim.
+   const floor=cylinder(306,2,p[0],0,-10,0,.09);
+   surfaceTexture(floor,'brawl');
+   floor.material.roughness=.66;floor.receiveShadow=true;
    shell.material.side=T.DoubleSide;
    lineRing(420,16,p[1],0,78,0);
    lineRing(392,4,'#f2a6de',0,38,0);
@@ -261,6 +278,9 @@ function stage(mode,s) {
  } else if(mode==='dropzone'){
    box(1005,850,65,'#4d2957',0,0,-35,.78);
    box(950,790,5,'#17264d',0,5,5,.45);
+   const face=mesh(new T.PlaneGeometry(934,776),material('#ffffff',.13,.4),0,5,9.2);
+   surfaceTexture(face,'dropzone');
+   face.receiveShadow=true;face.castShadow=false;
    for(let row=0;row<10;row++)for(let col=0;col<(row%2?8:9);col++){
      const x=(row%2?178:132)+92*col-500,y=350-(160+row*46);
      const peg=mesh(new T.SphereGeometry(10,12,10),
@@ -279,7 +299,8 @@ function stage(mode,s) {
    const d=mode==='derby'?650:mode==='curling'?530:580;
    box(w+30,34,d+30,p[1],0,-24,0,.52);
    const deck=box(w,16,d,p[0],0,-5,0,mode==='curling'?.29:.1);
-   deck.material.roughness=mode==='curling'?.11:.32;
+   surfaceTexture(deck,mode,mode==='derby'?2.0:1.0,mode==='derby'?1.1:1.0);
+   deck.material.roughness=mode==='curling'?.11:mode==='golf'?.82:.48;
    box(w+30,55,14,'#f3d69e',0,16,-d/2);
    box(w+30,55,14,'#f3d69e',0,16,d/2);
    box(14,55,d+24,'#f3d69e',-w/2,16,0);
@@ -362,6 +383,12 @@ function stage(mode,s) {
  else if(mode==='derby')camera.position.set(0,620,900);
  else camera.position.set(0,625,930);
  camera.lookAt(0,0,0);
+ if(world.backdrop){
+   // 3 km camera-relative plane: permanently behind the sculpted playfield.
+   world.backdrop.position.set(0,0,-3100);
+   camera.add(world.backdrop);
+   scene.add(camera);
+ }
 }
 function marbleSkin(color){
   // Painted glass swirl under a clear glossy physical coating. This is an
