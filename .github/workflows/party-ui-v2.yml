@@ -1,4 +1,4 @@
-name: Party Pack UI v2 — All Five Game Screens Final QA
+name: MARBLE RUSH real rebuild — five exclusive stages, physics and multiplayer QA
 on:
   push:
     branches:
@@ -19,6 +19,8 @@ on:
       - src/modes/golf.js
       - src/modes/party-golf-ui-v2.js
       - tools/test-golf.js
+      - tools/test-brawl-balance.js
+      - docs/REAL-REBUILD-AUDIT.md
       - src/play.html
       - tools/party-ui-v2-*.js
       - tools/test-party-ui-v2.js
@@ -46,6 +48,7 @@ jobs:
           node tools/test-derby.js
           node tools/test-dropzone.js
           node tools/test-brawl.js
+          node tools/test-brawl-balance.js
           node tools/test-curling.js
           node tools/test-golf.js
           node tests/phase7-golf.test.js
@@ -54,6 +57,15 @@ jobs:
           node tools/test-party-fx.js
           node tools/test-phase8-integration.js
           node tools/test-party-ui-v2.js
+      - name: Prove ALL 200 approved raw images/audio are byte-identical to active Party Pack baseline
+        run: |
+          git fetch --depth=1 origin dev/party-pack-ui-v2-rebuild
+          if ! git diff --quiet FETCH_HEAD HEAD -- assets/raw; then
+            echo "ERROR: approved source artwork or audio changed during real rebuild" >&2
+            git diff --name-status FETCH_HEAD HEAD -- assets/raw
+            exit 1
+          fi
+          echo "PASS: all 200 approved raw art files and bundled raw audio unchanged"
       - name: Confirm original Grand Prix physics matches main exactly
         run: |
           git fetch --depth=1 origin main
