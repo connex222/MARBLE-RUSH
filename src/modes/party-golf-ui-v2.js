@@ -60,6 +60,17 @@ const MarbleGolfUI=(()=>{
  }
  function track(c,assets,s){
   const {x,y,w,h}=BOARD;
+  // The putting surface is one physical toy board. Its raised face and every
+  // obstacle/ball share the same affine broadcast projection — never a 3D
+  // decoration floating above a separate flat game canvas.
+  const lip=c.createLinearGradient(x,y+h+23,x,y+h+83);
+  lip.addColorStop(0,'#c69061');lip.addColorStop(.37,'#744d40');
+  lip.addColorStop(1,'#2b3544');
+  c.save();c.beginPath();
+  c.moveTo(x-35,y+h+14);c.lineTo(x+w+36,y+h+14);
+  c.lineTo(x+w+29,y+h+72);c.lineTo(x-28,y+h+72);
+  c.closePath();c.fillStyle=lip;c.fill();
+  c.strokeStyle='#ffdd9f';c.lineWidth=6;c.stroke();c.restore();
   c.save();c.shadowColor='#050c20e8';c.shadowBlur=66;c.shadowOffsetY=42;
   rr(c,x-44,y-59,w+88,h+111,42,'#5d4939','#fff1c6',13);c.restore();
   rr(c,x-37,y-48,w+74,h+92,35,
@@ -283,9 +294,18 @@ const MarbleGolfUI=(()=>{
   if(!c||!s||!s.layout)return false;
   c.save();c.setTransform(1,0,0,1,0,0);
   world(c,assets,s.elapsed||0,s,!!options.reduce);
+  // Physically coherent miniature diorama viewpoint: tilt the ENTIRE real
+  // course, all physics obstacles, cup, aim guide and moving marble together.
+  // No second board/renderer and no camera shake for putting precision.
+  c.save();
+  c.translate(960,575);
+  c.transform(1,.072,-.14,.922,0,0);
+  c.translate(-960,-575);
   track(c,assets,s);
   marble(c,s,assets,!!options.reduce);
   particles(c,assets,s,!!options.reduce);
+  c.restore();
+  // Winner/results overlays remain TV-horizontal and highly readable.
   results(c,assets,s);
   c.restore();hud(s);return true;
  }
