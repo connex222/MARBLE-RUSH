@@ -22,21 +22,16 @@ Hover or focus a game card to see its 15-second concept preview. All six registe
 
 Phones don't work in this mode — that needs the server below.
 
-## Put it online on Render (so phones can join)
+## Play it online
 
-You've done this before for your other TV games. Same steps:
+**Live game:** https://marble-rush.onrender.com
 
-1. Create a new GitHub repo called `marble-rush` and upload **everything in this folder** (keep the folder structure).
-2. In Render: **New → Web Service** → pick the `marble-rush` repo.
-3. Fill in:
-   - **Region:** Frankfurt (closest to the UK — matters for button lag)
-   - **Build command:** `npm install && npm run build`
-   - **Start command:** `npm start`
-   - **Plan:** Free
-4. Click **Create Web Service**. Wait for "Live".
-5. Open the Render address on the TV/laptop. Phones go to the same address with `/play` on the end and type the code.
+1. Open the live address on the TV or laptop.
+2. Phones go to the same address with `/play` on the end (https://marble-rush.onrender.com/play) and type the code shown on the TV.
 
-The free plan sleeps when unused. The TV shows "Polishing the marbles…" for up to a minute while it wakes up — that's normal.
+Hosting: Render web service, Free plan, Frankfurt. Build command `npm install && npm run build`, start command `npm start`. It redeploys automatically whenever `main` changes on GitHub, so **do not push changes during a game night** (live races would be lost).
+
+The free plan sleeps when unused. The TV shows "Polishing the marbles..." for up to a minute while it wakes up; that's normal.
 
 ## Adding ChatGPT art and sound
 
