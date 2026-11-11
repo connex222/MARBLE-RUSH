@@ -222,7 +222,7 @@ if(typeof module!=='undefined')module.exports=BowlBrawl;
 let bowlBrawlGame=null;
 registerMode({
   id:'brawl',name:'Bowl Brawl',tagline:"Bump 'em out",icon:'💥',
-  minPlayers:2,maxPlayers:8,roundsDefault:5,available:false,awards:[],
+  minPlayers:2,maxPlayers:8,roundsDefault:5,available:true,awards:[],
   setup({players,seed,onFinish}) {
     bowlBrawlGame=BowlBrawl.create([...players.values()],seed,onFinish);
     return bowlBrawlGame;
