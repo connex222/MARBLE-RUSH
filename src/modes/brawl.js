@@ -25,7 +25,7 @@ const BowlBrawl = (() => {
     const state={roster,seed,round:0,elapsed:0,time:0,radius:START_RADIUS,marbles:[],
       active:[],done:false,finishedCalled:false,lastWinner:null,events:[],roundHistory:[],
       hazard:'clean',hazardAngle:0,spectators:new Set(),
-      pulseIndex:0,lastPulseAt:-99};
+      pulseIndex:0,pulseAt:SHOCK_TIMES[0],lastPulseAt:-99};
     const HAZARDS=['bumpers','ice','rotor','crumbling','clean'];
     function current(id){return state.marbles.find(m=>m.id===id);}
     function alive(){return state.marbles.filter(m=>m.alive);}
@@ -34,7 +34,7 @@ const BowlBrawl = (() => {
     function beginRound(){
       state.round++;state.elapsed=0;state.radius=START_RADIUS;state.lastWinner=null;
       state.hazard=HAZARDS[state.round-1];state.hazardAngle=rng()*TAU;state.spectators=new Set();
-      state.pulseIndex=0;state.lastPulseAt=-99;
+      state.pulseIndex=0;state.pulseAt=SHOCK_TIMES[0];state.lastPulseAt=-99;
       state.events.push({kind:'hazardReveal',hazard:state.hazard,round:state.round,time:state.time});
       const n=roster.length,phase=rng()*TAU;
       state.marbles=roster.map((p,i)=>{
@@ -204,7 +204,8 @@ const BowlBrawl = (() => {
         // SHOCK_TIMES, so the TV and every phone always show the same clock.
         if(state.pulseIndex<SHOCK_TIMES.length&&
            state.elapsed>=SHOCK_TIMES[state.pulseIndex]){
-          state.pulseIndex++;state.lastPulseAt=state.time;
+          state.pulseIndex++;state.pulseAt=SHOCK_TIMES[state.pulseIndex]??null;
+          state.lastPulseAt=state.time;
           for(const m of state.marbles)if(m.alive){
             const distance=Math.hypot(m.x,m.y)||1;
             const push=m.anchored>0?72:310;
@@ -261,7 +262,7 @@ const BowlBrawl = (() => {
       const rimGap=m?.alive?state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y):null;
       const recoverReady=!!m?.alive&&!m.recoverUsed&&m.cooldown<=0&&
         m.energy>=RECOVER_COST&&rimGap>=0&&rimGap<=RECOVER_MARGIN;
-      const pulseTime=SHOCK_TIMES[state.pulseIndex];
+      const pulseTime=state.pulseAt;
       const pulseIn=pulseTime==null?null:Math.max(0,pulseTime-state.elapsed);
       return {
         turnLabel:state.done?'BOWL BRAWL COMPLETE':`ROUND ${state.round}/${ROUNDS} · ${alive().length} IN THE BOWL`,
