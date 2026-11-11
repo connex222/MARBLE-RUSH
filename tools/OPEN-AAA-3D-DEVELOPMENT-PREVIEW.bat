@@ -41,7 +41,7 @@ if errorlevel 1 goto failed
 echo [4/4] Opening the preview on this PC...
 echo.
 echo You will see MARBLE RUSH running in its own command window.
-echo TV preview:  http://localhost:35993/tv
+echo TV preview with 3D FPS counter:  http://localhost:35993/tv?marblePerf=1
 echo Phone join:  http://YOUR-PC-LAN-IP:35993/play
 echo.
 echo For phones, use the QR code from the TV screen. Your devices
@@ -50,7 +50,7 @@ echo if Windows Firewall asks. Close the extra command window to stop.
 echo.
 start "MARBLE RUSH AAA 3D SERVER" /D "%PREVIEW%" cmd /k "set PORT=35993&node server/server.js"
 timeout /t 4 /nobreak >nul
-start "" "http://localhost:35993/tv"
+start "" "http://localhost:35993/tv?marblePerf=1"
 echo SUCCESS - Development preview started. Production unchanged.
 echo.
 pause
