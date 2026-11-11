@@ -35,16 +35,31 @@ function chooseQuality(next){
  renderer.shadowMap.needsUpdate=true;
  root.dataset.quality=quality;
 }
+function performanceFallback(){
+ if(!enabled)return;
+ enabled=false;slowFrames=0;fastFrames=0;
+ root.dataset.fallback='low-frame-rate';
+ root.dataset.quality='classic';
+ root.hidden=true;
+ toggle.hidden=false;toggle.setAttribute('aria-pressed','false');
+ toggle.textContent='◇ CLASSIC VIEW (AUTO)';
+ console.warn('[MARBLE RUSH] WebGL too slow; restoring the playable 2D board.');
+ clean();worldMode='';
+}
 function trackFrameTime(dt,now){
  if(document.visibilityState==='hidden'||!Number.isFinite(dt))return;
- frameRate=frameRate*.94+(1000/Math.max(1,dt))*.06;
+ frameRate=frameRate*.88+(1000/Math.max(1,dt))*.12;
  root.dataset.fps=String(Math.max(1,Math.min(120,Math.round(frameRate))));
- if(now<qualityHold)return;
- if(dt>46){slowFrames++;fastFrames=0;}
+ if(dt>90){slowFrames+=3;fastFrames=0;}
+ else if(dt>54){slowFrames++;fastFrames=0;}
  else if(dt<38){fastFrames++;slowFrames=Math.max(0,slowFrames-2);}
- else {slowFrames=Math.max(0,slowFrames-1);fastFrames=0;}
- if(quality==='cinematic'&&slowFrames>45)chooseQuality('balanced');
- else if(quality==='balanced'&&fastFrames>190)chooseQuality('cinematic');
+ else{slowFrames=Math.max(0,slowFrames-1);fastFrames=0;}
+ if(quality==='cinematic' && slowFrames>=9){
+   chooseQuality('balanced');
+ }else if(quality==='balanced'){
+   if(slowFrames>=12 && window.__MR_CAPTURE_3D_QA!==true)performanceFallback();
+   else if(fastFrames>220 && now>qualityHold)chooseQuality('cinematic');
+ }
 }
 const ballGeo=new T.SphereGeometry(29,32,24);
 // The marble swirl is generated once at runtime: actual painted detail on a
@@ -774,6 +789,7 @@ function frame(time){
    update(mode,s);
    renderer.render(scene,camera);
    trackFrameTime(dt,time);
+   if(!enabled){delete root.dataset.rendered;return;}
    root.dataset.rendered='true';
    root.dataset.mode=mode;
    // Read-only acceptance diagnostics to prove premium visuals are genuine
