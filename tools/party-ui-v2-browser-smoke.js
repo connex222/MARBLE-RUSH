@@ -19,8 +19,8 @@ const {chromium}=require('playwright');
    mode:b.dataset.mode,disabled:b.disabled,locked:b.dataset.locked
   })));
   assert.equal(menu.length,6);
-  assert.deepEqual(menu.filter(c=>!c.disabled).map(c=>c.mode),['grandprix','derby','dropzone','brawl'],
-   'Grand Prix, Derby, Drop Zone and new Brawl must be selectable');
+  assert.deepEqual(menu.filter(c=>!c.disabled).map(c=>c.mode),['grandprix','derby','dropzone','brawl','curling'],
+   'All rebuilt modes, including Curling, must be selectable; Golf remains locked');
   await page.screenshot({path:'qa-ui-v2-lobby.png'});
   const old=await page.evaluate(()=>['derbyCanvas','dropZoneCanvas','brawlCanvas','curlingCanvas',
    'golfCanvas','derbyHelp','dropZoneHelp','brawlHelp','curlingHelp','golfHelp'].filter(id=>document.getElementById(id)));
@@ -201,6 +201,77 @@ const {chromium}=require('playwright');
   assert.ok(result.champs,'Brawl results winner missing');
   await page.screenshot({path:'qa-ui-v2-brawl-finale.png'});
 
+  // CURLING v2: visually distinct rink and real stone/aim/sweep engine.
+  await page.evaluate(()=>window.__MR.Game.toLobby());
+  await page.locator('#partyModeCards .partyModeCard[data-mode="curling"]').click();
+  await page.waitForFunction(()=>window.__MR.selectedMode==='curling',{timeout:10000});
+  await page.locator('#btnStart').click();
+  await page.locator('#partyStage').waitFor({state:'visible',timeout:10000});
+  await page.waitForFunction(()=>window.__MR.state==='curling'&&
+    document.getElementById('ppCurlRankRows')?.children.length>=2,{timeout:12000});
+  const curlingView=await page.evaluate(()=>{
+    const stage=document.getElementById('partyStage');
+    const canvas=document.getElementById('partyStageCanvas'),rect=canvas.getBoundingClientRect();
+    const pix=canvas.getContext('2d').getImageData(900,550,32,32).data,colors=new Set();
+    for(let i=0;i<pix.length;i+=4)colors.add(pix[i]+':'+pix[i+1]+':'+pix[i+2]);
+    return {mode:stage.dataset.mode,rect:[rect.width,rect.height],colors:colors.size,
+      visible:[...stage.querySelectorAll('button')].filter(b=>b.getClientRects().length>0).map(b=>b.id),
+      rows:document.getElementById('ppCurlRankRows').children.length,
+      end:document.getElementById('ppCurlEnd').textContent};
+  });
+  assert.equal(curlingView.mode,'curling');
+  assert.ok(curlingView.rect[0]>=1900&&curlingView.rect[1]>=1050,'Curling must fill the TV');
+  assert.ok(curlingView.colors>10,'Curling ice stage appears blank or flat');
+  assert.deepEqual(curlingView.visible,[
+    'ppCurlLeft','ppCurlRight','ppCurlPowerDown','ppCurlPowerUp',
+    'ppCurlLeftSpin','ppCurlRightSpin','ppCurlThrow','ppCurlSweepBtn'
+  ],'Previous game controls leaked into Curling');
+  assert.ok(curlingView.rows>=2);
+  assert.match(curlingView.end,/END 1 \/ 5/);
+  await page.screenshot({path:'qa-ui-v2-curling-aim.png'});
+  const initial=await page.evaluate(()=>{
+    const g=window.__MR.MODES.curling.session();
+    return {id:g.current().id,aim:g.state.aim,power:g.state.power,curl:g.state.curl};
+  });
+  await page.locator('#ppCurlRight').click();
+  await page.locator('#ppCurlPowerUp').click();
+  await page.locator('#ppCurlLeftSpin').click();
+  const aimed=await page.evaluate(()=>{
+    const s=window.__MR.MODES.curling.session().state;
+    return {aim:s.aim,power:s.power,curl:s.curl};
+  });
+  assert.ok(aimed.aim>initial.aim&&aimed.power>initial.power&&aimed.curl<initial.curl,
+    'Curling TV controls must drive real aim, power and spin');
+  await page.locator('#ppCurlThrow').click();
+  await page.waitForFunction(()=>window.__MR.MODES.curling.session().state.phase==='slide',
+    {timeout:10000});
+  await page.locator('#ppCurlSweepBtn').click();
+  const sweep=await page.evaluate(()=>{
+    const g=window.__MR.MODES.curling.session();
+    return {phase:g.state.phase,stones:g.state.stones.length,sweep:g.state.sweep,
+      events:g.state.events.filter(e=>e.kind==='sweep').length};
+  });
+  assert.ok(sweep.stones>=1&&sweep.events>=1,'New SWEEP control did not reach the physics engine');
+  await page.screenshot({path:'qa-ui-v2-curling-sweep.png'});
+  await page.evaluate(()=>{
+    const g=window.__MR.MODES.curling.session();
+    let n=0;while(!g.state.done&&n++<90000)g.step(.1);
+    if(!g.state.done)throw Error('Curling did not finish all five ends');
+  });
+  await page.waitForFunction(()=>window.__MR.state==='finale',{timeout:12000});
+  const curlFinal=await page.evaluate(()=>{
+    const s=window.__MR.MODES.curling.session().state;
+    return {ends:s.end,history:s.history.length,
+      scores:s.roster.map(p=>p.endPoints.length),
+      stones:s.roster.map(p=>p.stonesPlayed),
+      champ:document.getElementById('champName')?.textContent};
+  });
+  assert.equal(curlFinal.ends,5);assert.equal(curlFinal.history,5);
+  assert.ok(curlFinal.scores.every(v=>v===5)&&curlFinal.stones.every(v=>v===10),
+    'Curling two stones per player per end scoring changed');
+  assert.ok(curlFinal.champ,'Curling finale lacks winner');
+  await page.screenshot({path:'qa-ui-v2-curling-finale.png'});
+
   // A second mode start must still reach original Grand Prix, untouched by the reset.
   await page.evaluate(()=>window.__MR.Game.toLobby());
   await page.locator('#partyModeCards .partyModeCard[data-mode="grandprix"]').click();
@@ -208,7 +279,7 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>['vote','countdown','race'].includes(window.__MR.state),{timeout:12000});
   assert.ok(await page.locator('#raceHud').count(),'Original Grand Prix screen was deleted');
   assert.deepEqual(errors,[],'Uncaught browser errors');
-  console.log('PASS: three exclusive full-TV mode stages, Derby betting, Drop Zone scoring, Brawl physics/energy, three five-round finales, GP intact');
+  console.log('PASS: four independent full-TV mode stages, Curling real throw/sweep, four five-round finales, Grand Prix intact');
  }catch(e){
   console.error('FAIL Party Pack v2 browser smoke:',e);
   await page.screenshot({path:'qa-ui-v2-error.png'}).catch(()=>{});
