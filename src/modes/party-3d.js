@@ -128,6 +128,82 @@ function addBackdrop(mode) {
  else bg.position.set(0,360,-760);
  bg.receiveShadow=false;scene.add(bg);
 }
+
+function stageDressing(mode){
+ // Physical sets, not flat backdrops: all outside authoritative collision
+ // shapes. Keep the active marbles and score panel entirely unobstructed.
+ const lit=(color)=>new T.MeshStandardMaterial({
+   color:new T.Color(color),emissive:new T.Color(color),emissiveIntensity:.85,
+   metalness:.35,roughness:.4
+ });
+ if(mode==='derby'){
+   for(const z of [-425,425]){
+     box(1440,34,45,z<0?'#bd6461':'#f5c678',0,18,z,.47);
+     for(let i=-6;i<=6;i++){
+       const x=i*109;
+       const lamp=mesh(new T.SphereGeometry(10,10,8),lit(i%2?'#ffdb8c':'#91d5ff'),x,53,z);
+       lamp.castShadow=false;
+     }
+   }
+   for(const x of [-640,640]){
+     box(28,205,27,'#986647',x,98,-395,.24);
+     box(29,205,27,'#986647',x,98,395,.24);
+     box(1390,30,24,'#f7d796',0,215,-395,.5);
+   }
+ } else if(mode==='dropzone'){
+   for(let i=0;i<16;i++){
+     const y=-365+i*48;
+     for(const x of [-513,513]){
+       const light=box(10,20,16,i%2?'#ffd476':'#8fe1ff',x,y,72,.12);
+       light.material=lit(i%2?'#ffc15a':'#62beff');
+     }
+   }
+   for(let i=0;i<8;i++){
+     const x=-368+i*105;
+     box(94,11,23,'#fff0aa',x,-395,105,.43);
+   }
+ } else if(mode==='brawl'){
+   for(let k=0;k<16;k++){
+     const a=k*Math.PI/8,x=Math.cos(a)*685,z=Math.sin(a)*685;
+     cylinder(17,120,k%2?'#ab5777':'#d6a65e',x,-5,z,.45);
+     const lamp=mesh(new T.SphereGeometry(13,10,10),lit(k%2?'#fe7e9d':'#ffc765'),x,58,z);
+     lamp.castShadow=false;
+   }
+   for(const radius of [510,565]){
+     const ring=lineRing(radius,5,radius===510?'#ff9e6c':'#6fd3f9',0,-52,0);
+     ring.material.emissive=new T.Color(radius===510?'#c34765':'#317ba5');
+     ring.material.emissiveIntensity=.42;
+   }
+ } else if(mode==='curling'){
+   for(const z of [-320,320]){
+     box(1400,65,42,'#a9d9ec',0,19,z,.12);
+     box(1400,11,15,'#f6fbff',0,54,z,.22);
+     for(let x=-640;x<=640;x+=160)box(15,95,14,'#b8e7fa',x,72,z,.22);
+   }
+   for(let x=-660;x<=660;x+=180){
+     const a=mesh(new T.ConeGeometry(33,95,8),material('#1c6171',.12,.6),x,30,-460);
+     a.castShadow=false;
+   }
+ } else if(mode==='golf'){
+   for(let x=-630;x<=630;x+=200){
+     const z=x%400===0?-355:355;
+     cylinder(14,74,'#9e7549',x,26,z,.13);
+     const tree=mesh(new T.ConeGeometry(54,115,9),material('#39875a',.08,.64),x,105,z);
+     tree.castShadow=false;
+   }
+   for(const z of [-320,320])box(1350,37,30,'#b99565',0,16,z,.24);
+   // Show-scale windmill is scenery beside the course, never a fake obstacle.
+   const tower=mesh(new T.ConeGeometry(42,132,7),material('#e7cc9a',.08,.6),520,70,-417);
+   const cap=mesh(new T.ConeGeometry(54,47,7),material('#b85751',.28,.38),520,154,-417);
+   const arms=new T.Group();arms.position.set(520,100,-360);
+   for(let k=0;k<4;k++){
+     const blade=new T.Mesh(new T.BoxGeometry(10,118,6),material('#fff6d3',.13,.44));
+     blade.position.y=57;blade.rotation.z=k*Math.PI/2;arms.add(blade);
+   }
+   arms.rotation.z=.23;scene.add(arms);world.windmill=arms;
+ }
+}
+
 function stage(mode,s) {
  scene=new T.Scene();
  scene.background=new T.Color('#111b31');
@@ -267,6 +343,8 @@ function stage(mode,s) {
      root.appendChild(tag);
    }
  }
+ // Themed three-dimensional set dressing frames the physical gameplay.
+ stageDressing(mode);
  // Add actual miniature-diorama depth outside the board.
  if(mode!=='dropzone'){
    for(let i=0;i<7;i++){
@@ -373,6 +451,8 @@ function update(mode,s){
      world.guide.setLength(120+clamp(Number(s.power)||0,0,100)*2,29,15);
    }
  }
+ if(mode==='golf'&&world.windmill)
+   world.windmill.rotation.z=(Number(s.elapsed)||0)*.2;
  if(mode==='golf'&&s.ball){
    const p=(s.roster||[])[s.turn%Math.max(1,(s.roster||[]).length)]||{};
    placeBall('golfball',s.ball.x-620,27,s.ball.y-290,p.color,p.name,seen);
