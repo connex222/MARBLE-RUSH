@@ -229,7 +229,6 @@ const MarbleGolf = (() => {
           {a:'preview',label:'SHOT GUIDE',v:0},{a:'shoot',label:'PUTT!',v:0}]:[],
         hole:state.hole,holes:state.holes,par:state.layout.par,activePlayer:current()?.name||''};
     }
-    function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     newHole();
     return {state,action,step,hud,draw,standings,current,player};
   }
@@ -243,7 +242,6 @@ registerMode({
   setup({players,seed,onFinish,championship=true}){marbleGolfGame=MarbleGolf.create([...players.values()],seed,onFinish,{championship});return marbleGolfGame;},
   startRound(){return marbleGolfGame;},
   tick(dt){marbleGolfGame?.step(dt);},
-  draw(ctx,w,h){marbleGolfGame?.draw(ctx,w,h);},
   onInput(id,k){if(k==='p')marbleGolfGame?.action(id,'shoot');},
   onAction(id,a,v){return marbleGolfGame?.action(id,a,v)||false;},
   botTick(){},hud(player){return marbleGolfGame?.hud(player.id)||{};},
