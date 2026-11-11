@@ -328,7 +328,6 @@ const BowlBrawl = (() => {
         timeRemaining:Math.max(0,Math.ceil(ROUND_TIME-state.elapsed))
       };
     }
-    function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     return {state,current,action,tick,hud,draw,standings,alive,finishRound,rimRadius};
   }
   return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS,
@@ -345,7 +344,6 @@ registerMode({
   },
   startRound(){return bowlBrawlGame;},
   tick(dt){bowlBrawlGame?.tick(dt);},
-  draw(ctx,w,h){bowlBrawlGame?.draw(ctx,w,h);},
   onInput(id,k){if(k==='p')bowlBrawlGame?.action(id,'ram');else if(k==='r'){}},
   onAction(id,a,v){return bowlBrawlGame?.action(id,a,v)||false;},
   botTick(){},
