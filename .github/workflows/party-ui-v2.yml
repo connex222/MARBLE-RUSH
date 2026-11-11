@@ -114,5 +114,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             qa-ui-v2-*.png
+            qa-real-*.png
+            qa-real-*.json
             public/
           retention-days: 7
