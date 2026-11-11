@@ -92,6 +92,43 @@ const {chromium}=require('playwright');
   await p2.screenshot({path:'qa-ui-v2-dropzone-predict.png'});
   assert.deepEqual(errs,[],'JS errors during new Drop Zone: '+errs.join(' | '));
   console.log('PASS: same TV plus two connected phones used new Drop Zone UI, live aim/drop and spectator prediction.');
+  // Brawl mode shares the already-established authenticated two-phone room.
+  await tv.evaluate(()=>window.__MR.Game.toLobby());
+  await p1.waitForFunction(()=>[...document.querySelectorAll('#vip button')]
+    .some(b=>b.textContent.includes('Bowl Brawl')),{timeout:10000});
+  await p1.locator('#vip button').filter({hasText:'Bowl Brawl'}).click();
+  await tv.waitForFunction(()=>window.__MR.selectedMode==='brawl',{timeout:8000});
+  await tv.locator('#btnStart').click();
+  await tv.waitForFunction(()=>window.__MR.state==='brawl'&&
+    document.getElementById('partyStage').dataset.mode==='brawl',{timeout:10000});
+  await p1.waitForFunction(()=>document.body.dataset.mode==='brawl'&&
+    document.body.dataset.s==='brawl',{timeout:10000});
+  await p2.waitForFunction(()=>document.body.dataset.mode==='brawl',{timeout:10000});
+  const e0=await tv.evaluate(()=>window.__MR.MODES.brawl.session().state.marbles.map(m=>m.energy));
+  await p1.locator('#modeActions button[data-action="ram"]').click();
+  await tv.waitForFunction(()=>window.__MR.MODES.brawl.session().state.events.some(e=>e.kind==='ram'),{timeout:8000});
+  await p2.locator('#modeActions button[data-action="anchor"]').click();
+  await tv.waitForFunction(()=>window.__MR.MODES.brawl.session().state.events.some(e=>e.kind==='anchor'),{timeout:8000});
+  const brawl=await tv.evaluate(()=>{
+    const s=window.__MR.MODES.brawl.session().state;
+    return {round:s.round,alive:s.marbles.filter(m=>m.alive).length,
+      hazard:s.hazard,ram:s.events.filter(e=>e.kind==='ram').length,
+      anchor:s.events.filter(e=>e.kind==='anchor').length};
+  });
+  assert.equal(brawl.round,1);
+  assert.equal(brawl.hazard,'bumpers');
+  assert.ok(brawl.ram>=1&&brawl.anchor>=1);
+  assert.ok(actions.get(p1).some(m=>m.t==='act'&&m.a==='ram'),
+    'First phone did not send Brawl RAM');
+  assert.ok(actions.get(p2).some(m=>m.t==='act'&&m.a==='anchor'),
+    'Second phone did not send Brawl ANCHOR');
+  assert.equal(await p1.locator('#padZone').isVisible(),false,
+    'Old boost pad must be absent from Brawl interface');
+  await tv.screenshot({path:'qa-ui-v2-brawl-two-phones-tv.png'});
+  await p1.screenshot({path:'qa-ui-v2-brawl-phone-ram.png'});
+  await p2.screenshot({path:'qa-ui-v2-brawl-phone-anchor.png'});
+  assert.deepEqual(errs,[],'Uncaught error in new Bowl Brawl '+errs.join(' | '));
+  console.log('PASS: two authenticated phones control newly rendered Brawl, RAM and ANCHOR, shared TV synced.');
 
  }catch(e){console.error('FAIL Derby UI v2 2-phone smoke:',e);process.exitCode=1;}
  finally{await browser.close();}
