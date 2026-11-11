@@ -183,7 +183,6 @@ const MarbleDerby=(()=>{
         secondsLeft:state.phase==='betting'?Math.max(0,Math.ceil(12-state.phaseTime)):0
       };
     }
-    function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     newHeat();
     return {state,bet,action,step,hud,draw,standings,getPlayer};
   }
@@ -197,7 +196,6 @@ registerMode({
   setup({players,seed,onFinish}){marbleDerbyGame=MarbleDerby.create([...players.values()],seed,onFinish);return marbleDerbyGame;},
   startRound(){return marbleDerbyGame;},
   tick(dt){marbleDerbyGame?.step(dt);},
-  draw(ctx,w,h){marbleDerbyGame?.draw(ctx,w,h);},
   onInput(id,k){if(k==='p')marbleDerbyGame?.action(id,'cheer');},
   onAction(id,a,v){return marbleDerbyGame?.action(id,a,v)||false;},
   botTick(){},
