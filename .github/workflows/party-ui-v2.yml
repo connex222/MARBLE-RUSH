@@ -46,6 +46,11 @@ jobs:
           node tools/test-brawl.js
           node tools/test-curling.js
           node tools/test-golf.js
+          node tests/phase7-golf.test.js
+          node tools/test-party-aaa-phase2.js
+          node tools/test-party-presentation.js
+          node tools/test-party-fx.js
+          node tools/test-phase8-integration.js
           node tools/test-party-ui-v2.js
       - name: Confirm original Grand Prix physics matches main exactly
         run: |
