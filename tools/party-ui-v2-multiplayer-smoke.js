@@ -2,6 +2,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
+const fs=require('node:fs');
 (async()=>{
  const base=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -251,6 +252,12 @@ const {chromium}=require('playwright');
   console.log('PASS: two phones successfully aim, power, preview, putt and cheer in new Golf UI.');
   assert.equal(e2eLatency.length,5,'Must record one real phone→TV action for every mode');
   const ordered=e2eLatency.map(v=>v.ms).sort((a,b)=>a-b);
+  const e2eReport={
+    samples:e2eLatency,medianMs:ordered[2],p95Ms:ordered[4],
+    measurement:'Playwright phone tap through WebSocket to authoritative TV state; browser CI, not physical Wi-Fi',
+    physicalDevicesTested:false
+  };
+  fs.writeFileSync('qa-real-phone-latency.json',JSON.stringify(e2eReport,null,2));
   console.log('HEADLESS-WEBSOCKET-LATENCY '+JSON.stringify({
     samples:e2eLatency,medianMs:ordered[2],p95Ms:ordered[4],
     measurement:'Playwright phone tap through WebSocket to authoritative TV state; browser CI, not physical Wi-Fi'
