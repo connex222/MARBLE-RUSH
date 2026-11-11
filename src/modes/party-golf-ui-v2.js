@@ -250,7 +250,7 @@ const MarbleGolfUI=(()=>{
   $('ppGolfStroke').textContent=s.strokes+' / 7';
   $('ppGolfAngle').textContent=(s.angle>0?'+':'')+Math.round(s.angle)+'°';
   $('ppGolfPower').textContent=Math.round(s.power)+'%';
-  $('ppGolfPreviewState').textContent=s.ghost?'HINT ON':'HINT OFF';
+  $('ppGolfPreviewState').textContent=s.ghost?'GUIDE ON':'GUIDE OFF';
   $('ppGolfTurn').textContent=(s.turn+1)+' / '+s.roster.length;
   $('ppGolfHazard').textContent=s.layout?.moving?
     s.layout.moving.toUpperCase().replace(/([a-z])([A-Z])/g,'$1 $2'):
@@ -258,7 +258,7 @@ const MarbleGolfUI=(()=>{
   for(const id of ['ppGolfLeft','ppGolfRight','ppGolfPowerDown','ppGolfPowerUp',
                    'ppGolfPreview','ppGolfShoot'])$(id).disabled=!human;
   $('ppGolfHelp').textContent=human?
-    'Adjust aim and power. A hint predicts only the FIRST bounce, never the final shot.':
+    'Adjust aim and power. The guide indicates initial direction, not the outcome.':
     s.phase==='rolling'?'Your marble is rolling. Watch for the cup!':'The next player takes their turn.';
   const rank=s.roster.slice().sort((a,b)=>a.strokes-b.strokes||b.wins-a.wins||
     s.roster.indexOf(a)-s.roster.indexOf(b));
