@@ -227,57 +227,7 @@ const MarbleGolf = (() => {
           {a:'preview',label:'TRAJECTORY',v:0},{a:'shoot',label:'SHOOT!',v:0}]:[],
         hole:state.hole,par:state.layout.par,activePlayer:current()?.name||''};
     }
-    function draw(ctx,w=1920,h=1080) {
-      ctx.save();ctx.scale(w/1920,h/1080);
-      const bg=ctx.createLinearGradient(0,0,1920,1080);
-      bg.addColorStop(0,'#18273b');bg.addColorStop(1,'#384d60');
-      ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
-       MarblePartyStage.backdrop(ctx,'golf',state.elapsed);
-       MarblePartyStage.frame(ctx,548,231,1305,625,'golf');
-      ctx.fillStyle='#fff5df';ctx.font='bold 67px Fredoka,sans-serif';ctx.fillText('MARBLE GOLF',64,88);
-      ctx.fillStyle='#ffd984';ctx.font='bold 28px Nunito,sans-serif';
-      ctx.fillText(`HOLE ${state.hole} OF ${state.holes} · ${state.layout.name} · PAR ${state.layout.par}`,65,137);
-      const ox=555,oy=240,s=1.04;
-      ctx.save();ctx.translate(ox,oy);ctx.scale(s,s);
-      MarblePartyStage.surface(ctx,'golf',0,0,W,H,state.elapsed);
-      for(let x=35;x<W;x+=65){ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=35;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-      ctx.strokeStyle='#f3e1b4';ctx.lineWidth=17;ctx.strokeRect(0,0,W,H);
-      for(const water of state.layout.water){
-        const pool=ctx.createLinearGradient(water[0],water[1],water[0]+water[2],water[1]+water[3]);
-        pool.addColorStop(0,'#123b7a');pool.addColorStop(.48,'#42c8ef');pool.addColorStop(1,'#175582');
-        ctx.fillStyle=pool;ctx.shadowColor='#072d55';ctx.shadowBlur=16;ctx.fillRect(...water);ctx.shadowBlur=0;
-        ctx.strokeStyle='#d5f8fb';ctx.lineWidth=6;ctx.strokeRect(...water);
-        for(let i=1;i<4;i++){ctx.strokeStyle='rgba(255,255,255,.38)';ctx.lineWidth=2;
-          ctx.beginPath();ctx.moveTo(water[0]+12,water[1]+i*water[3]/4);ctx.lineTo(water[0]+water[2]-12,water[1]+i*water[3]/4+5*Math.sin(state.elapsed+i));ctx.stroke();}}
-      for(const wall of state.layout.walls)MarblePartyStage.obstacle(ctx,...wall);
-      for(const o of state.layout.bumpers){MarblePartyStage.halo(ctx,o[0],o[1],o[2]*2.1,'#f7c76d');MarblePartyStage.peg(ctx,o[0],o[1],o[2],'#ffa763');}
-      const cup=state.layout.cup;
-      MarblePartyStage.halo(ctx,cup[0],cup[1],76,'#fce078');
-      ctx.fillStyle='#17222d';ctx.shadowColor='#03191d';ctx.shadowBlur=22;ctx.beginPath();ctx.arc(cup[0],cup[1],31,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-      ctx.strokeStyle='#fff8e0';ctx.lineWidth=5;ctx.stroke();
-      ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cup[0],cup[1]);ctx.lineTo(cup[0],cup[1]-78);ctx.stroke();
-      ctx.fillStyle='#e84b55';ctx.beginPath();ctx.moveTo(cup[0],cup[1]-78);ctx.lineTo(cup[0]+58,cup[1]-58);ctx.lineTo(cup[0],cup[1]-41);ctx.fill();
-      const b=state.ball,p=current();
-      if(state.phase==='aim'&&p){
-        const a=state.angle*Math.PI/180;
-        ctx.setLineDash([9,9]);ctx.strokeStyle='#fff8c0';ctx.lineWidth=5;ctx.beginPath();
-        ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+Math.cos(a)*(120+state.power*2),b.y+Math.sin(a)*(120+state.power*2));
-        ctx.stroke();ctx.setLineDash([]);
-      }
-      MarblePartyStage.marble(ctx,b.x,b.y,R,p?.color||'#f7d35c');
-      ctx.restore();
-      ctx.font='bold 34px Fredoka,sans-serif';ctx.fillStyle='#fff5df';ctx.fillText('SCORECARD',65,238);
-      standings().forEach((p,i)=>{
-        const y=305+i*76;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(90,y-11,14,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#fff5df';ctx.font='bold 24px Nunito,sans-serif';ctx.fillText(p.name,116,y);
-        ctx.fillStyle='#ffda87';ctx.fillText(`${p.strokes} strokes · ${p.holeScores.join(' / ')||'—'}`,116,y+29);
-      });
-      ctx.fillStyle='#fff5df';ctx.font='bold 28px Nunito,sans-serif';
-      ctx.fillText(state.done?'THE GOLF CHAMPION IS CROWNED':
-        state.phase==='results'?`HOLE ${state.hole} COMPLETE`:
-        `${current()?.name||''} · SHOT ${Math.min(MAX_STROKES,state.strokes+1)}/${MAX_STROKES}`,568,970);
-      ctx.restore();
-    }
+    function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     newHole();
     return {state,action,step,hud,draw,standings,current,player};
   }
@@ -287,7 +237,7 @@ if(typeof module!=='undefined')module.exports=MarbleGolf;
 let marbleGolfGame=null;
 registerMode({
   id:'golf',name:'Marble Golf',tagline:'Nine crazy golf holes',icon:'⛳',
-  minPlayers:1,maxPlayers:8,roundsDefault:9,available:true,awards:[],
+  minPlayers:1,maxPlayers:8,roundsDefault:9,available:false,awards:[],
   setup({players,seed,onFinish,championship=true}){marbleGolfGame=MarbleGolf.create([...players.values()],seed,onFinish,{championship});return marbleGolfGame;},
   startRound(){return marbleGolfGame;},
   tick(dt){marbleGolfGame?.step(dt);},
