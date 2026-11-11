@@ -48,7 +48,7 @@ echo For phones, use the QR code from the TV screen. Your devices
 echo must share one Wi-Fi network; permit Node.js on PRIVATE networks
 echo if Windows Firewall asks. Close the extra command window to stop.
 echo.
-start "MARBLE RUSH AAA 3D SERVER" cmd /k "cd /d ""%PREVIEW%"" && set PORT=35993 && node server/server.js"
+start "MARBLE RUSH AAA 3D SERVER" /D "%PREVIEW%" cmd /k "set PORT=35993&node server/server.js"
 timeout /t 4 /nobreak >nul
 start "" "http://localhost:35993/tv"
 echo SUCCESS - Development preview started. Production unchanged.
