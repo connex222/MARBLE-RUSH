@@ -522,16 +522,47 @@ function update(mode,s){
  updateEffects(mode,s);
  const sec=performance.now()/1000;
  if(mode==='dropzone'){
-   camera.position.set(lowMotion?0:20*Math.sin(sec*.16),0,1350);
-   camera.lookAt(0,0,0);
+   // Entire pegboard and all jackpot bins must remain visible even when a
+   // ball drops to the bottom: pan by a few pixels, never lose the target.
+   const x=lowMotion?0:Math.sin(sec*.19)*8;
+   const y=lowMotion?0:Math.max(-16,Math.min(16,(s.ball?.y||300)-390)*.027);
+   camera.position.x+=(x-camera.position.x)*.025;
+   camera.position.y+=(y-camera.position.y)*.025;
+   camera.position.z+=(1345-camera.position.z)*.03;
+   camera.lookAt(0,y*.23,0);
  }else{
-   const spread=mode==='brawl'?.12:mode==='derby'?.08:.06;
-   const px=lowMotion?0:Math.sin(sec*.21)*spread*600;
-   camera.position.x+=(px+cx.x*.07-camera.position.x)*.022;
+   let z=mode==='brawl'?1045:mode==='derby'?900:930;
+   let focusX=cx.x*.12,focusZ=cx.z*.09;
+   if(mode==='derby' && (s.horses||[]).length){
+     // Camera operator follows the pack, but widens to include a marble that
+     // falls behind. As the gap closes, it gently returns to the race.
+     const dist=(s.horses||[]).map(h=>Number(h.x)||0);
+     const gap=Math.max(...dist)-Math.min(...dist);
+     z=Math.min(1170,900+gap*.23);
+     focusX=cx.x*.18;
+   }else if(mode==='brawl'){
+     const alive=(s.marbles||[]).filter(m=>m.alive).length;
+     z=alive>2?1045:965;
+     focusX=cx.x*.10;focusZ=cx.z*.09;
+   }else if(mode==='golf' && s.ball){
+     const cup=s.layout?.cup;
+     const bx=s.ball.x-620;
+     const gx=Array.isArray(cup)?cup[0]-620:bx;
+     focusX=Math.max(-160,Math.min(160,(bx+gx)*.095));
+     const gap=Array.isArray(cup)?Math.hypot(s.ball.x-cup[0],s.ball.y-cup[1]):300;
+     z=Math.max(850,Math.min(1020,865+gap*.24));
+   }else if(mode==='curling'){
+     focusX=cx.x*.11;
+     z=950;
+   }
+   const motion=lowMotion?0:Math.sin(sec*.18)*(mode==='brawl'?15:9);
+   const rate=lowMotion?.05:.027;
+   const px=lowMotion?0:focusX+motion;
+   camera.position.x+=(px-camera.position.x)*rate;
    const targetY=mode==='brawl'?765:mode==='derby'?620:625;
-   camera.position.y+=((targetY+(mode==='derby'&&s.phase==='racing'?18:0))-camera.position.y)*.018;
-   camera.position.z+=((mode==='brawl'?1045:mode==='derby'?900:930)-camera.position.z)*.018;
-   camera.lookAt(cx.x*(mode==='derby'?.13:.11),0,cx.z*.11);
+   camera.position.y+=(targetY-camera.position.y)*rate;
+   camera.position.z+=(z-camera.position.z)*rate;
+   camera.lookAt(lowMotion?0:focusX*.48,0,lowMotion?0:focusZ*.5);
  }
 }
 function clean(){
