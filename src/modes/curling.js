@@ -147,7 +147,8 @@ const MarbleCurling=(()=>{
       if(vn<0){
         const impulse= -(1+.65)*vn/2;
         a.vx-=impulse*nx;a.vy-=impulse*ny;b.vx+=impulse*nx;b.vy+=impulse*ny;
-        if(-vn>40)state.events.push({kind:'hit',ids:[a.id,b.id],impact:-vn});
+        if(-vn>40)state.events.push({kind:'hit',ids:[a.id,b.id],impact:-vn,
+           x:(a.x+b.x)*.5,y:(a.y+b.y)*.5,time:state.elapsed});
       }
     }
     if(state.sweep>0)state.sweep=Math.max(0,state.sweep-dt*65);
