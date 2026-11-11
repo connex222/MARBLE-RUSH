@@ -397,6 +397,27 @@ async function main(){
     assert.ok(cur.ends.every(n=>n===5));
     assert.deepEqual(errors,[],'Curling browser errors');
     console.log('PASS: TV five-end Curling, throw physics, scoreboard and winner presentation');
+    const finaleVisual=await page.evaluate(()=>{
+      const root=document.querySelector('[data-screen="finale"]');
+      const podium=root.querySelector('#partyFinaleStage');
+      return {
+        mode:root.dataset.partyVisual,
+        stageVisible:!!podium&&!podium.hidden,
+        title:podium?.querySelector('.mrpHeader strong')?.textContent,
+        placements:[...(podium?.querySelectorAll('.partyPodiumSlot')||[])].map(x=>({
+          place:x.dataset.place,name:x.querySelector('.mrpName')?.textContent,
+          visible:!x.hidden})),
+        hasCSS:!!document.getElementById('partyPresentationCSS')
+      };
+    });
+    assert.equal(finaleVisual.mode,'curling','Cinematic finale must be mode-specific');
+    assert.equal(finaleVisual.stageVisible,true,'Party Pack stage is not visible');
+    assert.equal(finaleVisual.title,'MARBLE CURLING');
+    assert.equal(finaleVisual.hasCSS,true,'Podium stage CSS was not installed');
+    assert.ok(finaleVisual.placements.some(x=>x.place==='1'&&x.visible&&x.name),
+      'Winner marble and readable name not presented');
+    await page.screenshot({path:'qa-party-phase3-finale.png',fullPage:true});
+    console.log('PASS: rendered 3D-style Curling winner podium, existing scores and award roster');
 
 
 
