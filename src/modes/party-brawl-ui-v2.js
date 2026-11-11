@@ -198,7 +198,7 @@ const MarbleBrawlUI=(()=>{
       }
       if(m.anchored>0){ring(c,x,y,34,'#b2f5df',5,true);}
       const rimGap=s.radius-22-Math.hypot(m.x,m.y);
-      if(!m.recoverUsed&&rimGap<85&&rimGap>=0){
+      if(m.edgeHanging||(!m.recoverUsed&&rimGap<85&&rimGap>=0)){
         c.save();c.globalAlpha=clamp((85-rimGap)/70,.2,1);
         ring(c,x,y,36,'#ff647c',5,true);c.restore();
       }
@@ -281,13 +281,15 @@ const MarbleBrawlUI=(()=>{
     $('ppBrawlRam').disabled=!m||m.cooldown>0||m.energy<28;
     $('ppBrawlAnchor').disabled=!m||m.cooldown>0||m.energy<15;
     const gap=m?s.radius-22-Math.hypot(m.x,m.y):Infinity;
-    const canRecover=!!m&&!m.recoverUsed&&m.cooldown<=0&&
-      m.energy>=35&&gap>=0&&gap<=85;
+    const canRecover=!!m&&!m.recoverUsed&&
+      (m.cooldown<=0||m.edgeHanging)&&m.energy>=35&&
+      (m.edgeHanging||(gap>=0&&gap<=85));
     $('ppBrawlRecover').disabled=!canRecover;
     $('ppBrawlRecover').textContent=m?.recoverUsed?'LIFELINE USED':
       canRecover?'↩ SAVE YOUR MARBLE!':'↩ EDGE RECOVERY · 35';
     $('ppBrawlLeft').disabled=!m;$('ppBrawlRight').disabled=!m;
     $('ppBrawlHelp').textContent=m?
+      m.edgeHanging?'HANGING ON! '+m.edgeGrace.toFixed(1)+'s TO RECOVER OR FALL!':
       canRecover?'CRITICAL EDGE! Hit RECOVER before you fall!':
       pulseIn!=null&&pulseIn<=3?'SHOCKWAVE! Use ANCHOR to brace, or risk being thrown out.':
       m.recoverUsed?'No recovery remaining · RAM opponents for KO points.':
@@ -304,8 +306,12 @@ const MarbleBrawlUI=(()=>{
         ' · +'+recent.bonus+' BONUS!':
         (shooter?.name||'A marble')+' SURVIVED THE EDGE!';
     }else{
-      $('ppBrawlKillFeed').textContent=alive.length===2?
-        'FINAL DUEL · ONE SURVIVOR TAKES THE ROUND':
+      const hanging=s.marbles.find(m=>m.alive&&m.edgeHanging);
+      const inDanger=players.find(p=>p.id===hanging?.id);
+      $('ppBrawlKillFeed').textContent=hanging?
+        (inDanger?.name||'A MARBLE')+' CLINGS TO THE RIM · '+
+          hanging.edgeGrace.toFixed(1)+'s TO ESCAPE!':
+        alive.length===2?'FINAL DUEL · ONE SURVIVOR TAKES THE ROUND':
         'CHARGE YOUR RAM · KNOCK OUT RIVALS FOR BONUS POINTS';
     }
     // Award the visual KO bonus instantly; the authoritative points ledger
