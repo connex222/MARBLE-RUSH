@@ -258,18 +258,20 @@ const BowlBrawl = (() => {
     function hud(id){
       const p=roster.find(x=>x.id===id),m=current(id);
       if(!p)return {};
+      const rimGap=m?.alive?state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y):null;
+      const recoverReady=!!m?.alive&&!m.recoverUsed&&m.cooldown<=0&&
+        m.energy>=RECOVER_COST&&rimGap>=0&&rimGap<=RECOVER_MARGIN;
+      const pulseTime=SHOCK_TIMES[state.pulseIndex];
+      const pulseIn=pulseTime==null?null:Math.max(0,pulseTime-state.elapsed);
       return {
         turnLabel:state.done?'BOWL BRAWL COMPLETE':`ROUND ${state.round}/${ROUNDS} · ${alive().length} IN THE BOWL`,
         roundScore:p.points,energy:Math.round(m?.energy||0),
         modePhase:state.done?'finished':m?.alive?'brawling':'eliminated',
         isTurn:!!m?.alive,
         hazard:state.hazard,
-        pulseIn:SHOCK_TIMES[state.pulseIndex]!=null?
-          Math.max(0,SHOCK_TIMES[state.pulseIndex]-state.elapsed):null,
-        edgeDistance:m?.alive?Math.max(0,state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y)):null,
-        recoverReady:!!m?.alive&&!m.recoverUsed&&m.cooldown<=0&&
-          m.energy>=RECOVER_COST&&state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y)>=0&&
-          state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y)<=RECOVER_MARGIN,
+        pulseIn,
+        edgeDistance:rimGap===null?null:Math.max(0,rimGap),
+        recoverReady,
         recoveryUsed:!!m?.recoverUsed,
         knockouts:p.knockouts,bonus:m?.glory||0,
         modeControls:!m?.alive&&!state.done&&!state.spectators.has(id)?
@@ -278,10 +280,14 @@ const BowlBrawl = (() => {
           {a:'ram',label:'RAM!',v:0},
           {a:'right',label:'TURN ▶',v:2},
           {a:'anchor',label:'ANCHOR',v:0},
-          {a:'recover',label:m.recoverUsed?'SAVE USED':'EDGE RECOVER',v:0}
+          ...(recoverReady?[{a:'recover',label:'SAVE YOUR MARBLE!',v:0}]:[])
         ]:[],
-        modeHint:m?.alive?(m.recoverUsed?'Lifeline used · RAM 28 · ANCHOR 15':
-          'Recover once near the rim for 35 energy · RAM to earn KO bonuses'):
+        modeHint:m?.alive?(
+          recoverReady?'EDGE DANGER! Use your one recovery NOW.':
+          pulseIn!=null&&pulseIn<=SHOCK_WARNING?
+            'SHOCKWAVE IN '+pulseIn.toFixed(1)+'s! ANCHOR braces against the blast.':
+          m.recoverUsed?'Lifeline used · RAM 28 · ANCHOR 15':
+          'RAM for KO bonuses · RECOVER once near the rim'):
           'Out! Cheer the final duel and get ready for the next round',
         timeRemaining:Math.max(0,Math.ceil(ROUND_TIME-state.elapsed))
       };
