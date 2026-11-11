@@ -142,6 +142,29 @@ function surfaceTexture(object,mode,repeatX=1,repeatY=1){
  object.material.needsUpdate=true;
  return object;
 }
+// Decorative, transparent approved ChatGPT art is anchored to objects in
+// three-dimensional world-space. Props have no collider and cannot cover HUD.
+function sceneProps(mode) {
+ const placements={
+  derby:[['grandstand',-450,146,-487,470,255],['hay_bales',470,68,429,230,150]],
+  dropzone:[['glass_chute',-567,276,-12,177,270],['gold_bucket',555,-295,25,171,142]],
+  brawl:[['spin_hazard',-565,98,-454,240,155],['striped_bumper',550,75,434,206,157]],
+  curling:[['alpine_lodge',-490,175,-401,310,210],['ice_blocks',489,67,390,190,139]],
+  golf:[['stone_bridge',-530,120,392,305,219],['windmill',532,153,-439,221,248]]
+ };
+ for(const [name,x,y,z,w,h] of placements[mode]||[]){
+   const tex=new T.TextureLoader().load(
+     'assets/img/pp_'+mode+'_prop_'+name+'.webp',
+     t=>{t.colorSpace=T.SRGBColorSpace;t.anisotropy=2;},
+     undefined,()=>{});
+   const mat=new T.SpriteMaterial({
+     map:tex,color:0xffffff,transparent:true,depthTest:true,
+     depthWrite:false,opacity:.98
+   });
+   const prop=new T.Sprite(mat);prop.position.set(x,y,z);prop.scale.set(w,h,1);
+   prop.renderOrder=4;scene.add(prop);
+ }
+}
 function stageDressing(mode){
  // Physical sets, not flat backdrops: all outside authoritative collision
  // shapes. Keep the active marbles and score panel entirely unobstructed.
@@ -366,6 +389,7 @@ function stage(mode,s) {
  }
  // Themed three-dimensional set dressing frames the physical gameplay.
  stageDressing(mode);
+ sceneProps(mode);
  // Add actual miniature-diorama depth outside the board.
  if(mode!=='dropzone'){
    for(let i=0;i<7;i++){
@@ -518,7 +542,7 @@ function clean(){
  for(const x of ballMap.values()){x.el.remove();x.sphere.material.dispose();x.shadow.material.dispose();x.glow.material.dispose();}
  ballMap.clear();
  scene.traverse(o=>{
-   if(o.isMesh){
+   if(o.isMesh||o.isSprite){
      if(o.geometry&&!([ballGeo,ringGeo,shadowGeo].includes(o.geometry)))o.geometry.dispose();
      if(o.material){
        const mats=Array.isArray(o.material)?o.material:[o.material];
