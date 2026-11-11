@@ -277,11 +277,12 @@ const BowlBrawl = (() => {
         knockouts:p.knockouts,bonus:m?.glory||0,
         modeControls:!m?.alive&&!state.done&&!state.spectators.has(id)?
           [{a:'spectate',label:'CHEER THE FINALISTS',v:0}]:m?.alive&&!state.done?[
+          // Keep the emergency button FIRST so it is visible without scrolling.
+          ...(recoverReady?[{a:'recover',label:'SAVE YOUR MARBLE!',v:0}]:[]),
           {a:'left',label:'◀ TURN',v:2},
           {a:'ram',label:'RAM!',v:0},
           {a:'right',label:'TURN ▶',v:2},
-          {a:'anchor',label:'ANCHOR',v:0},
-          ...(recoverReady?[{a:'recover',label:'SAVE YOUR MARBLE!',v:0}]:[])
+          {a:'anchor',label:'ANCHOR',v:0}
         ]:[],
         modeHint:m?.alive?(
           recoverReady?'EDGE DANGER! Use your one recovery NOW.':
