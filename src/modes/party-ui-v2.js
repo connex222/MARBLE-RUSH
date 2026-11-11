@@ -9,6 +9,9 @@ const MarblePartyUI=(()=>{
  const W=1920,H=1080;
  let stage=null,canvas=null,ctx=null,mode=null,lastHud=-99,lastSignature='';
  let lastHeat=0,lastPhase='',entryAt=0;
+ // TV-only composition framing. The race positions come directly from Derby
+ // physics; this never changes horse speed, betting or game outcomes.
+ let derbyZoom=1,derbyZoomTarget=1,derbySpread=0,lastCameraAt=0;
  const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
  const isColour=c=>typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c);
  function bind(){
@@ -24,6 +27,7 @@ const MarblePartyUI=(()=>{
    if(!bind())return false;
    mode=next;lastHeat=0;lastPhase='';lastSignature='';
    lastHud=-99;entryAt=performance.now();
+   derbyZoom=1;derbyZoomTarget=1;derbySpread=0;lastCameraAt=performance.now();
    return true;
  }
  function picture(ctx,art,x,y,w,h,opacity=1){
@@ -246,14 +250,35 @@ const MarblePartyUI=(()=>{
      c.restore();
    }
  }
+ // Smooth broadcast zoom: tight pack = legible close-up; one slow marble
+ // drops behind = widen until all six remain in view; catch-up = glide back.
+ // The scene is a single composited track, not a fake 3D overlay.
+ function frameDerbyCamera(state,reduce){
+   const xs=(state.horses||[]).map(h=>Number(h.x)).filter(Number.isFinite);
+   derbySpread=xs.length?Math.max(...xs)-Math.min(...xs):0;
+   const wide=clamp((derbySpread-200)/700,0,1);
+   derbyZoomTarget=state.phase==='racing'?(1.028-.138*wide):1;
+   const now=performance.now(),dt=Math.min(.05,Math.max(0,(now-lastCameraAt)/1000));
+   lastCameraAt=now;
+   if(reduce)derbyZoom=1;
+   else derbyZoom+=(derbyZoomTarget-derbyZoom)*(1-Math.exp(-2.3*dt));
+   derbyZoom=clamp(derbyZoom,.89,1.03);
+   return derbyZoom;
+ }
  function drawDerby(state,assets,opts={}){
    if(mode!=='derby'||!ctx||!state||!Array.isArray(state.horses))return false;
    const t=Number(state.time)||0;
    ctx.save();ctx.setTransform(1,0,0,1,0,0);
    backdrop(ctx,assets,t);
+   const zoom=frameDerbyCamera(state,!!opts.reduce);
+   ctx.save();
+   // Scale ALL physical track features and real marbles together around
+   // the course centre. HUD and results remain TV-safe and stationary.
+   ctx.translate(1090,565);ctx.scale(zoom,zoom);ctx.translate(-1090,-565);
    const geo=track(ctx,assets,t,state);
    runners(ctx,state,assets,geo,!!opts.reduce);
    effects(ctx,assets,state,geo,!!opts.reduce);
+   ctx.restore();
    foreground(ctx,state,assets);
    ctx.restore();
    updateDerby(state,opts.selectedHorse||0);
@@ -538,5 +563,7 @@ const MarblePartyUI=(()=>{
    }
  }
 
- return Object.freeze({activate,drawDerby,drawDropZone});
+ return Object.freeze({activate,drawDerby,drawDropZone,
+   get derbyFraming(){return {zoom:derbyZoom,target:derbyZoomTarget,spread:derbySpread};}
+ });
 })();
