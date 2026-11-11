@@ -2160,16 +2160,19 @@
     if (state==='golf') {
       stateT+=dt;MODES.golf.tick(dt);const canvas=$('#golfCanvas');
       MODES.golf.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      {const active=MODES.golf.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'golf',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='curling') {
       stateT+=dt;MODES.curling.tick(dt);const canvas=$('#curlingCanvas');
       MODES.curling.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      {const active=MODES.curling.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'curling',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='derby') {
       stateT+=dt;MODES.derby.tick(dt);const canvas=$('#derbyCanvas');
       MODES.derby.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      {const active=MODES.derby.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'derby',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
       const derby=MODES.derby.session();
       const local=derby.state.roster.find(p=>!p.cpu);
       if(local){
@@ -2184,6 +2187,7 @@
       stateT+=dt;MODES.brawl.tick(dt);
       const canvas=$('#brawlCanvas');
       MODES.brawl.draw(canvas.getContext('2d'),canvas.width,canvas.height);
+      {const active=MODES.brawl.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'brawl',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
     if (state==='dropzone') {
@@ -2191,6 +2195,7 @@
       MODES.dropzone.tick(dt);
       const dzCanvas=$('#dropZoneCanvas');
       MODES.dropzone.draw(dzCanvas.getContext('2d'),dzCanvas.width,dzCanvas.height);
+      {const active=MODES.dropzone.session()?.state; if(active)PartyFX.draw(dzCanvas.getContext('2d'),'dropzone',active,active.elapsed??active.time??0,settings.reduce,dzCanvas.width,dzCanvas.height);}
       hudAcc+=dt;
       if(hudAcc>0.1){hudAcc=0;sendHud(false);}
       return;

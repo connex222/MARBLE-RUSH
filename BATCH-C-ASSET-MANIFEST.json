@@ -1,0 +1,679 @@
+{
+  "batch": "C",
+  "count": 48,
+  "art_source": "ChatGPT image generator only",
+  "files": [
+    {
+      "key": "pp_derby_fx_dust",
+      "file": "assets/raw/pp_derby_fx_dust.png",
+      "mode": "derby",
+      "kind": "dust",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "eight_isolated_racing_vfx_assets.png",
+      "cell": 1,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_derby_fx_speed",
+      "file": "assets/raw/pp_derby_fx_speed.png",
+      "mode": "derby",
+      "kind": "speed",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "eight_isolated_racing_vfx_assets.png",
+      "cell": 2,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_derby_fx_photo",
+      "file": "assets/raw/pp_derby_fx_photo.png",
+      "mode": "derby",
+      "kind": "photo",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "eight_isolated_racing_vfx_assets.png",
+      "cell": 3,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_derby_fx_confetti",
+      "file": "assets/raw/pp_derby_fx_confetti.png",
+      "mode": "derby",
+      "kind": "confetti",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "eight_isolated_racing_vfx_assets.png",
+      "cell": 4,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_derby_fx_impact",
+      "file": "assets/raw/pp_derby_fx_impact.png",
+      "mode": "derby",
+      "kind": "impact",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "eight_isolated_racing_vfx_assets.png",
+      "cell": 5,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_derby_fx_sunset",
+      "file": "assets/raw/pp_derby_fx_sunset.png",
+      "mode": "derby",
+      "kind": "sunset",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "eight_isolated_racing_vfx_assets.png",
+      "cell": 6,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_derby_fx_laurel",
+      "file": "assets/raw/pp_derby_fx_laurel.png",
+      "mode": "derby",
+      "kind": "laurel",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "eight_isolated_racing_vfx_assets.png",
+      "cell": 7,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_derby_fx_surge",
+      "file": "assets/raw/pp_derby_fx_surge.png",
+      "mode": "derby",
+      "kind": "surge",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "eight_isolated_racing_vfx_assets.png",
+      "cell": 8,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_dropzone_fx_peg",
+      "file": "assets/raw/pp_dropzone_fx_peg.png",
+      "mode": "dropzone",
+      "kind": "peg",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "arcade_marble_vfx_sprite_collection.png",
+      "cell": 1,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_dropzone_fx_jackpot",
+      "file": "assets/raw/pp_dropzone_fx_jackpot.png",
+      "mode": "dropzone",
+      "kind": "jackpot",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "arcade_marble_vfx_sprite_collection.png",
+      "cell": 2,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_dropzone_fx_fall",
+      "file": "assets/raw/pp_dropzone_fx_fall.png",
+      "mode": "dropzone",
+      "kind": "fall",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "arcade_marble_vfx_sprite_collection.png",
+      "cell": 3,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_dropzone_fx_coins",
+      "file": "assets/raw/pp_dropzone_fx_coins.png",
+      "mode": "dropzone",
+      "kind": "coins",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "arcade_marble_vfx_sprite_collection.png",
+      "cell": 4,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_dropzone_fx_multiplier",
+      "file": "assets/raw/pp_dropzone_fx_multiplier.png",
+      "mode": "dropzone",
+      "kind": "multiplier",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "arcade_marble_vfx_sprite_collection.png",
+      "cell": 5,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_dropzone_fx_chime",
+      "file": "assets/raw/pp_dropzone_fx_chime.png",
+      "mode": "dropzone",
+      "kind": "chime",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "arcade_marble_vfx_sprite_collection.png",
+      "cell": 6,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_dropzone_fx_superjackpot",
+      "file": "assets/raw/pp_dropzone_fx_superjackpot.png",
+      "mode": "dropzone",
+      "kind": "superjackpot",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "arcade_marble_vfx_sprite_collection.png",
+      "cell": 7,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_dropzone_fx_confetti",
+      "file": "assets/raw/pp_dropzone_fx_confetti.png",
+      "mode": "dropzone",
+      "kind": "confetti",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "arcade_marble_vfx_sprite_collection.png",
+      "cell": 8,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_brawl_fx_impact",
+      "file": "assets/raw/pp_brawl_fx_impact.png",
+      "mode": "brawl",
+      "kind": "impact",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "colourful_arena_game_vfx_collection.png",
+      "cell": 1,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_brawl_fx_shockwave",
+      "file": "assets/raw/pp_brawl_fx_shockwave.png",
+      "mode": "brawl",
+      "kind": "shockwave",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "colourful_arena_game_vfx_collection.png",
+      "cell": 2,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_brawl_fx_ko",
+      "file": "assets/raw/pp_brawl_fx_ko.png",
+      "mode": "brawl",
+      "kind": "ko",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "colourful_arena_game_vfx_collection.png",
+      "cell": 3,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_brawl_fx_dust",
+      "file": "assets/raw/pp_brawl_fx_dust.png",
+      "mode": "brawl",
+      "kind": "dust",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "colourful_arena_game_vfx_collection.png",
+      "cell": 4,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_brawl_fx_warning",
+      "file": "assets/raw/pp_brawl_fx_warning.png",
+      "mode": "brawl",
+      "kind": "warning",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "colourful_arena_game_vfx_collection.png",
+      "cell": 5,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_brawl_fx_spin",
+      "file": "assets/raw/pp_brawl_fx_spin.png",
+      "mode": "brawl",
+      "kind": "spin",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "colourful_arena_game_vfx_collection.png",
+      "cell": 6,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_brawl_fx_victory",
+      "file": "assets/raw/pp_brawl_fx_victory.png",
+      "mode": "brawl",
+      "kind": "victory",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "colourful_arena_game_vfx_collection.png",
+      "cell": 7,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_brawl_fx_ricochet",
+      "file": "assets/raw/pp_brawl_fx_ricochet.png",
+      "mode": "brawl",
+      "kind": "ricochet",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "colourful_arena_game_vfx_collection.png",
+      "cell": 8,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_curling_fx_impact",
+      "file": "assets/raw/pp_curling_fx_impact.png",
+      "mode": "curling",
+      "kind": "impact",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "icy_curling_vfx_asset_collection.png",
+      "cell": 1,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_curling_fx_sweep",
+      "file": "assets/raw/pp_curling_fx_sweep.png",
+      "mode": "curling",
+      "kind": "sweep",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "icy_curling_vfx_asset_collection.png",
+      "cell": 2,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_curling_fx_scrape",
+      "file": "assets/raw/pp_curling_fx_scrape.png",
+      "mode": "curling",
+      "kind": "scrape",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "icy_curling_vfx_asset_collection.png",
+      "cell": 3,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_curling_fx_mist",
+      "file": "assets/raw/pp_curling_fx_mist.png",
+      "mode": "curling",
+      "kind": "mist",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "icy_curling_vfx_asset_collection.png",
+      "cell": 4,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_curling_fx_target",
+      "file": "assets/raw/pp_curling_fx_target.png",
+      "mode": "curling",
+      "kind": "target",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "icy_curling_vfx_asset_collection.png",
+      "cell": 5,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_curling_fx_victory",
+      "file": "assets/raw/pp_curling_fx_victory.png",
+      "mode": "curling",
+      "kind": "victory",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "icy_curling_vfx_asset_collection.png",
+      "cell": 6,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_curling_fx_ricochet",
+      "file": "assets/raw/pp_curling_fx_ricochet.png",
+      "mode": "curling",
+      "kind": "ricochet",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "icy_curling_vfx_asset_collection.png",
+      "cell": 7,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_curling_fx_aurora",
+      "file": "assets/raw/pp_curling_fx_aurora.png",
+      "mode": "curling",
+      "kind": "aurora",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "icy_curling_vfx_asset_collection.png",
+      "cell": 8,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_golf_fx_putt",
+      "file": "assets/raw/pp_golf_fx_putt.png",
+      "mode": "golf",
+      "kind": "putt",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_golf_game_vfx_asset_sheet.png",
+      "cell": 1,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_golf_fx_roll",
+      "file": "assets/raw/pp_golf_fx_roll.png",
+      "mode": "golf",
+      "kind": "roll",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_golf_game_vfx_asset_sheet.png",
+      "cell": 2,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_golf_fx_holeinone",
+      "file": "assets/raw/pp_golf_fx_holeinone.png",
+      "mode": "golf",
+      "kind": "holeinone",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_golf_game_vfx_asset_sheet.png",
+      "cell": 3,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_golf_fx_cup",
+      "file": "assets/raw/pp_golf_fx_cup.png",
+      "mode": "golf",
+      "kind": "cup",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_golf_game_vfx_asset_sheet.png",
+      "cell": 4,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_golf_fx_ricochet",
+      "file": "assets/raw/pp_golf_fx_ricochet.png",
+      "mode": "golf",
+      "kind": "ricochet",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_golf_game_vfx_asset_sheet.png",
+      "cell": 5,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_golf_fx_sunset",
+      "file": "assets/raw/pp_golf_fx_sunset.png",
+      "mode": "golf",
+      "kind": "sunset",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_golf_game_vfx_asset_sheet.png",
+      "cell": 6,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_golf_fx_flag",
+      "file": "assets/raw/pp_golf_fx_flag.png",
+      "mode": "golf",
+      "kind": "flag",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_golf_game_vfx_asset_sheet.png",
+      "cell": 7,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_golf_fx_confetti",
+      "file": "assets/raw/pp_golf_fx_confetti.png",
+      "mode": "golf",
+      "kind": "confetti",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_golf_game_vfx_asset_sheet.png",
+      "cell": 8,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_shared_fx_impact",
+      "file": "assets/raw/pp_shared_fx_impact.png",
+      "mode": "shared",
+      "kind": "impact",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_marble_game_vfx_collection.png",
+      "cell": 1,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_shared_fx_start",
+      "file": "assets/raw/pp_shared_fx_start.png",
+      "mode": "shared",
+      "kind": "start",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_marble_game_vfx_collection.png",
+      "cell": 2,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_shared_fx_boost",
+      "file": "assets/raw/pp_shared_fx_boost.png",
+      "mode": "shared",
+      "kind": "boost",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_marble_game_vfx_collection.png",
+      "cell": 3,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_shared_fx_select",
+      "file": "assets/raw/pp_shared_fx_select.png",
+      "mode": "shared",
+      "kind": "select",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_marble_game_vfx_collection.png",
+      "cell": 4,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_shared_fx_crown",
+      "file": "assets/raw/pp_shared_fx_crown.png",
+      "mode": "shared",
+      "kind": "crown",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_marble_game_vfx_collection.png",
+      "cell": 5,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_shared_fx_confetti",
+      "file": "assets/raw/pp_shared_fx_confetti.png",
+      "mode": "shared",
+      "kind": "confetti",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_marble_game_vfx_collection.png",
+      "cell": 6,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_shared_fx_dust",
+      "file": "assets/raw/pp_shared_fx_dust.png",
+      "mode": "shared",
+      "kind": "dust",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_marble_game_vfx_collection.png",
+      "cell": 7,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    },
+    {
+      "key": "pp_shared_fx_finale",
+      "file": "assets/raw/pp_shared_fx_finale.png",
+      "mode": "shared",
+      "kind": "finale",
+      "size": [
+        384,
+        384
+      ],
+      "transparent": true,
+      "source": "glossy_marble_game_vfx_collection.png",
+      "cell": 8,
+      "generated_by": "ChatGPT image generation; no Creative Claw graphics"
+    }
+  ]
+}

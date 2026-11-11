@@ -19,6 +19,7 @@ try { sharp = require('sharp'); } catch (e) { console.log('• sharp not install
 
 // Game sizes from Section 9 (longest edge or exact box)
 const SIZES = [
+  [/^pp_(derby|dropzone|brawl|curling|golf|shared)_fx_/, { box: 384 }],
   [/^pp_(derby|dropzone|brawl|curling|golf)_surface_main$/, { w: 1024, h: 1024, fit: 'cover' }],
   [/^pp_(derby|dropzone|brawl|curling|golf)_(prop_|obstacle_)/, { box: 768 }],
   [/^pp_(derby|dropzone|brawl|curling|golf)_bg$/, { w: 1920, h: 1080, fit: 'cover' }],
@@ -123,7 +124,7 @@ function fontCss(names) {
   const fonts = fontCss([['Fredoka', 'fredoka.woff2', '300 700'], ['Nunito', 'nunito.woff2', '200 1000']]);
   const engine = fs.readFileSync(path.join(SRC, 'engine.js'), 'utf8');
   const tv = fs.readFileSync(path.join(SRC, 'tv.js'), 'utf8');
-  const modes = ['registry','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
+  const modes = ['registry','party-fx','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
   const qr = fs.readFileSync(path.join(SRC, 'qr.js'), 'utf8');
   const safe = s => s.replace(/<\/script/gi, '<\\/script');
   let tvHtml = fs.readFileSync(path.join(SRC, 'tv.html'), 'utf8');
