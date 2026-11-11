@@ -24,7 +24,7 @@ const palettes={
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let enabled=true,renderer=null,world=null,camera=null,scene=null,worldMode='',
   ballMap=new Map(),last=0,lowMotion=false,unsupported=false;
-let quality='cinematic',slowFrames=0,fastFrames=0,qualityHold=0,frameRate=30;
+let quality='cinematic',slowFrames=0,fastFrames=0,qualityHold=0,frameRate=30,stageStartedAt=0;
 const assetTextures=new Map();
 function chooseQuality(next){
  if(!renderer || quality===next)return;
@@ -49,9 +49,11 @@ function performanceFallback(){
 function trackFrameTime(dt,now){
  if(document.visibilityState==='hidden'||!Number.isFinite(dt))return;
  frameRate=frameRate*.88+(1000/Math.max(1,dt))*.12;
+ // The first seconds of a new scene compile shaders and upload artwork.
+ if(now-stageStartedAt<1800)return;
  root.dataset.fps=String(Math.max(1,Math.min(120,Math.round(frameRate))));
  if(dt>90){slowFrames+=3;fastFrames=0;}
- else if(dt>54){slowFrames++;fastFrames=0;}
+ else if(dt>43){slowFrames++;fastFrames=0;}
  else if(dt<38){fastFrames++;slowFrames=Math.max(0,slowFrames-2);}
  else{slowFrames=Math.max(0,slowFrames-1);fastFrames=0;}
  if(quality==='cinematic' && slowFrames>=9){
@@ -773,6 +775,7 @@ function frame(time){
  if(!s)return;
  if(worldMode!==mode || (mode==='golf'&&world?.hole!==s.hole)){
    clean();world={hole:s.hole};worldMode=mode;stage(mode,s);
+   stageStartedAt=time;slowFrames=0;fastFrames=0;
  }
  const [left,top,width,height]=frames[mode];
  root.style.left='calc('+left+'*var(--u))';
