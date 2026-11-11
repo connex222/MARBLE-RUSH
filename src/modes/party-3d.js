@@ -26,6 +26,33 @@ let enabled=true,renderer=null,world=null,camera=null,scene=null,worldMode='',
   ballMap=new Map(),last=0,lowMotion=false,unsupported=false;
 let quality='cinematic',slowFrames=0,fastFrames=0,qualityHold=0,frameRate=30,stageStartedAt=0;
 const assetTextures=new Map();
+ // Opt-in diagnostic on the separate Windows development preview only.
+ // Players never see this badge on a normal TV URL.
+ const perfDebug=new URLSearchParams(window.location.search).get('marblePerf')==='1'
+   ?document.createElement('output'):null;
+ if(perfDebug){
+   perfDebug.id='marble3dPerf';
+   perfDebug.setAttribute('aria-hidden','true');
+   Object.assign(perfDebug.style,{
+     position:'fixed',right:'16px',bottom:'16px',zIndex:'9999',
+     pointerEvents:'none',padding:'9px 13px',borderRadius:'9px',
+     background:'rgba(9,16,32,.89)',color:'#f4e8bd',
+     font:'700 16px system-ui,sans-serif',border:'1px solid #ffd67e'
+   });
+   document.body.appendChild(perfDebug);
+ }
+ function showPerformance(mode,active){
+   if(!perfDebug)return;
+   perfDebug.hidden=!supported.includes(mode);
+   if(perfDebug.hidden)return;
+   const summary=active
+     ?'3D · '+(root.dataset.fps||'?')+' FPS · '+quality+
+       ' · '+(root.dataset.gpuTextures||'?')+' textures'
+     :root.dataset.fallback==='low-frame-rate'
+       ?'2D SAFE MODE · low GPU frame rate'
+       :'2D CLASSIC VIEW';
+   if(perfDebug.textContent!==summary)perfDebug.textContent=summary;
+ }
 function chooseQuality(next){
  if(!renderer || quality===next)return;
  quality=next;slowFrames=0;fastFrames=0;
@@ -769,6 +796,7 @@ function frame(time){
  const title=enabled?'Switch to the classic 2D board':'Switch to the cinematic 3D board';
  if(toggle.title!==title)toggle.title=title;
  if(!active){
+   showPerformance(mode,false);
    if(worldMode){clean();worldMode='';}
    slowFrames=0;fastFrames=0;return;
  }
@@ -784,6 +812,7 @@ function frame(time){
  if(!s){
    // Room transitions can temporarily have no active session: restore the 2D board.
    root.hidden=true;delete root.dataset.rendered;delete root.dataset.mode;
+   showPerformance(mode,false);
    if(worldMode){clean();worldMode='';}
    return;
  }
@@ -810,6 +839,7 @@ function frame(time){
    update(mode,s);
    renderer.render(scene,camera);
    trackFrameTime(dt,time);
+   showPerformance(mode,enabled&&!unsupported);
    if(!enabled){delete root.dataset.rendered;return;}
    root.dataset.rendered='true';
    root.dataset.mode=mode;
@@ -828,6 +858,7 @@ function frame(time){
  }catch(e){
    console.warn('[MARBLE RUSH] 3D frame failed; restoring 2D:',e.message);
    unsupported=true;root.hidden=true;toggle.hidden=true;clean();
+   showPerformance(mode,false);
  }
 }
 toggle.addEventListener('click',()=>{
