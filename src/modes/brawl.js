@@ -42,7 +42,8 @@ const BowlBrawl = (() => {
         return {id:p.id,x,y,vx:0,vy:0,heading:ang+Math.PI,energy:75,
           anchored:0,cooldown:0,alive:true,eliminatedAt:null,ramHits:0,outs:0,
           cpuWait:.3+rng()*.5,ramWindow:0,
-          recoverUsed:false,glory:0,kos:0,lastHitBy:null,lastHitTime:-999};
+          recoverUsed:false,edgeHanging:false,edgeGrace:0,
+          glory:0,kos:0,lastHitBy:null,lastHitTime:-999};
       });
       state.active=state.marbles;
     }
@@ -72,10 +73,12 @@ const BowlBrawl = (() => {
       if(type==='recover'){
         const distance=Math.hypot(m.x,m.y);
         const margin=state.radius-MARBLE_RADIUS-distance;
-        if(m.recoverUsed||m.energy<RECOVER_COST||m.cooldown>0||
-           margin<0||margin>RECOVER_MARGIN||distance<1)return false;
+        if(m.recoverUsed||m.energy<RECOVER_COST||
+           (m.cooldown>0&&!m.edgeHanging)||
+           (!m.edgeHanging&&(margin<0||margin>RECOVER_MARGIN))||distance<1)return false;
         const nx=-m.x/distance,ny=-m.y/distance;
         m.energy-=RECOVER_COST;m.recoverUsed=true;m.cooldown=.70;m.anchored=0;
+        m.edgeHanging=false;m.edgeGrace=0;
         // A genuine inward escape, not an invulnerability or a teleport.
         m.vx=nx*470;m.vy=ny*470;m.x+=nx*6;m.y+=ny*6;
         state.events.push({kind:'recover',id:m.id,x:m.x,y:m.y,time:state.time,
@@ -105,7 +108,9 @@ const BowlBrawl = (() => {
         if(m.cpuWait>0)continue;
         m.cpuWait=(.33-.15*p.skill)+rng()*.23;
         const margin=state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y);
-        if(margin<=RECOVER_MARGIN&&margin>=0&&!m.recoverUsed&&m.energy>=RECOVER_COST&&m.cooldown<=0){
+        if((m.edgeHanging||(margin<=RECOVER_MARGIN&&margin>=0))&&
+           !m.recoverUsed&&m.energy>=RECOVER_COST&&
+           (m.cooldown<=0||m.edgeHanging)){
           action(m.id,'recover');continue;
         }
         const pulseAt=SHOCK_TIMES[state.pulseIndex];
@@ -240,8 +245,28 @@ const BowlBrawl = (() => {
           }
         }
         resolveHits();
-        for(const m of state.marbles)if(m.alive&&Math.hypot(m.x,m.y)>state.radius-MARBLE_RADIUS){
-          m.alive=false;m.eliminatedAt=state.elapsed;m.outs++;
+        // A marble reaching the lip clings for 0.85s: a visible, FAIR
+        // human reaction window rather than an invisible instant knockout.
+        // Teleported or grossly out-of-bounds states still eliminate at once.
+        for(const m of state.marbles)if(m.alive){
+          const boundary=state.radius-MARBLE_RADIUS;
+          let d=Math.hypot(m.x,m.y);
+          if(m.edgeHanging){
+            m.edgeGrace-=dt;
+            if(d<boundary-14){m.edgeHanging=false;m.edgeGrace=0;}
+          }
+          if(d>boundary&&d-boundary<=50&&!m.edgeHanging){
+            m.edgeHanging=true;m.edgeGrace=.85;
+            state.events.push({kind:'edgeHang',id:m.id,
+              x:m.x,y:m.y,time:state.time,round:state.round});
+          }
+          if(m.edgeHanging&&d>boundary+7){
+            const factor=(boundary+7)/d;m.x*=factor;m.y*=factor;
+            m.vx*=.85;m.vy*=.85;
+            d=boundary+7;
+          }
+          if(!(d>boundary&&(!m.edgeHanging||m.edgeGrace<=0)))continue;
+          m.alive=false;m.edgeHanging=false;m.eliminatedAt=state.elapsed;m.outs++;
           const attacker=m.lastHitBy&&state.time-m.lastHitTime<=2.6?
             current(m.lastHitBy):null;
           if(attacker&&attacker!==m){
@@ -260,8 +285,9 @@ const BowlBrawl = (() => {
       const p=roster.find(x=>x.id===id),m=current(id);
       if(!p)return {};
       const rimGap=m?.alive?state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y):null;
-      const recoverReady=!!m?.alive&&!m.recoverUsed&&m.cooldown<=0&&
-        m.energy>=RECOVER_COST&&rimGap>=0&&rimGap<=RECOVER_MARGIN;
+      const recoverReady=!!m?.alive&&!m.recoverUsed&&
+        (m.cooldown<=0||m.edgeHanging)&&m.energy>=RECOVER_COST&&
+        (m.edgeHanging||(rimGap>=0&&rimGap<=RECOVER_MARGIN));
       const pulseTime=state.pulseAt;
       const pulseIn=pulseTime==null?null:Math.max(0,pulseTime-state.elapsed);
       return {
@@ -274,6 +300,7 @@ const BowlBrawl = (() => {
         edgeDistance:rimGap===null?null:Math.max(0,rimGap),
         recoverReady,
         recoveryUsed:!!m?.recoverUsed,
+        edgeHanging:!!m?.edgeHanging,edgeGrace:m?.edgeGrace||0,
         knockouts:p.knockouts,bonus:m?.glory||0,
         modeControls:!m?.alive&&!state.done&&!state.spectators.has(id)?
           [{a:'spectate',label:'CHEER THE FINALISTS',v:0}]:m?.alive&&!state.done?[
