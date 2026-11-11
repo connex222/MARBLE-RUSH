@@ -1,12 +1,10 @@
 /* MARBLE RUSH Party Pack UI v2 — full replacement presentation.
  * Scope: TV artwork and HUD. Never mutates game engine, bets, scoring or phones.
- * The five legacy Canvas2D draw functions and per-mode markup are retired.
- * Derby and Drop Zone have independent replacement screens; the other modes remain gated.
+ * The five legacy Canvas2D draw functions and per-mode markup were retired.
+ * Stage visibility and renderer ownership live only in party-screen-host.js.
  */
 const MarblePartyUI=(()=>{
  'use strict';
- const MODES=['derby','dropzone','brawl','curling','golf'];
- const NAMES={derby:'MARBLE DERBY',dropzone:'DROP ZONE',brawl:'BOWL BRAWL',curling:'MARBLE CURLING',golf:'MARBLE GOLF'};
  const LENGTH=1500;
  const W=1920,H=1080;
  let stage=null,canvas=null,ctx=null,mode=null,lastHud=-99,lastSignature='';
@@ -19,31 +17,13 @@ const MarblePartyUI=(()=>{
    ctx=canvas?.getContext('2d',{alpha:false})||null;
    return !!(stage&&ctx);
  }
- function enter(next){
-   if(!MODES.includes(next)||!bind())return false;
-   mode=next;lastHeat=0;lastPhase='';lastSignature='';lastHud=-99;entryAt=performance.now();
-   stage.dataset.mode=next;
-   const title=document.getElementById('ppModeTitle');
-   if(title)title.textContent=NAMES[next];
-   const derby=next==='derby',drop=next==='dropzone',brawl=next==='brawl',curling=next==='curling',golf=next==='golf';
-   for(const id of ['ppBetPanel','ppLeaderPanel','ppBoardLabel','ppTicker','ppTitleArea']){
-     const node=document.getElementById(id);if(node)node.hidden=!derby;
-   }
-   for(const id of ['ppDropHeader','ppDropPanel','ppDropStandings','ppDropStats']){
-     const node=document.getElementById(id);if(node)node.hidden=!drop;
-   }
-   for(const id of ['ppBrawlHeader','ppBrawlStats','ppBrawlPanel','ppBrawlStandings']){
-     const node=document.getElementById(id);if(node)node.hidden=!brawl;
-   }
-   const ice=document.getElementById('ppCurlHud');if(ice)ice.hidden=!curling;
-   const greens=document.getElementById('ppGolfHud');if(greens)greens.hidden=!golf;
-   const wip=document.getElementById('ppWorkInProgress');
-   if(wip)wip.hidden=derby||drop||brawl||curling||golf;
-   if(canvas)canvas.setAttribute('aria-label',
-     golf?'Marble Golf miniature fairway, actual hazards and rolling marble':
-     curling?'Marble Curling Alpine ice rink and live scoring stones':
-     brawl?'Bowl Brawl elimination stadium and active marbles':
-     drop?'Drop Zone glass pegboard and live score bins':'Marble Derby animated racing world');
+ // The shared host alone mounts/hides game UI. The Derby/Drop Zone
+ // illustrators retain only their per-match HUD cache and canvas binding.
+ function activate(next){
+   if(next!=='derby'&&next!=='dropzone')return false;
+   if(!bind())return false;
+   mode=next;lastHeat=0;lastPhase='';lastSignature='';
+   lastHud=-99;entryAt=performance.now();
    return true;
  }
  function picture(ctx,art,x,y,w,h,opacity=1){
@@ -558,5 +538,5 @@ const MarblePartyUI=(()=>{
    }
  }
 
- return Object.freeze({enter,drawDerby,drawDropZone,modes:MODES.slice()});
+ return Object.freeze({activate,drawDerby,drawDropZone});
 })();
