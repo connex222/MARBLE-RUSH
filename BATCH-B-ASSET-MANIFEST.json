@@ -1,0 +1,149 @@
+{
+  "name": "MARBLE RUSH Party Pack Phase 3 Batch B",
+  "version": "Batch B production previews",
+  "branch": "dev/party-pack-aaa",
+  "status": "Asset staging. Visual acceptance still required.",
+  "source": "ChatGPT-generated materials/prop illustrations, extracted, isolated and refined into individual files",
+  "asset_count": 15,
+  "assets": [
+    {
+      "path": "assets/raw/pp_brawl_prop_spin_hazard.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "995841cfe5f2c746ae95398fb9ec56ce631e7f91242be76455e09660ea9d6edc"
+    },
+    {
+      "path": "assets/raw/pp_brawl_prop_striped_bumper.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "27ce0fec313448053faf78aa27ef039a5c2c415fec283fe7b1354ff433309e5c"
+    },
+    {
+      "path": "assets/raw/pp_brawl_surface_main.png",
+      "size": [
+        768,
+        768
+      ],
+      "alpha": false,
+      "sha256": "4df6fb0732560d4f012a93c59a3ffc282c5f61620f466c658f0397f11d715e5b"
+    },
+    {
+      "path": "assets/raw/pp_curling_prop_alpine_lodge.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "2138bc1b70291fed4b6eabba2212813afa15191019d199534eddb0f26a34d25e"
+    },
+    {
+      "path": "assets/raw/pp_curling_prop_ice_blocks.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "6bfa687a34f3941219fd4fb35ab8791acf4165d0a44afe934339c13336d53061"
+    },
+    {
+      "path": "assets/raw/pp_curling_surface_main.png",
+      "size": [
+        768,
+        768
+      ],
+      "alpha": false,
+      "sha256": "e15ae22d2dc172912e545ac74e397322a1c778e9518ee4f530923b6ee493d17f"
+    },
+    {
+      "path": "assets/raw/pp_derby_prop_grandstand.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "9956f86792a1aee007d7fe5a2a305f656bfdd805a74106446732bd5ea3cf039a"
+    },
+    {
+      "path": "assets/raw/pp_derby_prop_hay_bales.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "dede9deaa149147337d613683169a45afb330e519cb5734f90be869aa91292d0"
+    },
+    {
+      "path": "assets/raw/pp_derby_surface_main.png",
+      "size": [
+        768,
+        768
+      ],
+      "alpha": false,
+      "sha256": "250f5d36153533c84237fed8f3ce02358eac8282da91e18525679444cb09e80a"
+    },
+    {
+      "path": "assets/raw/pp_dropzone_prop_glass_chute.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "ff3ad9c036a727b45ab37d5ed7a69ce7240f11c0924b7212783f369687b904ff"
+    },
+    {
+      "path": "assets/raw/pp_dropzone_prop_gold_bucket.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "d485922cb4bf86915e0bb614e9b8faa1d05aaa52ffc1f61b268e8c5b89b154e5"
+    },
+    {
+      "path": "assets/raw/pp_dropzone_surface_main.png",
+      "size": [
+        768,
+        768
+      ],
+      "alpha": false,
+      "sha256": "7746c73cfe4e95dbaded92c706eb81bd628f10cefbd8a41917ba0b0d94bffb63"
+    },
+    {
+      "path": "assets/raw/pp_golf_prop_stone_bridge.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "d500dc9fb096388b3b7794948ebe15051efc773be778d341a3e7c1d0e63114bc"
+    },
+    {
+      "path": "assets/raw/pp_golf_prop_windmill.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": true,
+      "sha256": "10cef017c622d7543999c0dd76702e52d686093f24285e9714790770e62325e8"
+    },
+    {
+      "path": "assets/raw/pp_golf_surface_main.png",
+      "size": [
+        768,
+        768
+      ],
+      "alpha": false,
+      "sha256": "0f35a20c41902d963d04b30af367982ee72d50405495f0473ef657a00d521bea"
+    }
+  ],
+  "integration_files": [
+    "src/modes/registry.js",
+    "tools/build.js"
+  ]
+}
