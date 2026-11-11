@@ -142,11 +142,13 @@ const MarbleCurlingUI=(()=>{
      c.lineTo(launch+dx-Math.cos(angle)*18+Math.sin(angle)*13,centreY+dy-Math.sin(angle)*18-Math.cos(angle)*13);
      c.fill();c.restore();
      const p=s.roster[Math.floor(s.turn/2)%s.roster.length];
-     if(p)marble(c,{x:75,y:265,vx:0,vy:0},p,assets,t,reduce);
+     if(p)marble(c,{x:75,y:265,vx:0,vy:0},
+       {...p,swirl:Math.floor(s.turn/2)%s.roster.length},assets,t,reduce);
    }
    // Stones are always drawn from actual simulation positions.
    for(const m of s.stones){
-     const p=roster.get(m.id);if(p)marble(c,m,p,assets,t,reduce);
+     const p=roster.get(m.id);
+     if(p)marble(c,m,{...p,swirl:s.roster.findIndex(q=>q.id===m.id)},assets,t,reduce);
      if(s.moving===m && !reduce){
        art(c,assets.pp_curling_fx_scrape,X(m.x)-56,Y(m.y)-60,115,111,.60);
        if(s.sweep>0)art(c,assets.pp_curling_fx_sweep,X(m.x)-100,Y(m.y)-106,200,187,.40);
