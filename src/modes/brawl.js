@@ -5,6 +5,9 @@
 const BowlBrawl = (() => {
   'use strict';
   const ROUNDS=5, ROUND_TIME=42, START_RADIUS=380, END_RADIUS=110;
+  // Telegraph before each force pulse: players can anchor or retreat.
+  const SHOCK_TIMES=[8,20,32], SHOCK_WARNING=3;
+  const RECOVER_COST=35, RECOVER_MARGIN=85, KO_BONUS=3;
   const MARBLE_RADIUS=22, TAU=2*Math.PI;
   const COLORS=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d','#a7deed','#ffd4a2'];
   const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
@@ -21,7 +24,8 @@ const BowlBrawl = (() => {
     }));
     const state={roster,seed,round:0,elapsed:0,time:0,radius:START_RADIUS,marbles:[],
       active:[],done:false,finishedCalled:false,lastWinner:null,events:[],roundHistory:[],
-      hazard:'clean',hazardAngle:0,spectators:new Set()};
+      hazard:'clean',hazardAngle:0,spectators:new Set(),
+      pulseIndex:0,lastPulseAt:-99};
     const HAZARDS=['bumpers','ice','rotor','crumbling','clean'];
     function current(id){return state.marbles.find(m=>m.id===id);}
     function alive(){return state.marbles.filter(m=>m.alive);}
@@ -30,13 +34,15 @@ const BowlBrawl = (() => {
     function beginRound(){
       state.round++;state.elapsed=0;state.radius=START_RADIUS;state.lastWinner=null;
       state.hazard=HAZARDS[state.round-1];state.hazardAngle=rng()*TAU;state.spectators=new Set();
+      state.pulseIndex=0;state.lastPulseAt=-99;
       state.events.push({kind:'hazardReveal',hazard:state.hazard,round:state.round,time:state.time});
       const n=roster.length,phase=rng()*TAU;
       state.marbles=roster.map((p,i)=>{
         const ang=TAU*i/n+phase, x=190*Math.cos(ang),y=190*Math.sin(ang);
         return {id:p.id,x,y,vx:0,vy:0,heading:ang+Math.PI,energy:75,
           anchored:0,cooldown:0,alive:true,eliminatedAt:null,ramHits:0,outs:0,
-          cpuWait:.3+rng()*.5};
+          cpuWait:.3+rng()*.5,ramWindow:0,
+          recoverUsed:false,glory:0,kos:0,lastHitBy:null,lastHitTime:-999};
       });
       state.active=state.marbles;
     }
@@ -63,6 +69,19 @@ const BowlBrawl = (() => {
         if(!Number.isFinite(val)||val<0||val>360)return false;
         m.heading=val*Math.PI/180;return true;
       }
+      if(type==='recover'){
+        const distance=Math.hypot(m.x,m.y);
+        const margin=state.radius-MARBLE_RADIUS-distance;
+        if(m.recoverUsed||m.energy<RECOVER_COST||m.cooldown>0||
+           margin<0||margin>RECOVER_MARGIN||distance<1)return false;
+        const nx=-m.x/distance,ny=-m.y/distance;
+        m.energy-=RECOVER_COST;m.recoverUsed=true;m.cooldown=.70;m.anchored=0;
+        // A genuine inward escape, not an invulnerability or a teleport.
+        m.vx=nx*470;m.vy=ny*470;m.x+=nx*6;m.y+=ny*6;
+        state.events.push({kind:'recover',id:m.id,x:m.x,y:m.y,time:state.time,
+          margin,round:state.round});
+        return true;
+      }
       if(type==='anchor'){
         if(m.energy<15||m.cooldown>0)return false;
         m.energy-=15;m.anchored=.75;m.cooldown=.65;
@@ -70,7 +89,7 @@ const BowlBrawl = (() => {
       }
       if(type==='ram'){
         if(m.energy<28||m.cooldown>0)return false;
-        m.energy-=28;m.cooldown=.72;m.anchored=0;
+        m.energy-=28;m.cooldown=.72;m.anchored=0;m.ramWindow=.58;
         // A committed forward burst; automatic steering does not erase momentum.
         m.vx+=Math.cos(m.heading)*480;
         m.vy+=Math.sin(m.heading)*480;
@@ -85,6 +104,15 @@ const BowlBrawl = (() => {
         m.cpuWait-=dt;
         if(m.cpuWait>0)continue;
         m.cpuWait=(.33-.15*p.skill)+rng()*.23;
+        const margin=state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y);
+        if(margin<=RECOVER_MARGIN&&margin>=0&&!m.recoverUsed&&m.energy>=RECOVER_COST&&m.cooldown<=0){
+          action(m.id,'recover');continue;
+        }
+        const pulseAt=SHOCK_TIMES[state.pulseIndex];
+        if(pulseAt!=null&&pulseAt-state.elapsed<1.1&&pulseAt-state.elapsed>0&&
+           margin<180&&m.energy>=15&&m.cooldown<=0){
+          action(m.id,'anchor');continue;
+        }
         const enemy=closest(m);
         if(!enemy)continue;
         const ang=Math.atan2(enemy.y-m.y,enemy.x-m.x);
@@ -118,7 +146,17 @@ const BowlBrawl = (() => {
           b.vx+=impact*nx*bResistance;b.vy+=impact*ny*bResistance;
           if(-vr>140){
             a.ramHits++;b.ramHits++;
-            state.events.push({kind:'hit',id:a.id,other:b.id,impact:-vr,time:state.time});
+            const chargeA=a.ramWindow>0,chargeB=b.ramWindow>0;
+            const speedA=Math.hypot(a.vx,a.vy),speedB=Math.hypot(b.vx,b.vy);
+            const attacker=chargeA&&!chargeB?a:
+              chargeB&&!chargeA?b:
+              chargeA&&chargeB?(speedA>=speedB?a:b):null;
+            const victim=attacker?(attacker===a?b:a):null;
+            if(attacker&&victim){
+              victim.lastHitBy=attacker.id;victim.lastHitTime=state.time;
+            }
+            state.events.push({kind:'hit',id:a.id,other:b.id,impact:-vr,
+              attacker:attacker?.id||null,time:state.time,x:(a.x+b.x)/2,y:(a.y+b.y)/2});
           }
         }
       }
@@ -137,8 +175,9 @@ const BowlBrawl = (() => {
       order.forEach((m,i)=>{
         const p=roster.find(x=>x.id===m.id);
         const points=placement[i]||0;
-        p.points+=points;p.roundPoints.push(points);p.roundRanks.push(i+1);
-        p.knockouts+=m.ramHits;
+        const earned=points+m.glory;
+        p.points+=earned;p.roundPoints.push(earned);p.roundRanks.push(i+1);
+        p.knockouts+=m.kos;
         if(i===0)p.wins++;
       });
       state.lastWinner=order[0]?.id;
@@ -161,12 +200,26 @@ const BowlBrawl = (() => {
         state.radius=rimRadius(state.elapsed) - (state.hazard==='crumbling' ? 14*Math.max(0,Math.sin(state.elapsed*1.35)) : 0);
         if(state.events.length>850)state.events.splice(0,state.events.length-850);
         cpuTick(dt);
+        // 3, 2, 1 ... SHOCKWAVE! The warning is derived directly from
+        // SHOCK_TIMES, so the TV and every phone always show the same clock.
+        if(state.pulseIndex<SHOCK_TIMES.length&&
+           state.elapsed>=SHOCK_TIMES[state.pulseIndex]){
+          state.pulseIndex++;state.lastPulseAt=state.time;
+          for(const m of state.marbles)if(m.alive){
+            const distance=Math.hypot(m.x,m.y)||1;
+            const push=m.anchored>0?72:310;
+            m.vx+=m.x/distance*push;m.vy+=m.y/distance*push;
+          }
+          state.events.push({kind:'shockwave',round:state.round,
+            pulse:state.pulseIndex,time:state.time});
+        }
         // Pre-announced hazard affects only this deterministic physics step.
         state.hazardAngle+=dt*.9;
         for(const m of state.marbles){
           if(!m.alive)continue;
           m.cooldown=Math.max(0,m.cooldown-dt);
           m.anchored=Math.max(0,m.anchored-dt);
+          m.ramWindow=Math.max(0,m.ramWindow-dt);
           m.energy=clamp(m.energy+19*dt,0,100);
           const onIce=state.hazard==='ice'&&Math.hypot(m.x-75,m.y+35)<140;
           const drag=Math.exp(-(m.anchored>0?7.2:onIce?.22:.8)*dt);
@@ -188,6 +241,14 @@ const BowlBrawl = (() => {
         resolveHits();
         for(const m of state.marbles)if(m.alive&&Math.hypot(m.x,m.y)>state.radius-MARBLE_RADIUS){
           m.alive=false;m.eliminatedAt=state.elapsed;m.outs++;
+          const attacker=m.lastHitBy&&state.time-m.lastHitTime<=2.6?
+            current(m.lastHitBy):null;
+          if(attacker&&attacker!==m){
+            const bonus=state.round===ROUNDS?5:KO_BONUS;
+            attacker.kos++;attacker.glory+=bonus;
+            state.events.push({kind:'knockout',id:attacker.id,victim:m.id,
+              bonus,x:m.x,y:m.y,round:state.round,time:state.time});
+          }
           state.events.push({kind:'out',id:m.id,x:m.x,y:m.y,round:state.round,time:state.time});
           if(alive().length===2)state.events.push({kind:'lastTwo',round:state.round,time:state.time});
         }
@@ -202,21 +263,34 @@ const BowlBrawl = (() => {
         roundScore:p.points,energy:Math.round(m?.energy||0),
         modePhase:state.done?'finished':m?.alive?'brawling':'eliminated',
         isTurn:!!m?.alive,
-        hazard:state.hazard,modeControls:!m?.alive&&!state.done&&!state.spectators.has(id)?
+        hazard:state.hazard,
+        pulseIn:SHOCK_TIMES[state.pulseIndex]!=null?
+          Math.max(0,SHOCK_TIMES[state.pulseIndex]-state.elapsed):null,
+        edgeDistance:m?.alive?Math.max(0,state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y)):null,
+        recoverReady:!!m?.alive&&!m.recoverUsed&&m.cooldown<=0&&
+          m.energy>=RECOVER_COST&&state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y)>=0&&
+          state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y)<=RECOVER_MARGIN,
+        recoveryUsed:!!m?.recoverUsed,
+        knockouts:p.knockouts,bonus:m?.glory||0,
+        modeControls:!m?.alive&&!state.done&&!state.spectators.has(id)?
           [{a:'spectate',label:'CHEER THE FINALISTS',v:0}]:m?.alive&&!state.done?[
           {a:'left',label:'◀ TURN',v:2},
           {a:'ram',label:'RAM!',v:0},
           {a:'right',label:'TURN ▶',v:2},
-          {a:'anchor',label:'ANCHOR',v:0}
+          {a:'anchor',label:'ANCHOR',v:0},
+          {a:'recover',label:m.recoverUsed?'SAVE USED':'EDGE RECOVER',v:0}
         ]:[],
-        modeHint:m?.alive?'RAM costs 28 energy · ANCHOR costs 15':'Wait for the next round',
+        modeHint:m?.alive?(m.recoverUsed?'Lifeline used · RAM 28 · ANCHOR 15':
+          'Recover once near the rim for 35 energy · RAM to earn KO bonuses'):
+          'Out! Cheer the final duel and get ready for the next round',
         timeRemaining:Math.max(0,Math.ceil(ROUND_TIME-state.elapsed))
       };
     }
     function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     return {state,current,action,tick,hud,draw,standings,alive,finishRound,rimRadius};
   }
-  return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS});
+  return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS,
+    SHOCK_TIMES,SHOCK_WARNING,RECOVER_COST,RECOVER_MARGIN,KO_BONUS});
 })();
 if(typeof module!=='undefined')module.exports=BowlBrawl;
 let bowlBrawlGame=null;
