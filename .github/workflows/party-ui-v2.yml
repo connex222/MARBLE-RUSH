@@ -1,4 +1,4 @@
-name: Party Pack UI v2 — Derby, Drop Zone, Brawl and Curling QA
+name: Party Pack UI v2 — All Five Game Screens Final QA
 on:
   push:
     branches:
@@ -14,6 +14,9 @@ on:
       - src/modes/party-brawl-ui-v2.js
       - src/modes/party-curling-ui-v2.js
       - src/modes/curling.js
+      - src/modes/golf.js
+      - src/modes/party-golf-ui-v2.js
+      - tools/test-golf.js
       - src/play.html
       - tools/party-ui-v2-*.js
       - tools/test-party-ui-v2.js
@@ -22,7 +25,7 @@ permissions:
   contents: read
 jobs:
   derby-ui-rebuild:
-    name: Verify four new Party Pack game screens and original Grand Prix
+    name: Verify all five rebuilt game screens, phones and preserved Grand Prix
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -34,7 +37,7 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Validate every surviving rules engine and new UI source
         run: |
-          for f in src/tv.js src/modes/registry.js src/modes/party-ui-v2.js src/modes/party-brawl-ui-v2.js src/modes/party-curling-ui-v2.js src/modes/derby.js src/modes/dropzone.js src/modes/brawl.js src/modes/curling.js src/modes/golf.js tools/build.js; do
+          for f in src/tv.js src/modes/registry.js src/modes/party-ui-v2.js src/modes/party-brawl-ui-v2.js src/modes/party-curling-ui-v2.js src/modes/party-golf-ui-v2.js src/modes/derby.js src/modes/dropzone.js src/modes/brawl.js src/modes/curling.js src/modes/golf.js tools/build.js; do
             node --check "$f"
           done
           node tools/test-party-foundations.js
@@ -42,6 +45,8 @@ jobs:
           node tools/test-dropzone.js
           node tools/test-brawl.js
           node tools/test-curling.js
+          node tools/test-golf.js
+          node tools/test-grandprix-regression.js
           node tools/test-party-ui-v2.js
       - name: Build without touching production
         run: npm run build
@@ -56,7 +61,7 @@ jobs:
           # Avoid apt-get --with-deps: the Ubuntu mirror intermittently fails DNS
           # and breaks game CI before any browser tests can execute.
           npx playwright install --only-shell chromium
-      - name: Verify four independent TV modes plus original Grand Prix in Chromium
+      - name: Verify all five new TV stages plus original Grand Prix in Chromium
         run: |
           set -e
           PORT=35993 node server/server.js >/tmp/mr-ui-v2-browser.log 2>&1 &
@@ -67,7 +72,7 @@ jobs:
             sleep 1
           done
           node tools/party-ui-v2-browser-smoke.js
-      - name: Verify two phones bet, drop, fight, throw and sweep over WebSockets
+      - name: Verify two phones use five new modes, including Golf, over WebSockets
         run: |
           set -e
           PORT=35993 node server/server.js >/tmp/mr-ui-v2-phones.log 2>&1 &
@@ -82,7 +87,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: marble-rush-party-ui-v2-four-mode-review
+          name: marble-rush-party-ui-v2-five-mode-review
           if-no-files-found: ignore
           path: |
             qa-ui-v2-*.png
