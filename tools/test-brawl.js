@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..'),ctx=vm.createContext({});
 for(const file of ['registry','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf'])
  vm.runInContext(fs.readFileSync(path.join(root,'src/modes',file+'.js'),'utf8'),ctx,{filename:file+'.js'});
 const B=vm.runInContext('BowlBrawl',ctx),MODES=vm.runInContext('MODES',ctx);
-assert.equal(MODES.brawl.available,false,'Rules remain tested, but legacy UI is gated pending the new presentation');
+assert.equal(MODES.brawl.available,true,'Bowl Brawl has a new independent TV UI');
 assert.equal(B.ROUNDS,5);
 function run(seed,n=3){
  const roster=Array.from({length:n},(_,i)=>({id:'p'+i,name:'CPU '+i,cpu:true,color:'#ff3355'}));
