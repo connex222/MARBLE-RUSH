@@ -10,6 +10,12 @@ assert.ok(html.includes('id="ppBetPanel"')&&html.includes('id="ppRankRows"'),
  'Derby live controls and standings missing');
 assert.ok(tv.includes('MarblePartyUI.drawDerby'),'Derby not connected to its new renderer');
 assert.ok(tv.includes('MarblePartyUI.drawDropZone'),'Drop Zone not connected to new renderer');
+assert.ok(tv.includes('MarbleBrawlUI.draw'),'Brawl new arena renderer not connected');
+const brawlUi=read('src/modes/party-brawl-ui-v2.js');
+for(const art of ['pp_brawl_bg','pp_brawl_surface_main','pp_brawl_prop_spin_hazard','pp_brawl_prop_striped_bumper','pp_brawl_fx_ko','pp_brawl_fx_spin'])
+ assert.ok(brawlUi.includes(art),'Brawl approved visual asset missing: '+art);
+for(const id of ['ppBrawlPanel','ppBrawlStandings','ppBrawlRankRows','ppBrawlRam','ppBrawlAnchor','ppBrawlAlive'])
+ assert.ok(html.includes('id="'+id+'"'),'Brawl replacement UI missing: '+id);
 assert.ok(ui.includes('pp_dropzone_bg')&&ui.includes('pp_dropzone_surface_main')&&
  ui.includes('pp_dropzone_prop_glass_chute')&&ui.includes('pp_dropzone_prop_gold_bucket'),
  'Drop Zone must use its four approved environment assets');
@@ -34,11 +40,11 @@ for(const name of modes){
  assert.ok(!code.includes('MarblePartyStage.'),name+' still calls the retired renderer');
  assert.ok(code.includes('registerMode({'),name+' authoritative mode registration lost');
  assert.ok(code.includes('session(){'),name+' authoritative game session lost');
- assert.ok(code.includes(['derby','dropzone'].includes(name)?'available:true':'available:false'),
+ assert.ok(code.includes(['derby','dropzone','brawl'].includes(name)?'available:true':'available:false'),
    name+' phase readiness must match the visible UI');
 }
 // The five new gameplay modes retain their deterministic logic and phone action
 // handlers even though four unfinished TV presentations are not yet launchable.
 assert.ok(tv.includes("['stake','bet','cheer']"),'Derby phone controls were changed');
 assert.ok(html.includes('id="partyBackLobby"'),'Host exit was lost');
-console.log('PASS Party Pack UI v2: no legacy mode canvases, Derby and Drop Zone exclusive new stages wired, three unfinished modes gated.');
+console.log('PASS Party Pack UI v2: no legacy mode canvases, Derby/Drop Zone/Brawl replacement views wired, Curling/Golf gated.');
