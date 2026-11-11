@@ -408,6 +408,96 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 .ppBrawlWarning{margin-top:calc(15*var(--u));font:800 calc(16*var(--u)) Nunito,sans-serif;
  color:#d9faf0;line-height:1.35}
 
+
+/* CURLING v2 — alpine miniature ice arena, separate from previous five-game UI. */
+#partyStage[data-mode="curling"]{background:#102f4b}
+#ppCurlHeader{position:absolute;left:calc(57*var(--u));top:calc(42*var(--u));}
+#ppCurlHeader .ppKicker{color:#a9fff0}
+#ppCurlHeader h1{font:900 calc(89*var(--u)) Fredoka,sans-serif;
+ margin:calc(9*var(--u)) 0;color:#fffcec;line-height:.96;
+ -webkit-text-stroke:calc(2*var(--u)) #9bcfe2;
+ text-shadow:0 calc(7*var(--u)) calc(7*var(--u)) #16416b,
+ 0 0 calc(42*var(--u)) #8ffffb69}
+#ppCurlHeader .ppCurlStatus{display:flex;align-items:center;gap:calc(13*var(--u));
+ font:900 calc(23*var(--u)) Nunito,sans-serif;color:#fff6db}
+#ppCurlEnd,#ppCurlPhase{padding:calc(7*var(--u)) calc(17*var(--u));
+ border:calc(2*var(--u)) solid #dafdf2;border-radius:calc(15*var(--u));
+ background:linear-gradient(140deg,#185a6bdb,#214460dc)}
+#ppCurlPhase{color:#fff3bd;border-color:#f3e0a2}
+#ppCurlClockWrap{position:absolute;right:calc(75*var(--u));top:calc(100*var(--u));
+ display:flex;flex-direction:column;text-align:center;gap:calc(4*var(--u));
+ background:linear-gradient(150deg,#134e60ed,#1a3654ef);
+ border:calc(3*var(--u)) solid #dcffeb;border-radius:calc(20*var(--u));
+ padding:calc(12*var(--u)) calc(30*var(--u));box-shadow:0 10px 36px #0008;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;color:#bffff0}
+#ppCurlClock{font:900 calc(45*var(--u)) Fredoka,sans-serif;color:#fff0b5}
+#ppCurlPanel{position:absolute;left:calc(46*var(--u));top:calc(281*var(--u));
+ width:calc(328*var(--u));min-height:calc(640*var(--u));
+ padding:calc(20*var(--u));border:calc(3*var(--u)) solid #ccfff4;
+ border-radius:calc(30*var(--u));
+ background:linear-gradient(157deg,#185b6bf1,#20445fee 56%,#16324eea);
+ box-shadow:0 calc(19*var(--u)) calc(42*var(--u)) #000b}
+#ppCurlPanel>small{display:block;font:900 calc(18*var(--u)) Nunito,sans-serif;
+ color:#fff3b6;letter-spacing:.07em}
+#ppCurlPlayer{font:900 calc(38*var(--u)) Fredoka,sans-serif;line-height:1.12;
+ color:#fffdef;display:block;margin:calc(9*var(--u)) 0 calc(12*var(--u));
+ overflow-wrap:anywhere}
+#ppCurlPanel .ppCurlReadouts{display:grid;grid-template-columns:1fr 1fr;
+ gap:calc(9*var(--u));margin-bottom:calc(14*var(--u))}
+.ppCurlValue{background:linear-gradient(150deg,#102a48db,#173e5ce8);
+ border:1px solid #cafbf0;border-radius:calc(13*var(--u));padding:calc(9*var(--u));
+ text-align:center}
+.ppCurlValue span{display:block;font:900 calc(14*var(--u)) Nunito,sans-serif;
+ letter-spacing:.06em;color:#c5fcf3}
+.ppCurlValue strong{display:block;margin-top:calc(4*var(--u));
+ font:900 calc(29*var(--u)) Fredoka,sans-serif;color:#fff6d8}
+#ppCurlPanel .ppCurlControls{display:grid;grid-template-columns:1fr 1fr;
+ gap:calc(8*var(--u));pointer-events:auto}
+.ppCurlControls button{min-height:calc(58*var(--u));padding:calc(6*var(--u));
+ border:calc(2*var(--u)) solid #e6fffa;border-radius:calc(13*var(--u));
+ background:linear-gradient(160deg,#46839b,#17425e);color:#fff9e7;
+ font:900 calc(17*var(--u)) Nunito,sans-serif;
+ box-shadow:0 calc(4*var(--u)) 0 #102d44;cursor:pointer}
+.ppCurlControls button:disabled{opacity:.43;cursor:default;box-shadow:none}
+.ppCurlControls button:focus-visible{outline:calc(4*var(--u)) solid #fffbe4;outline-offset:calc(3*var(--u))}
+#ppCurlThrow,#ppCurlSweepBtn{grid-column:span 2;
+ font:900 calc(29*var(--u)) Fredoka,sans-serif;
+ min-height:calc(72*var(--u))}
+#ppCurlThrow{background:linear-gradient(155deg,#ffe5b0,#e9aa63 65%,#d17c67);
+ color:#2b3552;border-color:#fffae2}
+#ppCurlSweepBtn{background:linear-gradient(155deg,#8ff5e8,#3fc6bc 65%,#168fa1);
+ color:#16344b;border-color:#e6fffb}
+#ppCurlHelp{font:800 calc(16*var(--u)) Nunito,sans-serif;color:#e0fffa;
+ line-height:1.32;margin-top:calc(14*var(--u))}
+#ppCurlStandings{position:absolute;right:calc(49*var(--u));top:calc(294*var(--u));
+ width:calc(357*var(--u));min-height:calc(598*var(--u));
+ border:calc(3*var(--u)) solid #e7fffa;border-radius:calc(30*var(--u));
+ padding:calc(20*var(--u));
+ background:linear-gradient(150deg,#174b67ef,#15334fec);
+ box-shadow:0 calc(15*var(--u)) calc(40*var(--u)) #000a}
+#ppCurlStandings h2{font:900 calc(30*var(--u)) Fredoka,sans-serif;color:#fff4bd;
+ border-bottom:calc(2*var(--u)) solid #bceee3;
+ padding-bottom:calc(12*var(--u));margin:0}
+#ppCurlRankRows{display:grid;gap:calc(10*var(--u));margin-top:calc(18*var(--u))}
+.ppCurlRank{display:flex;align-items:center;gap:calc(10*var(--u));
+ min-height:calc(43*var(--u));padding:calc(6*var(--u)) calc(9*var(--u));
+ border-left:calc(5*var(--u)) solid var(--curl-marble);
+ border-radius:calc(12*var(--u));background:#376a8680;
+ font:900 calc(19*var(--u)) Nunito,sans-serif}
+.ppCurlRank>b{color:#fff4b3;min-width:calc(23*var(--u))}
+.ppCurlRank>i{width:calc(20*var(--u));height:calc(20*var(--u));flex:none;
+ border-radius:50%;background:radial-gradient(circle at 24% 20%,#fff,var(--curl-marble) 48%,#12314b)}
+.ppCurlRank>strong{flex:1;min-width:0;text-overflow:ellipsis;
+ overflow:hidden;white-space:nowrap}
+.ppCurlRank>span{white-space:nowrap;color:#fff6ce}
+#ppCurlStandings .ppCurlMore{display:grid;grid-template-columns:1fr auto;
+ gap:calc(12*var(--u));padding-top:calc(20*var(--u));
+ border-top:2px solid #c9f8e682;margin-top:calc(21*var(--u));
+ font:900 calc(19*var(--u)) Nunito,sans-serif;color:#d4f9f0}
+#ppCurlStandings .ppCurlMore strong{color:#fff0bc}
+#ppCurlStandings .ppCurlNote{font:800 calc(17*var(--u)) Nunito,sans-serif;
+ color:#d9f7ef;margin-top:calc(20*var(--u));line-height:1.35}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -723,6 +813,51 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
         </div>
         <p class="ppBrawlWarning">Knock marbles out. The arena shrinks every round. All points are game points.</p>
       </aside>
+
+      <!-- Marble Curling UI v2: independent TV rink, HUD and stone controls.
+           There is NO previous Curling canvas behind this stage. -->
+      <div id="ppCurlHud" hidden>
+        <header id="ppCurlHeader">
+          <div class="ppKicker">MARBLE RUSH PRESENTS · THE ALPINE ICE HOUSE</div>
+          <h1>MARBLE CURLING</h1>
+          <div class="ppCurlStatus">
+            <span id="ppCurlEnd">END 1 / 5</span>
+            <span id="ppCurlPhase">LINE UP YOUR STONE</span>
+          </div>
+        </header>
+        <div id="ppCurlClockWrap"><span>SHOT CLOCK</span><strong id="ppCurlClock">12s</strong></div>
+        <aside id="ppCurlPanel" aria-label="Marble Curling throw and sweep controls">
+          <small>YOUR TURN · THE ICE HOUSE</small>
+          <strong id="ppCurlPlayer">Player</strong>
+          <div class="ppCurlReadouts">
+            <div class="ppCurlValue"><span>AIM</span><strong id="ppCurlAim">0°</strong></div>
+            <div class="ppCurlValue"><span>POWER</span><strong id="ppCurlPower">68%</strong></div>
+            <div class="ppCurlValue"><span>CURL</span><strong id="ppCurlCurl">STRAIGHT</strong></div>
+            <div class="ppCurlValue"><span>SWEEP</span><strong id="ppCurlSweep">0%</strong></div>
+          </div>
+          <div class="ppCurlControls">
+            <button type="button" id="ppCurlLeft">◀ AIM</button>
+            <button type="button" id="ppCurlRight">AIM ▶</button>
+            <button type="button" id="ppCurlPowerDown">− POWER</button>
+            <button type="button" id="ppCurlPowerUp">+ POWER</button>
+            <button type="button" id="ppCurlLeftSpin">↶ CURL</button>
+            <button type="button" id="ppCurlRightSpin">CURL ↷</button>
+            <button type="button" id="ppCurlThrow">THROW!</button>
+            <button type="button" id="ppCurlSweepBtn">SWEEP!</button>
+          </div>
+          <p id="ppCurlHelp">Aim, set power and curl, then THROW.</p>
+        </aside>
+        <aside id="ppCurlStandings" aria-label="Curling end-by-end scores">
+          <h2>THE ICE LEADERBOARD</h2>
+          <div id="ppCurlRankRows"></div>
+          <div class="ppCurlMore">
+            <span>STONES RELEASED</span><strong id="ppCurlPlayed">0 / 4</strong>
+            <span>ON THE ICE</span><strong id="ppCurlOwner">—</strong>
+            <span>SWEEP ENERGY</span><strong><span id="ppCurlSweepBar" hidden></span>READY</strong>
+          </div>
+          <p class="ppCurlNote">Two stones each. Nearest the button wins the end. Sweep your own stone while it slides.</p>
+        </aside>
+      </div>
       <div id="ppWorkInProgress" hidden aria-live="polite">
         <div class="ppKicker">PARTY PACK · UI REBUILD v2</div>
         <h2>NEW ARENA IN PRODUCTION</h2>
