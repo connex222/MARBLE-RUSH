@@ -1,4 +1,4 @@
-name: Party Pack UI v2 — Derby hard-reset QA
+name: Party Pack UI v2 — Derby and Drop Zone QA
 on:
   push:
     branches:
@@ -9,6 +9,8 @@ on:
       - src/tv.js
       - src/modes/party-ui-v2.js
       - src/modes/derby.js
+      - src/modes/dropzone.js
+      - src/play.html
       - tools/party-ui-v2-*.js
       - tools/test-party-ui-v2.js
       - tools/build.js
@@ -16,7 +18,7 @@ permissions:
   contents: read
 jobs:
   derby-ui-rebuild:
-    name: Preserve game engines and verify fresh Derby interface
+    name: Verify clean Party Pack stage, original GP, Derby and Drop Zone
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -47,7 +49,7 @@ jobs:
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.57.0
           npx playwright install --with-deps chromium
-      - name: Verify one TV Derby plus Grand Prix isolation in real Chromium
+      - name: Verify two TV modes and original Grand Prix in Chromium
         run: |
           set -e
           PORT=35993 node server/server.js >/tmp/mr-ui-v2-browser.log 2>&1 &
@@ -58,7 +60,7 @@ jobs:
             sleep 1
           done
           node tools/party-ui-v2-browser-smoke.js
-      - name: Verify two independent phones connect and place Derby bets
+      - name: Verify two phones bet, drop and predict through real WebSockets
         run: |
           set -e
           PORT=35993 node server/server.js >/tmp/mr-ui-v2-phones.log 2>&1 &
@@ -73,7 +75,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: marble-rush-party-ui-v2-derby-review
+          name: marble-rush-party-ui-v2-derby-dropzone-review
           if-no-files-found: ignore
           path: |
             qa-ui-v2-*.png
