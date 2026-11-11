@@ -158,23 +158,38 @@ function lineRing(r,t,color,x=0,y=2,z=0){
 // Camera-aligned environmental art. Previously this giant photographed
 // plane was foreshortened into a distracting trapezoid behind the boards.
 // Keeping it aligned to the camera lets the *real* 3D world be the focus.
+// Reuse identical textures between the nine Golf holes, preventing GPU
+// uploads and decode pauses on each level transition.
+function cachedArt(key,url,repeatX=1,repeatY=1){
+ let tex=assetTextures.get(key);
+ if(tex)return tex;
+ tex=new T.TextureLoader().load(url,t=>{
+   t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;
+   t.wrapS=T.RepeatWrapping;t.wrapT=T.RepeatWrapping;
+   t.repeat.set(repeatX,repeatY);t.needsUpdate=true;
+ },undefined,()=>{});
+ assetTextures.set(key,tex);
+ return tex;
+}
 function addBackdrop(mode) {
- const mat=new T.MeshBasicMaterial({
-   color:0xb1bccf,depthWrite:true,depthTest:true
- });
+ const owner=world;
+ const mat=new T.MeshBasicMaterial({color:0xb1bccf,depthWrite:true,depthTest:true});
  const plane=new T.Mesh(new T.PlaneGeometry(6450,3650),mat);
  plane.receiveShadow=false;plane.castShadow=false;
  world.backdrop=plane;
+ const key='backdrop:'+mode;
+ if(assetTextures.has(key)){
+   mat.map=assetTextures.get(key);mat.color.set('#ffffff');mat.needsUpdate=true;return;
+ }
  new T.TextureLoader().load('assets/img/pp_'+mode+'_bg.webp',t=>{
-   // The approved posters contain some large stationary marbles and playfields.
-   // Those must NOT appear behind live 3D marble action as duplicate game
-   // objects. A shallow depth-of-field and bottom matte keep the attractive
-   // scenery but make it read as background, not a second live board.
    const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=576;
    const ctx=canvas.getContext('2d');
-   if(!ctx){mat.map=t;t.colorSpace=T.SRGBColorSpace;mat.needsUpdate=true;return;}
-   ctx.filter='blur(3px)';
-   ctx.drawImage(t.image,-15,-15,1054,606);
+   if(!ctx){
+     if(world===owner){mat.map=t;mat.color.set('#ffffff');mat.needsUpdate=true;}
+     else t.dispose();
+     return;
+   }
+   ctx.filter='blur(3px)';ctx.drawImage(t.image,-15,-15,1054,606);
    ctx.filter='none';
    ctx.save();ctx.beginPath();ctx.rect(0,275,1024,301);ctx.clip();
    ctx.filter='blur(19px)';ctx.drawImage(t.image,-30,-32,1084,640);
@@ -187,25 +202,20 @@ function addBackdrop(mode) {
    ctx.fillStyle=fade;ctx.fillRect(0,160,1024,416);
    const texture=new T.CanvasTexture(canvas);
    texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=2;
-   mat.map=texture;mat.color.set('#ffffff');mat.needsUpdate=true;
+   assetTextures.set(key,texture);
+   if(world===owner){mat.map=texture;mat.color.set('#ffffff');mat.needsUpdate=true;}
    t.dispose();
  },undefined,()=>{});
 }
 function surfaceTexture(object,mode,repeatX=1,repeatY=1){
  world.surfaceCount=(world.surfaceCount||0)+1;
- const tex=new T.TextureLoader().load(
-   'assets/img/pp_'+mode+'_surface_main.webp',t=>{
-     t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;t.needsUpdate=true;
-   },undefined,()=>{});
- tex.wrapS=T.RepeatWrapping;tex.wrapT=T.RepeatWrapping;
- tex.repeat.set(repeatX,repeatY);
- object.material.map=tex;
+ object.material.map=cachedArt('surface:'+mode,
+   'assets/img/pp_'+mode+'_surface_main.webp',repeatX,repeatY);
  object.material.color.set('#ffffff');
  object.material.needsUpdate=true;
  return object;
 }
-// Decorative, transparent approved ChatGPT art is anchored to objects in
-// three-dimensional world-space. Props have no collider and cannot cover HUD.
+// Decorative approved sprites have zero collision effect.
 function sceneProps(mode) {
  const placements={
   derby:[['grandstand',-450,146,-487,470,255],['hay_bales',470,68,429,230,150]],
@@ -216,10 +226,8 @@ function sceneProps(mode) {
  };
  world.propCount=(placements[mode]||[]).length;
  for(const [name,x,y,z,w,h] of placements[mode]||[]){
-   const tex=new T.TextureLoader().load(
-     'assets/img/pp_'+mode+'_prop_'+name+'.webp',
-     t=>{t.colorSpace=T.SRGBColorSpace;t.anisotropy=2;},
-     undefined,()=>{});
+   const tex=cachedArt('prop:'+mode+':'+name,
+     'assets/img/pp_'+mode+'_prop_'+name+'.webp');
    const mat=new T.SpriteMaterial({
      map:tex,color:0xffffff,transparent:true,depthTest:true,
      depthWrite:false,opacity:.98
