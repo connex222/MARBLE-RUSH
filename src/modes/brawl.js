@@ -213,60 +213,7 @@ const BowlBrawl = (() => {
         timeRemaining:Math.max(0,Math.ceil(ROUND_TIME-state.elapsed))
       };
     }
-    function draw(ctx,w=1920,h=1080){
-      ctx.save();ctx.scale(w/1920,h/1080);
-      const grad=ctx.createLinearGradient(0,0,1920,1080);
-      grad.addColorStop(0,'#161c43');grad.addColorStop(1,'#46345c');
-      ctx.fillStyle=grad;ctx.fillRect(0,0,1920,1080);
-       MarblePartyStage.backdrop(ctx,'brawl',state.elapsed);
-       MarblePartyStage.frame(ctx,628,88,905,906,'brawl');
-      ctx.fillStyle='#fff4e0';ctx.font='bold 62px Fredoka,sans-serif';ctx.fillText('BOWL BRAWL',76,85);
-      ctx.fillStyle='#ffd23f';ctx.font='bold 29px Nunito,sans-serif';
-      ctx.fillText(`ROUND ${state.round}/${ROUNDS} · ${state.hazard.toUpperCase()} · ${Math.ceil(Math.max(0,ROUND_TIME-state.elapsed))}s`,77,132);
-      const x=1080,y=540,scale=1.03;
-      ctx.save();ctx.translate(x,y);
-      const bg=ctx.createRadialGradient(-140,-140,30,0,0,415);
-      bg.addColorStop(0,'#d2a2b5');bg.addColorStop(.72,'#956881');bg.addColorStop(1,'#433758');
-      ctx.shadowColor='#000c';ctx.shadowBlur=48;ctx.shadowOffsetY=22;
-      ctx.fillStyle='#2b1538';ctx.beginPath();ctx.ellipse(0,24,442,442,0,0,TAU);ctx.fill();
-      ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-      const bowl=ctx.createRadialGradient(-200,-230,30,0,0,440);
-      bowl.addColorStop(0,'#ffe5ee');bowl.addColorStop(.22,'#d7a2cd');
-      bowl.addColorStop(.56,'#a05b8d');bowl.addColorStop(.83,'#533763');bowl.addColorStop(1,'#281739');
-      ctx.fillStyle=bowl;ctx.beginPath();ctx.ellipse(0,0,430,430,0,0,TAU);ctx.fill();
-      for(let ring=400;ring>130;ring-=90){ctx.beginPath();ctx.arc(0,0,ring,0,TAU);
-        ctx.lineWidth=3;ctx.strokeStyle='rgba(255,240,196,.17)';ctx.stroke();}
-      const rim=ctx.createLinearGradient(-390,-390,400,400);
-      rim.addColorStop(0,'#fff9d7');rim.addColorStop(.26,'#ffc85d');rim.addColorStop(.65,'#ab5a66');rim.addColorStop(1,'#fff1a4');
-      ctx.lineWidth=31;ctx.strokeStyle=rim;ctx.beginPath();ctx.arc(0,0,416,0,TAU);ctx.stroke();
-      ctx.lineWidth=6;ctx.strokeStyle='#fffcdf';ctx.beginPath();ctx.arc(0,0,428,Math.PI*1.12,Math.PI*1.88);ctx.stroke();
-      ctx.beginPath();ctx.arc(0,0,state.radius*scale,0,TAU);
-      ctx.strokeStyle='#ffdb73';ctx.lineWidth=13;ctx.stroke();
-      for(const m of state.marbles){
-        if(!m.alive)continue;
-        const p=roster.find(a=>a.id===m.id),px=m.x*scale,py=m.y*scale;
-        ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.ellipse(px+5,py+10,23,12,0,0,TAU);ctx.fill();
-        MarblePartyStage.marble(ctx,px,py,24,p.color);
-        ctx.strokeStyle=m.anchored>0?'#ffe58e':'#fff';ctx.lineWidth=m.anchored>0?6:2;ctx.stroke();
-        ctx.strokeStyle='#fff';ctx.lineWidth=2;
-        ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+Math.cos(m.heading)*33,py+Math.sin(m.heading)*33);ctx.stroke();
-        ctx.fillStyle='#fff5e7';ctx.font='bold 17px Nunito,sans-serif';ctx.textAlign='center';
-        ctx.fillText(p.name,px,py-38);
-      }
-      ctx.restore();
-      ctx.fillStyle='#fff4e0';ctx.font='bold 35px Fredoka,sans-serif';
-      ctx.fillText('ARENA STANDINGS',60,240);
-      const ranked=standings();
-      ranked.forEach((p,i)=>{
-        const y=305+i*75;
-        ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(85,y-12,15,0,TAU);ctx.fill();
-        ctx.fillStyle='#fff4e0';ctx.font='bold 26px Nunito,sans-serif';ctx.fillText(p.name,116,y);
-        ctx.fillStyle='#ffd23f';ctx.fillText(`${p.points} pts · ${p.wins} wins`,116,y+29);
-      });
-      ctx.fillStyle='#fff4e0';ctx.font='bold 27px Nunito,sans-serif';
-      ctx.fillText(state.done?'CHAMPIONSHIP COMPLETE':'RAM your rivals out · ANCHOR to hold ground',70,1020);
-      ctx.restore();
-    }
+    function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     return {state,current,action,tick,hud,draw,standings,alive,finishRound,rimRadius};
   }
   return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS});
@@ -275,7 +222,7 @@ if(typeof module!=='undefined')module.exports=BowlBrawl;
 let bowlBrawlGame=null;
 registerMode({
   id:'brawl',name:'Bowl Brawl',tagline:"Bump 'em out",icon:'💥',
-  minPlayers:2,maxPlayers:8,roundsDefault:5,available:true,awards:[],
+  minPlayers:2,maxPlayers:8,roundsDefault:5,available:false,awards:[],
   setup({players,seed,onFinish}) {
     bowlBrawlGame=BowlBrawl.create([...players.values()],seed,onFinish);
     return bowlBrawlGame;
