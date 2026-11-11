@@ -94,88 +94,126 @@ const MarblePartyUI=(()=>{
    }
  }
  function track(c,assets,time,state){
-   const lx=412,rx=1814,top=322,lane=83;
-   // Bespoke elevated stadium deck. Each lane is physically layered,
-   // with inset racing-surface art and raised guard rails.
-   c.save();
-   c.shadowColor='#000d';c.shadowBlur=50;c.shadowOffsetY=33;
-   roundBox(c,lx-23,top-38,rx-lx+46,584,34,'#241d36','#ffd887',12);
-   c.restore();
-   roundBox(c,lx-11,top-25,rx-lx+22,555,27,
-     gradient(c,lx,top,0,555,[[0,'#f0b768'],[.14,'#97664d'],[1,'#513b48']]),'#fff2b8',5);
+   // Derby v2 art direction: an elevated six-lane stadium diorama in
+   // one-point perspective. The geometry is composed into the ONE game stage;
+   // no legacy canvas, billboards or overlayed old scoreboard.
+   const yEdges=[309,378,450,529,612,704,811];
+   const leftAt=y=>508-(y-309)*.285;
+   const rightAt=y=>1737+(y-309)*.072;
+   const face=(points,fill,stroke,line=1)=>{
+     c.beginPath();c.moveTo(points[0][0],points[0][1]);
+     points.slice(1).forEach(p=>c.lineTo(p[0],p[1]));c.closePath();
+     if(fill){c.fillStyle=fill;c.fill();}
+     if(stroke){c.strokeStyle=stroke;c.lineWidth=line;c.stroke();}
+   };
+   const outer=[
+     [leftAt(yEdges[0])-29,yEdges[0]-30],
+     [rightAt(yEdges[0])+30,yEdges[0]-30],
+     [rightAt(yEdges[6])+32,yEdges[6]+30],
+     [leftAt(yEdges[6])-40,yEdges[6]+30]
+   ];
+   c.save();c.shadowColor='rgba(2,4,20,.92)';c.shadowBlur=62;c.shadowOffsetY=40;
+   face(outer,'#4d3241','#ffe5a8',11);c.restore();
+   const front=[
+     [leftAt(yEdges[6])-39,yEdges[6]+14],
+     [rightAt(yEdges[6])+30,yEdges[6]+14],
+     [rightAt(yEdges[6])+19,yEdges[6]+52],
+     [leftAt(yEdges[6])-28,yEdges[6]+52]
+   ];
+   face(front,gradient(c,0,815,0,70,[[0,'#ad6d42'],[.5,'#412a38'],[1,'#14192c']]),'#ffcd81',5);
+   face(outer,'#61424a','#ffe4ad',7);
+   const lanes=[];
    for(let i=0;i<6;i++){
-     const y=top+i*lane;
-     const shade=i%2?'#503542':'#6b4547';
-     roundBox(c,lx+2,y,rx-lx-4,lane-5,5,shade,null);
-     c.save();c.beginPath();c.rect(lx+4,y+2,rx-lx-8,lane-9);c.clip();
+     const y0=yEdges[i],y1=yEdges[i+1]-3;
+     const l0=leftAt(y0),l1=leftAt(y1),r0=rightAt(y0),r1=rightAt(y1);
+     lanes.push({y0,y1,l0,l1,r0,r1});
+     const poly=[[l0,y0],[r0,y0],[r1,y1],[l1,y1]];
+     c.save();c.beginPath();c.moveTo(l0,y0);c.lineTo(r0,y0);c.lineTo(r1,y1);
+     c.lineTo(l1,y1);c.closePath();c.clip();
+     c.fillStyle=i%2?'#76504e':'#6a4242';c.fillRect(l1-10,y0,r1-l1+20,y1-y0);
      const surface=assets?.pp_derby_surface_main;
      if(surface?.complete&&surface.naturalWidth){
-       picture(c,surface,lx+4,y-40,rx-lx-8,176,.34);
+       picture(c,surface,l1-5,y0-35,r1-l1+10,y1-y0+75,.39);
      }
-     c.fillStyle=gradient(c,lx,y,0,lane,[[0,'rgba(255,246,207,.20)'],[.35,'rgba(255,238,175,.04)'],[1,'rgba(5,4,19,.4)']]);
-     c.fillRect(lx+4,y,rx-lx-8,lane-5);
-     for(let q=0;q<12;q++){
-       const xx=lx+q*116+((time*23)%116);
-       c.fillStyle='rgba(255,237,187,.07)';c.fillRect(xx,y+9,3,lane-22);
+     const shade=gradient(c,l0,y0,0,y1-y0,
+       [[0,'rgba(255,244,203,.31)'],[.14,'rgba(255,233,186,.12)'],
+        [.57,'rgba(28,16,40,.02)'],[1,'rgba(9,9,25,.60)']]);
+     c.fillStyle=shade;c.fillRect(l1-10,y0,r1-l1+20,y1-y0);
+     // Gold lane studs diminish towards the upper (more distant) track.
+     for(let step=0;step<14;step++){
+       const ratio=step/13, yy=(y0+y1)*.5;
+       const xx=l0+(r0-l0)*ratio;
+       c.fillStyle='rgba(255,221,149,.11)';
+       c.fillRect(xx,y0+7,2.5,y1-y0-13);
      }
      c.restore();
-     c.fillStyle='#f8ddb0';c.fillRect(lx,y+lane-6,rx-lx,5);
-     c.fillStyle='#c38e57';c.fillRect(lx,y+lane-1,rx-lx,4);
-     c.fillStyle='rgba(2,6,21,.33)';c.fillRect(lx+15,y+lane+3,rx-lx-30,5);
+     face(poly,null,'rgba(255,225,166,.20)',2);
+     // Solid brass divider: lit top face and a dark bevel underneath.
+     face([[l1,y1-3],[r1,y1-3],[r1,y1+4],[l1,y1+4]],'#fff0c2',null);
+     face([[l1,y1+4],[r1,y1+4],[r1,y1+11],[l1,y1+11]],'#6a413a',null);
+     c.strokeStyle='rgba(0,0,0,.48)';c.lineWidth=3;
+     c.beginPath();c.moveTo(l1,y1+10);c.lineTo(r1,y1+10);c.stroke();
+     // Each lane is raised and physically number-tagged.
+     const tagY=(y0+y1)*.5;
+     c.fillStyle='#ffd27b';c.font='900 '+Math.round(17+i*1.2)+'px Nunito,sans-serif';
+     c.textAlign='center';c.fillText(String(i+1),l0+18,tagY+7);
    }
-   // Finish tower, arch and chequered lightboxes.
-   const finish=rx-67;
-   c.save();c.shadowColor='#ffde8b';c.shadowBlur=24;
-   c.fillStyle='#fff1ca';c.fillRect(finish-8,top-13,16,lane*6+17);c.restore();
-   for(let row=0;row<24;row++){
-     c.fillStyle=row%2?'#fff8df':'#171e37';
-     c.fillRect(finish-8,top+row*21,8,21);
-     c.fillStyle=row%2?'#171e37':'#fff8df';
-     c.fillRect(finish,top+row*21,8,21);
+   // Front safety rim sits outside the playable course, never on the balls.
+   const y=yEdges[6],xL=leftAt(y)-11,xR=rightAt(y)+10;
+   face([[xL,y+6],[xR,y+6],[xR,y+20],[xL,y+20]],'#ffe5a0','#fff4c9',3);
+   face([[xL,y+20],[xR,y+20],[xR-6,y+44],[xL+7,y+44]],
+        gradient(c,0,y+20,0,25,[[0,'#d9a264'],[1,'#443444']]),'#ae694b',2);
+   // Real vertical finish gantry uses perspective endpoints.
+   const fTop=rightAt(yEdges[0])-65,fBot=rightAt(yEdges[6])-78;
+   c.save();c.shadowColor='rgba(255,214,127,.7)';c.shadowBlur=26;
+   for(let j=0;j<26;j++){
+     const yy=yEdges[0]+j*(yEdges[6]-yEdges[0])/26;
+     const next=yEdges[0]+(j+1)*(yEdges[6]-yEdges[0])/26;
+     const fx=fTop+(fBot-fTop)*j/26;
+     c.fillStyle=j%2?'#0e1931':'#fff8dc';
+     c.fillRect(fx-13,yy,11,next-yy+1);
+     c.fillStyle=j%2?'#fff8dc':'#0e1931';
+     c.fillRect(fx-2,yy,11,next-yy+1);
    }
-   roundBox(c,finish-71,top-58,142,39,10,'#10203e','#ffd987',3);
-   c.font='900 22px Nunito,sans-serif';c.textAlign='center';
-   c.fillStyle='#ffdd9b';c.fillText('FINISH',finish,top-31);
-   const props=assets||{};
-   picture(c,props.pp_derby_prop_grandstand,320,98,620,285,.72);
-   picture(c,props.pp_derby_prop_hay_bales,1560,733,285,182,.91);
-   c.save();c.fillStyle='rgba(0,0,0,.28)';roundBox(c,lx,top+lane*6+20,rx-lx,42,12,'#1d162b','#e3b479',3);
-   c.font='900 19px Nunito,sans-serif';c.textAlign='left';c.fillStyle='#ffe7a9';
-   c.fillText('START',lx+21,top+lane*6+48);
-   c.textAlign='right';c.fillText('1500 M · GRANDSTAND CIRCUIT',rx-18,top+lane*6+48);c.restore();
-   return {lx,rx,top,lane,finish};
+   c.restore();
+   roundBox(c,fTop-88,yEdges[0]-60,182,38,9,'#172547','#ffde95',4);
+   c.textAlign='center';c.font='900 24px Nunito,sans-serif';
+   c.fillStyle='#ffdf9a';c.fillText('FINISH',fTop+3,yEdges[0]-35);
+   // Physical scene props sit in the setting, not over gameplay controls.
+   picture(c,assets?.pp_derby_prop_grandstand,475,88,576,255,.88);
+   picture(c,assets?.pp_derby_prop_hay_bales,1564,733,281,159,.88);
+   c.save();c.textAlign='left';c.fillStyle='#ffe4ad';
+   c.font='900 23px Nunito,sans-serif';
+   c.fillText('START GATES',leftAt(811)+18,886);
+   c.textAlign='right';c.fillText('THE GRANDSTAND CIRCUIT · 1500 M',rightAt(811)-12,886);
+   c.restore();
+   return {lanes,finishTop:fTop,finishBot:fBot};
  }
  function runners(c,state,assets,geometry,reduce){
-   const {lx,top,lane,finish}=geometry;
-   const x0=lx+62,scale=(finish-x0-33)/LENGTH;
    for(let i=0;i<6;i++){
-     const h=state.horses[i];if(!h)continue;
-     const x=x0+clamp(Number(h.x)||0,0,LENGTH)*scale;
-     const y=top+i*lane+lane*.52;
-     const r=27;
-     const speed=clamp((Number(h.v)||0)/180,0,1);
-     if(state.phase==='racing'&&!reduce){
-       const streak=c.createLinearGradient(x-160,y,x,y);
-       streak.addColorStop(0,'rgba(255,255,255,0)');
-       streak.addColorStop(1,h.color+'b0');
+     const h=state.horses[i],lane=geometry.lanes[i];
+     if(!h||!lane)continue;
+     const y=(lane.y0+lane.y1)*.52;
+     const depth=i/5,r=21+depth*13;
+     const left=lane.l0+(lane.l1-lane.l0)*.50;
+     const right=lane.r0+(lane.r1-lane.r0)*.50;
+     const x0=left+48,raceLength=right-left-150;
+     const x=x0+clamp(Number(h.x)||0,0,LENGTH)/LENGTH*raceLength;
+     const speed=clamp((Number(h.v)||0)/185,0,1);
+     if(state.phase==='racing'&&!reduce&&speed>.1){
+       const streak=c.createLinearGradient(x-160,y,x-5,y);
+       streak.addColorStop(0,'rgba(255,226,153,0)');
+       streak.addColorStop(1,(isColour(h.color)?h.color:'#ffd56c')+'aa');
        c.fillStyle=streak;c.beginPath();
-       c.moveTo(x-150*speed,y-11);c.lineTo(x-r,y-6);c.lineTo(x-r,y+6);c.lineTo(x-150*speed,y+13);
-       c.closePath();c.fill();
-       for(let k=0;k<3;k++){
-         c.fillStyle='rgba(255,235,166,.30)';
-         c.fillRect(x-(55+k*24)*speed,y+20+k*3,16*speed,2);
-       }
+       c.moveTo(x-180*speed,y-12);c.lineTo(x-r,y-8);
+       c.lineTo(x-r,y+8);c.lineTo(x-180*speed,y+16);c.closePath();c.fill();
      }
-     ball(c,x,y,r,h.color,(Number(h.x)||0)/25,
+     ball(c,x,y,r,h.color,(Number(h.x)||0)/26,
        assets?.['marble_swirl_'+String(i+1).padStart(2,'0')]);
-     // Nameplate moves with each physical ball, never mistaken for a second sphere.
-     const name=h.name;
-     roundBox(c,Math.min(x-56,finish-125),y-58,112,25,9,'rgba(8,15,34,.91)','#ffde85',1.5);
-     c.font='800 18px Nunito,sans-serif';c.fillStyle='#fff9e9';c.textAlign='center';
-     c.fillText(name,Math.min(x,finish-69),y-39);
-     c.fillStyle=h.color;c.fillRect(lx+11,y-14,8,29);
-     c.font='800 18px Nunito,sans-serif';c.textAlign='left';c.fillStyle='#ffe2a9';
-     c.fillText(String(i+1),lx+27,y+6);
+     const labelX=clamp(x,left+53,right-70),labelY=y-r-29;
+     roundBox(c,labelX-58,labelY-12,116,27,8,'rgba(8,15,34,.89)','#ffde8b',1.6);
+     c.fillStyle='#fff9ec';c.font='800 '+Math.round(17+depth*3)+'px Nunito,sans-serif';
+     c.textAlign='center';c.fillText(h.name,labelX,labelY+8);
    }
  }
  function effects(c,assets,s,g,reduce){
@@ -188,22 +226,18 @@ const MarblePartyUI=(()=>{
      let key=e.kind==='lateSurge'?'pp_derby_fx_surge':e.kind==='photoFinish'?'pp_derby_fx_photo':'pp_derby_fx_confetti';
      const im=assets?.[key];if(!im?.complete||!im.naturalWidth)continue;
      const h=(s.horses||[]).find(x=>x.id===e.horse||x.id===e.winner);
-     const x=g.lx+62+(Number(h?.x)||0)/LENGTH*(g.finish-g.lx-100);
-     const y=g.top+((h?.id)||0)*g.lane+45;
+     const lane=g.lanes[Number(h?.id)||0]||g.lanes[0];
+     const ly=(lane.y0+lane.y1)*.52;
+     const lx=(lane.l0+lane.l1)*.50,rx=(lane.r0+lane.r1)*.50;
+     const x=lx+48+(Number(h?.x)||0)/LENGTH*(rx-lx-150);
+     const y=ly;
      const alpha=(1-age/.8)*.8;
      picture(c,im,x-103,y-126,206,192,alpha);
    }
  }
  function foreground(c,s,assets){
-   const betting=s.phase==='betting';
-   if(betting){
-     const secs=Math.max(0,Math.ceil(12-s.phaseTime));
-     c.save();
-     roundBox(c,674,892,570,88,26,'rgba(15,23,45,.93)','#f6d38d',3);
-     c.font='900 28px Nunito,sans-serif';c.fillStyle='#ffe6b1';c.textAlign='center';
-     c.fillText('MAKE YOUR PICK · '+secs+' SECONDS',959,946);
-     c.restore();
-   }
+   // The live TV betting countdown lives in the dedicated HUD. Never draw a
+   // second overlapping callout over the leaderboard.
    if(s.phase==='results'){
      const winner=s.horses.find(h=>h.id===s.lastWinner);
      c.save();
