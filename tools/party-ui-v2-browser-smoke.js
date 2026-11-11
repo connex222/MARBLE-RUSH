@@ -480,7 +480,7 @@ const {chromium}=require('playwright');
   await page.screenshot({path:'qa-real-derby-tight-pack.png'});
   await page.evaluate(()=>{
     const g=window.__MR.MODES.derby.session();
-    g.state.horses[0].x=1480;
+    g.state.horses[0].x=1110;
     for(let i=1;i<g.state.horses.length;i++)g.state.horses[i].x=150;
   });
   await page.waitForTimeout(850);
