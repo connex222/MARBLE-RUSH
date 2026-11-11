@@ -157,8 +157,8 @@ const {chromium}=require('playwright');
   assert.equal(brawlView.mode,'brawl');
   assert.ok(brawlView.rect[0]>=1900&&brawlView.rect[1]>=1050,'Brawl not full TV');
   assert.ok(brawlView.colors>10,'Brawl stadium rendering blank or flat');
-  assert.deepEqual(brawlView.ids,['ppBrawlLeft','ppBrawlRight','ppBrawlRam','ppBrawlAnchor'],
-    'Previous-game controls leaked into Brawl');
+  assert.deepEqual(brawlView.ids,['ppBrawlLeft','ppBrawlRight','ppBrawlRam','ppBrawlAnchor','ppBrawlRecover'],
+    'Expected five exclusive Brawl controls, including the real recovery action');
   assert.ok(brawlView.rankRows>=2);
   assert.match(brawlView.hazard,/BUMPER/);
   assert.equal(Number(brawlView.radius),380);
@@ -183,6 +183,43 @@ const {chromium}=require('playwright');
   assert.ok(ramAction.ram,'New RAM button did not trigger authorised action');
   assert.ok(ramAction.energy<beforeBrawl.energy,'RAM did not consume energy');
   await page.screenshot({path:'qa-ui-v2-brawl-ram.png'});
+  // Real recovery must become available only when danger is genuine.
+  await page.evaluate(id=>{
+    const g=window.__MR.MODES.brawl.session(),m=g.current(id),s=g.state;
+    m.x=s.radius-22-40;m.y=0;m.vx=0;m.vy=0;m.heading=Math.PI;
+    m.energy=100;m.cooldown=0;
+  },beforeBrawl.id);
+  await page.waitForFunction(()=>!document.getElementById('ppBrawlRecover').disabled);
+  await page.screenshot({path:'qa-ui-v2-brawl-edge-panic.png'});
+  await page.locator('#ppBrawlRecover').click();
+  const rescue=await page.evaluate(id=>{
+    const g=window.__MR.MODES.brawl.session(),m=g.current(id);
+    return {used:m.recoverUsed,energy:m.energy,
+      event:g.state.events.some(e=>e.kind==='recover'&&e.id===id)};
+  },beforeBrawl.id);
+  assert.equal(rescue.used,true,'Brawl did not consume the one-time escape');
+  assert.ok(rescue.energy<=65&&rescue.event,'Brawl escape must have an energy cost');
+  // Telegraphed danger needs a visible countdown and an actual outward shockwave.
+  await page.evaluate(()=>{
+    const g=window.__MR.MODES.brawl.session(),s=g.state;
+    for(const [i,m] of s.marbles.entries()){
+      m.x=i===0?175:-175;m.y=0;m.vx=0;m.vy=0;
+      m.anchored=0;m.cooldown=0;m.heading=i===0?Math.PI:0;
+    }
+    s.elapsed=6.4;s.time=6.4;
+    s.pulseIndex=0;s.pulseAt=8;
+  });
+  await page.waitForFunction(()=>document.getElementById('ppBrawlShockBox').classList.contains('danger'));
+  await page.screenshot({path:'qa-ui-v2-brawl-shockwave-warning.png'});
+  await page.waitForFunction(()=>window.__MR.MODES.brawl.session().state.pulseIndex>=1,{timeout:7000});
+  const danger=await page.evaluate(()=>{
+    const g=window.__MR.MODES.brawl.session();
+    return {pulses:g.state.events.filter(e=>e.kind==='shockwave').length,
+      next:g.state.pulseAt,warning:document.getElementById('ppBrawlShockLabel').textContent};
+  });
+  assert.equal(danger.pulses,1,'Scripted shockwave did not actually fire');
+  assert.equal(danger.next,20,'No upcoming escalation');
+  await page.screenshot({path:'qa-ui-v2-brawl-shockwave.png'});
   await page.evaluate(()=>{
     const g=window.__MR.MODES.brawl.session();
     let n=0;while(!g.state.done&&n++<50000)g.tick(.05);
