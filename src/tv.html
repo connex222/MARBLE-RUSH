@@ -586,6 +586,53 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #ppGolfStandings p{font:800 calc(16*var(--u)) Nunito,sans-serif;
  color:#ddf2df;line-height:1.35;margin-top:calc(19*var(--u))}
 
+
+/* BOWL BRAWL MAYHEM — actionable jeopardy, never a decorative warning. */
+#ppBrawlShockBox{
+ margin-top:calc(13*var(--u));width:calc(490*var(--u));
+ padding:calc(8*var(--u)) calc(16*var(--u));
+ background:linear-gradient(110deg,#122b42e8,#463041e8);
+ border:calc(2*var(--u)) solid #ffc07f;
+ border-radius:calc(13*var(--u));box-shadow:0 7px 18px #0008;
+}
+#ppBrawlShockLabel{color:#ffe6a9;font:900 calc(20*var(--u)) Nunito,sans-serif}
+.ppBrawlShockMeter{height:calc(9*var(--u));border-radius:99px;
+ background:#08192c;overflow:hidden;border:1px solid #ffe0a78d;
+ margin-top:calc(7*var(--u))}
+#ppBrawlShockBar{display:block;height:100%;width:0;
+ background:linear-gradient(90deg,#68e6d4,#ffce75,#ff566e);
+ transition:width .12s linear}
+#ppBrawlShockBox.danger{border-color:#ff4a67;
+ background:linear-gradient(100deg,#662840,#3e203cf1);
+ box-shadow:0 0 calc(25*var(--u)) #fc44688f;
+ animation:ppBrawlAlarm .43s ease-in-out infinite alternate}
+@keyframes ppBrawlAlarm{
+ from{filter:brightness(.88)}to{filter:brightness(1.32)}
+}
+#ppBrawlShockBox.blast{border-color:#fffcaf;
+ box-shadow:0 0 calc(40*var(--u)) #ffd77ac0}
+.ppBrawlActions #ppBrawlRecover{
+ grid-column:span 2;min-height:calc(65*var(--u));
+ background:linear-gradient(150deg,#db536c,#732741);color:#fff3e9;
+ border-color:#ffc4ad;font:900 calc(21*var(--u)) Fredoka,sans-serif;
+}
+.ppBrawlActions #ppBrawlRecover:disabled{opacity:.35;filter:grayscale(.7)}
+.ppBrawlActions #ppBrawlRecover:not(:disabled){
+ background:linear-gradient(155deg,#ff7659,#ef365d,#993258);
+ box-shadow:0 calc(5*var(--u)) 0 #782139,0 0 calc(24*var(--u)) #ef557d70;
+ animation:ppBrawlAlarm .42s ease-in-out infinite alternate
+}
+#ppBrawlKillFeed{
+ font:900 calc(19*var(--u)) Nunito,sans-serif;
+ line-height:1.4;color:#ffd9a2;padding:calc(11*var(--u)) calc(12*var(--u));
+ margin-top:calc(14*var(--u));border-left:calc(5*var(--u)) solid #fda56c;
+ border-radius:calc(11*var(--u));background:linear-gradient(110deg,#582a45c9,#1b3b50a8);
+}
+#ppBrawlPanel{padding-bottom:calc(20*var(--u))}
+@media(prefers-reduced-motion:reduce){
+ #ppBrawlShockBox.danger,#ppBrawlActions #ppBrawlRecover:not(:disabled){animation:none}
+}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -874,6 +921,10 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
         <h1>BOWL BRAWL</h1>
         <div class="ppBrawlRound"><span id="ppBrawlRound">ROUND 1 / 5</span>
           <span id="ppBrawlPhase">BUMPER BLITZ</span></div>
+        <div id="ppBrawlShockBox" aria-live="polite">
+          <strong id="ppBrawlShockLabel">SHOCKWAVE IN 8.0s</strong>
+          <div class="ppBrawlShockMeter"><span id="ppBrawlShockBar"></span></div>
+        </div>
       </header>
       <div id="ppBrawlStats" hidden>
         <div><span>ROUND CLOCK</span><strong id="ppBrawlTime">42.0s</strong></div>
@@ -889,9 +940,10 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
           <button id="ppBrawlLeft" type="button">◀ TURN</button>
           <button id="ppBrawlRight" type="button">TURN ▶</button>
           <button id="ppBrawlRam" type="button">RAM!</button>
-          <button id="ppBrawlAnchor" type="button">⚓ ANCHOR</button>
+          <button id="ppBrawlAnchor" type="button">⚓ ANCHOR · BRACE</button>
+          <button id="ppBrawlRecover" type="button" disabled>↩ EDGE RECOVERY</button>
         </div>
-        <p id="ppBrawlHelp">TURN to steer · RAM costs 28 · ANCHOR costs 15</p>
+        <p id="ppBrawlHelp">SHOCKWAVE incoming. Recover once near the rim, or RAM opponents out for bonus points.</p>
       </aside>
       <aside id="ppBrawlStandings" aria-label="Bowl Brawl live standings" hidden>
         <h2>BRAWL LEADERBOARD</h2>
@@ -899,7 +951,8 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
         <div class="ppBrawlArenaNote">
           <span>ARENA RADIUS</span><strong><span id="ppBrawlRadius">380</span> M</strong>
         </div>
-        <p class="ppBrawlWarning">Knock marbles out. The arena shrinks every round. All points are game points.</p>
+        <p class="ppBrawlWarning">Charged knockouts earn +3 bonus points (+5 in the final round). Recover once per round for 35 energy.</p>
+        <div id="ppBrawlKillFeed" aria-live="polite">NO KNOCKOUTS YET · GO GET 'EM</div>
       </aside>
 
       <!-- Marble Curling UI v2: independent TV rink, HUD and stone controls.
