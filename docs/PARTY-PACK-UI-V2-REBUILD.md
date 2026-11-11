@@ -2,7 +2,8 @@
 
 **Status:** Development-only, NOT MERGED, NOT DEPLOYED.  
 **Branch:** `dev/party-pack-ui-v2-rebuild` (forked from the current `main`, not the rejected layered WebGL experiment).  
-**Starting mode:** Marble Derby.  
+**Completed development modes:** Marble Derby and Drop Zone.
+**Current visual acceptance:** Derby accepted for continuation; Drop Zone awaiting user visual review.  
 
 ## Why this branch exists
 
@@ -15,7 +16,7 @@ The previous `dev/aaa-gameplay-cinematic-rebuild` preview failed visual acceptan
 - Retire the obsolete `MarblePartyStage` shared rendering helpers from `src/modes/registry.js`.
 - Keep **all authoritative mode simulations**, scores, phone actions, game-specific event metadata, assets, music and Grand Prix untouched.
 - Do not combine the old flat canvases with the new UI. One mode = one exclusive new stage.
-- Temporarily mark the unrebuilt Drop Zone, Brawl, Curling and Golf **unavailable** on this branch. Their rules/tests remain available. They must never be selectable without a working new scene.
+- Temporarily mark the unrebuilt Brawl, Curling and Golf **unavailable** on this branch. Their rules/tests remain available. They must never be selectable without a working new scene.
 - Preserve the shared lobby, original Grand Prix, networking and final score flow.
 
 ## Marble Derby v2 — first rebuild
@@ -25,17 +26,26 @@ The previous `dev/aaa-gameplay-cinematic-rebuild` preview failed visual acceptan
 - Reuses approved `pp_derby_bg`, `pp_derby_surface_main`, `pp_derby_prop_grandstand`, `pp_derby_prop_hay_bales`, `pp_derby_fx_laurel`, `pp_derby_fx_surge`, plus the approved marble-swirl textures.
 - Hand-built perspective stadium diorama presentation with six graduated lanes, raised rails, a perspective finish gantry, rolling marble texture, movement trails and heat-winner reveal.
 - No new simulation, no new randomness in game rules and no new external asset hosting. Betting is virtual and remains authoritative on the TV as before.
-- This first presentation uses a single perspective Canvas2D composition, **not a claim of physically simulated 3D**. Upgrade to genuine 3D only if TV visual review establishes a clear need; never put one render layer over the old UI.
+- The game presentations use a new single-stage perspective Canvas2D composition, **not a claim of physically simulated 3D**. Upgrade to genuine 3D only if TV visual review establishes a clear need; never put one render layer over the old UI.
+
+## Drop Zone v2 — second rebuild
+
+- Dedicated full-screen glass and brass cabinet reusing **all four principal approved Drop Zone assets** (`pp_dropzone_bg`, `pp_dropzone_surface_main`, `pp_dropzone_prop_glass_chute`, `pp_dropzone_prop_gold_bucket`) and the approved peg, multiplier, jackpot, coins and confetti effects.
+- Authentic game-state pegs, moving gold targets, spinner, oscillating gate, falling marble and eight live prize bins. The 85 peg locations, x/aim, physics and jackpots are all read directly from `DropZone.state`.
+- Brand-new left-side TV aim/drop controls, separate right-hand jackpot leaderboard, current player, elapsed time, round information and last prize.
+- Matching teal/gold phone controller: full-size DROP action while aiming, compact 8-bin predictor buttons during a drop, the existing VIP lobby exit.
+- Real 5-round deterministic game engine, scoring, CPU and connection paths unchanged. No duplicate old TV pegboard canvas behind the new presentation.
+- A separate browser and two-phone WebSocket smoke must pass; visual approval on the actual TV remains required.
 
 ## Acceptance gates
 
-1. `node tools/test-party-foundations.js` and game-specific deterministic regression tests pass, even for the four gated modes.
+1. `node tools/test-party-foundations.js` and game-specific deterministic regression tests pass, even for the three gated modes.
 2. `node tools/test-party-ui-v2.js` proves all old mode canvases, old stage helpers and stale view handlers are gone.
 3. `npm run build`, `node tools/test-phase4-release.js`, `node tools/audit-art.js` verify existing files and approved image/audio counts.
-4. Browser `tools/party-ui-v2-browser-smoke.js` checks exclusive full-TV rendering, new TV controls, five-heat completion and untouched Grand Prix.
-5. WebSocket `tools/party-ui-v2-multiplayer-smoke.js` checks two independent phones, VIP selection, private wagers and the new stage.
+4. Browser `tools/party-ui-v2-browser-smoke.js` checks exclusive full-TV Derby and Drop Zone rendering, new TV controls, complete five-heat/round sessions, commentator cleanup and untouched Grand Prix.
+5. WebSocket `tools/party-ui-v2-multiplayer-smoke.js` checks two independent phones, VIP selection, private Derby wagers, phone-controlled Drop Zone aiming/drop and spectator predictions.
 6. Real 1920×1080 TV visual assessment, reliable performance and physical 2–4-phone acceptance are **still required before a release**.
-7. Get explicit user approval of Derby's gameplay and visual screen before proceeding to the next game's full rebuild. **No merge or deployment until all five are completed and approved.**
+7. Get explicit user approval of each rebuilt mode's gameplay and visual screen before proceeding to the next full mode rebuild. **No merge or deployment until all five are completed and approved.**
 
 ## Review
 
@@ -43,10 +53,10 @@ New independent launcher: `tools/OPEN-PARTY-UI-V2-DERBY-PREVIEW.bat` (Windows, N
 
 ## Remaining roadmap
 
-- Stage 2: Drop Zone — new brass-and-glass game-show cabinet, integrated chute and live jackpot HUD.
+- Stage 2: Drop Zone — brass-and-glass game-show cabinet, integrated chute and live jackpot HUD (development complete; review pending).
 - Stage 3: Bowl Brawl — full arena, combat energy and elimination presentation.
 - Stage 4: Marble Curling — premium ice stage, target and sweep HUD.
 - Stage 5: Marble Golf — miniature hole dioramas, shot control and turn HUD.
 - Stage 6: unify presentation/result screens and perform full Party Night/TV/multiplayer acceptance.
 
-**Release remains blocked** while the four incomplete views are gated and the new Derby visual system is under review.
+**Release remains blocked** while three incomplete views are gated and the new Drop Zone visual presentation is under review.
