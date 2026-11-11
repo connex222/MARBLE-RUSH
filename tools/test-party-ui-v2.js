@@ -1,69 +1,75 @@
-/* MARBLE RUSH UI v2: fail closed against reintroducing legacy mode screens. */
+/* MARBLE RUSH real rebuild: fail closed against ANY old mode screen ownership. */
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
-const html=read('src/tv.html'),tv=read('src/tv.js'),ui=read('src/modes/party-ui-v2.js');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const html=read('src/tv.html'),tv=read('src/tv.js');
+const derby=read('src/modes/party-ui-v2.js');
+const brawl=read('src/modes/party-brawl-ui-v2.js');
+const curling=read('src/modes/party-curling-ui-v2.js');
+const golf=read('src/modes/party-golf-ui-v2.js');
+const host=read('src/modes/party-screen-host.js');
+const build=read('tools/build.js');
 const modes=['derby','dropzone','brawl','curling','golf'];
-assert.ok(html.includes('id="partyStageCanvas"')&&html.includes('id="partyStage"'),
- 'Party Pack needs a newly constructed full-TV stage');
-assert.ok(html.includes('id="ppBetPanel"')&&html.includes('id="ppRankRows"'),
- 'Derby live controls and standings missing');
-assert.ok(tv.includes('MarblePartyUI.drawDerby'),'Derby not connected to its new renderer');
-assert.ok(tv.includes('MarblePartyUI.drawDropZone'),'Drop Zone not connected to new renderer');
-assert.ok(tv.includes('MarbleBrawlUI.draw'),'Brawl new arena renderer not connected');
-assert.ok(tv.includes('MarbleCurlingUI.draw'),'Curling renderer not connected');
-assert.ok(tv.includes('MarbleGolfUI.draw'),'Golf replacement renderer not connected');
-const golfUi=read('src/modes/party-golf-ui-v2.js');
-for(const name of ['pp_golf_bg','pp_golf_surface_main',
- 'pp_golf_prop_stone_bridge','pp_golf_prop_windmill',
- 'pp_golf_fx_holeinone','pp_golf_fx_cup','pp_golf_fx_putt']){
- assert.ok(golfUi.includes(name),'Approved Golf asset missing: '+name);
+assert.equal((html.match(/id="partyStageCanvas"/g)||[]).length,1,
+ 'Exactly one Party Pack canvas must be mounted in the TV HTML');
+assert.ok(html.includes('id="partyStage"')&&html.includes('data-screen="party-stage"'));
+assert.ok(!html.includes('ppWorkInProgress'),'Unreachable placeholder must be deleted');
+for(const mode of modes){
+ assert.ok(host.includes(mode+':')||host.includes(mode+' '),
+  'Missing exclusive renderer registration: '+mode);
+ const engine=read('src/modes/'+mode+'.js');
+ assert.ok(engine.includes('registerMode({')&&engine.includes('session(){'),
+  mode+' lost authoritative physics/session');
+ assert.ok(engine.includes('available:true'),mode+' no longer available');
+ assert.ok(!/function draw\(\)/.test(engine),mode+' old private renderer returned');
+ assert.ok(!/\bdraw\(ctx,w,h\)/.test(engine),mode+' old registry draw bridge returned');
 }
-for(const id of ['ppGolfHud','ppGolfPanel','ppGolfRankRows','ppGolfStandings',
- 'ppGolfLeft','ppGolfRight','ppGolfPowerDown','ppGolfPowerUp','ppGolfPreview','ppGolfShoot',
- 'ppGolfHole','ppGolfPar','ppGolfStroke','ppGolfPlayer'])
- assert.ok(html.includes('id="'+id+'"'),'New Golf TV interface missing: '+id);
-const curlingUi=read('src/modes/party-curling-ui-v2.js');
-for(const asset of ['pp_curling_bg','pp_curling_surface_main','pp_curling_prop_alpine_lodge',
-  'pp_curling_prop_ice_blocks','pp_curling_fx_scrape','pp_curling_fx_sweep','pp_curling_fx_victory'])
- assert.ok(curlingUi.includes(asset),'Curling approved asset missing: '+asset);
-for(const id of ['ppCurlHud','ppCurlPanel','ppCurlStandings','ppCurlRankRows',
- 'ppCurlThrow','ppCurlSweepBtn','ppCurlAim','ppCurlPower','ppCurlLeftSpin','ppCurlRightSpin'])
- assert.ok(html.includes('id="'+id+'"'),'Curling new UI not found: '+id);
-const brawlUi=read('src/modes/party-brawl-ui-v2.js');
-for(const art of ['pp_brawl_bg','pp_brawl_surface_main','pp_brawl_prop_spin_hazard','pp_brawl_prop_striped_bumper','pp_brawl_fx_ko','pp_brawl_fx_spin'])
- assert.ok(brawlUi.includes(art),'Brawl approved visual asset missing: '+art);
-for(const id of ['ppBrawlPanel','ppBrawlStandings','ppBrawlRankRows','ppBrawlRam','ppBrawlAnchor','ppBrawlAlive'])
- assert.ok(html.includes('id="'+id+'"'),'Brawl replacement UI missing: '+id);
-assert.ok(ui.includes('pp_dropzone_bg')&&ui.includes('pp_dropzone_surface_main')&&
- ui.includes('pp_dropzone_prop_glass_chute')&&ui.includes('pp_dropzone_prop_gold_bucket'),
- 'Drop Zone must use its four approved environment assets');
-for(const id of ['ppDropPanel','ppDropStandings','ppDropRankRows','dropLeft','dropNow','dropRight'])
- assert.ok(html.includes('id="'+id+'"'),'New Drop Zone control/HUD missing: '+id);
-assert.ok(ui.includes('pp_derby_bg')&&ui.includes('pp_derby_surface_main')&&
- ui.includes('pp_derby_prop_grandstand')&&ui.includes('pp_derby_prop_hay_bales'),
- 'New Derby must re-use four approved environment assets');
-assert.ok(ui.includes('pp_derby_fx_laurel')&&ui.includes('pp_derby_fx_surge'),
- 'New Derby must use approved climax effects');
-assert.ok(!/MarblePartyStage/.test(tv+ui+read('src/modes/registry.js')),
- 'Old stage renderer is still compiled');
-assert.ok(!/PartyFX\.draw/.test(tv),'Old overlaid FX still used in gameplay');
-for(const id of ['derbyCanvas','dropZoneCanvas','brawlCanvas','curlingCanvas','golfCanvas',
- 'derbyHelp','dropZoneHelp','brawlHelp','curlingHelp','golfHelp'])
- assert.ok(!html.includes('id="'+id+'"')&&!tv.includes("'#"+id+"'"),
- 'Old game UI not removed: '+id);
-for(const name of modes){
- const code=read('src/modes/'+name+'.js');
- assert.ok(code.includes('function draw(){ /* Party Pack v2: legacy graphics deleted'),
-   name+' old drawing code still in rules module');
- assert.ok(!code.includes('MarblePartyStage.'),name+' still calls the retired renderer');
- assert.ok(code.includes('registerMode({'),name+' authoritative mode registration lost');
- assert.ok(code.includes('session(){'),name+' authoritative game session lost');
- assert.ok(code.includes('available:true'),
-   name+' phase readiness must match the visible UI');
+for(const [renderer,src] of [
+ ['MarblePartyUI.drawDerby',host],['MarblePartyUI.drawDropZone',host],
+ ['MarbleBrawlUI.draw',host],['MarbleCurlingUI.draw',host],
+ ['MarbleGolfUI.draw',host]
+])assert.ok(src.includes(renderer),'Only the host may dispatch '+renderer);
+for(const old of ['derbyCanvas','dropZoneCanvas','brawlCanvas',
+ 'curlingCanvas','golfCanvas','ppWorkInProgress'])
+ assert.ok(!html.includes('id="'+old+'"'),old+' retired UI was remounted');
+for(const id of ['ppBetPanel','ppRankRows','ppDropPanel','ppDropRankRows',
+ 'ppBrawlPanel','ppBrawlRecover','ppBrawlStandings',
+ 'ppCurlHud','ppCurlThrow','ppCurlSweepBtn',
+ 'ppGolfHud','ppGolfPreview','ppGolfShoot'])
+ assert.ok(html.includes('id="'+id+'"'),'Required new UI missing: '+id);
+assert.ok(!/MarblePartyUI\.enter/.test(tv+host+derby),
+ 'Old renderer still owns the screen instead of the screen host');
+assert.ok(!/MarblePartyStage/.test(tv+host+derby),
+ 'Obsolete Party Pack fallback painter is back');
+assert.ok(tv.includes('MarblePartyScreen.mount(name)')&&
+ tv.includes('MarblePartyScreen.unmount()')&&
+ tv.includes('MarblePartyScreen.render(mode,session.state'),
+ 'All modes must have one mount and one render ownership path');
+assert.ok(host.includes('raceCanvas.hidden=true')&&
+ host.includes('raceCanvas.hidden=false')&&
+ host.includes('assertExclusive()'),
+ 'Shared GP canvas is not hidden exclusively while a Party Pack mode runs');
+assert.ok(!build.includes("'party-fx'")&&
+ !fs.existsSync(path.join(root,'src/modes/party-fx.js')),
+ 'Retired overlay still bundled or checked in');
+assert.ok(build.includes("'party-screen-host'"));
+assert.ok(!/PartyFX\.draw/.test(tv+host));
+assert.ok(derby.includes('pp_derby_bg')&&
+ derby.includes('pp_derby_surface_main')&&
+ derby.includes('pp_derby_prop_grandstand')&&
+ derby.includes('pp_derby_prop_hay_bales'),
+ 'Derby approved art missing');
+assert.ok(derby.includes('pp_dropzone_bg')&&
+ derby.includes('pp_dropzone_surface_main')&&
+ derby.includes('pp_dropzone_prop_glass_chute')&&
+ derby.includes('pp_dropzone_prop_gold_bucket'),'Drop Zone art missing');
+for(const [content,keys] of [[brawl,['pp_brawl_bg','pp_brawl_surface_main','pp_brawl_fx_ko']],
+ [curling,['pp_curling_bg','pp_curling_surface_main','pp_curling_fx_sweep']],
+ [golf,['pp_golf_bg','pp_golf_surface_main','pp_golf_fx_cup']]]){
+ for(const key of keys)assert.ok(content.includes(key),'Missing reusable art key '+key);
 }
-// All five Party Pack game engines and their authenticated phone action handlers
-// remain unchanged beneath their completely new TV/phone presentation layers.
-assert.ok(tv.includes("['stake','bet','cheer']"),'Derby phone controls were changed');
-assert.ok(html.includes('id="partyBackLobby"'),'Host exit was lost');
-console.log('PASS UI v2: all five mode UIs replaced, all approved assets reused, Grand Prix untouched, six modes selectable.');
+assert.ok(html.includes('id="partyBackLobby"')&&html.includes('id="raceHud"'));
+assert.ok(tv.includes("['stake','bet','cheer']"),
+ 'Derby phone betting controls lost');
+console.log('PASS: five game engines separate from visuals, one stage host, exactly one canvas, no legacy draw shims, overlay or fallback, Grand Prix retained');
