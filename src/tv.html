@@ -498,6 +498,94 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #ppCurlStandings .ppCurlNote{font:800 calc(17*var(--u)) Nunito,sans-serif;
  color:#d9f7ef;margin-top:calc(20*var(--u));line-height:1.35}
 
+
+/* GOLF V2 — miniature putting theatre. This is a genuine replacement screen,
+   not a new panel on top of the old flat game. */
+#partyStage[data-mode="golf"]{background:#123247}
+#ppGolfHeader{position:absolute;top:calc(39*var(--u));left:calc(55*var(--u));
+ max-width:calc(1040*var(--u));pointer-events:none}
+#ppGolfHeader .ppKicker{color:#ffe6af;letter-spacing:.13em}
+#ppGolfHeader h1{font:900 calc(88*var(--u)) Fredoka,sans-serif;
+ color:#fff4cc;line-height:.95;margin:calc(10*var(--u)) 0;
+ -webkit-text-stroke:calc(2*var(--u)) #edbd7b;
+ text-shadow:0 calc(8*var(--u)) calc(6*var(--u)) #133b3d,
+ 0 0 calc(35*var(--u)) #fef1a452}
+#ppGolfHeader .ppGolfMeta{display:flex;align-items:center;
+ gap:calc(11*var(--u));font:900 calc(21*var(--u)) Nunito,sans-serif}
+#ppGolfHeader .ppGolfMeta span{padding:calc(7*var(--u)) calc(16*var(--u));
+ border:calc(2*var(--u)) solid #ffe6a9;border-radius:calc(14*var(--u));
+ background:linear-gradient(135deg,#22533ddc,#1e4e59ea);color:#fff3c4}
+#ppGolfClockBox{position:absolute;right:calc(60*var(--u));top:calc(106*var(--u));
+ display:flex;align-items:center;gap:calc(17*var(--u));font:900 calc(21*var(--u)) Nunito,sans-serif;
+ color:#ffe5aa;background:linear-gradient(135deg,#214e4be8,#173b51ed);
+ border:calc(2*var(--u)) solid #ffedb4;border-radius:calc(19*var(--u));
+ padding:calc(10*var(--u)) calc(17*var(--u));box-shadow:0 7px 28px #0008}
+#ppGolfClock{font:900 calc(37*var(--u)) Fredoka,sans-serif;color:#fff9df}
+#ppGolfPanel{position:absolute;top:calc(279*var(--u));left:calc(46*var(--u));
+ width:calc(334*var(--u));min-height:calc(641*var(--u));
+ padding:calc(22*var(--u));border:calc(3*var(--u)) solid #f7e5ae;
+ border-radius:calc(32*var(--u));box-shadow:0 calc(17*var(--u)) calc(48*var(--u)) #000b;
+ background:linear-gradient(147deg,#376349ef,#254a56f2 58%,#182c43f2)}
+#ppGolfPanel>small{display:block;color:#ffe1a6;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;letter-spacing:.08em}
+#ppGolfPlayer{display:block;margin:calc(10*var(--u)) 0 calc(16*var(--u));
+ font:900 calc(36*var(--u)) Fredoka,sans-serif;color:#fff5d8;
+ line-height:1.1;overflow-wrap:anywhere}
+.ppGolfValues{display:grid;grid-template-columns:1fr 1fr;gap:calc(9*var(--u));
+ margin-bottom:calc(18*var(--u))}
+.ppGolfValue{padding:calc(9*var(--u));border:2px solid #bff2d7;
+ background:linear-gradient(145deg,#153b3cef,#18364deb);
+ border-radius:calc(13*var(--u));text-align:center;min-width:0}
+.ppGolfValue>span{display:block;font:900 calc(14*var(--u)) Nunito,sans-serif;
+ color:#c2f3dd;letter-spacing:.04em}
+.ppGolfValue>strong{display:block;margin-top:calc(4*var(--u));
+ font:900 calc(28*var(--u)) Fredoka,sans-serif;color:#fff5cc}
+.ppGolfActions{pointer-events:auto;display:grid;grid-template-columns:1fr 1fr;
+ gap:calc(9*var(--u))}
+.ppGolfActions button{min-height:calc(59*var(--u));padding:calc(8*var(--u)) calc(5*var(--u));
+ border:2px solid #e4f7d7;border-radius:calc(13*var(--u));
+ background:linear-gradient(153deg,#3e8070,#1e5360);color:#fffcec;
+ box-shadow:0 calc(5*var(--u)) 0 #122e3c;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;cursor:pointer}
+.ppGolfActions button:focus-visible{outline:calc(4*var(--u)) solid #fff;
+ outline-offset:calc(3*var(--u))}
+.ppGolfActions button:disabled{opacity:.45;cursor:default;box-shadow:none}
+#ppGolfPreview{grid-column:span 2;background:linear-gradient(153deg,#385a7c,#203b61);
+ border-color:#d5ebf9}
+#ppGolfShoot{grid-column:span 2;min-height:calc(98*var(--u));
+ font:900 calc(38*var(--u)) Fredoka,sans-serif;
+ background:linear-gradient(153deg,#fff0c0,#ffc773 64%,#e5845c);
+ color:#3b2d40;border:3px solid #fff8d9;
+ box-shadow:0 calc(7*var(--u)) 0 #a85a47}
+#ppGolfHelp{margin-top:calc(15*var(--u));font:800 calc(16*var(--u)) Nunito,sans-serif;
+ color:#edffe8;line-height:1.35}
+#ppGolfStandings{position:absolute;top:calc(278*var(--u));right:calc(45*var(--u));
+ width:calc(367*var(--u));min-height:calc(622*var(--u));
+ border:calc(3*var(--u)) solid #ffe2a6;border-radius:calc(32*var(--u));
+ padding:calc(20*var(--u));background:linear-gradient(152deg,#375844ee,#19394bee);
+ box-shadow:0 calc(17*var(--u)) calc(45*var(--u)) #000b}
+#ppGolfStandings h2{margin:0;padding-bottom:calc(15*var(--u));
+ font:900 calc(30*var(--u)) Fredoka,sans-serif;color:#ffe1a3;
+ border-bottom:2px solid #e2f2ce7a}
+#ppGolfRankRows{display:grid;gap:calc(9*var(--u));margin-top:calc(16*var(--u))}
+.ppGolfRank{display:flex;align-items:center;gap:calc(9*var(--u));
+ min-height:calc(46*var(--u));padding:calc(7*var(--u));
+ border-left:calc(5*var(--u)) solid var(--golf-ball);
+ border-radius:calc(12*var(--u));background:#2c5c5b8b;
+ font:900 calc(19*var(--u)) Nunito,sans-serif}
+.ppGolfRank>b{color:#ffe4a8;min-width:calc(24*var(--u))}
+.ppGolfRank>i{width:calc(19*var(--u));height:calc(19*var(--u));border-radius:50%;
+ flex:none;background:radial-gradient(circle at 24% 24%,white,var(--golf-ball) 50%,#162b40)}
+.ppGolfRank>strong{flex:1;min-width:0;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.ppGolfRank>span{color:#fff0c3;white-space:nowrap;font-size:calc(17*var(--u))}
+.ppGolfStats{display:grid;grid-template-columns:1fr auto;gap:calc(13*var(--u));
+ margin-top:calc(22*var(--u));padding-top:calc(17*var(--u));
+ border-top:2px solid #d8e9ce6b;color:#d8f7dd;
+ font:900 calc(18*var(--u)) Nunito,sans-serif}
+.ppGolfStats strong{color:#fff0b9}
+#ppGolfStandings p{font:800 calc(16*var(--u)) Nunito,sans-serif;
+ color:#ddf2df;line-height:1.35;margin-top:calc(19*var(--u))}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -856,6 +944,50 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
             <span>SHOT STATUS</span><strong id="ppCurlShotStatus">AIMING</strong>
           </div>
           <p class="ppCurlNote">Two stones each. Nearest the button wins the end. Sweep your own stone while it slides.</p>
+        </aside>
+      </div>
+
+      <!-- New Marble Golf TV screen. The legacy Golf canvas and bar are gone. -->
+      <div id="ppGolfHud" hidden>
+        <header id="ppGolfHeader">
+          <div class="ppKicker">MARBLE RUSH PRESENTS · THE MINIATURE MASTERS</div>
+          <h1>MARBLE GOLF</h1>
+          <div class="ppGolfMeta">
+            <span id="ppGolfHole">HOLE 1 / 9</span>
+            <span id="ppGolfName">The Warm-Up</span>
+            <span id="ppGolfPar">PAR 2</span>
+          </div>
+        </header>
+        <div id="ppGolfClockBox"><span id="ppGolfPhase">LINE UP YOUR SHOT</span>
+          <strong id="ppGolfClock">14s</strong></div>
+        <aside id="ppGolfPanel" aria-label="Marble Golf shot controls">
+          <small>YOUR PUTTING STATION</small>
+          <strong id="ppGolfPlayer">Player</strong>
+          <div class="ppGolfValues">
+            <div class="ppGolfValue"><span>AIM</span><strong id="ppGolfAngle">0°</strong></div>
+            <div class="ppGolfValue"><span>POWER</span><strong id="ppGolfPower">60%</strong></div>
+            <div class="ppGolfValue"><span>STROKES THIS HOLE</span><strong id="ppGolfStroke">0 / 7</strong></div>
+            <div class="ppGolfValue"><span>TRAJECTORY</span><strong id="ppGolfPreviewState">HINT OFF</strong></div>
+          </div>
+          <div class="ppGolfActions">
+            <button id="ppGolfLeft" type="button">◀ AIM</button>
+            <button id="ppGolfRight" type="button">AIM ▶</button>
+            <button id="ppGolfPowerDown" type="button">− POWER</button>
+            <button id="ppGolfPowerUp" type="button">+ POWER</button>
+            <button id="ppGolfPreview" type="button">TRAJECTORY HINT</button>
+            <button id="ppGolfShoot" type="button">PUTT!</button>
+          </div>
+          <p id="ppGolfHelp">Aim your shot, set power and putt towards the cup.</p>
+        </aside>
+        <aside id="ppGolfStandings" aria-label="Marble Golf live stroke-play leaderboard">
+          <h2>THE MASTERS BOARD</h2>
+          <div id="ppGolfRankRows"></div>
+          <div class="ppGolfStats">
+            <span>PLAYER TURN</span><strong id="ppGolfTurn">1 / 2</strong>
+            <span>COURSE HAZARD</span><strong id="ppGolfHazard">OPEN FAIRWAY</strong>
+          </div>
+          <p>The fewest total strokes wins. Up to seven strokes per hole.
+             Watch the water, bumpers and moving hazards.</p>
         </aside>
       </div>
       <div id="ppWorkInProgress" hidden aria-live="polite">
