@@ -110,6 +110,17 @@ assert.equal(noCredit.state.events.some(e=>e.kind==='knockout'),false,
  'Falling off without a credited RAM must not award bonus points');
 assert.ok(!noCredit.state.roster[0].roundPoints[0] ||
   noCredit.state.roster[0].roundPoints[0]===10,'Free knockouts forbidden');
+const finale=B.create(roster,20);
+finale.state.round=5;
+finale.current('bravo').lastHitBy='alpha';
+finale.current('bravo').lastHitTime=finale.state.time;
+finale.current('bravo').x=999;
+finale.tick(.05);
+assert.equal(finale.state.done,true,'Final round must finish normally');
+assert.ok(finale.state.events.some(e=>e.kind==='knockout'&&e.bonus===5),
+  'Final-round comeback knockout must award +5');
+assert.equal(finale.state.roster[0].roundPoints[0],15,
+  'Final-round winner must receive 10 placement plus 5 KO bonus');
 console.log('PASS MAYHEM: telegraphed deterministic shockwave, anchor counterplay, one energy-funded edge save, credited +3 knockout and no unearned points.');
 
 console.log('PASS: Bowl Brawl 30 seeded 3-CPU full games × 2 deterministic replays, five rounds, eight-player capacity, rim, ownership and energy.');
