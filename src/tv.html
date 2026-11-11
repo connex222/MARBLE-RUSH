@@ -238,6 +238,84 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #ppWorkInProgress .ppKicker{display:block;margin-bottom:calc(12*var(--u))}
 @media(prefers-reduced-motion:reduce){#partyStage *{animation:none!important;transition:none!important}}
 
+
+/* DROP ZONE v2: separate prize-show design, not the withdrawn flat pegboard. */
+#partyStage[data-mode="dropzone"]{background:#071a2c}
+#ppDropHeader{position:absolute;left:calc(58*var(--u));top:calc(39*var(--u));
+ display:flex;flex-direction:column;gap:calc(7*var(--u));max-width:calc(1190*var(--u))}
+#ppDropHeader h1{font:900 calc(92*var(--u)) Fredoka,sans-serif;line-height:.93;margin:0;
+ color:#fff5d5;-webkit-text-stroke:calc(2*var(--u)) #f5bb6b;
+ text-shadow:0 calc(8*var(--u)) calc(7*var(--u)) #043444,0 0 calc(43*var(--u)) #21c3c04c}
+#ppDropHeader .ppDropCaps{display:flex;gap:calc(11*var(--u));align-items:center;
+ font:900 calc(21*var(--u)) Nunito,sans-serif}
+#ppDropHeader .ppDropCaps span{padding:calc(7*var(--u)) calc(18*var(--u));
+ background:#0a314adf;border:calc(2*var(--u)) solid #8debd2a8;
+ border-radius:calc(18*var(--u));color:#ffe3a2}
+#ppDropStats{position:absolute;left:calc(1230*var(--u));top:calc(60*var(--u));
+ display:flex;align-items:center;gap:calc(14*var(--u));pointer-events:none;
+ color:#fff3cf;font:900 calc(20*var(--u)) Nunito,sans-serif}
+#ppDropStats .ppDropTimer{display:inline-block;min-width:calc(90*var(--u));
+ padding:calc(9*var(--u)) calc(16*var(--u));border-radius:calc(19*var(--u));
+ background:#153550ec;border:calc(3*var(--u)) solid #ffc965;
+ font:900 calc(36*var(--u)) Fredoka,sans-serif;text-align:center;color:#fff1c8}
+#ppDropPanel{position:absolute;top:calc(254*var(--u));left:calc(49*var(--u));
+ width:calc(314*var(--u));padding:calc(21*var(--u));min-height:calc(585*var(--u));
+ border-radius:calc(32*var(--u));border:calc(3*var(--u)) solid #ffdfa1;
+ background:linear-gradient(160deg,#0e3b4cf2,#102944f6 58%,#322a46f1);
+ box-shadow:0 calc(18*var(--u)) calc(56*var(--u)) #000a,
+ inset 0 0 calc(25*var(--u)) #5de8d61c}
+#ppDropPanel .ppDropSmall{display:block;font:900 calc(20*var(--u)) Nunito,sans-serif;
+ letter-spacing:.08em;color:#aaf9e5}
+#ppDropPanel .ppDropName{display:block;font:900 calc(38*var(--u)) Fredoka,sans-serif;
+ color:#fff4ce;line-height:1.15;word-break:break-word;
+ margin:calc(13*var(--u)) 0}
+#ppDropPanel .ppDropAimLabel{display:block;color:#ffe1a2;
+ font:900 calc(20*var(--u)) Nunito,sans-serif;margin-top:calc(17*var(--u))}
+#ppDropPanel .ppDropAim{font:900 calc(60*var(--u)) Fredoka,sans-serif;
+ color:#fff1bd;line-height:1.05}
+#ppDropPanel .ppDropKeyline{height:calc(2*var(--u));margin:calc(20*var(--u)) 0;
+ background:linear-gradient(90deg,#f1d79ca6,#c4ffed24)}
+#ppDropPanel .ppDropButtons{display:grid;grid-template-columns:1fr 1fr;gap:calc(12*var(--u));
+ pointer-events:auto;margin-top:calc(20*var(--u))}
+.ppDropButtons button{font:900 calc(18*var(--u)) Nunito,sans-serif;
+ border-radius:calc(16*var(--u));padding:calc(13*var(--u)) calc(6*var(--u));
+ min-height:calc(64*var(--u));cursor:pointer;color:#fff7db;
+ border:calc(2*var(--u)) solid #bbefdd;background:linear-gradient(155deg,#2b7f80,#104958);
+ box-shadow:0 calc(6*var(--u)) 0 #0b2b43}
+.ppDropButtons button:focus-visible{outline:calc(4*var(--u)) solid #fff8db;outline-offset:calc(3*var(--u))}
+.ppDropButtons button:disabled{opacity:.48;cursor:default;filter:grayscale(.4);box-shadow:none}
+#dropNow{grid-column:1 / -1;background:linear-gradient(165deg,#ffedb6,#f0ae55 60%,#d27654);
+ color:#2a263d;font:900 calc(35*var(--u)) Fredoka,sans-serif;
+ border-color:#fff9e7;min-height:calc(93*var(--u));box-shadow:0 calc(7*var(--u)) 0 #92482c}
+#ppDropHint{color:#e6f6f5;font:800 calc(18*var(--u)) Nunito,sans-serif;
+ line-height:1.34;margin-top:calc(22*var(--u))}
+#ppDropStandings{position:absolute;right:calc(44*var(--u));top:calc(260*var(--u));
+ width:calc(367*var(--u));height:calc(604*var(--u));padding:calc(20*var(--u));
+ background:linear-gradient(148deg,#0c3049f7,#0c203ff7);
+ border:calc(3*var(--u)) solid #ffdb91;border-radius:calc(30*var(--u));
+ box-shadow:0 calc(17*var(--u)) calc(40*var(--u)) #000b}
+#ppDropStandings .ppDropListHead{font:900 calc(25*var(--u)) Fredoka,sans-serif;
+ color:#ffdb8c;padding-bottom:calc(13*var(--u));border-bottom:2px solid #ffdf9673}
+#ppDropRankRows{display:grid;gap:calc(9*var(--u));margin-top:calc(15*var(--u))}
+.ppDropRankRow{display:flex;align-items:center;gap:calc(9*var(--u));height:calc(48*var(--u));
+ padding:calc(6*var(--u)) calc(9*var(--u));border-left:calc(5*var(--u)) solid var(--drop-color);
+ border-radius:calc(11*var(--u));background:#28506a74;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;min-width:0}
+.ppDropRankRow>span{color:#ffdf98;min-width:calc(22*var(--u))}
+.ppDropMarble{display:block;flex:none;width:calc(18*var(--u));height:calc(18*var(--u));
+ border-radius:50%;background:radial-gradient(circle at 28% 25%,#fff,var(--drop-color) 50%,#0a2030)}
+.ppDropRankRow>strong{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppDropRankRow>b{color:#ffe3a8;white-space:nowrap;font-variant-numeric:tabular-nums}
+#ppDropStandings .ppDropBonus{display:grid;grid-template-columns:1fr auto;gap:calc(8*var(--u));
+ padding-top:calc(19*var(--u));margin-top:calc(19*var(--u));
+ border-top:2px solid #c7eada42;font:900 calc(19*var(--u)) Nunito,sans-serif}
+#ppDropStandings .ppDropBonus strong{color:#ffdf95}
+#ppDropStandings .ppDropWarning{margin-top:calc(13*var(--u));
+ font:800 calc(16*var(--u)) Nunito,sans-serif;color:#bfedeb;line-height:1.35}
+#partyStage[data-mode="dropzone"] #ppDropHeader .ppKicker{color:#b1fff0}
+#partyStage[data-mode="dropzone"] #ppDropStandings[hidden],
+#partyStage[data-mode="dropzone"] #ppDropPanel[hidden]{display:none}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -479,6 +557,44 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
           </div>
         </div>
         <div id="ppRankRows"></div>
+      </aside>
+
+      <!-- Drop Zone is a separate visual language on the SAME new stage.
+           No flat legacy Drop Zone canvas or duplicate mode screen exists. -->
+      <header id="ppDropHeader" hidden>
+        <div class="ppKicker">MARBLE RUSH PRESENTS · THE GOLDEN DROP</div>
+        <h1>DROP ZONE</h1>
+        <div class="ppDropCaps">
+          <span id="ppDropRound">ROUND 1 / 5</span>
+          <span>JACKPOT CABINET · LIVE</span>
+        </div>
+      </header>
+      <div id="ppDropStats" hidden>
+        <span id="ppDropTurn">UP NEXT</span>
+        <span class="ppDropTimer" id="ppDropTimer">10s</span>
+      </div>
+      <aside id="ppDropPanel" aria-label="Drop Zone aim and release" hidden>
+        <span class="ppDropSmall">YOU'RE ON THE CHUTE</span>
+        <strong class="ppDropName" id="ppDropOnDeck">Player</strong>
+        <div class="ppDropKeyline"></div>
+        <span class="ppDropAimLabel">DROP POSITION</span>
+        <strong class="ppDropAim" id="ppDropAim">500</strong>
+        <div class="ppDropButtons">
+          <button id="dropLeft" type="button">◀ LEFT</button>
+          <button id="dropRight" type="button">RIGHT ▶</button>
+          <button id="dropNow" type="button">DROP!</button>
+        </div>
+        <p id="ppDropHint">Aim your chute and bank the jackpot.</p>
+      </aside>
+      <aside id="ppDropStandings" aria-label="Drop Zone live scores" hidden>
+        <h2 class="ppDropListHead">THE JACKPOT TABLE</h2>
+        <div id="ppDropRankRows" aria-live="off"></div>
+        <div class="ppDropBonus">
+          <span>HOT JACKPOT</span><strong id="ppDropJackpot">1000</strong>
+          <span>LAST DROP</span><strong id="ppDropLast">0 PTS</strong>
+          <span>DROPS PLAYED</span><strong id="ppDropCount">1 / 5</strong>
+        </div>
+        <p class="ppDropWarning">Gold pegs can double a prize. All scores are game points.</p>
       </aside>
       <div id="ppWorkInProgress" hidden aria-live="polite">
         <div class="ppKicker">PARTY PACK · UI REBUILD v2</div>
