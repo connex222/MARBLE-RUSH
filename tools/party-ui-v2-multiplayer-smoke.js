@@ -65,6 +65,7 @@ const {chromium}=require('playwright');
   await p1.waitForFunction(()=>document.body.dataset.mode==='dropzone' &&
     document.body.dataset.dropPhase==='aim',{timeout:10000});
   await p2.waitForFunction(()=>document.body.dataset.mode==='dropzone',{timeout:10000});
+  await p1.screenshot({path:'qa-ui-v2-dropzone-phone-aim.png'});
   const before=await tv.evaluate(()=>window.__MR.MODES.dropzone.session().state.x);
   await p1.locator('#modeActions button[data-action="left"]').click();
   await tv.waitForFunction(x=>window.__MR.MODES.dropzone.session().state.x<x,before,{timeout:8000});
@@ -72,6 +73,7 @@ const {chromium}=require('playwright');
   await p1.locator('#modeActions button[data-action="drop"]').click();
   await tv.waitForFunction(()=>!!window.__MR.MODES.dropzone.session().state.ball,{timeout:8000});
   await p2.waitForFunction(()=>document.body.dataset.dropPhase==='falling',{timeout:8000});
+  await p2.locator('#dropGuide').waitFor({state:'visible',timeout:8000});
   const predictions=p2.locator('#modeActions button[data-action="predict"]');
   if(await predictions.count())await predictions.first().click();
   const drop=await tv.evaluate(()=>{
