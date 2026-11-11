@@ -51,6 +51,13 @@ const MarbleCurlingUI=(()=>{
  }
  function board(c,im,t){
    const {x,y,w,h}=RINK;
+   // A complete frozen board in a shallow toy-diorama camera, with actual
+   // stone positions and the REAL house rings projected in the same plane.
+   c.save();c.beginPath();
+   c.moveTo(x-44,y+h+15);c.lineTo(x+w+44,y+h+15);
+   c.lineTo(x+w+28,y+h+68);c.lineTo(x-28,y+h+68);c.closePath();
+   c.fillStyle=grad(c,x,y+h+15,0,60,'#e0f8fa','#2f617d');
+   c.fill();c.lineWidth=5;c.strokeStyle='#fff8e5';c.stroke();c.restore();
    c.save();c.shadowColor='#000c';c.shadowBlur=68;c.shadowOffsetY=34;
    rr(c,x-52,y-59,w+104,h+121,38,'#29566b','#ffe5c6',12);c.restore();
    rr(c,x-44,y-50,w+88,h+98,33,
@@ -225,8 +232,15 @@ const MarbleCurlingUI=(()=>{
    if(!c||!s||!Array.isArray(s.stones))return false;
    c.save();c.setTransform(1,0,0,1,0,0);
    bg(c,assets,s.elapsed||0);
+   // A single shallow broadcast camera transforms BOTH ice and every
+   // simulated stone. Results and the TV control HUD remain horizontal.
+   c.save();
+   c.translate(960,563);
+   c.transform(1,.056,-.11,.937,0,0);
+   c.translate(-960,-563);
    board(c,assets,s.elapsed||0);
    actors(c,assets,s,s.elapsed||0,!!opts.reduce);
+   c.restore();
    result(c,assets,s);
    c.restore();update(s);return true;
  }
