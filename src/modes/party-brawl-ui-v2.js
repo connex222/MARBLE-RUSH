@@ -270,8 +270,9 @@ const MarbleBrawlUI=(()=>{
       pulseIn==null?'NO MORE WARNINGS · LAST MARBLE WINS':
       pulseIn<=3?'DANGER! SHOCKWAVE IN '+pulseIn.toFixed(1)+'s':
       'SHOCKWAVE IN '+pulseIn.toFixed(1)+'s · ANCHOR TO BRACE';
+    const pulseWindow=s.pulseIndex===0?4:s.pulseIndex===1?8:12;
     $('ppBrawlShockBar').style.width=(pulseIn==null?'100':
-      (100*clamp((8-pulseIn)/8,0,1)).toFixed(1))+'%';
+      (100*clamp((pulseWindow-pulseIn)/pulseWindow,0,1)).toFixed(1))+'%';
     const human=players.find(p=>!p.cpu&&get(p.id)?.alive);
     const m=human?get(human.id):null;
     $('ppBrawlPlayer').textContent=human?.name||'WATCH THE ACTION';
