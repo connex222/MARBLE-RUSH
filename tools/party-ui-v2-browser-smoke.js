@@ -19,8 +19,8 @@ const {chromium}=require('playwright');
    mode:b.dataset.mode,disabled:b.disabled,locked:b.dataset.locked
   })));
   assert.equal(menu.length,6);
-  assert.deepEqual(menu.filter(c=>!c.disabled).map(c=>c.mode),['grandprix','derby','dropzone','brawl','curling'],
-   'All rebuilt modes, including Curling, must be selectable; Golf remains locked');
+  assert.deepEqual(menu.filter(c=>!c.disabled).map(c=>c.mode),['grandprix','derby','dropzone','brawl','curling','golf'],
+   'All six game modes must be ready and without legacy screens');
   await page.screenshot({path:'qa-ui-v2-lobby.png'});
   const old=await page.evaluate(()=>['derbyCanvas','dropZoneCanvas','brawlCanvas','curlingCanvas',
    'golfCanvas','derbyHelp','dropZoneHelp','brawlHelp','curlingHelp','golfHelp'].filter(id=>document.getElementById(id)));
@@ -272,6 +272,80 @@ const {chromium}=require('playwright');
   assert.ok(curlFinal.champ,'Curling finale lacks winner');
   await page.screenshot({path:'qa-ui-v2-curling-finale.png'});
 
+  // GOLF v2: fresh full-TV miniature fairway, actual hazards and nine holes.
+  await page.evaluate(()=>window.__MR.Game.toLobby());
+  await page.locator('#partyModeCards .partyModeCard[data-mode="golf"]').click();
+  await page.waitForFunction(()=>window.__MR.selectedMode==='golf');
+  await page.locator('#btnStart').click();
+  await page.locator('#partyStage').waitFor({state:'visible'});
+  await page.waitForFunction(()=>window.__MR.state==='golf'&&
+    document.getElementById('ppGolfRankRows')?.children.length>=2);
+  const golfView=await page.evaluate(()=>{
+    const stage=document.getElementById('partyStage');
+    const rect=document.getElementById('partyStageCanvas').getBoundingClientRect();
+    const p=document.getElementById('partyStageCanvas').getContext('2d').getImageData(900,500,36,36).data;
+    const colors=new Set();for(let i=0;i<p.length;i+=4)colors.add(p[i]+':'+p[i+1]+':'+p[i+2]);
+    return {mode:stage.dataset.mode,rect:[rect.width,rect.height],colorCount:colors.size,
+      visible:[...stage.querySelectorAll('button')].filter(b=>b.getClientRects().length>0).map(b=>b.id),
+      rankRows:document.getElementById('ppGolfRankRows').children.length,
+      hole:document.getElementById('ppGolfHole').textContent,
+      noOld:!document.getElementById('golfCanvas')};
+  });
+  assert.equal(golfView.mode,'golf');assert.ok(golfView.noOld);
+  assert.ok(golfView.rect[0]>=1900&&golfView.rect[1]>=1050,'Golf not full-screen');
+  assert.ok(golfView.colorCount>10,'New Golf scene blank or flat');
+  assert.deepEqual(golfView.visible,[
+    'ppGolfLeft','ppGolfRight','ppGolfPowerDown','ppGolfPowerUp','ppGolfPreview','ppGolfShoot'
+  ],'Other mode buttons visible in Golf');
+  assert.ok(golfView.rankRows>=2);
+  assert.match(golfView.hole,/HOLE 1 \/ 9/);
+  await page.screenshot({path:'qa-ui-v2-golf-aim.png'});
+  const golfStart=await page.evaluate(()=>{
+    const s=window.__MR.MODES.golf.session().state;
+    return {angle:s.angle,power:s.power,holes:s.holes};
+  });
+  await page.locator('#ppGolfRight').click();
+  await page.locator('#ppGolfPowerUp').click();
+  await page.locator('#ppGolfPreview').click();
+  const golfAimState=await page.evaluate(()=>{
+    const s=window.__MR.MODES.golf.session().state;
+    return {angle:s.angle,power:s.power,hint:!!s.ghost};
+  });
+  assert.ok(golfAimState.angle>golfStart.angle&&golfAimState.power>golfStart.power,
+    'Golf TV controls did not affect authoritative aim/power');
+  assert.ok(golfAimState.hint,'Golf trajectory first-bounce hint missing');
+  await page.screenshot({path:'qa-ui-v2-golf-trajectory.png'});
+  await page.locator('#ppGolfShoot').click();
+  await page.waitForFunction(()=>window.__MR.MODES.golf.session().state.phase==='rolling');
+  const golfFirstShot=await page.evaluate(()=>{
+    const s=window.__MR.MODES.golf.session().state;
+    return {strokes:s.strokes,stale:!!s.ghost,hasShot:s.events.some(e=>e.kind==='shot')};
+  });
+  assert.equal(golfFirstShot.strokes,1);
+  assert.equal(golfFirstShot.stale,false);
+  assert.ok(golfFirstShot.hasShot,'PUTT did not fire a real game event');
+  await page.screenshot({path:'qa-ui-v2-golf-putt.png'});
+  await page.evaluate(()=>{
+    const g=window.__MR.MODES.golf.session();
+    let n=0;while(!g.state.done&&n++<300000)g.step(.1);
+    if(!g.state.done)throw Error('Nine-hole Golf never completed');
+  });
+  await page.waitForFunction(()=>window.__MR.state==='finale');
+  const golfFinish=await page.evaluate(()=>{
+    const s=window.__MR.MODES.golf.session().state;
+    return {holes:s.holes,completed:s.hole,history:s.history.length,
+      scores:s.roster.map(p=>p.holeScores.length),
+      total:s.roster.map(p=>p.strokes),
+      winner:document.getElementById('champName')?.textContent};
+  });
+  assert.equal(golfFinish.holes,9);
+  assert.equal(golfFinish.completed,9);
+  assert.equal(golfFinish.history,9);
+  assert.ok(golfFinish.scores.every(x=>x===9),'Golf scorecards incomplete');
+  assert.ok(golfFinish.total.every(x=>x>=9&&x<=63),'Golf strokes outside valid 9-hole range');
+  assert.ok(golfFinish.winner,'Golf finale winner missing');
+  await page.screenshot({path:'qa-ui-v2-golf-finale.png'});
+
   // A second mode start must still reach original Grand Prix, untouched by the reset.
   await page.evaluate(()=>window.__MR.Game.toLobby());
   await page.locator('#partyModeCards .partyModeCard[data-mode="grandprix"]').click();
@@ -279,7 +353,7 @@ const {chromium}=require('playwright');
   await page.waitForFunction(()=>['vote','countdown','race'].includes(window.__MR.state),{timeout:12000});
   assert.ok(await page.locator('#raceHud').count(),'Original Grand Prix screen was deleted');
   assert.deepEqual(errors,[],'Uncaught browser errors');
-  console.log('PASS: four independent full-TV mode stages, Curling real throw/sweep, four five-round finales, Grand Prix intact');
+  console.log('PASS: all five independent full-TV mode screens, real Golf 9-hole shots and scoring, four other modes, original Grand Prix intact');
  }catch(e){
   console.error('FAIL Party Pack v2 browser smoke:',e);
   await page.screenshot({path:'qa-ui-v2-error.png'}).catch(()=>{});
