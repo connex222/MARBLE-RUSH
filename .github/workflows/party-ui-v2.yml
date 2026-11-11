@@ -50,7 +50,10 @@ jobs:
       - name: Install browser for visual and phone acceptance
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.57.0
-          npx playwright install --with-deps chromium
+          # Ubuntu runners already include browser runtime libraries.
+          # Avoid apt-get --with-deps: the Ubuntu mirror intermittently fails DNS
+          # and breaks game CI before any browser tests can execute.
+          npx playwright install --only-shell chromium
       - name: Verify three rebuilt TV modes and original Grand Prix in Chromium
         run: |
           set -e
