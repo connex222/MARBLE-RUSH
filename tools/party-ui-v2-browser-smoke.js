@@ -257,6 +257,9 @@ const {chromium}=require('playwright');
       m.anchored=0;m.cooldown=0;m.heading=i===0?Math.PI:0;
     }
     s.elapsed=2.4;s.time=2.4;
+    // This test resets the physics clock. Clear shocks from the earlier
+    // unmodified match so one new pulse is counted, not two lifetime pulses.
+    s.events=s.events.filter(e=>e.kind!=='shockwave');
     s.pulseIndex=0;s.pulseAt=4;
   });
   await page.waitForFunction(()=>document.getElementById('ppBrawlShockBox').classList.contains('danger'));
