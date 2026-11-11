@@ -57,19 +57,19 @@ human.tick(.05);
 assert.equal(out.alive,false,'outside marble must be eliminated');
 assert.equal(human.action('a','ram'),false,'eliminated player cannot ram');
 // MAYHEM v3: every new moment of danger is authoritative and deterministic.
-assert.deepEqual(Array.from(B.SHOCK_TIMES),[8,20,32]);
+assert.deepEqual(Array.from(B.SHOCK_TIMES),[4,12,24]);
 assert.equal(B.RECOVER_COST,35);
 assert.equal(B.KO_BONUS,3);
 const roster=[{id:'alpha'},{id:'bravo'}];
 const pulse=B.create(roster,100);
-assert.equal(pulse.state.pulseAt,8);
+assert.equal(pulse.state.pulseAt,4);
 const aa=pulse.current('alpha'),bb=pulse.current('bravo');
 aa.x=200;aa.y=0;aa.vx=0;aa.vy=0;aa.anchored=.7;
 bb.x=-200;bb.y=0;bb.vx=0;bb.vy=0;bb.anchored=0;
-pulse.state.elapsed=7.99;pulse.state.time=7.99;
+pulse.state.elapsed=3.99;pulse.state.time=3.99;
 pulse.tick(.05);
 assert.equal(pulse.state.pulseIndex,1);
-assert.equal(pulse.state.pulseAt,20);
+assert.equal(pulse.state.pulseAt,12);
 assert.ok(pulse.state.events.some(e=>e.kind==='shockwave'&&e.pulse===1));
 assert.ok(Math.abs(bb.vx)>Math.abs(aa.vx)*2,
   'A pre-timed anchor must mitigate the pulse, not merely add a visual effect');
