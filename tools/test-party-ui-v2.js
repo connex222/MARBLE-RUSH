@@ -11,6 +11,14 @@ assert.ok(html.includes('id="ppBetPanel"')&&html.includes('id="ppRankRows"'),
 assert.ok(tv.includes('MarblePartyUI.drawDerby'),'Derby not connected to its new renderer');
 assert.ok(tv.includes('MarblePartyUI.drawDropZone'),'Drop Zone not connected to new renderer');
 assert.ok(tv.includes('MarbleBrawlUI.draw'),'Brawl new arena renderer not connected');
+assert.ok(tv.includes('MarbleCurlingUI.draw'),'Curling renderer not connected');
+const curlingUi=read('src/modes/party-curling-ui-v2.js');
+for(const asset of ['pp_curling_bg','pp_curling_surface_main','pp_curling_prop_alpine_lodge',
+  'pp_curling_prop_ice_blocks','pp_curling_fx_scrape','pp_curling_fx_sweep','pp_curling_fx_victory'])
+ assert.ok(curlingUi.includes(asset),'Curling approved asset missing: '+asset);
+for(const id of ['ppCurlHud','ppCurlPanel','ppCurlStandings','ppCurlRankRows',
+ 'ppCurlThrow','ppCurlSweepBtn','ppCurlAim','ppCurlPower','ppCurlLeftSpin','ppCurlRightSpin'])
+ assert.ok(html.includes('id="'+id+'"'),'Curling new UI not found: '+id);
 const brawlUi=read('src/modes/party-brawl-ui-v2.js');
 for(const art of ['pp_brawl_bg','pp_brawl_surface_main','pp_brawl_prop_spin_hazard','pp_brawl_prop_striped_bumper','pp_brawl_fx_ko','pp_brawl_fx_spin'])
  assert.ok(brawlUi.includes(art),'Brawl approved visual asset missing: '+art);
@@ -40,11 +48,11 @@ for(const name of modes){
  assert.ok(!code.includes('MarblePartyStage.'),name+' still calls the retired renderer');
  assert.ok(code.includes('registerMode({'),name+' authoritative mode registration lost');
  assert.ok(code.includes('session(){'),name+' authoritative game session lost');
- assert.ok(code.includes(['derby','dropzone','brawl'].includes(name)?'available:true':'available:false'),
+ assert.ok(code.includes(['derby','dropzone','brawl','curling'].includes(name)?'available:true':'available:false'),
    name+' phase readiness must match the visible UI');
 }
 // The five new gameplay modes retain their deterministic logic and phone action
 // handlers even though four unfinished TV presentations are not yet launchable.
 assert.ok(tv.includes("['stake','bet','cheer']"),'Derby phone controls were changed');
 assert.ok(html.includes('id="partyBackLobby"'),'Host exit was lost');
-console.log('PASS Party Pack UI v2: no legacy mode canvases, Derby/Drop Zone/Brawl replacement views wired, Curling/Golf gated.');
+console.log('PASS UI v2: Derby, Drop Zone, Brawl and Curling are exclusive rebuilt views; only Golf gated.');
