@@ -25,16 +25,21 @@ const MarblePartyUI=(()=>{
    stage.dataset.mode=next;
    const title=document.getElementById('ppModeTitle');
    if(title)title.textContent=NAMES[next];
-   const derby=next==='derby',drop=next==='dropzone';
+   const derby=next==='derby',drop=next==='dropzone',brawl=next==='brawl';
    for(const id of ['ppBetPanel','ppLeaderPanel','ppBoardLabel','ppTicker','ppTitleArea']){
      const node=document.getElementById(id);if(node)node.hidden=!derby;
    }
    for(const id of ['ppDropHeader','ppDropPanel','ppDropStandings','ppDropStats']){
      const node=document.getElementById(id);if(node)node.hidden=!drop;
    }
+   for(const id of ['ppBrawlHeader','ppBrawlStats','ppBrawlPanel','ppBrawlStandings']){
+     const node=document.getElementById(id);if(node)node.hidden=!brawl;
+   }
    const wip=document.getElementById('ppWorkInProgress');
-   if(wip)wip.hidden=derby||drop;
-   if(canvas)canvas.setAttribute('aria-label',drop?'Drop Zone glass pegboard and live score bins':'Marble Derby animated racing world');
+   if(wip)wip.hidden=derby||drop||brawl;
+   if(canvas)canvas.setAttribute('aria-label',
+     brawl?'Bowl Brawl elimination stadium and active marbles':
+     drop?'Drop Zone glass pegboard and live score bins':'Marble Derby animated racing world');
    return true;
  }
  function picture(ctx,art,x,y,w,h,opacity=1){
