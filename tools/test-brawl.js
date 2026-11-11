@@ -110,6 +110,26 @@ assert.equal(noCredit.state.events.some(e=>e.kind==='knockout'),false,
  'Falling off without a credited RAM must not award bonus points');
 assert.ok(!noCredit.state.roster[0].roundPoints[0] ||
   noCredit.state.roster[0].roundPoints[0]===10,'Free knockouts forbidden');
+const ledge=B.create(roster,22);
+const clinging=ledge.current('alpha');
+clinging.x=ledge.state.radius-22-1;
+clinging.y=0;clinging.vx=510;clinging.vy=0;
+ledge.tick(.05);
+assert.equal(clinging.alive,true,'Crossing the rim must offer a visible escape chance');
+assert.equal(clinging.edgeHanging,true,'Edge cling event not activated');
+assert.ok(ledge.hud('alpha').recoverReady,'Phone never receives emergency recovery');
+assert.ok(ledge.state.events.some(e=>e.kind==='edgeHang'));
+assert.equal(ledge.action('alpha','recover'),true,'Rescue must work while hanging');
+assert.equal(clinging.edgeHanging,false);
+const ledgeFall=B.create(roster,23);
+const doomed=ledgeFall.current('alpha');
+doomed.x=ledgeFall.state.radius-22-1;doomed.y=0;
+doomed.vx=510;doomed.vy=0;
+ledgeFall.tick(.05);
+let climb=0;
+while(doomed.alive&&climb++<40)ledgeFall.tick(.05);
+assert.equal(doomed.alive,false,'An ignored lip danger must still become elimination');
+
 const finale=B.create(roster,20);
 finale.state.round=5;
 finale.current('bravo').lastHitBy='alpha';
