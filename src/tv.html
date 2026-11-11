@@ -318,10 +318,40 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
 
 @media(max-width:780px){#partyBackLobby{min-width:175px;min-height:52px;padding:7px 15px;font-size:19px}}
 
+/* Prototype: physically rendered, frame-clipped WebGL gameplay arenas. */
+#party3d{
+  position:fixed;z-index:1;overflow:hidden;pointer-events:none;
+  border:calc(8*var(--u)) solid #ffe29a;
+  border-radius:calc(27*var(--u));
+  box-shadow:0 20px 45px #0009,inset 0 4px 10px #fff7;
+  background:#101830;
+}
+#party3d[hidden]{display:none!important}
+#party3d canvas{display:block;width:100%;height:100%}
+#party3d .p3label{
+  position:absolute;transform:translate(-50%,-120%);
+  z-index:3;white-space:nowrap;text-shadow:0 3px 4px #000,0 0 10px #000b;
+  font:800 clamp(11px,1.15vw,21px) Fredoka,sans-serif;color:#fff;
+  border-bottom:2px solid var(--tagcolor,#ffe39a);padding:0 5px;
+}
+#ui{z-index:2}
+#party3dToggle{
+  position:fixed;z-index:90;left:50%;top:max(10px,env(safe-area-inset-top));
+  transform:translateX(-50%);min-width:150px;min-height:45px;
+  padding:8px 16px;border-radius:14px;
+  border:2px solid #ffe7ac;background:linear-gradient(180deg,#327e92,#193952);
+  color:#fff;font:800 clamp(15px,1.15vw,20px) Fredoka,sans-serif;
+  cursor:pointer;box-shadow:0 5px 0 #091f39;pointer-events:auto
+}
+#party3dToggle[hidden]{display:none!important}
+#party3dToggle:focus-visible{outline:4px solid #fff8c1;outline-offset:3px}
+@media(max-width:650px){#party3dToggle{min-width:110px;min-height:36px;font-size:13px}}
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
+<!-- Opt-in real 3D party stages; existing Canvas remains a safe fallback. -->
+<div id="party3d" hidden aria-hidden="true"></div>
 <div id="ui">
   <div id="boot">
     <div class="bootIn">
@@ -483,10 +513,12 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
   <div id="status" hidden></div>
 </div>
 <!-- Independent top-level control: never clipped by a game screen or scaled canvas -->
+<button type="button" id="party3dToggle" hidden aria-pressed="true" aria-label="Toggle live three-dimensional game view">3D VIEW: ON</button>
 <button type="button" id="partyBackLobby" aria-label="Return to lobby and end current game" hidden>⌂ Back to Lobby</button>
 <script>/*ENGINE*/</script>
 <script>/*MODES*/</script>
 <script>/*QR*/</script>
 <script>/*TV*/</script>
+<script type="module" src="assets/js/party-3d.js"></script>
 </body>
 </html>
