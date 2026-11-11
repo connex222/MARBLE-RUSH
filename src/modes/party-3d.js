@@ -49,9 +49,9 @@ function performanceFallback(){
 function trackFrameTime(dt,now){
  if(document.visibilityState==='hidden'||!Number.isFinite(dt))return;
  frameRate=frameRate*.88+(1000/Math.max(1,dt))*.12;
+ root.dataset.fps=String(Math.max(1,Math.min(120,Math.round(frameRate))));
  // The first seconds of a new scene compile shaders and upload artwork.
  if(now-stageStartedAt<1800)return;
- root.dataset.fps=String(Math.max(1,Math.min(120,Math.round(frameRate))));
  if(dt>90){slowFrames+=3;fastFrames=0;}
  else if(dt>43){slowFrames++;fastFrames=0;}
  else if(dt<38){fastFrames++;slowFrames=Math.max(0,slowFrames-2);}
