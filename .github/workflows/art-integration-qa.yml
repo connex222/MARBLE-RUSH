@@ -49,6 +49,8 @@ jobs:
         run: npm run build
       - name: Audit all seven theme packs and real compiled files
         run: node tools/audit-art.js
+      - name: Phase 4 release candidate gate (200 assets, five audio, TV and phone)
+        run: node tools/test-phase4-release.js
       - name: Smoke-test HTTP and generated assets without deploying
         run: |
           set -e
