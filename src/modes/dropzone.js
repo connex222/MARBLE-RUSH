@@ -179,7 +179,7 @@ if(typeof module!=='undefined')module.exports=DropZone;
 let dropZoneGame=null;
 registerMode({
   id:'dropzone',name:'Drop Zone',tagline:'Drop, bounce, bank it',icon:'🎯',
-  minPlayers:1,maxPlayers:8,roundsDefault:5,available:false,awards:[],
+  minPlayers:1,maxPlayers:8,roundsDefault:5,available:true,awards:[],
   setup({players,seed,onFinish}) {
     dropZoneGame=DropZone.create([...players.values()],seed,onFinish);
     return dropZoneGame;
