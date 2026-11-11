@@ -130,6 +130,17 @@ function fontCss(names) {
   let tvHtml = fs.readFileSync(path.join(SRC, 'tv.html'), 'utf8');
   tvHtml = tvHtml.replace('/*FONTS*/', () => fonts).replace('/*ENGINE*/', () => safe(engine)).replace('/*MODES*/', () => safe(modes)).replace('/*QR*/', () => safe(qr)).replace('/*TV*/', () => safe(tv));
   fs.writeFileSync(path.join(PUB, 'tv.html'), tvHtml);
+  // True-3D prototype uses a local, version-pinned Three.js module.
+  // No CDN calls in a game-night session. Standalone assets do not change
+  // the existing 2D fallback or physics.
+  const vendor=path.join(PUB,'assets','vendor'),js=path.join(PUB,'assets','js');
+  fs.mkdirSync(vendor,{recursive:true});fs.mkdirSync(js,{recursive:true});
+  for(const f of ['three.core.js','three.module.js']){
+    const from=path.join(ROOT,'node_modules','three','build',f);
+    if(!fs.existsSync(from))throw Error('Three.js module missing: '+f+' (run npm install)');
+    fs.copyFileSync(from,path.join(vendor,f));
+  }
+  fs.copyFileSync(path.join(SRC,'modes','party-3d.js'),path.join(js,'party-3d.js'));
   let play = fs.readFileSync(path.join(SRC, 'play.html'), 'utf8');
   play = play.replace('/*FONTS*/', () => fonts);
   fs.writeFileSync(path.join(PUB, 'play.html'), play);
