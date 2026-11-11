@@ -110,6 +110,30 @@ const MarbleBrawlUI=(()=>{
     ring(c,0,0,R-1,'#101e38',8);
     ring(c,0,0,activeR,progress>.55?'#ff6872':'#6dece4',6,true);
     ring(c,0,0,activeR+10,progress>.55?'rgba(255,88,99,.18)':'rgba(123,250,228,.12)',15);
+    // Telegraph the centre-origin shockwave, then show the actual blast ring
+    // racing outwards. Nothing here alters the physical collision model.
+    const pulseIn=s.pulseAt==null?Infinity:s.pulseAt-s.elapsed;
+    const warn=clamp((3-pulseIn)/3,0,1);
+    if(warn>0&&pulseIn>=0){
+      c.save();c.rotate(t*.48);
+      ring(c,0,0,(68+warn*185)*SCALE,
+        pulseIn<1?'#ff647f':'#ffe3a2',5+warn*8,true);
+      for(let i=0;i<12;i++){
+        const a=TAU*i/12,r1=(R-18)*warn+48,r2=r1+26;
+        c.strokeStyle=pulseIn<1?'#fa5c71':'rgba(255,209,130,.60)';
+        c.lineWidth=5;c.beginPath();c.moveTo(Math.cos(a)*r1,Math.sin(a)*r1);
+        c.lineTo(Math.cos(a)*r2,Math.sin(a)*r2);c.stroke();
+      }
+      c.restore();
+    }
+    const sincePulse=s.time-s.lastPulseAt;
+    if(sincePulse>=0&&sincePulse<.90){
+      const wave=(30+sincePulse*480)*SCALE;
+      c.save();c.globalAlpha=1-sincePulse/.90;
+      ring(c,0,0,wave,'#fff7c8',20,true);
+      ring(c,0,0,wave+14,'#ff657e',9,true);
+      c.restore();
+    }
     const point=(x,y)=>[Number(x||0)*SCALE,Number(y||0)*SCALE];
     if(s.hazard==='bumpers'){
       const obstacles=[[125,60],[-110,-50]];
@@ -173,6 +197,12 @@ const MarbleBrawlUI=(()=>{
         c.lineTo(x,y);c.stroke();c.restore();
       }
       if(m.anchored>0){ring(c,x,y,34,'#b2f5df',5,true);}
+      const rimGap=s.radius-22-Math.hypot(m.x,m.y);
+      if(!m.recoverUsed&&rimGap<85&&rimGap>=0){
+        c.save();c.globalAlpha=clamp((85-rimGap)/70,.2,1);
+        ring(c,x,y,36,'#ff647c',5,true);c.restore();
+      }
+      if(m.ramWindow>0){ring(c,x,y,39,'#ffe6a3',7,true);}
       drawMarble(c,x,y,24,p.color,image,spin,false);
       // Direction arrow is an indication of real thrust heading, not a false HUD control.
       const hx=Math.cos(m.heading),hy=Math.sin(m.heading);
@@ -188,11 +218,13 @@ const MarbleBrawlUI=(()=>{
       for(const e of (s.events||[]).slice(-22)){
         const age=(Number(s.time)||0)-(Number(e.time)||0);
         if(age<0||age>1.1)continue;
-        if(!['hit','out','hazardImpact','ram','spectatorCheer'].includes(e.kind))continue;
+        if(!['hit','out','hazardImpact','ram','spectatorCheer','recover','knockout'].includes(e.kind))continue;
         const member=(s.marbles||[]).find(x=>x.id===e.id);
         const px=CX+(Number(e.x??member?.x)||0)*SCALE;
         const py=CY+(Number(e.y??member?.y)||0)*SCALE*.84;
-        const fx=e.kind==='out'?'pp_brawl_fx_ko':e.kind==='ram'?'pp_brawl_fx_impact':
+        const fx=e.kind==='out'||e.kind==='knockout'?'pp_brawl_fx_ko':
+          e.kind==='ram'?'pp_brawl_fx_impact':
+          e.kind==='recover'?'pp_brawl_fx_shockwave':
           e.kind==='spectatorCheer'?'pp_brawl_fx_victory':'pp_brawl_fx_shockwave';
         const image=assets?.[fx];
         art(c,image,px-115,py-115,230,230,(1-age/1.1)*.75);
@@ -229,6 +261,17 @@ const MarbleBrawlUI=(()=>{
     $('ppBrawlTime').textContent=Math.max(0,42-(Number(s.elapsed)||0)).toFixed(1)+'s';
     $('ppBrawlAlive').textContent=alive.length+' / '+players.length;
     $('ppBrawlRadius').textContent=Math.round(s.radius)+'';
+    const pulseIn=s.pulseAt==null?null:Math.max(0,s.pulseAt-s.elapsed);
+    const justPulsed=s.time-s.lastPulseAt<.8;
+    const shockBox=$('ppBrawlShockBox');
+    shockBox.classList.toggle('danger',pulseIn!=null&&pulseIn<=3);
+    shockBox.classList.toggle('blast',justPulsed);
+    $('ppBrawlShockLabel').textContent=justPulsed?'SHOCKWAVE! BRACE FOR IMPACT':
+      pulseIn==null?'NO MORE WARNINGS · LAST MARBLE WINS':
+      pulseIn<=3?'DANGER! SHOCKWAVE IN '+pulseIn.toFixed(1)+'s':
+      'SHOCKWAVE IN '+pulseIn.toFixed(1)+'s · ANCHOR TO BRACE';
+    $('ppBrawlShockBar').style.width=(pulseIn==null?'100':
+      (100*clamp((8-pulseIn)/8,0,1)).toFixed(1))+'%';
     const human=players.find(p=>!p.cpu&&get(p.id)?.alive);
     const m=human?get(human.id):null;
     $('ppBrawlPlayer').textContent=human?.name||'WATCH THE ACTION';
@@ -236,9 +279,34 @@ const MarbleBrawlUI=(()=>{
     $('ppBrawlEnergyFill').style.width=clamp(m?.energy||0,0,100)+'%';
     $('ppBrawlRam').disabled=!m||m.cooldown>0||m.energy<28;
     $('ppBrawlAnchor').disabled=!m||m.cooldown>0||m.energy<15;
+    const gap=m?s.radius-22-Math.hypot(m.x,m.y):Infinity;
+    const canRecover=!!m&&!m.recoverUsed&&m.cooldown<=0&&
+      m.energy>=35&&gap>=0&&gap<=85;
+    $('ppBrawlRecover').disabled=!canRecover;
+    $('ppBrawlRecover').textContent=m?.recoverUsed?'LIFELINE USED':
+      canRecover?'↩ SAVE YOUR MARBLE!':'↩ EDGE RECOVERY · 35';
     $('ppBrawlLeft').disabled=!m;$('ppBrawlRight').disabled=!m;
-    $('ppBrawlHelp').textContent=m?'TURN to steer · RAM costs 28 · ANCHOR costs 15':
-      'All human marbles are eliminated. Watch the remaining racers.';
+    $('ppBrawlHelp').textContent=m?
+      canRecover?'CRITICAL EDGE! Hit RECOVER before you fall!':
+      pulseIn!=null&&pulseIn<=3?'SHOCKWAVE! Use ANCHOR to brace, or risk being thrown out.':
+      m.recoverUsed?'No recovery remaining · RAM opponents for KO points.':
+      'RAM for +3 knockout points (+5 final) · RECOVER once near the rim.':
+      'You are out. Watch the final duel and prepare for your next round.';
+    const recent=(s.events||[]).slice().reverse().find(e=>
+      (e.kind==='knockout'||e.kind==='recover')&&
+      s.time-(Number(e.time)||0)<5&&e.round===s.round);
+    if(recent){
+      const shooter=players.find(p=>p.id===recent.id);
+      const victim=players.find(p=>p.id===recent.victim);
+      $('ppBrawlKillFeed').textContent=recent.kind==='knockout'?
+        (shooter?.name||'A marble')+' KNOCKED OUT '+(victim?.name||'A RIVAL')+
+        ' · +'+recent.bonus+' BONUS!':
+        (shooter?.name||'A marble')+' SURVIVED THE EDGE!';
+    }else{
+      $('ppBrawlKillFeed').textContent=alive.length===2?
+        'FINAL DUEL · ONE SURVIVOR TAKES THE ROUND':
+        'CHARGE YOUR RAM · KNOCK OUT RIVALS FOR BONUS POINTS';
+    }
     const ranking=players.slice().sort((a,b)=>b.points-a.points||b.wins-a.wins||a.name.localeCompare(b.name));
     const sig=ranking.map(p=>p.id+':'+p.points+':'+!!get(p.id)?.alive).join('|')+'|'+s.round;
     if(sig!==rankSignature){
@@ -260,6 +328,15 @@ const MarbleBrawlUI=(()=>{
     const c=ctx();if(!c||!s||!Array.isArray(s.marbles))return false;
     c.save();c.setTransform(1,0,0,1,0,0);
     arenaBack(c,assets,Number(s.time)||0);
+    // Cinematic camera punches (render-only, reduced-motion compliant).
+    const sincePulse=s.time-s.lastPulseAt;
+    const lateDuel=s.marbles.filter(m=>m.alive).length===2;
+    const punch=!opts.reduce&&sincePulse>=0&&sincePulse<.65?
+      .052*(1-sincePulse/.65):0;
+    const zoom=1+(lateDuel?.045:0)+punch;
+    const jitter=!opts.reduce&&punch>0?Math.sin(s.time*97)*punch*73:0;
+    c.translate(CX+jitter,CY-jitter*.4);
+    c.scale(zoom,zoom);c.translate(-CX,-CY);
     bowl(c,assets,s,Number(s.time)||0,!!opts.reduce);
     endOverlay(c,s,assets);
     c.restore();
