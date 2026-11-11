@@ -316,6 +316,98 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #partyStage[data-mode="dropzone"] #ppDropStandings[hidden],
 #partyStage[data-mode="dropzone"] #ppDropPanel[hidden]{display:none}
 
+
+/* BOWL BRAWL UI V2 — theatrical elimination arena, isolated TV composition. */
+#partyStage[data-mode="brawl"]{background:#170e29}
+#ppBrawlHeader{position:absolute;top:calc(42*var(--u));left:calc(56*var(--u));
+ max-width:calc(900*var(--u))}
+#ppBrawlHeader .ppKicker{color:#ffba9b}
+#ppBrawlHeader h1{margin:calc(8*var(--u)) 0 calc(9*var(--u));
+ font:900 calc(93*var(--u)) Fredoka,sans-serif;line-height:.9;color:#fff1d6;
+ -webkit-text-stroke:calc(2.5*var(--u)) #f8a35c;
+ text-shadow:0 calc(8*var(--u)) calc(6*var(--u)) #271635,
+ 0 0 calc(34*var(--u)) #f7657448}
+#ppBrawlHeader .ppBrawlRound{display:flex;align-items:center;gap:calc(10*var(--u));
+ font:900 calc(22*var(--u)) Nunito,sans-serif}
+#ppBrawlRound{border-radius:calc(14*var(--u));padding:calc(7*var(--u)) calc(16*var(--u));
+ color:#ffddad;border:calc(2*var(--u)) solid #ffcc9f;
+ background:#2b253eec}
+#ppBrawlPhase{border-radius:calc(14*var(--u));padding:calc(7*var(--u)) calc(16*var(--u));
+ color:#bcfff0;border:calc(2*var(--u)) solid #6be4d2;
+ background:#194e5bec}
+#ppBrawlStats{position:absolute;top:calc(76*var(--u));right:calc(65*var(--u));
+ display:flex;align-items:center;gap:calc(13*var(--u));
+ font:900 calc(23*var(--u)) Nunito,sans-serif;color:#ffe1a4;
+ text-shadow:0 3px 6px #000b}
+#ppBrawlStats strong{font:900 calc(40*var(--u)) Fredoka,sans-serif;color:#fff6d8}
+#ppBrawlStats>div{border:calc(2*var(--u)) solid #f5bd9c;border-radius:calc(20*var(--u));
+ padding:calc(8*var(--u)) calc(16*var(--u));min-width:calc(155*var(--u));
+ background:linear-gradient(135deg,#40273fe8,#19233fe8);
+ display:flex;flex-direction:column;gap:calc(4*var(--u));text-align:center}
+#ppBrawlPanel{position:absolute;left:calc(50*var(--u));top:calc(293*var(--u));
+ width:calc(329*var(--u));min-height:calc(578*var(--u));
+ padding:calc(23*var(--u));border:calc(3*var(--u)) solid #ffe0aa;
+ border-radius:calc(33*var(--u));background:linear-gradient(155deg,#41253fec,#1b2c47f2 57%,#152337f2);
+ box-shadow:0 calc(19*var(--u)) calc(48*var(--u)) #0009}
+#ppBrawlPanel>small{display:block;font:900 calc(19*var(--u)) Nunito,sans-serif;
+ letter-spacing:.07em;color:#c4fff0;margin-bottom:calc(12*var(--u))}
+#ppBrawlPlayer{font:900 calc(39*var(--u)) Fredoka,sans-serif;color:#fff4d7;
+ word-break:break-word;display:block;line-height:1.03}
+#ppBrawlPanel .ppBrawlDivider{height:calc(2*var(--u));background:#ffddaa5f;
+ margin:calc(18*var(--u)) 0}
+.ppBrawlEnergyHead{display:flex;align-items:center;justify-content:space-between;
+ font:900 calc(23*var(--u)) Nunito,sans-serif;color:#ffdda1}
+.ppBrawlEnergyTrack{height:calc(19*var(--u));border-radius:999px;
+ background:#101b33;border:2px solid #ffe3b18c;overflow:hidden;
+ margin:calc(10*var(--u)) 0 calc(25*var(--u))}
+#ppBrawlEnergyFill{display:block;width:75%;height:100%;
+ background:linear-gradient(90deg,#63e8b4,#b5ffb2,#ffe28e);
+ transition:width .15s}
+.ppBrawlActions{display:grid;grid-template-columns:1fr 1fr;gap:calc(11*var(--u));
+ pointer-events:auto}
+.ppBrawlActions button{min-height:calc(68*var(--u));padding:calc(10*var(--u)) calc(5*var(--u));
+ border:calc(2*var(--u)) solid #9becdf;border-radius:calc(16*var(--u));
+ background:linear-gradient(150deg,#255c6e,#192943);color:#fff4de;
+ font:900 calc(21*var(--u)) Nunito,sans-serif;
+ box-shadow:0 calc(5*var(--u)) 0 #091528;cursor:pointer}
+.ppBrawlActions #ppBrawlRam{grid-column:span 2;
+ background:linear-gradient(160deg,#ffe2a5,#ed9b5b 63%,#c85c55);
+ color:#2c2139;font:900 calc(37*var(--u)) Fredoka,sans-serif;
+ min-height:calc(96*var(--u));border-color:#fff5da;
+ box-shadow:0 calc(7*var(--u)) 0 #813e45}
+.ppBrawlActions #ppBrawlAnchor{grid-column:span 2;
+ background:linear-gradient(145deg,#4b6385,#26395f);
+ border-color:#d3d6fc}
+.ppBrawlActions button:disabled{opacity:.47;cursor:default;filter:saturate(.4);box-shadow:none}
+.ppBrawlActions button:focus-visible{outline:calc(4*var(--u)) solid #fff;outline-offset:calc(4*var(--u))}
+#ppBrawlHelp{margin-top:calc(18*var(--u));font:800 calc(17*var(--u)) Nunito,sans-serif;
+ line-height:1.35;color:#d8f4f0}
+#ppBrawlStandings{position:absolute;top:calc(265*var(--u));right:calc(51*var(--u));
+ width:calc(371*var(--u));min-height:calc(620*var(--u));padding:calc(20*var(--u));
+ border:calc(3*var(--u)) solid #ffd69a;border-radius:calc(33*var(--u));
+ background:linear-gradient(150deg,#34223def,#162945ee);
+ box-shadow:0 calc(16*var(--u)) calc(48*var(--u)) #000a}
+#ppBrawlStandings h2{font:900 calc(32*var(--u)) Fredoka,sans-serif;
+ color:#ffdaa0;margin:0;padding-bottom:calc(13*var(--u));
+ border-bottom:2px solid #ffd68d69}
+#ppBrawlRankRows{display:grid;gap:calc(10*var(--u));margin-top:calc(18*var(--u))}
+.ppBrawlRank{display:flex;align-items:center;gap:calc(10*var(--u));
+ min-height:calc(47*var(--u));padding:calc(6*var(--u)) calc(9*var(--u));
+ border-radius:calc(12*var(--u));border-left:calc(5*var(--u)) solid var(--brawl);
+ background:#3d435e91;font:900 calc(19*var(--u)) Nunito,sans-serif}
+.ppBrawlRank>b{color:#ffe0a3;min-width:calc(23*var(--u))}
+.ppBrawlRank>i{width:calc(19*var(--u));height:calc(19*var(--u));border-radius:50%;
+ flex-shrink:0;background:radial-gradient(circle at 24% 21%,white,var(--brawl) 50%,#121d31)}
+.ppBrawlRank>strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppBrawlRank>span{color:#ffe1aa;white-space:nowrap}
+.ppBrawlRank.out{opacity:.46;background:#101d2cbf;text-decoration:line-through}
+.ppBrawlArenaNote{margin-top:calc(21*var(--u));display:grid;grid-template-columns:1fr auto;
+ border-top:2px solid #ffdd9c61;padding-top:calc(19*var(--u));
+ gap:calc(10*var(--u));font:900 calc(21*var(--u)) Nunito,sans-serif}
+.ppBrawlArenaNote strong{color:#fff2b7}
+.ppBrawlWarning{margin-top:calc(15*var(--u));font:800 calc(16*var(--u)) Nunito,sans-serif;
+ color:#d9faf0;line-height:1.35}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -595,6 +687,41 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
           <span>DROPS PLAYED</span><strong id="ppDropCount">1 / 5</strong>
         </div>
         <p class="ppDropWarning">Gold pegs can double a prize. All scores are game points.</p>
+      </aside>
+
+      <!-- Bowl Brawl — genuinely new arena TV presentation. The old canvas and
+           controls are deleted, NOT layered behind this UI. -->
+      <header id="ppBrawlHeader" hidden>
+        <div class="ppKicker">MARBLE RUSH PRESENTS · THE ELIMINATION ARENA</div>
+        <h1>BOWL BRAWL</h1>
+        <div class="ppBrawlRound"><span id="ppBrawlRound">ROUND 1 / 5</span>
+          <span id="ppBrawlPhase">BUMPER BLITZ</span></div>
+      </header>
+      <div id="ppBrawlStats" hidden>
+        <div><span>ROUND CLOCK</span><strong id="ppBrawlTime">42.0s</strong></div>
+        <div><span>STILL IN</span><strong id="ppBrawlAlive">2 / 2</strong></div>
+      </div>
+      <aside id="ppBrawlPanel" aria-label="Bowl Brawl controls" hidden>
+        <small>YOUR MARBLE · COMBAT STATION</small>
+        <strong id="ppBrawlPlayer">WATCH THE ACTION</strong>
+        <div class="ppBrawlDivider"></div>
+        <div class="ppBrawlEnergyHead"><span>RAM ENERGY</span><strong id="ppBrawlEnergy">75%</strong></div>
+        <div class="ppBrawlEnergyTrack"><span id="ppBrawlEnergyFill"></span></div>
+        <div class="ppBrawlActions">
+          <button id="ppBrawlLeft" type="button">◀ TURN</button>
+          <button id="ppBrawlRight" type="button">TURN ▶</button>
+          <button id="ppBrawlRam" type="button">RAM!</button>
+          <button id="ppBrawlAnchor" type="button">⚓ ANCHOR</button>
+        </div>
+        <p id="ppBrawlHelp">TURN to steer · RAM costs 28 · ANCHOR costs 15</p>
+      </aside>
+      <aside id="ppBrawlStandings" aria-label="Bowl Brawl live standings" hidden>
+        <h2>BRAWL LEADERBOARD</h2>
+        <div id="ppBrawlRankRows"></div>
+        <div class="ppBrawlArenaNote">
+          <span>ARENA RADIUS</span><strong><span id="ppBrawlRadius">380</span> M</strong>
+        </div>
+        <p class="ppBrawlWarning">Knock marbles out. The arena shrinks every round. All points are game points.</p>
       </aside>
       <div id="ppWorkInProgress" hidden aria-live="polite">
         <div class="ppKicker">PARTY PACK · UI REBUILD v2</div>
