@@ -143,7 +143,7 @@ const BowlBrawl = (() => {
       });
       state.lastWinner=order[0]?.id;
       state.roundHistory.push(rank);
-      state.events.push({kind:'round_end',winner:state.lastWinner,round:state.round});
+      state.events.push({kind:'round_end',winner:state.lastWinner,round:state.round,time:state.time});
       if(state.round>=ROUNDS){
         state.done=true;
         if(!state.finishedCalled){state.finishedCalled=true;onFinish(standings());}
