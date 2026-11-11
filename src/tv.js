@@ -1884,6 +1884,12 @@
     Audio_.setRoll(0,0);
     for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== name;
     $('#raceHud').hidden = !(name === 'race');
+    // Phase 3 presentation lives only in the five added modes.
+    // Grand Prix gameplay, tracks, camera and results are untouched.
+    if (typeof PartyPresentation !== 'undefined' &&
+        ['derby','dropzone','brawl','curling','golf'].includes(name)) {
+      PartyPresentation.enter(name,settings.reduce);
+    }
     // This is host-only TV navigation and remains available during all modes.
     const lobbyBtn=$('#partyBackLobby');
     lobbyBtn.hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
@@ -2092,6 +2098,12 @@
     $('#champName').textContent = champ ? champ.name : '';
     $('#champName').style.color = champ ? champ.color : '';
     const box = $('#awardRows'); box.innerHTML = '';
+    if(typeof PartyPresentation !== 'undefined'){
+      const root=$('[data-screen="finale"]');
+      if(['derby','dropzone','brawl','curling','golf'].includes(selectedMode))
+        PartyPresentation.applyFinale(root,selectedMode,list,settings.reduce);
+      else PartyPresentation.clear(root);
+    }
     for (const p of list) {
       const row = document.createElement('div'); row.className = 'arow'; row.style.setProperty('--pc', p.color);
       row.innerHTML = `<img alt="" src="${shapeImg(p.shape, p.color)}"><span class="aname"></span><span class="aaward"></span><span class="apts">${p.points} pts</span>`;
