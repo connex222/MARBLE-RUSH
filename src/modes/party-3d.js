@@ -328,6 +328,7 @@ function frame(time){
  const mr=window.__MR,mode=mr?.state;
  const active=enabled&&!unsupported&&supported.includes(mode);
  root.hidden=!active;toggle.hidden=!supported.includes(mode)||unsupported;
+ if(!active){delete root.dataset.rendered;delete root.dataset.mode;}
  toggle.setAttribute('aria-pressed',String(enabled));
  toggle.textContent=enabled?'3D VIEW: ON':'3D VIEW: OFF';
  if(!active){if(worldMode){clean();worldMode='';}return;}
@@ -351,6 +352,8 @@ function frame(time){
  try{
    update(mode,s);
    renderer.render(scene,camera);
+   root.dataset.rendered='true';
+   root.dataset.mode=mode;
    const cw=root.clientWidth,ch=root.clientHeight;
    for(const it of ballMap.values()){
      const v=it.sphere.position.clone();v.y+=55;v.project(camera);
