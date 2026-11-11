@@ -1994,7 +1994,7 @@
     }
     applyPartyArt();
     $('#partyModeStatus').textContent = partyLength ? 'Party Night preview: '+partyLength+' rounds · ready modes repeat' :
-      'UI REBUILD v2 · Grand Prix, Derby, Drop Zone and Brawl ready · two modes rebuilding';
+      'UI REBUILD v2 · Grand Prix, Derby, Drop Zone, Brawl and Curling ready · Golf rebuilding';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -2192,8 +2192,15 @@
       Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
-    // Curling and Golf are still gated until their own replacement views exist.
-    if (['curling','golf'].includes(state)) {
+    if (state==='curling') {
+      stateT+=dt;MODES.curling.tick(dt);
+      const ice=MODES.curling.session();
+      if(ice)MarbleCurlingUI.draw(ice.state,IMG,{reduce:settings.reduce});
+      Clatter.tick();
+      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
+    }
+    // Golf is the final retired view and cannot be selected until rebuilt.
+    if (state==='golf') {
       stateT+=dt;MODES[state].tick(dt);
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
@@ -2370,6 +2377,23 @@
       const g=MODES.brawl.session();
       const p=g?.state.roster.find(x=>!x.cpu&&g.current(x.id)?.alive);
       if(p)Game.onAction(p.id,action,action==='left'||action==='right'?2:0);
+    };
+  }
+  // Curling v2 TV controls use the same authorised actions as connected phones.
+  // The current player is read from the unchanged deterministic turn engine.
+  for(const [id,action,value] of [
+    ['ppCurlLeft','left',2],['ppCurlRight','right',2],
+    ['ppCurlPowerDown','powerdown',0],['ppCurlPowerUp','powerup',0],
+    ['ppCurlLeftSpin','curlleft',0],['ppCurlRightSpin','curlright',0],
+    ['ppCurlThrow','throw',0],['ppCurlSweepBtn','sweep',0]
+  ]){
+    $('#'+id).onclick=()=>{
+      const g=MODES.curling.session();
+      if(!g)return;
+      const p=(g.state.phase==='slide'&&g.state.moving)
+        ?g.state.roster.find(q=>q.id===g.state.moving.id)
+        :g.current();
+      if(p&&!p.cpu)Game.onAction(p.id,action,value);
     };
   }
   for (const b of document.querySelectorAll('[data-party]')) {
