@@ -11,6 +11,7 @@ const {chromium}=require('playwright');
  const [tv,p1,p2]=await Promise.all(contexts.map(c=>c.newPage()));
  const errs=[];for(const p of [tv,p1,p2])p.on('pageerror',e=>errs.push(e.message));
  const actions=new Map([[p1,[]],[p2,[]]]);
+ const e2eLatency=[];
  for(const p of [p1,p2])p.on('websocket',ws=>{
   if(!ws.url().includes('/ws'))return;
   ws.on('framesent',f=>{try{actions.get(p).push(JSON.parse(f.payload));}catch(e){}});
@@ -37,7 +38,10 @@ const {chromium}=require('playwright');
   await tv.locator('#partyStage').waitFor({state:'visible',timeout:10000});
   await p1.waitForFunction(()=>document.body.dataset.mode==='derby',{timeout:8000});
   await p2.waitForFunction(()=>document.body.dataset.mode==='derby',{timeout:8000});
+  let inputAt=Date.now();
   await p1.locator('#modeActions button').filter({hasText:'Rocket'}).click();
+  await tv.waitForFunction(()=>window.__MR.MODES.derby.session()?.state.wagers.size>=1,{timeout:10000});
+  e2eLatency.push({mode:'derby',action:'bet',ms:Date.now()-inputAt});
   await p2.locator('#modeActions button').filter({hasText:'Comet'}).click();
   await tv.waitForFunction(()=>window.__MR.MODES.derby.session()?.state.wagers.size===2,{timeout:10000});
   const wagers=await tv.evaluate(()=>{
@@ -70,8 +74,10 @@ const {chromium}=require('playwright');
   await p1.locator('#modeActions button[data-action="left"]').click();
   await tv.waitForFunction(x=>window.__MR.MODES.dropzone.session().state.x<x,before,{timeout:8000});
   // User controls travel through the original authenticated phone channel.
+  inputAt=Date.now();
   await p1.locator('#modeActions button[data-action="drop"]').click();
   await tv.waitForFunction(()=>!!window.__MR.MODES.dropzone.session().state.ball,{timeout:8000});
+  e2eLatency.push({mode:'dropzone',action:'drop',ms:Date.now()-inputAt});
   await p2.waitForFunction(()=>document.body.dataset.dropPhase==='falling',{timeout:8000});
   await p2.locator('#dropGuide').waitFor({state:'visible',timeout:8000});
   const predictions=p2.locator('#modeActions button[data-action="predict"]');
@@ -105,8 +111,10 @@ const {chromium}=require('playwright');
     document.body.dataset.s==='brawl',{timeout:10000});
   await p2.waitForFunction(()=>document.body.dataset.mode==='brawl',{timeout:10000});
   const e0=await tv.evaluate(()=>window.__MR.MODES.brawl.session().state.marbles.map(m=>m.energy));
+  inputAt=Date.now();
   await p1.locator('#modeActions button[data-action="ram"]').click();
   await tv.waitForFunction(()=>window.__MR.MODES.brawl.session().state.events.some(e=>e.kind==='ram'),{timeout:8000});
+  e2eLatency.push({mode:'brawl',action:'ram',ms:Date.now()-inputAt});
   await p2.locator('#modeActions button[data-action="anchor"]').click();
   await tv.waitForFunction(()=>window.__MR.MODES.brawl.session().state.events.some(e=>e.kind==='anchor'),{timeout:8000});
   const brawl=await tv.evaluate(()=>{
@@ -169,8 +177,10 @@ const {chromium}=require('playwright');
   await p1.screenshot({path:'qa-ui-v2-curling-phone-aim.png'});
   await p1.locator('#modeActions button[data-action="right"]').click();
   await tv.waitForFunction(()=>window.__MR.MODES.curling.session().state.aim>0,{timeout:8000});
+  inputAt=Date.now();
   await p1.locator('#modeActions button[data-action="throw"]').click();
   await tv.waitForFunction(()=>window.__MR.MODES.curling.session().state.phase==='slide',{timeout:8000});
+  e2eLatency.push({mode:'curling',action:'throw',ms:Date.now()-inputAt});
   await p1.locator('#modeActions button[data-action="sweep"]').click();
   await tv.waitForFunction(()=>window.__MR.MODES.curling.session().state.events.some(e=>e.kind==='sweep'),{timeout:8000});
   await p2.locator('#modeActions button[data-action="predict"]').first().click();
@@ -209,8 +219,10 @@ const {chromium}=require('playwright');
   await p1.locator('#modeActions button[data-action="preview"]').click();
   await tv.waitForFunction(()=>!!window.__MR.MODES.golf.session().state.ghost);
   await p1.screenshot({path:'qa-ui-v2-golf-phone-aim.png'});
+  inputAt=Date.now();
   await p1.locator('#modeActions button[data-action="shoot"]').click();
   await tv.waitForFunction(()=>window.__MR.MODES.golf.session().state.phase==='rolling');
+  e2eLatency.push({mode:'golf',action:'shoot',ms:Date.now()-inputAt});
   await p2.waitForFunction(()=>document.querySelector('#modeActions button[data-action="cheer"]'));
   await p2.locator('#modeActions button[data-action="cheer"]').click();
   await tv.waitForFunction(()=>window.__MR.MODES.golf.session().state.events.some(e=>e.kind==='spectatorCheer'));
@@ -237,6 +249,13 @@ const {chromium}=require('playwright');
   await p2.screenshot({path:'qa-ui-v2-golf-phone-spectator.png'});
   assert.deepEqual(errs,[],'Browser JS errors in Golf multiplayer');
   console.log('PASS: two phones successfully aim, power, preview, putt and cheer in new Golf UI.');
+  assert.equal(e2eLatency.length,5,'Must record one real phone→TV action for every mode');
+  const ordered=e2eLatency.map(v=>v.ms).sort((a,b)=>a-b);
+  console.log('HEADLESS-WEBSOCKET-LATENCY '+JSON.stringify({
+    samples:e2eLatency,medianMs:ordered[2],p95Ms:ordered[4],
+    measurement:'Playwright phone tap through WebSocket to authoritative TV state; browser CI, not physical Wi-Fi'
+  }));
+  assert.deepEqual(errs,[],'Phone/TV session JS errors: '+errs.join(' | '));
 
 
 
