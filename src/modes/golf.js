@@ -221,12 +221,12 @@ const MarbleGolf = (() => {
         roundScore:p.strokes,modePhase:state.phase,isTurn:yourTurn,
         power:state.power,aim:state.angle,strokes:state.strokes,ghost:state.ghost,
         obstacle:state.layout.moving||null,
-        modeHint:yourTurn?'Aim, set power, and SHOOT!':state.phase==='rolling'?'Marble rolling…':'Wait for your turn',
+        modeHint:yourTurn?'Aim, set power, then PUTT!':state.phase==='rolling'?'Marble rolling…':'Wait for your turn',
         modeControls:!yourTurn&&current()?.id!==id&&!state.comments.has(id)?
           [{a:'cheer',label:'CHEER!',v:0}]:yourTurn?[
           {a:'left',label:'◀ AIM',v:1},{a:'right',label:'AIM ▶',v:1},
           {a:'powerdown',label:'− POWER',v:0},{a:'powerup',label:'+ POWER',v:0},
-          {a:'preview',label:'TRAJECTORY',v:0},{a:'shoot',label:'SHOOT!',v:0}]:[],
+          {a:'preview',label:'SHOT GUIDE',v:0},{a:'shoot',label:'PUTT!',v:0}]:[],
         hole:state.hole,holes:state.holes,par:state.layout.par,activePlayer:current()?.name||''};
     }
     function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
