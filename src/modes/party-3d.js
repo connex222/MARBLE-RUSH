@@ -151,17 +151,17 @@ function addBackdrop(mode) {
    const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=576;
    const ctx=canvas.getContext('2d');
    if(!ctx){mat.map=t;t.colorSpace=T.SRGBColorSpace;mat.needsUpdate=true;return;}
-   ctx.filter='blur(6px)';
+   ctx.filter='blur(3px)';
    ctx.drawImage(t.image,-15,-15,1054,606);
    ctx.filter='none';
-   ctx.save();ctx.beginPath();ctx.rect(0,210,1024,366);ctx.clip();
-   ctx.filter='blur(30px)';ctx.drawImage(t.image,-30,-32,1084,640);
+   ctx.save();ctx.beginPath();ctx.rect(0,275,1024,301);ctx.clip();
+   ctx.filter='blur(19px)';ctx.drawImage(t.image,-30,-32,1084,640);
    ctx.restore();ctx.filter='none';
-   const fade=ctx.createLinearGradient(0,170,0,576);
+   const fade=ctx.createLinearGradient(0,205,0,576);
    fade.addColorStop(0,'rgba(7,13,30,0)');
-   fade.addColorStop(.42,'rgba(8,13,29,.28)');
-   fade.addColorStop(.76,'rgba(8,13,29,.68)');
-   fade.addColorStop(1,'rgba(8,13,29,.86)');
+   fade.addColorStop(.42,'rgba(8,13,29,.12)');
+   fade.addColorStop(.76,'rgba(8,13,29,.42)');
+   fade.addColorStop(1,'rgba(8,13,29,.74)');
    ctx.fillStyle=fade;ctx.fillRect(0,160,1024,416);
    const texture=new T.CanvasTexture(canvas);
    texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=2;
@@ -262,11 +262,16 @@ function stageDressing(mode){
      a.castShadow=false;
    }
  } else if(mode==='golf'){
-   for(let x=-630;x<=630;x+=200){
-     const z=x%400===0?-355:355;
-     cylinder(14,74,'#9e7549',x,26,z,.13);
-     const tree=mesh(new T.ConeGeometry(54,115,9),material('#39875a',.08,.64),x,105,z);
-     tree.castShadow=false;
+   // Rounded miniature topiary stays BEHIND the putting surface.
+   // Earlier angular cones along the front edge obscured the marble path.
+   for(const [i,x] of [-590,-370,-150,210,440,615].entries()){
+     const z=-410-(i%3)*16;
+     cylinder(12,76,'#976d46',x,28,z,.09);
+     const canopy=mesh(new T.IcosahedronGeometry(44,2),
+       material(i%2?'#388f60':'#50a86a',.06,.62),x,97,z);
+     const crown=mesh(new T.IcosahedronGeometry(34,2),
+       material(i%2?'#61b67b':'#78c98e',.06,.53),x+10,133,z-2);
+     canopy.castShadow=false;crown.castShadow=false;
    }
    for(const z of [-320,320])box(1350,37,30,'#b99565',0,16,z,.24);
    // Show-scale windmill is scenery beside the course, never a fake obstacle.
@@ -347,7 +352,7 @@ function stage(mode,s) {
    face.receiveShadow=true;face.castShadow=false;
    for(let row=0;row<10;row++)for(let col=0;col<(row%2?8:9);col++){
      const x=(row%2?178:132)+92*col-500,y=350-(160+row*46);
-     const peg=mesh(new T.SphereGeometry(10,12,10),
+     const peg=mesh(new T.SphereGeometry(13,18,14),
        material(row%3===0?'#ffd777':'#d0eeff',.75,.17),x,y,24);
      peg.scale.z=1.25;
    }
@@ -362,6 +367,11 @@ function stage(mode,s) {
    const w=mode==='derby'?1370:mode==='curling'?1300:1240;
    const d=mode==='derby'?650:mode==='curling'?530:580;
    box(w+30,34,d+30,p[1],0,-24,0,.52);
+   // Layered miniature display plinth: the course now sits on a solid
+   // sculpted base instead of floating above a blurred poster.
+   box(w+115,25,d+115,mode==='curling'?'#759dba':'#4e3d45',0,-60,0,.36);
+   box(w+150,21,d+150,mode==='golf'?'#b98b59':'#2a3349',0,-82,0,.24);
+   box(w+163,6,d+163,p[1],0,-96,0,.65);
    const deck=box(w,16,d,p[0],0,-5,0,mode==='curling'?.29:.1);
    surfaceTexture(deck,mode,mode==='derby'?2.0:1.0,mode==='derby'?1.1:1.0);
    deck.material.roughness=mode==='curling'?.11:mode==='golf'?.82:.48;
