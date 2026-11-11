@@ -170,7 +170,7 @@ const DropZone = (() => {
         isTurn:turn||prediction,modePhase:s.done?'finished':s.ball?'falling':'aim',totalScore:p.score,
         ghostX:Math.round(s.x),goldPegs:s.gold.slice(),jackpotBin:s.jackpotBin,aimSeconds:Math.ceil(Math.max(0,10-s.turnElapsed))};
     }
-    return {state:s,owner,action,step,standings,hud,draw,finishBall};
+    return {state:s,owner,action,step,standings,hud,finishBall};
   }
   return Object.freeze({create,PEGS,BINS,ROUNDS,WIDTH,HEIGHT});
 })();
