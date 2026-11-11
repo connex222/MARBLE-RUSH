@@ -1,4 +1,4 @@
-name: Party Pack UI v2 — Derby, Drop Zone and Brawl QA
+name: Party Pack UI v2 — Derby, Drop Zone, Brawl and Curling QA
 on:
   push:
     branches:
@@ -12,6 +12,8 @@ on:
       - src/modes/dropzone.js
       - src/modes/brawl.js
       - src/modes/party-brawl-ui-v2.js
+      - src/modes/party-curling-ui-v2.js
+      - src/modes/curling.js
       - src/play.html
       - tools/party-ui-v2-*.js
       - tools/test-party-ui-v2.js
@@ -20,7 +22,7 @@ permissions:
   contents: read
 jobs:
   derby-ui-rebuild:
-    name: Verify fresh Derby, Drop Zone, Brawl and original Grand Prix
+    name: Verify four new Party Pack game screens and original Grand Prix
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -32,7 +34,7 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Validate every surviving rules engine and new UI source
         run: |
-          for f in src/tv.js src/modes/registry.js src/modes/party-ui-v2.js src/modes/party-brawl-ui-v2.js src/modes/derby.js src/modes/dropzone.js src/modes/brawl.js src/modes/curling.js src/modes/golf.js tools/build.js; do
+          for f in src/tv.js src/modes/registry.js src/modes/party-ui-v2.js src/modes/party-brawl-ui-v2.js src/modes/party-curling-ui-v2.js src/modes/derby.js src/modes/dropzone.js src/modes/brawl.js src/modes/curling.js src/modes/golf.js tools/build.js; do
             node --check "$f"
           done
           node tools/test-party-foundations.js
@@ -54,7 +56,7 @@ jobs:
           # Avoid apt-get --with-deps: the Ubuntu mirror intermittently fails DNS
           # and breaks game CI before any browser tests can execute.
           npx playwright install --only-shell chromium
-      - name: Verify three rebuilt TV modes and original Grand Prix in Chromium
+      - name: Verify four independent TV modes plus original Grand Prix in Chromium
         run: |
           set -e
           PORT=35993 node server/server.js >/tmp/mr-ui-v2-browser.log 2>&1 &
@@ -65,7 +67,7 @@ jobs:
             sleep 1
           done
           node tools/party-ui-v2-browser-smoke.js
-      - name: Verify two phones bet, drop, predict, RAM and ANCHOR over WebSockets
+      - name: Verify two phones bet, drop, fight, throw and sweep over WebSockets
         run: |
           set -e
           PORT=35993 node server/server.js >/tmp/mr-ui-v2-phones.log 2>&1 &
@@ -80,7 +82,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: marble-rush-party-ui-v2-three-mode-review
+          name: marble-rush-party-ui-v2-four-mode-review
           if-no-files-found: ignore
           path: |
             qa-ui-v2-*.png
