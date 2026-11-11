@@ -237,7 +237,7 @@ if(typeof module!=='undefined')module.exports=MarbleGolf;
 let marbleGolfGame=null;
 registerMode({
   id:'golf',name:'Marble Golf',tagline:'Nine crazy golf holes',icon:'⛳',
-  minPlayers:1,maxPlayers:8,roundsDefault:9,available:false,awards:[],
+  minPlayers:1,maxPlayers:8,roundsDefault:9,available:true,awards:[],
   setup({players,seed,onFinish,championship=true}){marbleGolfGame=MarbleGolf.create([...players.values()],seed,onFinish,{championship});return marbleGolfGame;},
   startRound(){return marbleGolfGame;},
   tick(dt){marbleGolfGame?.step(dt);},
