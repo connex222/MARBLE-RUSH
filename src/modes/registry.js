@@ -1,7 +1,9 @@
 /* MARBLE RUSH Party Pack mode registry — no DOM or network dependencies. */
 const MODES = Object.create(null);
 const PARTY_POINTS = Object.freeze([10,8,6,5,4,3,2,1]);
-const MODE_METHODS = ['setup','startRound','tick','draw','onInput','onAction','botTick','hud','standings','roundResults','finalResults'];
+// The rules registry must NEVER force a game to render. Only the exclusive
+// Party Pack screen host owns its TV canvas; Grand Prix retains its own draw path.
+const MODE_METHODS = ['setup','startRound','tick','onInput','onAction','botTick','hud','standings','roundResults','finalResults'];
 function registerMode(spec) {
   if (!spec || !/^[a-z]+$/.test(spec.id) || MODES[spec.id]) throw Error('Invalid or repeated mode id');
   if (!Number.isInteger(spec.minPlayers) || !Number.isInteger(spec.maxPlayers) || spec.minPlayers < 1 || spec.maxPlayers > 8 || spec.minPlayers > spec.maxPlayers) throw Error('Invalid player range');
