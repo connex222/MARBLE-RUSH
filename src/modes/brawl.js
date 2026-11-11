@@ -328,7 +328,7 @@ const BowlBrawl = (() => {
         timeRemaining:Math.max(0,Math.ceil(ROUND_TIME-state.elapsed))
       };
     }
-    return {state,current,action,tick,hud,draw,standings,alive,finishRound,rimRadius};
+    return {state,current,action,tick,hud,standings,alive,finishRound,rimRadius};
   }
   return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS,
     SHOCK_TIMES,SHOCK_WARNING,RECOVER_COST,RECOVER_MARGIN,KO_BONUS});
