@@ -122,6 +122,33 @@ const {chromium}=require('playwright');
     'First phone did not send Brawl RAM');
   assert.ok(actions.get(p2).some(m=>m.t==='act'&&m.a==='anchor'),
     'Second phone did not send Brawl ANCHOR');
+
+  // Real multiplayer recovery: the first phone must rescue its own marble.
+  const p1BrawlId=await tv.evaluate(()=>{
+    const g=window.__MR.MODES.brawl.session();
+    return g.state.events.find(e=>e.kind==='ram')?.id;
+  });
+  assert.ok(p1BrawlId);
+  await tv.evaluate(id=>{
+    const g=window.__MR.MODES.brawl.session(),m=g.current(id);
+    m.x=g.state.radius-22-46;m.y=0;m.vx=0;m.vy=0;m.heading=Math.PI;
+    m.energy=90;m.cooldown=0;m.recoverUsed=false;
+  },p1BrawlId);
+  await p1.waitForFunction(()=>!!document.querySelector('#modeActions button[data-action="recover"]'),
+    {timeout:8000});
+  await p1.screenshot({path:'qa-ui-v2-brawl-phone-edge-recover.png'});
+  await p1.locator('#modeActions button[data-action="recover"]').click();
+  await tv.waitForFunction(id=>window.__MR.MODES.brawl.session().state.events
+    .some(e=>e.kind==='recover'&&e.id===id),p1BrawlId,{timeout:8000});
+  const mAfter=await tv.evaluate(id=>{
+    const m=window.__MR.MODES.brawl.session().current(id);
+    return {energy:m.energy,used:m.recoverUsed,vx:m.vx};
+  },p1BrawlId);
+  assert.ok(mAfter.used&&mAfter.energy<65,
+    'Recover must cost 35 energy and consume one life-saving action');
+  assert.ok(actions.get(p1).some(m=>m.t==='act'&&m.a==='recover'),
+    'First phone did not transmit its authorised Brawl escape');
+
   assert.equal(await p1.locator('#padZone').isVisible(),false,
     'Old boost pad must be absent from Brawl interface');
   await tv.screenshot({path:'qa-ui-v2-brawl-two-phones-tv.png'});
