@@ -204,7 +204,7 @@ if(typeof module!=='undefined')module.exports=MarbleCurling;
 let marbleCurlingGame=null;
 registerMode({
  id:'curling',name:'Marble Curling',tagline:'Sweep to the button',icon:'🥌',
- minPlayers:2,maxPlayers:8,roundsDefault:5,available:false,awards:[],
+ minPlayers:2,maxPlayers:8,roundsDefault:5,available:true,awards:[],
  setup({players,seed,onFinish}){marbleCurlingGame=MarbleCurling.create([...players.values()],seed,onFinish);return marbleCurlingGame;},
  startRound(){return marbleCurlingGame;},
  tick(dt){marbleCurlingGame?.step(dt);},
