@@ -110,6 +110,11 @@ assert.equal(noCredit.state.events.some(e=>e.kind==='knockout'),false,
  'Falling off without a credited RAM must not award bonus points');
 assert.ok(!noCredit.state.roster[0].roundPoints[0] ||
   noCredit.state.roster[0].roundPoints[0]===10,'Free knockouts forbidden');
+const timedBrace=B.create(roster,18);
+timedBrace.state.elapsed=1.2;timedBrace.state.time=1.2;
+assert.equal(timedBrace.action('alpha','anchor'),true);
+assert.ok(timedBrace.current('alpha').anchored>2.8,
+  'ANCHOR during the warning must remain active until shock impact');
 const ledge=B.create(roster,22);
 const clinging=ledge.current('alpha');
 clinging.x=ledge.state.radius-22-1;
