@@ -1882,14 +1882,12 @@
     }
     if(name!=='lobby')Audio_.stopIntro();
     Audio_.setRoll(0,0);
-    for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== name;
+    const isPartyStage=['derby','dropzone','brawl','curling','golf'].includes(name);
+    const visibleScreen=isPartyStage?'party-stage':name;
+    for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== visibleScreen;
     $('#raceHud').hidden = !(name === 'race');
-    // Phase 3 presentation lives only in the five added modes.
-    // Grand Prix gameplay, tracks, camera and results are untouched.
-    if (typeof PartyPresentation !== 'undefined' &&
-        ['derby','dropzone','brawl','curling','golf'].includes(name)) {
-      PartyPresentation.enter(name,settings.reduce);
-    }
+    // A single new stage is exclusive: no legacy game canvas exists behind it.
+    if(isPartyStage)MarblePartyUI.enter(name);
     // This is host-only TV navigation and remains available during all modes.
     const lobbyBtn=$('#partyBackLobby');
     lobbyBtn.hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
@@ -1974,6 +1972,8 @@
       card.dataset.mode = mode.id;
       card.type = 'button';
       card.dataset.locked = String(!mode.available);
+      card.disabled=!mode.available;
+      card.setAttribute('aria-disabled', String(!mode.available));
       card.setAttribute('aria-pressed', String(mode.id === selectedMode));
       card.setAttribute('aria-label', mode.name + (mode.available ? '' : ', coming soon'));
       const icon = document.createElement('span'); icon.className = 'modeIcon'; icon.textContent = mode.icon;
@@ -1990,9 +1990,8 @@
       box.appendChild(card);
     }
     applyPartyArt();
-    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · eligible modes repeat' :
-      selectedMode === 'brawl' && players.size < 2 ? 'Bowl Brawl needs two or more racers' :
-      'All six Party Pack games playable · choose a mode or Party Night';
+    $('#partyModeStatus').textContent = partyLength ? 'Party Night preview: '+partyLength+' rounds · ready modes repeat' :
+      'UI REBUILD v2 · Grand Prix and new Derby ready · four modes under reconstruction';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -2169,48 +2168,17 @@
     } else if (attractMode && now >= attractUntil) {
       attractMode = null; $('#partyAttractPanel').hidden = true;
     }
-    if (state==='golf') {
-      stateT+=dt;MODES.golf.tick(dt);const canvas=$('#golfCanvas');
-      MODES.golf.draw(canvas.getContext('2d'),canvas.width,canvas.height);
-      {const active=MODES.golf.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'golf',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='curling') {
-      stateT+=dt;MODES.curling.tick(dt);const canvas=$('#curlingCanvas');
-      MODES.curling.draw(canvas.getContext('2d'),canvas.width,canvas.height);
-      {const active=MODES.curling.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'curling',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
     if (state==='derby') {
-      stateT+=dt;MODES.derby.tick(dt);const canvas=$('#derbyCanvas');
-      MODES.derby.draw(canvas.getContext('2d'),canvas.width,canvas.height);
-      {const active=MODES.derby.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'derby',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
+      stateT+=dt;MODES.derby.tick(dt);
       const derby=MODES.derby.session();
-      const local=derby.state.roster.find(p=>!p.cpu);
-      if(local){
-        $('#derbyRunner').textContent=derby.state.horses[derbyTvHorse].name+' ▶';
-        $('#derbyStake').textContent=local.stake+' gems';
-        $('#derbyPick').disabled=derby.state.phase!=='betting'||derby.state.wagers.has(local.id);
-        $('#derbyCheer').disabled=derby.state.phase!=='racing';
-      }
+      if(derby)MarblePartyUI.drawDerby(derby.state,IMG,{selectedHorse:derbyTvHorse,reduce:settings.reduce});
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
-    if (state==='brawl') {
-      stateT+=dt;MODES.brawl.tick(dt);
-      const canvas=$('#brawlCanvas');
-      MODES.brawl.draw(canvas.getContext('2d'),canvas.width,canvas.height);
-      {const active=MODES.brawl.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'brawl',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
+    // Other four engines are preserved but their withdrawn interfaces cannot
+    // be started until rebuilt; never silently render the old boards.
+    if (['dropzone','brawl','curling','golf'].includes(state)) {
+      stateT+=dt;MODES[state].tick(dt);
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='dropzone') {
-      stateT+=dt;
-      MODES.dropzone.tick(dt);
-      const dzCanvas=$('#dropZoneCanvas');
-      MODES.dropzone.draw(dzCanvas.getContext('2d'),dzCanvas.width,dzCanvas.height);
-      {const active=MODES.dropzone.session()?.state; if(active)PartyFX.draw(dzCanvas.getContext('2d'),'dropzone',active,active.elapsed??active.time??0,settings.reduce,dzCanvas.width,dzCanvas.height);}
-      hudAcc+=dt;
-      if(hudAcc>0.1){hudAcc=0;sendHud(false);}
-      return;
     }
     if (!world) { drawBackground(); return; }
     timeScale = performance.now() / 1000 < slowUntil ? 0.3 : 1;
@@ -2356,21 +2324,7 @@
     }
   });
   $('#btnStart').onclick = () => Game.onAction('tv', 'start');
-  for(const [id,action] of [['golfLeft','left'],['golfRight','right'],
-    ['golfDown','powerdown'],['golfUp','powerup'],['golfShoot','shoot']]) {
-    $('#'+id).onclick=()=>{
-      const g=MODES.golf.session(),p=g?.state.roster[g.state.turn];
-      if(p&&!p.cpu)Game.onAction(p.id,action,['left','right'].includes(action)?2:undefined);
-    };
-  }
-  for(const [id,action] of [['curlLeft','left'],['curlRight','right'],
-    ['curlDown','powerdown'],['curlUp','powerup'],['curlThrow','throw'],['curlSweep','sweep']]){
-    $('#'+id).onclick=()=>{const g=MODES.curling.session();
-      if(!g)return;
-      const p=action==='sweep'?g.state.moving?.id:g.current()?.id;
-      if(p)g.action(p,action,['left','right'].includes(action)?2:undefined);
-    };
-  }
+  // Retired the four old mode control bars along with their canvases.
   $('#derbyRunner').onclick=()=>{const g=MODES.derby.session();
     if(g?.state.phase==='betting')derbyTvHorse=(derbyTvHorse+1)%6;};
   $('#derbyStake').onclick=()=>{const g=MODES.derby.session();
@@ -2384,18 +2338,6 @@
   $('#derbyCheer').onclick=()=>{const g=MODES.derby.session();
     const p=g?.state.roster.find(x=>!x.cpu&&g.state.wagers.has(x.id));
     if(p)g.action(p.id,'cheer');};
-  for(const [id,action] of [['brawlLeft','left'],['brawlRight','right'],['brawlRam','ram'],['brawlAnchor','anchor']]){
-    $('#'+id).onclick=()=>{
-      const active=MODES.brawl.session()?.state.marbles.find(m=>m.alive);
-      if(active)MODES.brawl.onAction(active.id,action,['left','right'].includes(action)?2:undefined);
-    };
-  }
-  for (const [id,action] of [['dropLeft','left'],['dropRight','right'],['dropNow','drop']]) {
-    $(`#${id}`).onclick = () => {
-      const active=MODES.dropzone.session()?.owner();
-      if(active) MODES.dropzone.onAction(active.id,action,action==='drop'?undefined:2);
-    };
-  }
   for (const b of document.querySelectorAll('[data-party]')) {
     b.onclick = () => Game.onAction('tv', 'party', Number(b.dataset.party));
   }
