@@ -356,6 +356,30 @@ body[data-mode="dropzone"][data-s="dropzone"] #ringBg{stroke:#c8f9ed81}
  body[data-mode="dropzone"][data-s="dropzone"] #padZone{min-height:100px}
 }
 
+
+/* Rich spectator state fills the lower phone display after a marble launches. */
+body[data-mode="dropzone"][data-s="dropzone"] #dropGuide:not([hidden]){
+ flex:1;min-height:0;margin:11px 15px 24px;padding:15px;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:10px;text-align:center;overflow:hidden;
+ border:2px solid #f8d99d7c;border-radius:23px;
+ background:radial-gradient(circle at 50% 30%,rgba(31,158,168,.32),transparent 65%),
+   linear-gradient(180deg,#103449c9,#102038df);
+ box-shadow:inset 0 0 24px #31cbb316,0 15px 22px #0007
+}
+#dropGuide img{display:block;width:min(63vw,210px);height:min(28vh,230px);
+ object-fit:contain;filter:drop-shadow(0 10px 18px #000a)}
+#dropGuide strong{font:900 clamp(20px,6.5vw,27px) Fredoka,sans-serif;
+ color:#ffe2a0;text-shadow:0 3px 5px #000a;line-height:1.15}
+#dropGuide p{font:800 14px Nunito,sans-serif;color:#ccf9ef;line-height:1.32;
+ max-width:290px}
+@media(max-height:680px){
+ body[data-mode="dropzone"][data-s="dropzone"] #dropGuide:not([hidden]){
+  gap:4px;padding:7px;margin:4px 10px 8px
+ }
+ #dropGuide img{height:min(20vh,135px)}
+}
+
 </style>
 </head>
 <body>
@@ -389,6 +413,11 @@ body[data-mode="dropzone"][data-s="dropzone"] #ringBg{stroke:#c8f9ed81}
     <div id="modeReadout"></div>
     <div id="modeActions"></div>
   </section>
+  <aside id="dropGuide" hidden aria-label="Drop Zone spectator display">
+    <img src="assets/img/pp_dropzone_prop_gold_bucket.webp" alt="" loading="lazy">
+    <strong id="dropGuideTitle">WATCH THE JACKPOT</strong>
+    <p id="dropGuideCopy">Choose a prize and watch the marble on the TV.</p>
+  </aside>
   <button id="cheer" type="button" hidden>CHEER!</button>
   <div id="padZone">
     <button id="pad" aria-label="Tap to boost, hold to grip">
@@ -572,6 +601,14 @@ body[data-mode="dropzone"][data-s="dropzone"] #ringBg{stroke:#c8f9ed81}
     $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
     document.body.dataset.mode = h.mode || 'grandprix';
+    const guide=$('#dropGuide');
+    if(h.mode==='dropzone'&&h.s==='dropzone'&&(h.modePhase!=='aim'||!h.isTurn)){
+      guide.hidden=false;
+      $('#dropGuideTitle').textContent=h.modePhase==='falling'?'WATCH THE PRIZE BINS':'YOUR TURN IS COMING';
+      $('#dropGuideCopy').textContent=h.modePhase==='falling'&&h.isTurn?
+        'Choose a score above before the marble reaches the bottom.':
+        h.modePhase==='falling'?'Watch the falling marble on the TV.':'Get ready to line up your chute!';
+    }else guide.hidden=true;
     if(h.mode==='dropzone'&&h.s==='dropzone'){
       document.body.dataset.dropPhase=h.modePhase||'';
       document.body.dataset.dropTurn=String(!!h.isTurn);
