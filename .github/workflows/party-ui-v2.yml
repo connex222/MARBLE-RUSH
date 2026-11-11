@@ -1,0 +1,81 @@
+name: Party Pack UI v2 — Derby hard-reset QA
+on:
+  push:
+    branches:
+      - dev/party-pack-ui-v2-rebuild
+  pull_request:
+    paths:
+      - src/tv.html
+      - src/tv.js
+      - src/modes/party-ui-v2.js
+      - src/modes/derby.js
+      - tools/party-ui-v2-*.js
+      - tools/test-party-ui-v2.js
+      - tools/build.js
+permissions:
+  contents: read
+jobs:
+  derby-ui-rebuild:
+    name: Preserve game engines and verify fresh Derby interface
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate every surviving rules engine and new UI source
+        run: |
+          for f in src/tv.js src/modes/registry.js src/modes/party-ui-v2.js src/modes/derby.js src/modes/dropzone.js src/modes/brawl.js src/modes/curling.js src/modes/golf.js tools/build.js; do
+            node --check "$f"
+          done
+          node tools/test-party-foundations.js
+          node tools/test-derby.js
+          node tools/test-dropzone.js
+          node tools/test-brawl.js
+          node tools/test-curling.js
+          node tools/test-party-ui-v2.js
+      - name: Build without touching production
+        run: npm run build
+      - name: Verify approved artwork, phone assets and no old mode canvases
+        run: |
+          node tools/test-phase4-release.js
+          node tools/audit-art.js
+      - name: Install browser for visual and phone acceptance
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Verify one TV Derby plus Grand Prix isolation in real Chromium
+        run: |
+          set -e
+          PORT=35993 node server/server.js >/tmp/mr-ui-v2-browser.log 2>&1 &
+          game_pid=$!
+          trap 'kill "$game_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/party-ui-v2-browser-smoke.js
+      - name: Verify two independent phones connect and place Derby bets
+        run: |
+          set -e
+          PORT=35993 node server/server.js >/tmp/mr-ui-v2-phones.log 2>&1 &
+          game_pid=$!
+          trap 'kill "$game_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/party-ui-v2-multiplayer-smoke.js
+      - name: Upload screenshots and independent build for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marble-rush-party-ui-v2-derby-review
+          if-no-files-found: ignore
+          path: |
+            qa-ui-v2-*.png
+            public/
+          retention-days: 7
