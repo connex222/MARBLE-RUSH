@@ -195,7 +195,7 @@ const MarbleCurling=(()=>{
       activePlayer:current()?.name||''};
   }
   startEnd();
-  return {state,action,step,hud,draw,standings,current,distances,scoreEnd};
+  return {state,action,step,hud,standings,current,distances,scoreEnd};
  }
  return Object.freeze({create,ENDS,STONES_PER_PLAYER,WIDTH,HEIGHT,BUTTON_X,BUTTON_Y});
 })();
