@@ -633,6 +633,13 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
  #ppBrawlShockBox.danger,#ppBrawlActions #ppBrawlRecover:not(:disabled){animation:none}
 }
 
+
+/* Keep the announcer out of Brawl's emergency buttons and edge warning.
+   Grand Prix, Derby and the other mode placements remain unchanged. */
+body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
+ left:calc(430*var(--u));bottom:calc(20*var(--u));
+}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
