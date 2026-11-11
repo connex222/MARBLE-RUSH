@@ -230,7 +230,7 @@ const MarbleGolf = (() => {
         hole:state.hole,holes:state.holes,par:state.layout.par,activePlayer:current()?.name||''};
     }
     newHole();
-    return {state,action,step,hud,draw,standings,current,player};
+    return {state,action,step,hud,standings,current,player};
   }
   return Object.freeze({create,HOLES,FULL_HOLES,MAX_STROKES,LAYOUTS,CHAMPIONSHIP_HOLES});
 })();
