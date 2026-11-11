@@ -94,6 +94,27 @@ async function main(){
           },id,{timeout:10000});
           const where=await page.evaluate(()=>document.querySelector('#party3d').closest('[data-screen]')?.dataset.screen);
           assert.equal(where,id,'3D renderer is behind the active 2D screen');
+          // The original failure was a 3D layer on top of the old game.
+          // Every 3D mode must now REPLACE the original drawing, not duplicate it.
+          const exclusive=await page.evaluate(mode=>{
+            const screen=document.querySelector('[data-screen="'+mode+'"]');
+            const legacy=screen?.querySelector('canvas');
+            const stage=document.querySelector('#party3d');
+            const hud=document.querySelector('#party3dHud');
+            return {
+              live:screen?.classList.contains('p3d-live'),
+              oldHidden:legacy?getComputedStyle(legacy).visibility==='hidden':false,
+              fullWidth:stage?.getBoundingClientRect().width/window.innerWidth,
+              fullHeight:stage?.getBoundingClientRect().height/window.innerHeight,
+              hud:!!hud?.textContent?.trim()
+            };
+          },id);
+          assert.equal(exclusive.live,true,id+' 3D must replace its original canvas');
+          assert.equal(exclusive.oldHidden,true,id+' still shows the old 2D board underneath');
+          assert.ok(exclusive.fullWidth>.95&&exclusive.fullHeight>.95,
+            id+' 3D must use the entire TV stage: '+JSON.stringify(exclusive));
+          assert.ok(exclusive.hud,id+' lacks its replacement score and round HUD');
+
           const premium=await page.evaluate(()=>{
             const el=document.getElementById('party3d'),rect=el.getBoundingClientRect();
             return {surface:Number(el.dataset.surfaceCount||0),
@@ -111,7 +132,7 @@ async function main(){
               gpuTextures:Number(el.dataset.gpuTextures||0)
             };
           });
-          assert.ok(['cinematic','balanced'].includes(perf.quality),
+          assert.ok(['cinematic','balanced','performance'].includes(perf.quality),
             id+' needs adaptive GPU quality and fallback');
           assert.ok(perf.fps>0&&perf.fps<=120,id+' FPS diagnostic invalid');
           assert.ok(perf.gpuTextures<160,
