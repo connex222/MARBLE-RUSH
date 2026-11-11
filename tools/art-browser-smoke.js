@@ -98,9 +98,12 @@ async function main(){
                 const s=document.querySelector('#party3d'),c=s.querySelector('canvas');
                 return {mode:s.dataset.mode,
                   webglSize:[c?.width||0,c?.height||0],
-                  stageVisible:!s.hidden};
+                  stageVisible:!s.hidden,mountedScreen:s.closest('[data-screen]')?.dataset.screen,
+                  stageZ:getComputedStyle(s).zIndex};
               });
               assert.equal(sceneCapture.mode,'brawl','3D frame never rendered correct mode');
+              assert.equal(sceneCapture.mountedScreen,'brawl',
+                'WebGL board is trapped BELOW the active 2D game screen');
               assert.ok(sceneCapture.webglSize[0]>200&&sceneCapture.webglSize[1]>200,
                 '3D framebuffer unexpectedly small');
               console.log('PASS: genuine 3D WebGL Bowl Brawl frame rendered '+JSON.stringify(sceneCapture));
