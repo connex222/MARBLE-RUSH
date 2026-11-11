@@ -522,6 +522,18 @@ function getBall(id,color,label){
  item={sphere,shadow,glow,arrow,el};ballMap.set(id,item);
  return item;
 }
+function releaseBall(it){
+ if(!it)return;
+ if(scene)scene.remove(it.sphere,it.shadow,it.glow,it.arrow);
+ it.el.remove();
+ for(const mat of [it.sphere.material,it.shadow.material,it.glow.material])mat.dispose();
+ // ArrowHelper owns per-instance materials but shares Three.js geometries.
+ it.arrow.traverse(o=>{
+   if(o.material){
+     for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();
+   }
+ });
+}
 function placeBall(id,x,y,z,color,label,seen){
  const it=getBall(id,color,label);seen.add(id);
  if(it.seen){
@@ -592,9 +604,7 @@ function update(mode,s){
    placeBall('golfball',s.ball.x-620,27,s.ball.y-290,p.color,p.name,seen);
  }
  for(const [id,it] of ballMap)if(!seen.has(id)){
-   scene.remove(it.sphere,it.shadow,it.glow,it.arrow);
-   it.el.remove();it.sphere.material.dispose();it.shadow.material.dispose();it.glow.material.dispose();
-   ballMap.delete(id);
+   releaseBall(it);ballMap.delete(id);
  }
  const cx=new T.Vector3();
  if(seen.size){
@@ -650,17 +660,29 @@ function update(mode,s){
 }
 function clean(){
  if(!scene)return;
- for(const sprite of vfx.values()){scene.remove(sprite);sprite.material.dispose();}
+ for(const sprite of vfx.values()){
+   scene.remove(sprite);sprite.material.dispose();
+ }
  vfx.clear();
  root.querySelectorAll('.p3bin').forEach(el=>el.remove());
- for(const x of ballMap.values()){x.el.remove();x.sphere.material.dispose();x.shadow.material.dispose();x.glow.material.dispose();}
+ for(const item of ballMap.values())releaseBall(item);
  ballMap.clear();
+ // Cached art and shared glass paint must survive a scene switch. Disposing
+ // them here caused repeated Golf holes to re-upload large GPU textures.
+ const shared=new Set([marblePaint,...assetTextures.values(),...fxTextures.values()]);
+ const disposedMat=new Set(),disposedGeo=new Set(),disposedTex=new Set();
  scene.traverse(o=>{
-   if(o.isMesh||o.isSprite){
-     if(o.geometry&&!([ballGeo,ringGeo,shadowGeo].includes(o.geometry)))o.geometry.dispose();
-     if(o.material){
-       const mats=Array.isArray(o.material)?o.material:[o.material];
-       mats.forEach(m=>{if(m.map)m.map.dispose();m.dispose();});
+   if(o.geometry && ![ballGeo,ringGeo,shadowGeo].includes(o.geometry)
+       && o.parent?.type!=='ArrowHelper' && !disposedGeo.has(o.geometry)){
+     o.geometry.dispose();disposedGeo.add(o.geometry);
+   }
+   if(o.material){
+     for(const m of Array.isArray(o.material)?o.material:[o.material]){
+       if(disposedMat.has(m))continue;
+       if(m.map&&!shared.has(m.map)&&!disposedTex.has(m.map)){
+         m.map.dispose();disposedTex.add(m.map);
+       }
+       m.dispose();disposedMat.add(m);
      }
    }
  });
@@ -739,6 +761,7 @@ function frame(time){
    // textured physical geometry with independent scene props.
    root.dataset.surfaceCount=String(world?.surfaceCount||0);
    root.dataset.propCount=String(world?.propCount||0);
+   root.dataset.gpuTextures=String(renderer.info.memory.textures);
    const cw=root.clientWidth,ch=root.clientHeight;
    for(const it of ballMap.values()){
      const v=it.sphere.position.clone();v.y+=55;v.project(camera);
