@@ -158,6 +158,60 @@ const {chromium}=require('playwright');
   assert.deepEqual(errs,[],'Curling browser error');
   console.log('PASS: two phones correctly throw, sweep and predict on the new Curling rink.');
 
+  // Fifth new mode: same TV room, two independent phones and real Golf actions.
+  await tv.evaluate(()=>window.__MR.Game.toLobby());
+  await p1.waitForFunction(()=>[...document.querySelectorAll('#vip button')]
+    .some(b=>b.textContent.includes('Marble Golf')));
+  await p1.locator('#vip button').filter({hasText:'Marble Golf'}).click();
+  await tv.waitForFunction(()=>window.__MR.selectedMode==='golf');
+  await tv.locator('#btnStart').click();
+  await tv.waitForFunction(()=>window.__MR.state==='golf'&&
+    document.getElementById('partyStage').dataset.mode==='golf');
+  await p1.waitForFunction(()=>document.body.dataset.mode==='golf'&&
+    document.body.dataset.s==='golf');
+  await p2.waitForFunction(()=>document.body.dataset.mode==='golf');
+  const golf0=await tv.evaluate(()=>{
+    const s=window.__MR.MODES.golf.session().state;
+    return {angle:s.angle,power:s.power,holes:s.holes,player:s.roster[s.turn]?.id};
+  });
+  assert.equal(golf0.holes,9,'Golf standalone game must be nine holes');
+  await p1.locator('#modeActions button[data-action="right"]').click();
+  await tv.waitForFunction(x=>window.__MR.MODES.golf.session().state.angle>x,golf0.angle);
+  await p1.locator('#modeActions button[data-action="powerup"]').click();
+  await tv.waitForFunction(x=>window.__MR.MODES.golf.session().state.power>x,golf0.power);
+  await p1.locator('#modeActions button[data-action="preview"]').click();
+  await tv.waitForFunction(()=>!!window.__MR.MODES.golf.session().state.ghost);
+  await p1.screenshot({path:'qa-ui-v2-golf-phone-aim.png'});
+  await p1.locator('#modeActions button[data-action="shoot"]').click();
+  await tv.waitForFunction(()=>window.__MR.MODES.golf.session().state.phase==='rolling');
+  await p2.waitForFunction(()=>document.querySelector('#modeActions button[data-action="cheer"]'));
+  await p2.locator('#modeActions button[data-action="cheer"]').click();
+  await tv.waitForFunction(()=>window.__MR.MODES.golf.session().state.events.some(e=>e.kind==='spectatorCheer'));
+  const golfLive=await tv.evaluate(()=>{
+    const s=window.__MR.MODES.golf.session().state;
+    return {phase:s.phase,strokes:s.strokes,hole:s.hole,holes:s.holes,
+      shot:s.events.some(e=>e.kind==='shot'),
+      cheers:s.events.filter(e=>e.kind==='spectatorCheer').length,
+      ghost:!!s.ghost};
+  });
+  assert.equal(golfLive.holes,9);
+  assert.equal(golfLive.strokes,1);
+  assert.equal(golfLive.ghost,false,'Trajectory hint remained after Golf shot');
+  assert.ok(golfLive.shot&&golfLive.cheers>=1);
+  for(const action of ['right','powerup','preview','shoot'])
+    assert.ok(actions.get(p1).some(m=>m.t==='act'&&m.a===action),
+      'Phone did not send Golf '+action+' over WebSocket');
+  assert.ok(actions.get(p2).some(m=>m.t==='act'&&m.a==='cheer'),
+    'Other phone did not send Golf spectator cheer');
+  assert.equal(await p1.locator('#padZone').isVisible(),false,
+    'Old Grand Prix pad leaked into new Golf phone UI');
+  await tv.screenshot({path:'qa-ui-v2-golf-two-phones-tv.png'});
+  await p1.screenshot({path:'qa-ui-v2-golf-phone-after-putt.png'});
+  await p2.screenshot({path:'qa-ui-v2-golf-phone-spectator.png'});
+  assert.deepEqual(errs,[],'Browser JS errors in Golf multiplayer');
+  console.log('PASS: two phones successfully aim, power, preview, putt and cheer in new Golf UI.');
+
+
 
  }catch(e){console.error('FAIL Derby UI v2 2-phone smoke:',e);process.exitCode=1;}
  finally{await browser.close();}
