@@ -46,8 +46,12 @@ jobs:
           node tools/test-brawl.js
           node tools/test-curling.js
           node tools/test-golf.js
-          node tools/test-grandprix-regression.js
           node tools/test-party-ui-v2.js
+      - name: Confirm original Grand Prix physics matches main exactly
+        run: |
+          git fetch --depth=1 origin main
+          git show FETCH_HEAD:src/engine.js > /tmp/marble-rush-main-engine.js
+          node tools/test-grandprix-regression.js /tmp/marble-rush-main-engine.js
       - name: Build without touching production
         run: npm run build
       - name: Verify approved artwork, phone assets and no old mode canvases
