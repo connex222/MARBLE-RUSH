@@ -85,6 +85,13 @@ async function main(){
                   inside:stage.getBoundingClientRect().width>300};
         });
         if(status3d.toggle){
+          await page.waitForFunction(mode=>{
+            const v=document.querySelector('#party3d');
+            return v?.dataset.rendered==='true'&&v.dataset.mode===mode;
+          },id,{timeout:10000});
+          const where=await page.evaluate(()=>document.querySelector('#party3d').closest('[data-screen]')?.dataset.screen);
+          assert.equal(where,id,'3D renderer is behind the active 2D screen');
+          if(id!=='brawl')await page.screenshot({path:'qa-true-3d-'+id+'.png',fullPage:true});
           assert.equal(status3d.stage,true,id+' 3D canvas not visible');
           assert.equal(status3d.canvas,true,id+' 3D renderer did not start');
           assert.equal(status3d.inside,true,id+' 3D camera viewport too small');
