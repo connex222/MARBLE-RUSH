@@ -2458,7 +2458,7 @@
     };
   }
   // test hooks for automated checks
-  window.__MR = { Audio_, Game, players, MODES, PartyNight, PartyCoordinator, DropZone, BowlBrawl, MarbleDerby, MarbleCurling, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, get partyScreen(){return MarblePartyScreen;}, addCpu, addKeyboard, settings };
+  window.__MR = { Audio_, Game, players, MODES, PartyNight, PartyCoordinator, DropZone, BowlBrawl, MarbleDerby, MarbleCurling, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, get partyScreen(){return MarblePartyScreen;}, get derbyCamera(){return MarblePartyUI.derbyFraming;}, addCpu, addKeyboard, settings };
 
   requestAnimationFrame(frame);
 })();
