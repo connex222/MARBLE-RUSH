@@ -696,6 +696,43 @@ body[data-mode="golf"][data-s="golf"] #golfGuide:not([hidden]){
  #golfGuide img{height:min(17vh,110px)}
 }
 
+
+/* BRAWL MAYHEM — phone urgency responds to real danger, not decorative timers. */
+body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="recover"]{
+ grid-column:span 2;min-height:96px;order:-5;
+ font:900 25px Fredoka,sans-serif;letter-spacing:.02em;
+ background:linear-gradient(145deg,#ffe1a1,#ff6571 45%,#e82f64);
+ color:#261c33;border:3px solid #fff6cb;
+ box-shadow:0 7px 0 #922f52,0 0 26px #ff637f8f;
+ animation:brawlPhonePanic .35s ease-in-out infinite alternate;
+}
+@keyframes brawlPhonePanic{
+ from{filter:brightness(.86);transform:scale(.99)}
+ to{filter:brightness(1.23);transform:scale(1.015)}
+}
+body[data-brawl-warning="true"] #look{
+ border-color:#ff6d88!important;
+ box-shadow:0 0 29px #f52f70a0,0 12px 26px #0009!important
+}
+body[data-brawl-warning="true"] #msg{color:#fff1bc!important}
+body[data-brawl-near="true"] #modePanel{
+ border-color:#ff547c!important;
+ box-shadow:0 0 27px #ff4b7ca6,0 13px 33px #000a!important;
+}
+body[data-mode="brawl"][data-s="brawl"] #modeReadout{
+ border:2px solid #ffc99f;font-size:16px;
+}
+@media(max-height:700px){
+ body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="recover"]{
+  min-height:77px;font-size:23px
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="recover"]{
+  animation:none
+ }
+}
+
 </style>
 </head>
 <body>
@@ -932,6 +969,13 @@ body[data-mode="golf"][data-s="golf"] #golfGuide:not([hidden]){
     $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
     document.body.dataset.mode = h.mode || 'grandprix';
+    if(h.mode==='brawl'&&h.s==='brawl'){
+      document.body.dataset.brawlWarning=String(h.pulseIn!=null&&h.pulseIn<=3);
+      document.body.dataset.brawlNear=String(!!h.recoverReady);
+    }else{
+      delete document.body.dataset.brawlWarning;
+      delete document.body.dataset.brawlNear;
+    }
     if(h.mode==='brawl'&&h.s==='brawl')document.body.dataset.brawlPhase=h.modePhase||'';
     else delete document.body.dataset.brawlPhase;
     const golfGuide=$('#golfGuide');
@@ -1031,11 +1075,18 @@ body[data-mode="golf"][data-s="golf"] #golfGuide:not([hidden]){
           (h.gems||0)+' virtual gems · '+(h.modeHint||h.turnLabel||''));
         // Persistent header lobby button already exists: no duplicate host exit.
         break;
-      case 'brawl':
-        setText('',h.modePhase==='eliminated'?'KNOCKED OUT!':h.modePhase==='finished'?'BRAWL COMPLETE':'SURVIVE THE BOWL',
-          (h.roundScore||0)+' points · Energy '+Math.round(h.energy||0)+'% · '+(h.hazard||'ARENA').toUpperCase());
-        // Existing header Lobby control is the only exit; no duplicate.
+      case 'brawl': {
+        const urgent=!!h.recoverReady;
+        const incoming=h.pulseIn!=null&&h.pulseIn<=3;
+        setText('',urgent?'EDGE DANGER — SAVE NOW!':
+          incoming?'SHOCKWAVE IN '+h.pulseIn.toFixed(1)+'s!':
+          h.modePhase==='eliminated'?'KNOCKED OUT!':
+          h.modePhase==='finished'?'BRAWL COMPLETE':'SURVIVE THE BOWL',
+          (h.roundScore||0)+' pts · '+Math.round(h.energy||0)+'% energy · '+
+          (h.modeHint||'RAM rivals out · ANCHOR to brace.'));
+        // One host exit remains in the persistent header, not repeated here.
         break;
+      }
       case 'dropzone': {
         const dropping=h.modePhase==='aim'&&h.isTurn;
         const predicting=h.modePhase==='falling'&&h.isTurn;
