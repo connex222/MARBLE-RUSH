@@ -47,7 +47,7 @@ const MarbleGolf = (() => {
     function resetBall() {
       state.ball={x:state.layout.start[0],y:state.layout.start[1],vx:0,vy:0};
       state.strokes=0;state.angle=0;state.power=60;state.phase='aim';
-      state.clock=0;state.cpuDelay=.5;state.comments=new Set();
+      state.clock=0;state.cpuDelay=.5;state.comments=new Set();state.ghost=null;
     }
     function newHole() {
       state.hole++;state.turn=0;state.layout=state.layouts[state.hole-1];resetBall();
@@ -225,7 +225,7 @@ const MarbleGolf = (() => {
           {a:'left',label:'◀ AIM',v:1},{a:'right',label:'AIM ▶',v:1},
           {a:'powerdown',label:'− POWER',v:0},{a:'powerup',label:'+ POWER',v:0},
           {a:'preview',label:'TRAJECTORY',v:0},{a:'shoot',label:'SHOOT!',v:0}]:[],
-        hole:state.hole,par:state.layout.par,activePlayer:current()?.name||''};
+        hole:state.hole,holes:state.holes,par:state.layout.par,activePlayer:current()?.name||''};
     }
     function draw(){ /* Party Pack v2: legacy graphics deleted; renderer lives in party-ui-v2.js. */ }
     newHole();
