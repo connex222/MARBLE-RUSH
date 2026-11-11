@@ -318,14 +318,27 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
 
 @media(max-width:780px){#partyBackLobby{min-width:175px;min-height:52px;padding:7px 15px;font-size:19px}}
 
-/* Prototype: physically rendered, frame-clipped WebGL gameplay arenas. */
+/* The original Canvas2D is a compatibility fallback, never a second visible board. */
+.screen.p3d-live>canvas{visibility:hidden!important}
 #party3d{
   position:fixed;z-index:1;overflow:hidden;pointer-events:none;
-  border:calc(8*var(--u)) solid #ffe29a;
-  border-radius:calc(27*var(--u));
-  box-shadow:0 20px 45px #0009,inset 0 4px 10px #fff7;
+  border:0;border-radius:0;box-shadow:none;
   background:#101830;
 }
+#party3dHud{position:absolute;inset:0;z-index:6;pointer-events:none;
+  font-family:var(--body);color:#fff7de;text-shadow:0 2px 5px #000c}
+#party3dHud .p3dTitle{position:absolute;top:calc(62*var(--u));left:calc(50*var(--u));
+  font:900 calc(34*var(--u)) var(--display);letter-spacing:.025em;
+  border-left:calc(7*var(--u)) solid #ffca68;
+  border-radius:calc(12*var(--u));padding:calc(16*var(--u)) calc(24*var(--u));
+  background:linear-gradient(100deg,#0e1536ed,#1c294ac5,#1c294a00);
+  max-width:calc(700*var(--u))}
+#party3dHud .p3dStanding{position:absolute;right:calc(42*var(--u));top:calc(134*var(--u));
+  max-width:calc(520*var(--u));border:calc(2*var(--u)) solid #ffe9a46e;
+  border-radius:calc(19*var(--u));padding:calc(18*var(--u)) calc(22*var(--u));
+  background:linear-gradient(145deg,#111a38ed,#17294bdc);
+  font:800 calc(21*var(--u)) var(--body);line-height:1.65;overflow-wrap:anywhere;
+  box-shadow:0 calc(15*var(--u)) calc(40*var(--u)) #0008}
 #party3d[hidden]{display:none!important}
 /* In-screen 3D board stays below interactive TV controls and captions. */
 #dropZoneHelp,#brawlHelp,#derbyHelp,#curlingHelp,#golfHelp{z-index:5}
