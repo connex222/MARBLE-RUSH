@@ -133,6 +133,119 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
 #flash.on{animation:fl .4s ease-out}
 @keyframes fl{0%{opacity:.35}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* DERBY UI V2 — exclusively themed phone view, no change to phone actions.
+   Grand Prix and the other four mode skins retain their previous styling. */
+body[data-mode="derby"][data-s="derby"]:not(.hc){
+ --bg:#0b1830;--bg2:#101a32;--card:#162440;--ink:#fff2d7;
+ --dim:#e8d4ac;--line:#eac47e7f;--gold:#ffd887;
+ background-image:linear-gradient(180deg,rgba(7,17,34,.89),rgba(10,16,37,.94) 50%,rgba(7,12,28,.98)),
+ url('assets/img/pp_derby_bg.webp');
+ background-position:center;background-size:cover;
+}
+body[data-mode="derby"][data-s="derby"] #top{
+ background:linear-gradient(120deg,#111b38f1,#3c2b3ded);
+ border-bottom:2px solid #ffe0a388;box-shadow:0 8px 25px #0007;
+ padding:10px 12px 11px;gap:8px
+}
+body[data-mode="derby"][data-s="derby"] #me{gap:7px}
+body[data-mode="derby"][data-s="derby"] #meName{
+ font-size:18px;max-width:140px;color:#fff3d6;text-shadow:0 2px 3px #000b
+}
+body[data-mode="derby"][data-s="derby"] #meMarble{height:39px;width:39px}
+body[data-mode="derby"][data-s="derby"] #hcBtn{
+ height:36px;font-size:12px;padding:0 9px;color:var(--ink);
+ border:2px solid #ffe0aa7c;background:#182544bb
+}
+body[data-mode="derby"][data-s="derby"] #hostExitGame{
+ font-size:14px;min-height:38px;padding:5px 9px;border-radius:12px;
+ border:2px solid #ffe6b6
+}
+body[data-mode="derby"][data-s="derby"] #look{
+ flex:0 0 auto;min-height:0;margin:14px 14px 7px;padding:11px 12px;
+ background:linear-gradient(140deg,#101d3de9,#34263aef);
+ border:2px solid #ffdfa4ba;border-radius:18px;
+ box-shadow:0 9px 24px #0008
+}
+body[data-mode="derby"][data-s="derby"] #msg{
+ margin:0;font:900 clamp(23px,7vw,31px) Fredoka,sans-serif;color:#ffe4a3;
+ text-shadow:0 3px 5px #000b
+}
+body[data-mode="derby"][data-s="derby"] #sub{
+ margin-top:6px;font:800 15px Nunito,sans-serif;color:#eee6dc;line-height:1.35
+}
+body[data-mode="derby"][data-s="derby"] #vip{padding:0 14px;gap:6px}
+body[data-mode="derby"][data-s="derby"] #vip button{
+ font-size:14px;padding:7px 9px;border-radius:11px
+}
+body[data-mode="derby"][data-s="derby"] #modePanel{
+ flex:0 1 auto;margin:7px 13px 2px;padding:13px 12px 14px;max-height:min(45vh,390px);
+ border:2px solid #ffe0a8b5;border-radius:20px;
+ background:linear-gradient(155deg,#172744ef,#34273eeb);
+ box-shadow:0 12px 30px #000a;overflow-y:auto;overscroll-behavior:contain;
+}
+body[data-mode="derby"][data-s="derby"] #modeTurn{
+ font:900 19px Fredoka,sans-serif;color:#ffe09e;
+ letter-spacing:.03em;padding-bottom:5px
+}
+body[data-mode="derby"][data-s="derby"] #modeReadout{
+ font:800 15px Nunito,sans-serif;color:#fff4da;margin-bottom:10px
+}
+body[data-mode="derby"][data-s="derby"] #modeActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button{
+ min-width:0;min-height:52px;margin:0;padding:8px 5px;
+ border-radius:13px;border:2px solid #ffddb08f;
+ font:800 14px Nunito,sans-serif;color:#fff6df;
+ background:linear-gradient(160deg,#364665,#16203f);
+ box-shadow:0 4px 0 #0a132a;white-space:normal
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button[data-action="bet"]{
+ background:linear-gradient(155deg,#855137,#492b3d);
+ border-color:#f4c480
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button[data-action="stake"]{
+ background:linear-gradient(155deg,#25465b,#132a42)
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button[data-action="cheer"]{
+ grid-column:span 2;background:linear-gradient(140deg,#188e86,#146175);border-color:#a9f5dc
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button[aria-pressed="true"]{
+ border-color:#fff5c8;box-shadow:0 0 0 2px #ffd16a8c,0 4px 0 #0a132a
+}
+body[data-mode="derby"][data-s="derby"] #padZone{
+ flex:1 1 auto;min-height:160px;padding:13px 14px 25px
+}
+body[data-mode="derby"][data-s="derby"][data-derby-phase="betting"] #padZone{
+ display:none!important
+}
+body[data-mode="derby"][data-s="derby"] #pad{
+ width:auto;height:min(100%,min(67vw,255px));max-height:270px;
+ background:radial-gradient(circle at 33% 21%,#fff9e2 0%,#ffd879 17%,#e99547 40%,#c65350 75%,#702641 100%);
+ border:7px solid #ffe1a1;outline:5px solid #95643f;
+ box-shadow:0 10px 0 #7d423b,0 18px 35px #0009,inset 0 8px 14px #fff6df95,
+ inset 0 -18px 28px #4c253eab
+}
+body[data-mode="derby"][data-s="derby"] #padText{
+ color:#251b30;text-shadow:0 1px 0 #ffe5af
+}
+body[data-mode="derby"][data-s="derby"] #padText b{font-size:min(13vw,56px)}
+body[data-mode="derby"][data-s="derby"] #padText span{
+ font-size:min(4.5vw,17px);font-weight:900;max-width:190px
+}
+body[data-mode="derby"][data-s="derby"] #pad:disabled{
+ opacity:.46;filter:grayscale(.6);cursor:default
+}
+body[data-mode="derby"][data-s="derby"] #ring{inset:-13px}
+body[data-mode="derby"][data-s="derby"] #ringFg{stroke:#fff1b9}
+body[data-mode="derby"][data-s="derby"] #ringBg{stroke:#ffdf8e6e}
+@media(max-height:670px){
+ body[data-mode="derby"][data-s="derby"] #look{margin:5px 12px;padding:7px 10px}
+ body[data-mode="derby"][data-s="derby"] #modePanel{max-height:40vh}
+ body[data-mode="derby"][data-s="derby"] #padZone{min-height:105px}
+}
+
 </style>
 </head>
 <body>
@@ -311,7 +424,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     const pts=Number.isFinite(h.roundScore)?Math.round(h.roundScore):null;
     const power=Number.isFinite(h.power)?Math.max(0,Math.min(100,Math.round(h.power))):null;
     const aim=Number.isFinite(h.aim)?Math.round(h.aim):null;
-    $('#modeReadout').textContent=[pts===null?'':pts+' pts',power===null?'':'Power '+power+'%',Number.isFinite(h.energy)?'Energy '+Math.round(h.energy)+'%':'',aim===null?'':'Aim '+aim+(h.mode==='dropzone'?' px':'°')].filter(Boolean).join(' · ');
+    $('#modeReadout').textContent=[pts===null?'':(h.mode==='derby'?pts+' ◆ virtual gems':pts+' pts'),power===null?'':'Power '+power+'%',Number.isFinite(h.energy)?'Energy '+Math.round(h.energy)+'%':'',aim===null?'':'Aim '+aim+(h.mode==='dropzone'?' px':'°')].filter(Boolean).join(' · ');
     const cheer=$('#cheer');
     cheer.hidden=!(h.s==='race' && (!h.inRace || h.fin));
     cheer.disabled=!h.cheerReady;
@@ -326,6 +439,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         button.type='button';
         button.textContent=String(control.label||control.a).slice(0,30);
         button.setAttribute('aria-pressed',String(!!control.selected));
+        button.dataset.action=control.a; // Derby-only CSS state; messages unchanged
         button.onclick=()=>{audio();buzz(14);send({t:'act',a:control.a,v:control.v});};
         box.appendChild(button);
       }
@@ -348,6 +462,13 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
     document.body.dataset.mode = h.mode || 'grandprix';
+    if(h.mode==='derby'&&h.s==='derby'){
+      document.body.dataset.derbyPhase=h.modePhase||'';
+      $('#pad').disabled=!(h.modePhase==='racing'&&h.myBet&&h.isTurn);
+    }else{
+      delete document.body.dataset.derbyPhase;
+      $('#pad').disabled=false;
+    }
     const it = $('#item');
     if (h.s !== 'race') h = Object.assign({}, h, { item: null });
     it.disabled = !h.item;
@@ -397,7 +518,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
       case 'derby':
         setText('',h.modePhase==='betting'?'PLACE YOUR BET':h.modePhase==='racing'?'THEY ARE OFF!':h.modePhase==='results'?'HEAT RESULTS':'DERBY FINISHED',
           (h.gems||0)+' virtual gems · '+(h.modeHint||h.turnLabel||''));
-        if(h.vip)vip=[['lobby','End game & lobby']];
+        // Persistent header lobby button already exists: no duplicate host exit.
         break;
       case 'brawl':
         setText('', h.modePhase==='eliminated'?'OUT OF THE BOWL':h.modePhase==='finished'?'BRAWL COMPLETE':'BOWL BRAWL',
@@ -439,7 +560,6 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     // Phone layout adapter. New mode controls are activated only as their modes ship.
     const labels = {
       grandprix: ['TAP', 'boost · hold to grip'],
-      derby: ['NUDGE', 'cheer your pick'],
       dropzone: ['DROP', 'tap to release'],
       derby: ['CHEER!', 'back your marble, cheer once per heat'],
       brawl: ['RAM', 'hold to anchor'],
