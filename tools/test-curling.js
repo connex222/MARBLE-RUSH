@@ -6,7 +6,7 @@ for(const name of ['registry','session','geometry','attract','bots','grandprix',
  vm.runInContext(fs.readFileSync(path.join(root,'src/modes',name+'.js'),'utf8'),ctx,{filename:name+'.js'});
 const C=vm.runInContext('MarbleCurling',ctx);
 const MODES=vm.runInContext('MODES',ctx);
-assert.equal(MODES.curling.available,true);
+assert.equal(MODES.curling.available,false,'Rules remain tested, but legacy UI is gated pending the new presentation');
 assert.equal(C.ENDS,5);
 function run(seed,n=3){
  let cb=0,winner;
