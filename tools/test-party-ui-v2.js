@@ -12,6 +12,17 @@ assert.ok(tv.includes('MarblePartyUI.drawDerby'),'Derby not connected to its new
 assert.ok(tv.includes('MarblePartyUI.drawDropZone'),'Drop Zone not connected to new renderer');
 assert.ok(tv.includes('MarbleBrawlUI.draw'),'Brawl new arena renderer not connected');
 assert.ok(tv.includes('MarbleCurlingUI.draw'),'Curling renderer not connected');
+assert.ok(tv.includes('MarbleGolfUI.draw'),'Golf replacement renderer not connected');
+const golfUi=read('src/modes/party-golf-ui-v2.js');
+for(const name of ['pp_golf_bg','pp_golf_surface_main',
+ 'pp_golf_prop_stone_bridge','pp_golf_prop_windmill',
+ 'pp_golf_fx_holeinone','pp_golf_fx_cup','pp_golf_fx_putt']){
+ assert.ok(golfUi.includes(name),'Approved Golf asset missing: '+name);
+}
+for(const id of ['ppGolfHud','ppGolfPanel','ppGolfRankRows','ppGolfStandings',
+ 'ppGolfLeft','ppGolfRight','ppGolfPowerDown','ppGolfPowerUp','ppGolfPreview','ppGolfShoot',
+ 'ppGolfHole','ppGolfPar','ppGolfStroke','ppGolfPlayer'])
+ assert.ok(html.includes('id="'+id+'"'),'New Golf TV interface missing: '+id);
 const curlingUi=read('src/modes/party-curling-ui-v2.js');
 for(const asset of ['pp_curling_bg','pp_curling_surface_main','pp_curling_prop_alpine_lodge',
   'pp_curling_prop_ice_blocks','pp_curling_fx_scrape','pp_curling_fx_sweep','pp_curling_fx_victory'])
@@ -48,11 +59,11 @@ for(const name of modes){
  assert.ok(!code.includes('MarblePartyStage.'),name+' still calls the retired renderer');
  assert.ok(code.includes('registerMode({'),name+' authoritative mode registration lost');
  assert.ok(code.includes('session(){'),name+' authoritative game session lost');
- assert.ok(code.includes(['derby','dropzone','brawl','curling'].includes(name)?'available:true':'available:false'),
+ assert.ok(code.includes('available:true'),
    name+' phase readiness must match the visible UI');
 }
-// The five new gameplay modes retain their deterministic logic and phone action
-// handlers even though four unfinished TV presentations are not yet launchable.
+// All five Party Pack game engines and their authenticated phone action handlers
+// remain unchanged beneath their completely new TV/phone presentation layers.
 assert.ok(tv.includes("['stake','bet','cheer']"),'Derby phone controls were changed');
 assert.ok(html.includes('id="partyBackLobby"'),'Host exit was lost');
-console.log('PASS UI v2: Derby, Drop Zone, Brawl and Curling are exclusive rebuilt views; only Golf gated.');
+console.log('PASS UI v2: all five mode UIs replaced, all approved assets reused, Grand Prix untouched, six modes selectable.');
