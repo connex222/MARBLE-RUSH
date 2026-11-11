@@ -24,7 +24,25 @@ const palettes={
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let enabled=true,renderer=null,world=null,camera=null,scene=null,worldMode='',
   ballMap=new Map(),labels=new Map(),halos=new Map(),last=0,lowMotion=false,unsupported=false;
-const ballGeo=new T.SphereGeometry(24,28,20);
+const ballGeo=new T.SphereGeometry(24,32,24);
+// The marble swirl is generated once at runtime: actual painted detail on a
+// 3D sphere, not a 2D overlay or a third-party graphics service.
+const marblePaint=(()=>{
+ const c=document.createElement('canvas');c.width=256;c.height=128;
+ const g=c.getContext('2d');
+ const background=g.createLinearGradient(0,0,256,128);
+ background.addColorStop(0,'#ffffff');background.addColorStop(.5,'#cfe5f8');
+ background.addColorStop(1,'#fff7dc');g.fillStyle=background;g.fillRect(0,0,256,128);
+ for(let k=0;k<11;k++){
+   const start=k*26-55;
+   g.beginPath();g.moveTo(start,-12);
+   g.bezierCurveTo(start+78,22,start-18,86,start+82,150);
+   g.strokeStyle=k%3===0?'rgba(255,214,84,.67)':k%3===1?'rgba(32,87,150,.50)':'rgba(255,255,255,.85)';
+   g.lineWidth=k%3===0?15:k%3===1?9:5;g.stroke();
+ }
+ const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;
+ tex.wrapS=T.RepeatWrapping;tex.anisotropy=2;return tex;
+})();
 const ringGeo=new T.TorusGeometry(34,4,8,40);
 const shadowGeo=new T.CircleGeometry(25,24);
 const defaultColors=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d','#a7deed','#ffd4a2'];
@@ -263,8 +281,8 @@ function stage(mode,s) {
  camera=new T.PerspectiveCamera(mode==='dropzone'?41:mode==='brawl'?42:45,aspect,1,4500);
  if(mode==='dropzone')camera.position.set(0,0,1350);
  else if(mode==='brawl')camera.position.set(0,765,1045);
- else if(mode==='derby')camera.position.set(0,810,1250);
- else camera.position.set(0,850,1240);
+ else if(mode==='derby')camera.position.set(0,620,900);
+ else camera.position.set(0,625,930);
  camera.lookAt(0,0,0);
 }
 function marbleSkin(color){
@@ -272,7 +290,7 @@ function marbleSkin(color){
   // inexpensive repeatable shader texture, not a static image billboard.
   const mat=material(/^#[a-f\d]{6}$/i.test(color||'')?color:'#ff526c',.14,.095);
   mat.clearcoat=1;mat.clearcoatRoughness=.025;
-  mat.iridescence=.35;mat.iridescenceIOR=1.3;
+  mat.iridescence=.35;mat.iridescenceIOR=1.3;mat.map=marblePaint;
   return mat;
 }
 function getBall(id,color,label){
@@ -294,6 +312,14 @@ function getBall(id,color,label){
 }
 function placeBall(id,x,y,z,color,label,seen){
  const it=getBall(id,color,label);seen.add(id);
+ if(it.seen){
+   const dx=x-it.sphere.position.x,dz=z-it.sphere.position.z;
+   if(Math.abs(dx)+Math.abs(dz)<140){
+     it.sphere.rotation.z-=dx/24*.35;
+     it.sphere.rotation.x+=dz/24*.35;
+   }
+ }
+ it.seen=true;
  it.sphere.scale.setScalar(worldMode==='brawl'?1.5:1);
  it.shadow.scale.setScalar(worldMode==='brawl'?1.35:1);
  it.sphere.position.set(x,y,z);it.shadow.position.set(x,5,z);it.glow.position.set(x,6,z);
@@ -371,9 +397,9 @@ function update(mode,s){
    const spread=mode==='brawl'?.12:mode==='derby'?.08:.06;
    const px=lowMotion?0:Math.sin(sec*.21)*spread*600;
    camera.position.x+=(px+cx.x*.07-camera.position.x)*.022;
-   const targetY=mode==='brawl'?765:mode==='derby'?810:850;
-   camera.position.y+=((targetY+(mode==='derby'&&s.phase==='racing'?30:0))-camera.position.y)*.018;
-   camera.position.z+=((mode==='brawl'?1045:mode==='derby'?1250:1240)-camera.position.z)*.018;
+   const targetY=mode==='brawl'?765:mode==='derby'?620:625;
+   camera.position.y+=((targetY+(mode==='derby'&&s.phase==='racing'?18:0))-camera.position.y)*.018;
+   camera.position.z+=((mode==='brawl'?1045:mode==='derby'?900:930)-camera.position.z)*.018;
    camera.lookAt(cx.x*(mode==='derby'?.13:.11),0,cx.z*.11);
  }
 }
