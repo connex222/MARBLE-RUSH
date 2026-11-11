@@ -166,8 +166,12 @@ function cachedArt(key,url,repeatX=1,repeatY=1){
  if(tex)return tex;
  tex=new T.TextureLoader().load(url,t=>{
    t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;
-   t.wrapS=T.RepeatWrapping;t.wrapT=T.RepeatWrapping;
-   t.repeat.set(repeatX,repeatY);t.needsUpdate=true;
+   // Surface textures tile; decorative transparent props must clamp edges.
+   const isSurface=key.startsWith('surface:');
+   t.wrapS=isSurface?T.RepeatWrapping:T.ClampToEdgeWrapping;
+   t.wrapT=isSurface?T.RepeatWrapping:T.ClampToEdgeWrapping;
+   if(isSurface)t.repeat.set(repeatX,repeatY);
+   t.needsUpdate=true;
  },undefined,()=>{});
  assetTextures.set(key,tex);
  return tex;
