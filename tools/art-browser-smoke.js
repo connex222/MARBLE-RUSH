@@ -12,6 +12,9 @@ async function main(){
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
+    // Headless software WebGL is deliberately slow; capture 3D for visual QA,
+    // while normal players retain the automatic low-FPS 2D fallback.
+    window.__MR_CAPTURE_3D_QA=true;
     window.__marbleArtDraws={backgrounds:new Set(),textures:new Set(),props:new Set(),gameObjects:new Set(),effects:new Set()};
     const originalDraw=CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage=function(image,...args){
