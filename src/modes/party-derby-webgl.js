@@ -225,7 +225,10 @@ const MarbleDerbyWebGL=(()=>{
     if(textureCache.has(key))return textureCache.get(key);
     const t=gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D,t);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,1);
+    // Background's fullscreen plane already has screen-aligned UVs.
+    // Only the approved environment needs the opposite unpack orientation;
+    // otherwise its sky appears below the track and its road above.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,key==='pp_derby_bg'?0:1);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
@@ -277,8 +280,9 @@ const MarbleDerbyWebGL=(()=>{
     }
     // Three physically raised layers give the stadium mass and silhouette,
     // with the approved soil surface inset on top of the lane geometry.
-    add([0,-.77,0],[33.6,.78,15.1],'#493449');
-    add([0,-.29,0],[33,.40,14.6],'#dfab64');
+    // TV-safe low plinth: no opaque 200-pixel slab below the contenders.
+    add([0,-.39,0],[33.6,.20,15.1],'#493449');
+    add([0,-.19,0],[33,.15,14.6],'#dfab64');
     add([0,-.03,0],[31.8,.16,13.2],'#3a3646');
     const runnerColours=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d'];
     for(let lane=0;lane<LANES;lane++){
@@ -309,10 +313,10 @@ const MarbleDerbyWebGL=(()=>{
       add([x,2.3,-12.0],[.20,4.2,.22],'#d2a76b');
       add([x,4.5,-12.0],[.55,.30,.55],'#ffe3a2');
     }
-    // Finish gantry only; starting arch obstructed the TV's first heat.
-    for(const z of [-7.3,7.3])
-      add([15.7,1.95,z],[.22,3.9,.30],'#f3d48f');
-    add([15.7,4.02,0],[.30,.29,15.2],'#f6dd99');
+    // Checkered finish is physically in every lane; a single compact
+    // back-side floodlight marks the finish without crossing the racers.
+    add([15.9,1.18,-7.7],[.18,2.2,.22],'#f3d48f');
+    add([15.9,2.35,-7.7],[.5,.35,.50],'#fff1c5');
     if(vertices.length/11>65535)throw Error('Static track exceeds WebGL1 vertex-index limit');
     return geometry(vertices,indices);
   }
@@ -376,7 +380,7 @@ const MarbleDerbyWebGL=(()=>{
       tag.textContent=names[i];
       Object.assign(tag.style,{
         position:'absolute',left:'50%',top:'50%',
-        transform:'translate(-50%,-140%)',
+        transform:'translate(-112%,-50%)',
         font:'900 clamp(11px, .9vw, 17px) Nunito, sans-serif',
         color:'#fffaf0',textShadow:'0 2px 4px #000',
         whiteSpace:'nowrap',padding:'3px 9px',
