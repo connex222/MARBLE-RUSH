@@ -150,6 +150,13 @@ The approved `assets/raw` Party Pack deliverables are **PNG raster images** (sty
 
 Capture matching 1920×1080 TV shots for Derby, Drop Zone, Brawl, Curling and Golf from both the previous development build and the improvement build; label source commit and phase. Pair each with relevant phone screenshots, gameplay state trace and CI artefact. Visual changes to unaffected game layouts may be minimal: **do not falsely market unchanged art as a new generation of 3D assets**. All changed architecture and mode behaviour must be documented.
 
+## 12 November 2026 final acceptance and reconnect safeguards
+
+- Local TV diagnostics are opt-in via `/tv?qa=1`. They draw no second game canvas, upload nothing, export a local report and explicitly avoid claiming physical phone tests.
+- Phones now resume the **same previously joined room** after refresh using the saved room and player identity. A duplicate tab closes the previous controller with code 4009, displays a clear warning and cannot send old inputs. Browser reconnection regression tests enforce these behaviours.
+- The separate Windows preview launcher runs unit checks and opens the optional diagnostic view, without touching GitHub main or Render.
+- The engineering phases are reviewable; actual 3D meshes, physical-device testing and AAA art acceptance are not claimed. See `docs/FINAL-ACCEPTANCE-PHASES.md`.
+
 ## 12 November 2026 mechanic-led visual clarity pass
 
 - **Derby first:** live on-track rank numbers now derive from actual runner
