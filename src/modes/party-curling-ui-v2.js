@@ -152,6 +152,23 @@ const MarbleCurlingUI=(()=>{
      if(p)marble(c,{x:75,y:265,vx:0,vy:0},
        {...p,swirl:Math.floor(s.turn/2)%s.roster.length},assets,t,reduce);
    }
+   // During measurement, mark the genuinely closest stone using the same
+   // button coordinates as the scoring engine (1140,265). Not a fake target.
+   if(s.phase==='results'&&s.stones.length){
+     const winner=s.stones.slice().sort((a,b)=>
+       Math.hypot(a.x-1140,a.y-265)-Math.hypot(b.x-1140,b.y-265)||
+       a.order-b.order)[0];
+     if(winner){
+       const wx=X(winner.x),wy=Y(winner.y),bx=X(1140),by=Y(265);
+       c.save();c.strokeStyle='#f7c976';c.lineWidth=5;
+       c.setLineDash([14,9]);c.beginPath();c.moveTo(wx,wy);c.lineTo(bx,by);
+       c.stroke();c.setLineDash([]);
+       c.shadowColor='#f5cf72';c.shadowBlur=17;
+       c.strokeStyle='#fff0b2';c.lineWidth=5;
+       c.beginPath();c.arc(wx,wy,30,0,TAU);c.stroke();
+       c.restore();
+     }
+   }
    // Stones are always drawn from actual simulation positions.
    for(const m of s.stones){
      const p=roster.get(m.id);
