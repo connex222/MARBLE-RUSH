@@ -340,7 +340,9 @@ const MarbleBrawlUI=(()=>{
   function draw(s,assets,opts={}){
     const c=ctx();if(!c||!s||!Array.isArray(s.marbles))return false;
     c.save();c.setTransform(1,0,0,1,0,0);
-    arenaBack(c,assets,Number(s.time)||0);
+    MarbleSceneCache.paint('brawl',c,assets,
+      ['pp_brawl_bg','pp_brawl_prop_spin_hazard','pp_brawl_prop_striped_bumper'],
+      brush=>arenaBack(brush,assets,Number(s.time)||0));
     // Cinematic camera punches (render-only, reduced-motion compliant).
     const sincePulse=s.time-s.lastPulseAt;
     const lateDuel=s.marbles.filter(m=>m.alive).length===2;
