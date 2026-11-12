@@ -48,7 +48,10 @@ jobs:
           const fs=require('fs'), assert=require('assert');
           const tv=fs.readFileSync('public/tv.html','utf8'), phone=fs.readFileSync('public/play.html','utf8');
           assert(tv.includes('data-screen="party-stage"'));
-          assert(tv.includes('MODES.golf.tick(dt)'));
+          assert(tv.includes('MODES[mode].tick(dt)'));
+          assert(tv.includes('MarblePartyScreen.render(mode,session.state'));
+          assert(tv.includes('MarbleSceneCache.paint'));
+          assert(!tv.includes('MarblePartyStage'));
           assert(tv.includes('id="ppGolfShoot"'));
           assert(tv.includes('MarbleGolfUI.draw'));
           assert(phone.includes("case 'golf':"));
