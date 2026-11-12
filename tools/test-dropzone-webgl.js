@@ -11,6 +11,17 @@ assert.ok(gl.includes('gl.createShader(')&&gl.includes('gl.createBuffer(')&&
  gl.includes('perspective(')&&gl.includes('lookAt(')&&
  gl.includes('bakedPanel()')&&gl.includes('append(sp,'),
  'Native 3D Drop Zone requires genuine depth-tested triangulated pegs and boxes');
+assert.ok(
+ gl.includes('VERTEX_STRIDE=10') &&
+ gl.includes('varying float vMaterial') &&
+ gl.includes('gl.vertexAttribPointer(loc.material,1,gl.FLOAT,false,40,36)') &&
+ gl.includes("surfaceQuality=forced==='basic'||forced==='premium'") &&
+ gl.includes('gl.uniform1f(loc.premium') &&
+ gl.includes('materialId(tint,manualMaterial)') &&
+ gl.includes('setSurfaceQuality(next)') &&
+ gl.includes('createHardwareOverlay()') &&
+ gl.includes('reviewOverlay.remove()'),
+ 'Premium shader / matte metal glass and marble pipeline / opt-in GPU hardware monitor');
 assert.ok(gl.includes('meshTemplates.sphere')&&
  gl.includes('projectToStage(world,vp)')&&
  gl.includes("lookAt([4.9,1.0,32.5],[3.0,0,0])")&&

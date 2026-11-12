@@ -40,6 +40,9 @@ if errorlevel 1 goto :fail
 echo.
 echo Compare the two screens in the SAME Windows browser:
 echo Original: http://localhost:36005/tv
+echo Monitor: http://localhost:36005/tv?dropzone3d=1^&debug3d=1
+echo Basic shader: http://localhost:36005/tv?dropzone3d=1^&dropzoneMaterial=basic
+echo Premium shader: http://localhost:36005/tv?dropzone3d=1^&dropzoneMaterial=premium
 echo Actual 3D: http://localhost:36005/tv?dropzone3d=1
 echo.
 echo TV physical test: check real FPS, 3D perspective, bin alignment,
@@ -48,7 +51,7 @@ echo Do NOT treat GitHub SwiftShader results as actual TV frame rate.
 echo.
 start "MARBLE RUSH review server" /D "%TARGET%" cmd /k "set PORT=36005&& node server/server.js"
 timeout /t 4 /nobreak >nul
-start "" "http://localhost:36005/tv?dropzone3d=1"
+start "" "http://localhost:36005/tv?dropzone3d=1&debug3d=1"
 goto :done
 :fail
 echo.

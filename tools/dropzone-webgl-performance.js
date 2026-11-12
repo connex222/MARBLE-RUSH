@@ -15,7 +15,7 @@ const intervalMs=Number(process.env.DROPZONE_BENCH_MS||6500);
  const page=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1});
  const errors=[];page.on('pageerror',e=>errors.push(String(e.message)));
  try{
-  await page.goto(base+'/tv?dropzone3d=1',{waitUntil:'domcontentloaded'});
+  await page.goto(base+'/tv?dropzone3d=1&debug3d=1',{waitUntil:'domcontentloaded'});
   for(const selector of ['#btnBoot','#btnKb','#btnCpu',
     '#partyModeCards .partyModeCard[data-mode="dropzone"]','#btnStart'])
    await page.locator(selector).click();
@@ -35,7 +35,8 @@ const intervalMs=Number(process.env.DROPZONE_BENCH_MS||6500);
     advanced:MarblePartyClock.stats().advancedSeconds,
     hud:window.__MR.partyScreen.telemetry(),
     graphics:MarbleDropZoneWebGL.debug(),
-    gameClock:window.__MR.MODES.dropzone.session().state.elapsed
+    gameClock:window.__MR.MODES.dropzone.session().state.elapsed,
+    monitor:document.getElementById('ppDrop3dHardwareQA')?.textContent||null
   }));
   const duration=(end.time-start.time)/1000,rendered=end.frames-start.frames;
   const gameDuration=end.advanced-start.advanced;
@@ -45,6 +46,8 @@ const intervalMs=Number(process.env.DROPZONE_BENCH_MS||6500);
   assert.equal(end.hud.renderFailures,0,'WebGL renderer failed a frame');
   assert.equal(end.graphics.drawCalls,2,'Batching has regressed');
   assert.equal(end.graphics.meshTemplatesCached,true);
+  assert.ok(end.graphics.hardwareQaOverlayActive);
+  assert.ok(end.monitor?.includes('FPS'),'On-screen target hardware frame monitor failed');
   assert.deepEqual(errors,[]);
   const result={
     environment:'Playwright Chromium / SwiftShader software GPU, NOT target TV',
@@ -56,6 +59,7 @@ const intervalMs=Number(process.env.DROPZONE_BENCH_MS||6500);
     engineAdvancedSeconds:+gameDuration.toFixed(2),
     engineAdvanceRatio:+(gameDuration/duration).toFixed(3),
     drawCalls:end.graphics.drawCalls,
+    liveOnscreenMonitor:end.monitor,
     meanDrawMs:+end.hud.averageDrawMs.toFixed(2),
     p95DrawMs:end.hud.p95DrawMs,
     p95FrameIntervalMs:end.hud.p95FrameIntervalMs,

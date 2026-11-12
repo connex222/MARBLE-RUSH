@@ -45,6 +45,22 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
    first.graphics.drawCalls<=4,'Must batch native 3D pegs');
   assert.equal(first.graphics.labels,9,'Eight scored bins and one event callout');
   assert.equal(first.graphics.meshTemplatesCached,true,'3D shape topology cache absent');
+  assert.equal(first.graphics.materialAttributeFloats,10);
+  assert.equal(first.graphics.surfaceQuality,'basic',
+    'Software SwiftShader must default to cheaper material shading');
+  const frameBefore=first.graphics.frame;
+  assert.equal(await page.evaluate(()=>MarbleDropZoneWebGL.setSurfaceQuality('premium')),true);
+  await page.waitForFunction(frame=>MarbleDropZoneWebGL.debug().frame>frame,
+    frameBefore,{timeout:12000});
+  const premium=await page.evaluate(()=>{
+    const ctx=document.getElementById('partyStageCanvas').getContext('webgl2')||
+      document.getElementById('partyStageCanvas').getContext('webgl');
+    return {surface:MarbleDropZoneWebGL.debug().surfaceQuality,error:ctx.getError()};
+  });
+  assert.equal(premium.surface,'premium');
+  assert.equal(premium.error,0,'Premium material shader generated GL error');
+  await page.screenshot({path:'qa-dropzone-webgl-premium-shaders.png'});
+  assert.equal(await page.evaluate(()=>MarbleDropZoneWebGL.setSurfaceQuality('basic')),true);
   assert.deepEqual(first.graphics.cameraTarget,[3.0,0,0]);
   const slots=await page.evaluate(()=>
     [...document.querySelectorAll('#ppDrop3dBinLabels [data-bin]')]

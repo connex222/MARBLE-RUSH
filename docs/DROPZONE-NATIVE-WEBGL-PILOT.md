@@ -36,3 +36,12 @@ The next screenshot moved the main board clear of the right prize HUD, but its b
 \`tools/OPEN-DROPZONE-3D-PREVIEW.bat\` creates a **new private review folder** in Windows Documents; it never overwrites an existing checkout, the production build or another game's assets. Compare the original \`/tv\` with \`/tv?dropzone3d=1\` in the same browser and test TV scaling and real phones.
 
 \`tools/dropzone-webgl-performance.js\` records a same-session eight-second-style headless SwiftShader frame/clock benchmark and stores the exact device name, backing resolution, draw calls, p95 timing and real rules-clock progress. Slow software GPU values must not be misrepresented as target 1080p-TV performance. Actual performance, 20-minute physical TV stability and multi-phone reconnect remain unverified.
+
+
+## Phase 3 — real materials and hardware frame monitor
+
+The two actual WebGL triangle batches now carry a tenth float per vertex: 0 matte, 1 metal/brass, 2 glass-like translucent *appearance* (no real transparency), 3 coloured polished marble. The hardware premium shader produces specular highlights and Fresnel edge reflections while the initial SwiftShader/llvmpipe setting uses simplified diffuse light. This is a shader/material effect, not a physically accurate raytraced reflection. Nonuniformly scaled spheres now have corrected normals, and old unused nine-float GPU buffers have been removed.
+
+The local Windows preview launcher opens \`/tv?dropzone3d=1&debug3d=1\`. An opt-in, disposable text monitor shows FPS observed on that physical browser, GPU, draw calls, active material mode and backing canvas resolution. For A/B comparison use \`&dropzoneMaterial=basic\` or \`&dropzoneMaterial=premium\`. No second canvas or render loop is created.
+
+CI deliberately toggles premium shader on the software GPU, checks for rendering errors, and captures a third screenshot, then returns to the cheaper shader before the regular scoring and game-mode-switch acceptance. The dedicated performance script confirms the hardware-monitor DOM text exists. CI software frame rates remain inconclusive for 1080p television acceptance.
