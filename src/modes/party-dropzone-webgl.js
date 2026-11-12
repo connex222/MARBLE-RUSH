@@ -10,7 +10,7 @@ const MarbleDropZoneWebGL=(()=>{
  'use strict';
  const TAU=Math.PI*2,DEG=Math.PI/180;
  const COLORS=['#ffbc8a','#ffd56f','#55cce8','#8cf0b0','#e1a8ff','#fda55f'];
- let canvas=null,gl=null,program=null,meshCube=null,meshSphere=null,meshStatic=null,loc=null;
+ let canvas=null,gl=null,program=null,meshCube=null,meshSphere=null,meshStatic=null,meshMoving=null,loc=null;
  let resources=[],frame=0,drawCalls=0,quality=1,debugGPU='',backdropUrl='';
  let labels=null,notice=null,contextLost=false,contextLossHandler=null,contextRestoreHandler=null;
  let lastEventKey='',fpsLost=0,geometryProbe=null;
@@ -162,6 +162,7 @@ const MarbleDropZoneWebGL=(()=>{
   const c=cube(),s=sphere();
   meshCube=geometry(c.v,c.i);meshSphere=geometry(s.v,s.i);
   meshStatic=bakedPanel();
+  meshMoving=geometry([],[]);
   gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0,0,0,0);
@@ -185,6 +186,47 @@ const MarbleDropZoneWebGL=(()=>{
   gl.vertexAttribPointer(loc.color,3,gl.FLOAT,false,36,24);
   gl.drawElements(gl.TRIANGLES,mesh.count,gl.UNSIGNED_SHORT,0);drawCalls++;
  }
+ function drawMovingMesh(state,vp){
+  // Static and dynamic draw objects now share the verified world-space MVP.
+  // One batched GPU upload holds real 3D gold pegs, bumper, gate and ball.
+  const v=[],i=[],sphereRaw=sphere(),cubeRaw=cube();
+  function add(mesh,p,dims,tint){
+   const offset=v.length/9,col=rgb(tint);
+   for(let k=0;k<mesh.v.length;k+=9)
+    v.push(p[0]+mesh.v[k]*dims[0],p[1]+mesh.v[k+1]*dims[1],
+      p[2]+mesh.v[k+2]*dims[2],
+      mesh.v[k+3],mesh.v[k+4],mesh.v[k+5],...col);
+   for(const index of mesh.i)i.push(offset+index);
+  }
+  for(const index of state.gold){
+   const peg=state.pegs[index];
+   if(peg)add(sphereRaw,[xw(peg.x),yw(peg.y),.93],
+     [.34,.34,.36],'#ffe37a');
+  }
+  add(sphereRaw,[xw(500+110*Math.sin(state.elapsed*1.2)),yw(480),1.01],
+    [.58,.58,.48],'#f38cc3');
+  add(cubeRaw,[xw(500+115*Math.sin(state.elapsed*.9)),yw(598),.95],
+    [1.16,.21,.48],'#83e8f1');
+  const p=state.ball;
+  if(p)add(sphereRaw,[xw(p.x),yw(p.y),1.43],
+    [.43,.43,.43],p.color||'#ffd96e');
+  else if(!state.done){
+   const owner=state.roster[state.turn%state.roster.length];
+   add(sphereRaw,[xw(state.x),yw(35),1.43],
+    [.43,.43,.43],owner?.color||'#ffce73');
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER,meshMoving.vertices);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.DYNAMIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,meshMoving.indices);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(i),gl.DYNAMIC_DRAW);
+  meshMoving.count=i.length;
+  gl.uniformMatrix4fv(loc.model,false,identity());
+  gl.uniformMatrix4fv(loc.mvp,false,vp);
+  gl.uniform3fv(loc.tint,new Float32Array([1,1,1]));
+  gl.uniform1f(loc.opacity,1);
+  bindMesh(meshMoving);
+ }
+
  function resize(){
   if(!canvas)return;
   canvas.width=Math.round(1920*quality/16)*16;
@@ -253,7 +295,7 @@ const MarbleDropZoneWebGL=(()=>{
   const blank=canvas.cloneNode(false);
   blank.removeAttribute('data-graphics');blank.removeAttribute('data-renderer-error');
   canvas.replaceWith(blank);
-  canvas=null;gl=null;program=null;meshCube=null;meshSphere=null;meshStatic=null;
+  canvas=null;gl=null;program=null;meshCube=null;meshSphere=null;meshStatic=null;meshMoving=null;
   loc=null;resources=[];backdropUrl='';contextLost=false;
  }
  function setBackdrop(assets){
@@ -301,22 +343,8 @@ const MarbleDropZoneWebGL=(()=>{
   gl.uniform3fv(loc.tint,new Float32Array([1,1,1]));
   gl.uniform1f(loc.opacity,1);
   bindMesh(meshStatic);
-  // Temporary depth-isolation diagnostic: are dynamically transformed
-  // meshes hidden by the baked board depth buffer on software WebGL?
-  gl.disable(gl.DEPTH_TEST);
-  for(const pegId of s.gold){
-   const peg=s.pegs[pegId];if(!peg)continue;
-   drawMesh(meshSphere,vp,[xw(peg.x),yw(peg.y),.77],[.27,.27,.29],'#ffe37a');
-  }
-  // The bumper and gate use the exact same functions as collision() in the
-  // deterministic 2D engine, merely mapped into camera-projected 3D space.
-  const bumperX=500+110*Math.sin(s.elapsed*1.2);
-  drawMesh(meshSphere,vp,[xw(bumperX),yw(480),.82],[.48,.48,.42],'#f892cc');
-  const gateX=500+115*Math.sin(s.elapsed*.9);
-  drawMesh(meshCube,vp,[xw(gateX),yw(598),.75],[1.16,.16,.42],'#77dbe5');
   const p=s.ball;
-  // First-frame GPU readback verifies a drawn marble becomes actual pixels.
-  const probePoint=p?[xw(p.x),yw(p.y),1.18]:[xw(s.x),yw(35),1.16];
+  const probePoint=p?[xw(p.x),yw(p.y),1.43]:[xw(s.x),yw(35),1.43];
   const point=[...probePoint,1];
   const clip=[0,1,2,3].map(row=>
     vp[row]*point[0]+vp[4+row]*point[1]+vp[8+row]*point[2]+vp[12+row]);
@@ -324,17 +352,7 @@ const MarbleDropZoneWebGL=(()=>{
   const probeY=clamp(Math.round((1+clip[1]/clip[3])*canvas.height/2),0,canvas.height-1);
   const beforePixel=new Uint8Array(4),afterPixel=new Uint8Array(4);
   if(frame===0)gl.readPixels(probeX,probeY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,beforePixel);
-  if(p){
-   drawMesh(meshSphere,vp,[xw(p.x),yw(p.y),1.18],[.37,.37,.37],
-    p.color||'#ffd66e');
-  }else if(!s.done){
-   // Ghost only: position is sourced directly from player-controlled aim s.x.
-   gl.depthMask(false);
-   drawMesh(meshSphere,vp,[xw(s.x),yw(35),1.16],[.40,.40,.40],
-    s.roster[s.turn%s.roster.length]?.color||'#ffcd68',.55);
-   gl.depthMask(true);
-  }
-  gl.enable(gl.DEPTH_TEST);
+  drawMovingMesh(s,vp);
   if(frame===0){
     gl.readPixels(probeX,probeY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,afterPixel);
     geometryProbe={at:[probeX,probeY],before:[...beforePixel],
