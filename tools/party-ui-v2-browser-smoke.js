@@ -1,6 +1,5 @@
-/* TV-first visual acceptance for Party Pack UI v2: Derby only.
- * Headless Chromium is a functional smoke; human TV review still required.
- */
+/* Five-game exclusive-screen UI QA. Headless Chromium measurements are
+ * not representative of physical TV or phone performance. */
 'use strict';
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
@@ -14,7 +13,9 @@ const fs=require('node:fs');
  async function verifyExclusive(mode){
    // Browser-rendered proof: exact renderer, one screen, one canvas,
    // the original GP canvas actually hidden, and measured draw times.
-   await page.waitForTimeout(450);
+   // Observe a multi-second window rather than treating 15 initial frames
+   // as a reliable TV framerate benchmark.
+   await page.waitForTimeout(2700);
    const report=await page.evaluate(m=>{
      const host=window.__MR?.partyScreen;
      const stage=document.getElementById('partyStage');
@@ -39,6 +40,11 @@ const fs=require('node:fs');
    assert.equal(report.oldGrandPrixCanvasHidden,true);
    assert.ok(report.performance.frames>=2,mode+' rendered no continuous frames');
    assert.equal(report.performance.renderFailures,0,mode+' renderer failed to paint');
+   assert.ok(report.performance.measurements>=30,
+     mode+' insufficient measured frame intervals for even a CI smoke');
+   assert.ok(Number.isFinite(report.performance.p95FrameIntervalMs)&&
+     Number.isFinite(report.performance.p95DrawMs),
+     mode+' missing p95 frame/draw telemetry');
    perfSnapshots.push(report.performance);
    console.log('REAL-REBUILD-FRAME-METRICS '+JSON.stringify(report.performance));
  }
@@ -524,6 +530,7 @@ const fs=require('node:fs');
   fs.writeFileSync('qa-real-performance.json',JSON.stringify({
    environment:'Headless Playwright Chromium GitHub Actions Linux, simulated 1920x1080 TV',
    physicalDevicesTested:false,
+   performanceAcceptance:'NOT ESTABLISHED: browser CI headless observed FPS is not a physical TV performance result. Frame rates below 30 require investigation on target hardware.',
    results:perfSnapshots,
    camera:{closeZoom,wide,caught,reducedMotionZoom:1},
    restart:{history:finalHost.history,active:finalHost.active,oldCanvasHidden:finalHost.oldCanvasHidden}
