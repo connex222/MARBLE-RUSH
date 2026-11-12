@@ -293,7 +293,9 @@ const MarbleGolfUI=(()=>{
   const c=$('partyStageCanvas')?.getContext('2d',{alpha:false});
   if(!c||!s||!s.layout)return false;
   c.save();c.setTransform(1,0,0,1,0,0);
-  world(c,assets,s.elapsed||0,s,!!options.reduce);
+  MarbleSceneCache.paint('golf',c,assets,
+    ['pp_golf_bg','pp_golf_prop_stone_bridge','pp_golf_prop_windmill'],
+    brush=>world(brush,assets,s.elapsed||0,s,!!options.reduce));
   // Physically coherent miniature diorama viewpoint: tilt the ENTIRE real
   // course, all physics obstacles, cup, aim guide and moving marble together.
   // No second board/renderer and no camera shake for putting precision.
