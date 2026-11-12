@@ -11,7 +11,7 @@ assert.ok(gl.includes('gl.createShader(')&&gl.includes('gl.createBuffer(')&&
   'Pilot has no genuine WebGL mesh/vertex/depth pipeline');
 assert.ok(gl.includes("key==='pp_derby_bg'?0:1")&&
   !gl.includes("add([15.7,4.02,0]")&&
-  gl.includes("add([0,-.39,0],[33.6,.20,15.1]"),
+  gl.includes("add([0,-.39,0],[33.6,.20,7.9]"),
   'Inverted scenery or a large foreground obstruction returned');
 assert.ok(gl.includes("key:'pp_derby_bg'")&&gl.includes('updateRunnerTags(s,vp)')&&
   gl.includes('resizeQuality()')&&gl.includes('qualityScale')&&
