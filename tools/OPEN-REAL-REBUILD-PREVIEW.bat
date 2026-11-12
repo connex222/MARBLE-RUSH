@@ -1,8 +1,8 @@
 @echo off
 setlocal EnableExtensions
-title MARBLE RUSH - REAL REBUILD - SAFE TV AND PHONE PREVIEW
+title MARBLE RUSH - FINAL ALPHA CANDIDATE - SAFE TV AND PHONE QA
 echo ===========================================================
-echo MARBLE RUSH - EXCLUSIVE NEW PARTY PACK GAME SCREENS
+echo MARBLE RUSH - FINAL ALPHA CANDIDATE - FIVE NEW GAMES
 echo ===========================================================
 echo.
 echo This uses a separate test folder and the improvement branch.
@@ -33,26 +33,35 @@ cd /d "%WORK%" || goto failed
 echo [2/4] Installing dependencies...
 call npm install --no-audit --no-fund
 if errorlevel 1 goto failed
-echo [3/4] Checking single renderer, physical rules and asset references...
+echo [3/4] Checking exclusive rendering, hazard physics and local TV QA...
+node tools/test-party-scene-cache.js
+if errorlevel 1 goto failed
+node tools/test-tv-qa.js
+if errorlevel 1 goto failed
 node tools/test-party-ui-v2.js
 if errorlevel 1 goto failed
 node tools/test-brawl-balance.js
+if errorlevel 1 goto failed
+node tools/test-golf.js
 if errorlevel 1 goto failed
 call npm run build
 if errorlevel 1 goto failed
 echo [4/4] Opening independent TV preview at port 36002...
 echo.
-echo TV:  http://localhost:36002/tv
+echo TV with local performance recorder: http://localhost:36002/tv?qa=1
+echo Clean TV (no diagnostics):         http://localhost:36002/tv
 echo Phones: scan the TV room QR or use your computer's LAN IP
 echo         and the four-letter room code.
 echo.
 echo Use the same Wi-Fi and permit Node.js on PRIVATE networks.
 echo Leave the server command window open during your test.
 echo Test all five Party Pack modes and original Grand Prix.
+echo On TV select SAVE QA REPORT after each game for real hardware data.
+echo No report can certify physical phones automatically.
 echo.
 start "MARBLE RUSH REAL REBUILD TEST SERVER" /D "%WORK%" cmd /k "set PORT=36002&node server/server.js"
 timeout /t 4 /nobreak >nul
-start "" "http://localhost:36002/tv"
+start "" "http://localhost:36002/tv?qa=1"
 echo Preview started. No GitHub merge or Render deployment.
 pause
 exit /b 0
