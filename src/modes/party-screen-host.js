@@ -66,7 +66,8 @@ const MarblePartyScreen=(()=>{
     }
     report={mode:name,renderer:def.renderer,mountAt:performance.now(),frames:0,
       firstFrameAt:null,lastFrameAt:null,renderMsTotal:0,renderMsMax:0,
-      intervals:0,slowIntervals:0,renderFailures:0};
+      intervals:0,slowIntervals:0,renderFailures:0,
+      frameIntervals:[],drawSamples:[]};
     active=name;return true;
   }
   function unmount(){
@@ -103,11 +104,13 @@ const MarblePartyScreen=(()=>{
       const interval=start-report.lastFrameAt;
       if(interval>0&&interval<1000){
         report.intervals++;if(interval>33.4)report.slowIntervals++;
+        if(report.frameIntervals.length<900)report.frameIntervals.push(interval);
       }
     }
     report.lastFrameAt=start;
     const ms=end-start;
     report.renderMsTotal+=ms;
+    if(report.drawSamples.length<900)report.drawSamples.push(ms);
     report.renderMsMax=Math.max(ms,report.renderMsMax);
     return true;
   }
@@ -116,11 +119,21 @@ const MarblePartyScreen=(()=>{
     if(!r)return null;
     const seconds=r.lastFrameAt!=null&&r.firstFrameAt!=null?
       (r.lastFrameAt-r.firstFrameAt)/1000:0;
+    const percentile=(values,p)=>{
+      if(!values?.length)return null;
+      const sorted=values.slice().sort((a,b)=>a-b);
+      return sorted[Math.min(sorted.length-1,Math.ceil(p*sorted.length)-1)];
+    };
     return Object.freeze({
       mode:r.mode,renderer:r.renderer,frames:r.frames,
       observedFps:seconds>0?(r.frames-1)/seconds:0,
       averageDrawMs:r.frames?r.renderMsTotal/r.frames:0,
-      worstDrawMs:r.renderMsMax,slowFrameShare:r.intervals?
+      worstDrawMs:r.renderMsMax,
+      p95FrameIntervalMs:percentile(r.frameIntervals,.95),
+      p95DrawMs:percentile(r.drawSamples,.95),
+      measurements:r.frameIntervals.length,
+      fpsEstimateReliable:r.frameIntervals.length>=120,
+      slowFrameShare:r.intervals?
         r.slowIntervals/r.intervals:0,
       renderFailures:r.renderFailures,active:active===r.mode,
       raceCanvasHidden:!!raceCanvas?.hidden
