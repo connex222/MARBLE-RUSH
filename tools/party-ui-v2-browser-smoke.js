@@ -213,6 +213,11 @@ const fs=require('node:fs');
   assert.ok(brawlView.rankRows>=2);
   assert.match(brawlView.hazard,/BUMPER/);
   assert.equal(Number(brawlView.radius),380);
+  const framed=await page.evaluate(()=>window.__MR.brawlCamera);
+  assert.ok(framed.zoom>=1&&framed.zoom<=1.075,
+    'Brawl camera must not cut off its physical danger rim');
+  assert.ok(Math.abs(framed.x)<=24&&Math.abs(framed.y)<=18,
+    'Brawl camera moved beyond its safe broadcast frame');
   await page.screenshot({path:'qa-ui-v2-brawl-live.png'});
   // Verify real physics and energy are being controlled by the newly mounted buttons.
   const beforeBrawl=await page.evaluate(()=>{
