@@ -25,6 +25,14 @@ const fs=require('node:fs');
   await page.waitForTimeout(2400);
   await page.locator('#derbyRunner').click();
   await page.locator('#derbyPick').click();
+  // The TV control invokes the authoritative engine directly. The local
+  // diagnostic recorder specifically samples the shared Game.onAction
+  // handler used by phones; drive one valid real cheer via that same route.
+  await page.waitForFunction(()=>window.__MR.MODES.derby.session()?.state.phase==='racing',{timeout:12000});
+  await page.evaluate(()=>{
+    const player=window.__MR.MODES.derby.session().state.roster.find(p=>!p.cpu);
+    window.__MR.Game.onAction(player.id,'cheer',0);
+  });
   await page.waitForTimeout(500);
   const d=await page.evaluate(()=>window.__MR.qaDiagnostics.report());
   assert.ok(d.metrics.derby.sampleCount>=25,'Real animation frames not captured');
