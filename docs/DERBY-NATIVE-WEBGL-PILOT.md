@@ -61,3 +61,14 @@ The approved 1C screenshot still showed a huge dark empty foreground beneath the
 ## Phase 1E — reduce audience confusion and overlapping scenery
 
 The 1D screenshot proved the stage footprint fix, but decorative giant marbles in the approved backdrop appeared below the live field and the additional full-width 3D bleachers obscured the stadium. A lightweight GPU backdrop fade now keeps the upper scenic environment and de-emphasises background-only marbles beneath the game; large duplicate 3D bleacher tiers have been retired in favour of small arena-side lamps. Live track, balls, physics and approved raw art are unchanged. This is a screen readability improvement, not proof of AAA art quality or real-TV frame rate.
+
+
+## Phase 1F — static backdrop compositor and controlled performance A/B
+
+The approved panorama is constant for the entire race. Default native-3D Derby now renders that image as the **static background of the existing \`#partyStage\` container**, composited by the browser; it never draws a full-screen textured WebGL quad on every frame. WebGL retains exclusive ownership of the original single game canvas and draws *every moving marble, track, gate, physical prop and camera transformation*. This does **not** bring back a legacy game screen or create another canvas. Exiting Derby clears the backdrop and all 3D labels.
+
+A QA-only \`?derby3d=1&derbyBackdrop=gpu\` option retains the older full-screen WebGL image as a scientifically comparable software-rendering baseline. The automated benchmark runs each variant in the same headless Chromium/SwiftShader environment for an eight-second race interval, recording delivered frames, canvas backing resolution, engine advancement and GPU identification. Its conclusions cannot be transferred to any real TV or laptop GPU.
+
+The camera now tilts more top-down, framing all six lanes lower in the TV picture, and the enlarged marble models rotate by displayed world distance divided by visible radius. This corrects a prior 3D-visual roll mismatch without modifying the Derby engine, betting, phone networking or other game modes.
+
+The remaining release blockers are **physical-TV performance at 1080p on the target GPU**, high-quality visual acceptance at television distance, and independent real-phone Wi-Fi/reconnect testing.

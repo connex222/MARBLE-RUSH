@@ -9,6 +9,12 @@ const build=read('tools/build.js');
 assert.ok(gl.includes('gl.createShader(')&&gl.includes('gl.createBuffer(')&&
   gl.includes('gl.drawElements(')&&gl.includes('gl.enable(gl.DEPTH_TEST)'),
   'Pilot has no genuine WebGL mesh/vertex/depth pipeline');
+assert.ok(gl.includes("get('derbyBackdrop')==='gpu'")&&
+  gl.includes("stage.dataset.derbyScenery='css-static-approved-art'")&&
+  gl.includes("alpha:!backgroundOnGpu")&&
+  gl.includes('setScenicBackdrop(assets)')&&
+  gl.includes("stage.style.removeProperty('background-image')"),
+  'Static approved scenery must bypass the WebGL full-screen pass by default and unmount cleanly');
 assert.ok(gl.includes('float scenic=1.0-smoothstep(0.38,0.62,vUV.y)')&&
   !gl.includes("add([0,1.4+seat*.52,-9.8-seat*.62]")&&
   gl.includes("key==='pp_derby_bg'?0:1")&&
@@ -23,6 +29,8 @@ assert.ok(gl.includes('createStaticTrack()')&&gl.includes('drawStaticTrack(vp)')
   gl.includes('sphereGeometry()')&&gl.includes('boxGeometry()')&&
   gl.includes('perspective(')&&gl.includes('lookAt('),
   'Pilot lacks actual 3D geometry or perspective camera');
+assert.ok(gl.includes('const rolling=positions[h.id]*(30/LENGTH)/.70'),
+  'Visual sphere roll must agree with authoritative distance and displayed radius');
 assert.ok(gl.includes('Number(h.x)')&&gl.includes('LENGTH=1500')&&
   gl.includes('s.horses'),
   'Pilot must consume real authoritative horse positions, never simulate them');

@@ -8,6 +8,11 @@
 const MarbleDerbyWebGL=(()=>{
   'use strict';
   const LENGTH=1500, LANES=6, TAU=Math.PI*2;
+  // QA comparison only; default uses the browser compositor for the approved
+  // motionless stadium photograph, leaving WebGL for the actual 3D race.
+  const backgroundOnGpu=typeof location!=='undefined'&&
+    new URLSearchParams(location.search).get('derbyBackdrop')==='gpu';
+  let scenicUrl='';
   let canvas=null,gl=null,program=null,meshBox=null,meshSphere=null,meshPlane=null,meshStatic=null;
   let locations=null,lost=false,drawCalls=0,frameCount=0;
   let cameraX=0,cameraDistance=42,cameraLast=0,cameraSpread=0;
@@ -172,7 +177,7 @@ const MarbleDerbyWebGL=(()=>{
     meshStatic=createStaticTrack();
     gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
     gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-    gl.clearColor(0.025,0.065,0.12,1);
+    gl.clearColor(0.025,0.065,0.12,backgroundOnGpu?1:0);
     gl.activeTexture(gl.TEXTURE0);gl.uniform1i(locations.tex,0);
   }
   function mount(oldCanvas){
@@ -182,13 +187,16 @@ const MarbleDerbyWebGL=(()=>{
     // to WebGL. The previous canvas is removed, NOT hidden under this renderer.
     canvas=oldCanvas.cloneNode(false);
     oldCanvas.replaceWith(canvas);
-    gl=canvas.getContext('webgl2',{alpha:false,antialias:true})||
-       canvas.getContext('webgl',{alpha:false,antialias:true});
+    const contextOptions={alpha:!backgroundOnGpu,antialias:true,
+      premultipliedAlpha:true,preserveDrawingBuffer:false};
+    gl=canvas.getContext('webgl2',contextOptions)||
+       canvas.getContext('webgl',contextOptions);
     if(!gl){
       canvas.dataset.rendererError='WebGL unavailable';
       throw Error('Derby WebGL unavailable on this browser/GPU. Remove ?derby3d=1 to use normal Derby.');
     }
     lost=false;frameCount=0;drawCalls=0;round=0;cameraLast=0;cameraX=0;cameraDistance=42;
+    scenicUrl='';
     const rendererExt=gl.getExtension('WEBGL_debug_renderer_info');
     gpuLabel=String(rendererExt?
       gl.getParameter(rendererExt.UNMASKED_RENDERER_WEBGL):
@@ -216,6 +224,16 @@ const MarbleDerbyWebGL=(()=>{
       }
     }
     if(runnerTags){runnerTags.remove();runnerTags=null;}
+    if(canvas.parentElement){
+      // No approved Derby scenery can remain underneath the next game.
+      const stage=canvas.parentElement;
+      stage.style.removeProperty('background-image');
+      stage.style.removeProperty('background-size');
+      stage.style.removeProperty('background-position');
+      stage.style.removeProperty('background-repeat');
+      delete stage.dataset.derbyScenery;
+    }
+    scenicUrl='';
     // Restore a fresh, uninitialised canvas for the other four Canvas2D modes.
     const fresh=canvas.cloneNode(false);
     fresh.removeAttribute('data-graphics');fresh.removeAttribute('data-renderer-error');
@@ -428,6 +446,24 @@ const MarbleDerbyWebGL=(()=>{
     }
   }
 
+  function setScenicBackdrop(assets){
+    if(backgroundOnGpu||!canvas?.parentElement)return;
+    const image=assets?.pp_derby_bg;
+    if(!image?.complete||!image.naturalWidth)return;
+    // Only a static approved asset is composited here: no game/UI canvas,
+    // no second DOM renderer, no animation or game-state dependency.
+    const url=String(image.currentSrc||image.src||'')
+      .replace(/["\\\n\r]/g,'');
+    if(!url||url===scenicUrl)return;
+    const stage=canvas.parentElement;
+    stage.style.backgroundImage=
+      'linear-gradient(0deg,rgba(6,14,32,.70) 0%,rgba(6,14,32,.14) 39%,transparent 68%),url("'+url+'")';
+    stage.style.backgroundSize='100% 100%,cover';
+    stage.style.backgroundPosition='center,center';
+    stage.style.backgroundRepeat='no-repeat';
+    stage.dataset.derbyScenery='css-static-approved-art';
+    scenicUrl=url;
+  }
   function draw(s,assets,options={}){
     if(!gl||lost||!s||!Array.isArray(s.horses)||s.horses.length!==LANES)return false;
     const positions=s.horses.map(h=>clamp(Number(h.x)||0,0,LENGTH));
@@ -437,26 +473,31 @@ const MarbleDerbyWebGL=(()=>{
     // We only nudge centre toward the pack; all six marbles remain in shot.
     const desiredX=clamp(((hi+lo)/(2*LENGTH)*30-15)*.18,-2.8,2.8);
     const wide=clamp((spread-130)/620,0,1);
-    const desiredDistance=38+wide*13;
+    const desiredDistance=37+wide*11;
     const now=performance.now(),dt=clamp((now-cameraLast)/1000,0,.05);
     cameraLast=now;
     const ease=1-Math.exp(-2.1*dt);
-    if(options.reduce){cameraX=0;cameraDistance=54;}
+    if(options.reduce){cameraX=0;cameraDistance=49;}
     else{
       cameraX+=(desiredX-cameraX)*ease;
       cameraDistance+=(desiredDistance-cameraDistance)*ease;
     }
-    if(s.round!==round){round=s.round;cameraDistance=options.reduce?54:43;}
-    const view=lookAt([cameraX+1.2,cameraDistance*.61,cameraDistance*.90],[cameraX,0,0]);
+    if(s.round!==round){round=s.round;cameraDistance=options.reduce?49:40;}
+    // Higher pitch shows every lane; looking above the field moves the
+    // action down into the previously vacant middle of the TV display.
+    // World geometry and finish positions remain unchanged.
+    const view=lookAt([cameraX+2,cameraDistance*.93,cameraDistance*.73],
+      [cameraX-1.7,3.2,0]);
     const proj=perspective(50*Math.PI/180,canvas.width/canvas.height,.5,175);
     const vp=multiply(proj,view);
     gl.viewport(0,0,canvas.width,canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);drawCalls=0;
-    // Approved 3D racing artwork is the atmosphere, not a competing game
-    // screen. It is textured INSIDE this same GPU backbuffer before the live
-    // camera-projected track, so no old interface exists underneath.
-    if(assets?.pp_derby_bg?.complete&&assets.pp_derby_bg.naturalWidth){
+    // A/B perf test uses ?derbyBackdrop=gpu for the old full-screen GPU
+    // draw. Default: the static approved panorama is CSS-composited outside
+    // GPU, while every moving sphere and 3D track mesh stays in WebGL.
+    setScenicBackdrop(assets);
+    if(backgroundOnGpu&&assets?.pp_derby_bg?.complete&&assets.pp_derby_bg.naturalWidth){
       gl.disable(gl.DEPTH_TEST);gl.depthMask(false);
       paint(meshPlane,ident(),[0,0,0],[1,1,1],'#c8c5d8',{
         key:'pp_derby_bg',image:assets.pp_derby_bg,unlit:true});
@@ -479,8 +520,10 @@ const MarbleDerbyWebGL=(()=>{
     // Every marble is an actual triangulated sphere at the authoritative x.
     for(const h of s.horses){
       const x=-15+positions[h.id]/LENGTH*30,z=-5.23+h.id*2.09;
-      const rolling=s.phase==='racing'?(Number(h.x)||0)/42:0;
-      paint(meshSphere,vp,[x,.75,z],[.62,.62,.62],h.color,{
+      // Visual rotation follows the exact 30-world-unit x position and
+      // displayed 0.70-unit radius: no independent visual-side simulation.
+      const rolling=positions[h.id]*(30/LENGTH)/.70;
+      paint(meshSphere,vp,[x,.83,z],[.70,.70,.70],h.color,{
         rotation:rolling,pattern:true,key:'marble_swirl_'+String(h.id+1).padStart(2,'0'),
         image:assets?.['marble_swirl_'+String(h.id+1).padStart(2,'0')]});
       paint(meshBox,vp,[x,-.01,z],[.74,.028,.74],'#152b38',{opacity:.44});
@@ -509,7 +552,10 @@ const MarbleDerbyWebGL=(()=>{
     frameCount,drawCalls,cameraX,cameraDistance,cameraSpread,contextLost:lost,
     qualityScale,backingPixels:[canvas?.width||0,canvas?.height||0],gpuLabel,
     runnerTagCount:runnerTags?.children?.length||0,
-    textureCount:textureCache.size,positionsSource:'MarbleDerby.state.horses[*].x'};}
+    textureCount:textureCache.size,
+    scenicSource:backgroundOnGpu?'webgl-fullscreen-texture':'css-static-approved-art',
+    scenicUrlLoaded:!!scenicUrl,
+    positionsSource:'MarbleDerby.state.horses[*].x'};}
   return Object.freeze({mount,unmount,draw,debug,
     get active(){return !!gl&&!lost;},get canvas(){return canvas;}});
 })();

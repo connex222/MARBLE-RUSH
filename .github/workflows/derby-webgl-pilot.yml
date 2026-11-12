@@ -8,6 +8,7 @@ on:
       - src/modes/party-screen-host.js
       - src/modes/party-ui-v2.js
       - tools/derby-webgl-browser-smoke.js
+      - tools/derby-webgl-render-benchmark.js
       - tools/test-derby-webgl.js
       - tools/build.js
       - .github/workflows/derby-webgl-pilot.yml
@@ -32,6 +33,7 @@ jobs:
           node --check src/modes/party-screen-host.js
           node --check src/modes/party-ui-v2.js
           node --check tools/derby-webgl-browser-smoke.js
+          node --check tools/derby-webgl-render-benchmark.js
           node --check tools/test-derby-webgl.js
           node tools/test-derby-webgl.js
           node tools/test-party-ui-v2.js
@@ -63,6 +65,7 @@ jobs:
             sleep 1
           done
           node tools/derby-webgl-browser-smoke.js
+          DERBY_BENCH_SECONDS=8 node tools/derby-webgl-render-benchmark.js
       - name: Upload pilot screenshots and reproducible QA
         if: always()
         uses: actions/upload-artifact@v4
