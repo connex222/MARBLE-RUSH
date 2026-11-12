@@ -11,6 +11,32 @@ const MarbleBrawlUI=(()=>{
   const ctx=()=>document.getElementById('partyStageCanvas')?.getContext('2d',{alpha:false});
   const $=id=>document.getElementById(id);
   let lastHud=0,rankSignature='',lastRound=0;
+  const broadcast={zoom:1,x:0,y:0,lastAt:0,lastGameTime:-1};
+  // Always keep the physical rim in view; the camera follows only a little
+  // towards living marbles rather than aggressively tracking one player.
+  function cameraFor(s,reduce){
+    const now=performance.now();
+    if(s.time<broadcast.lastGameTime-.2){
+      broadcast.zoom=1;broadcast.x=0;broadcast.y=0;
+    }
+    broadcast.lastGameTime=s.time;
+    const dt=broadcast.lastAt?Math.min(.05,Math.max(0,(now-broadcast.lastAt)/1000)):0;
+    broadcast.lastAt=now;
+    if(reduce){broadcast.zoom=1;broadcast.x=0;broadcast.y=0;return broadcast;}
+    const alive=s.marbles.filter(m=>m.alive);
+    const late=(380-s.radius)/270;
+    const finalDuel=alive.length===2&&(s.roster.length>2||s.radius<230);
+    const targetZoom=Math.min(1.075,1+.045*Math.max(0,late)+(finalDuel?.018:0));
+    const meanX=alive.length?alive.reduce((sum,m)=>sum+m.x,0)/alive.length:0;
+    const meanY=alive.length?alive.reduce((sum,m)=>sum+m.y,0)/alive.length:0;
+    const targetX=clamp(-meanX*SCALE*.09,-24,24);
+    const targetY=clamp(-meanY*SCALE*.06,-18,18);
+    const blend=1-Math.exp(-2.5*dt);
+    broadcast.zoom+=(targetZoom-broadcast.zoom)*blend;
+    broadcast.x+=(targetX-broadcast.x)*blend;
+    broadcast.y+=(targetY-broadcast.y)*blend;
+    return broadcast;
+  }
   const hazardNames={bumpers:'BUMPER BLITZ',ice:'BLACK ICE',rotor:'ROTOR RUMBLE',
     crumbling:'CRUMBLING EDGE',clean:'FINAL SHOWDOWN'};
   function rounded(c,x,y,w,h,r,fill,stroke,sw=1){
@@ -345,18 +371,19 @@ const MarbleBrawlUI=(()=>{
       brush=>arenaBack(brush,assets,Number(s.time)||0));
     // Cinematic camera punches (render-only, reduced-motion compliant).
     const sincePulse=s.time-s.lastPulseAt;
-    const lateDuel=s.marbles.filter(m=>m.alive).length===2;
-    const punch=!opts.reduce&&sincePulse>=0&&sincePulse<.65?
-      .052*(1-sincePulse/.65):0;
-    const zoom=1+(lateDuel?.045:0)+punch;
-    const jitter=!opts.reduce&&punch>0?Math.sin(s.time*97)*punch*73:0;
-    c.translate(CX+jitter,CY-jitter*.4);
-    c.scale(zoom,zoom);c.translate(-CX,-CY);
+    const cam=cameraFor(s,!!opts.reduce);
+    // Small sub-second pulse punch, never a camera whip or permanent shake.
+    const pulse=!opts.reduce&&sincePulse>=0&&sincePulse<.5?
+      .014*(1-sincePulse/.5):0;
+    c.translate(CX+cam.x,CY+cam.y);
+    c.scale(cam.zoom+pulse,cam.zoom+pulse);c.translate(-CX,-CY);
     bowl(c,assets,s,Number(s.time)||0,!!opts.reduce);
     endOverlay(c,s,assets);
     c.restore();
     updateHud(s);
     return true;
   }
-  return Object.freeze({draw});
+  return Object.freeze({draw,get framing(){
+    return Object.freeze({zoom:broadcast.zoom,x:broadcast.x,y:broadcast.y});
+  }});
 })();
