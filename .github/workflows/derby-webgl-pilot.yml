@@ -37,7 +37,8 @@ jobs:
         run: |
           git fetch --depth=1 origin main
           git diff --quiet FETCH_HEAD HEAD -- assets/raw src/engine.js src/modes/grandprix.js src/modes/derby.js
-          node tools/test-grandprix-regression.js <(git show FETCH_HEAD:src/engine.js)
+          git show FETCH_HEAD:src/engine.js > /tmp/marble-rush-main-engine.js
+          node tools/test-grandprix-regression.js /tmp/marble-rush-main-engine.js
         shell: bash
       - name: Build original stand-alone HTML with optional WebGL module
         run: npm run build
