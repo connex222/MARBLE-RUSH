@@ -37,7 +37,11 @@ jobs:
       - name: Validate source syntax
         run: |
           node --check src/modes/party-presentation.js
-          node --check src/modes/party-fx.js
+          # The old per-game FX painter was retired by the exclusive stage host.
+          test ! -e src/modes/party-fx.js
+          node --check src/modes/party-screen-host.js
+          node --check src/modes/party-scene-cache.js
+          node --check src/modes/party-tv-qa.js
           node tools/test-party-presentation.js
           node tools/test-party-fx.js
           node --check src/tv.js
