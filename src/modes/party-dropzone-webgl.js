@@ -301,6 +301,9 @@ const MarbleDropZoneWebGL=(()=>{
   gl.uniform3fv(loc.tint,new Float32Array([1,1,1]));
   gl.uniform1f(loc.opacity,1);
   bindMesh(meshStatic);
+  // Temporary depth-isolation diagnostic: are dynamically transformed
+  // meshes hidden by the baked board depth buffer on software WebGL?
+  gl.disable(gl.DEPTH_TEST);
   for(const pegId of s.gold){
    const peg=s.pegs[pegId];if(!peg)continue;
    drawMesh(meshSphere,vp,[xw(peg.x),yw(peg.y),.77],[.27,.27,.29],'#ffe37a');
@@ -331,6 +334,7 @@ const MarbleDropZoneWebGL=(()=>{
     s.roster[s.turn%s.roster.length]?.color||'#ffcd68',.55);
    gl.depthMask(true);
   }
+  gl.enable(gl.DEPTH_TEST);
   if(frame===0){
     gl.readPixels(probeX,probeY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,afterPixel);
     geometryProbe={at:[probeX,probeY],before:[...beforePixel],
