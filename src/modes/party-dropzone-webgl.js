@@ -8,12 +8,13 @@
  */
 const MarbleDropZoneWebGL=(()=>{
  'use strict';
- const TAU=Math.PI*2,DEG=Math.PI/180;
+ const TAU=Math.PI*2,DEG=Math.PI/180,VERTEX_STRIDE=10;
  const COLORS=['#ffbc8a','#ffd56f','#55cce8','#8cf0b0','#e1a8ff','#fda55f'];
  let canvas=null,gl=null,program=null,meshCube=null,meshSphere=null,meshStatic=null,meshMoving=null,loc=null;
  let resources=[],frame=0,drawCalls=0,quality=1,debugGPU='',backdropUrl='';
  let labels=null,notice=null,contextLost=false,contextLossHandler=null,contextRestoreHandler=null;
  let lastEventKey='',fpsLost=0,geometryProbe=null,meshTemplates=null;
+ let surfaceQuality='basic';
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const xw=x=>4+(x-500)*.022;
  const yw=y=>(400-y)*.019;
@@ -44,22 +45,15 @@ const MarbleDropZoneWebGL=(()=>{
    -y.reduce((s,v,i)=>s+v*eye[i],0),
    -z.reduce((s,v,i)=>s+v*eye[i],0),1]);
  }
- const vs=[
-  'attribute vec3 aPosition;attribute vec3 aNormal;attribute vec3 aColor;',
-  'uniform mat4 uMVP;uniform mat4 uModel;uniform vec3 uTint;',
-  'varying vec3 vColor;varying vec3 vNormal;',
-  'void main(){gl_Position=uMVP*vec4(aPosition,1.0);',
-  'vColor=aColor*uTint;vNormal=normalize(mat3(uModel)*aNormal);}'
- ].join('\n');
- const fs=[
-  'precision mediump float;',
-  'varying vec3 vColor;varying vec3 vNormal;',
-  'uniform float uOpacity;',
-  'void main(){vec3 n=normalize(vNormal);',
-  'float light=.34+.54*max(dot(n,normalize(vec3(-.42,.78,.49))),0.0)',
-  '+.15*max(dot(n,normalize(vec3(.68,.1,-.65))),0.0);',
-  'gl_FragColor=vec4(vColor*light+vec3(.075),uOpacity);}'
- ].join('\n');
+ const vs=["attribute vec3 aPosition;attribute vec3 aNormal;attribute vec3 aColor;","attribute float aMaterial;","uniform mat4 uMVP;uniform mat4 uModel;uniform vec3 uTint;","varying vec3 vColor;varying vec3 vNormal;varying vec3 vWorld;","varying float vMaterial;","void main(){vec4 world=uModel*vec4(aPosition,1.0);","gl_Position=uMVP*vec4(aPosition,1.0);","vWorld=world.xyz;vMaterial=aMaterial;vColor=aColor*uTint;","vNormal=normalize(mat3(uModel)*aNormal);}"] .join('\n');
+ const fs=["precision mediump float;","varying vec3 vColor;varying vec3 vNormal;varying vec3 vWorld;","varying float vMaterial;","uniform float uOpacity;uniform float uPremium;uniform vec3 uCamera;","void main(){vec3 n=normalize(vNormal);","vec3 key=normalize(vec3(-.42,.78,.49));","vec3 fill=normalize(vec3(.68,.1,-.65));","float light=.28+.56*max(dot(n,key),0.0)","+.18*max(dot(n,fill),0.0);","vec3 colour=vColor*light+vec3(.035,.050,.068);","if(uPremium>0.5){","float metal=1.0-step(0.5,abs(vMaterial-1.0));","float glass=1.0-step(0.5,abs(vMaterial-2.0));","float marble=1.0-step(0.5,abs(vMaterial-3.0));","float shine=max(metal,max(glass,marble));","if(shine>0.5){","vec3 viewDir=normalize(uCamera-vWorld);","vec3 halfDir=normalize(key+viewDir);","float smoothness=metal*38.0+glass*52.0+marble*64.0;","float spec=pow(max(dot(n,halfDir),0.0),smoothness);","float rim=pow(1.0-max(dot(n,viewDir),0.0),3.0);","vec3 gleam=mix(vec3(.75,.86,.96),vColor,metal*.40);","colour+=gleam*spec*(metal*.50+glass*.66+marble*.82);","colour+=vColor*rim*(metal*.12+glass*.28+marble*.24);","}}","gl_FragColor=vec4(clamp(colour,0.0,1.0),uOpacity);}"].join('\n');
+ function materialId(tint,override){
+  if(Number.isInteger(override))return override;
+  if(['#8cebf6','#e7f8f2','#69f5ee','#f38cc3','#83ecfa','#83e8f1'].includes(tint))return 2;
+  if(['#bf8b4d','#f4d897','#ffd891','#ffe6a9','#f6d286','#ffe7a7',
+      '#ffeaac','#ffe8ae','#ffe37a','#ffef94','#ffdf94','#fff0af'].includes(tint))return 1;
+  return 0;
+ }
  function rgb(hex){
   if(typeof hex!=='string'||!/^#[0-9a-f]{6}$/i.test(hex))return [1,.68,.36];
   return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255);
@@ -71,7 +65,7 @@ const MarbleDropZoneWebGL=(()=>{
   resources.push({type:'shader',object:o});return o;
  }
  function geometry(v,i){
-  if(v.length/9>=65536)throw Error('Drop Zone WebGL1 index overflow');
+  if(v.length/VERTEX_STRIDE>=65536)throw Error('Drop Zone WebGL1 index overflow');
   const vertices=gl.createBuffer(),indices=gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER,vertices);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);
@@ -114,12 +108,14 @@ const MarbleDropZoneWebGL=(()=>{
  }
  function bakedPanel(){
   const v=[],i=[],cb=cube(),sp=sphere(8,12);
-  function append(mesh,pos,scaleVec,tint){
-   const offset=v.length/9,rgbValue=rgb(tint);
+  function append(mesh,pos,scaleVec,tint,manualMaterial){
+   const offset=v.length/VERTEX_STRIDE,col=rgb(tint),material=materialId(tint,manualMaterial);
    for(let k=0;k<mesh.v.length;k+=9){
-    v.push(pos[0]+mesh.v[k]*scaleVec[0],pos[1]+mesh.v[k+1]*scaleVec[1],
-     pos[2]+mesh.v[k+2]*scaleVec[2],
-     mesh.v[k+3],mesh.v[k+4],mesh.v[k+5],...rgbValue);
+    const nx=mesh.v[k+3]/scaleVec[0],ny=mesh.v[k+4]/scaleVec[1],
+      nz=mesh.v[k+5]/scaleVec[2],len=Math.hypot(nx,ny,nz)||1;
+    v.push(pos[0]+mesh.v[k]*scaleVec[0],
+      pos[1]+mesh.v[k+1]*scaleVec[1],pos[2]+mesh.v[k+2]*scaleVec[2],
+      nx/len,ny/len,nz/len,...col,material);
    }
    for(const id of mesh.i)i.push(offset+id);
   }
@@ -191,9 +187,12 @@ const MarbleDropZoneWebGL=(()=>{
   resources.push({type:'program',object:program});
   gl.useProgram(program);
   loc={pos:gl.getAttribLocation(program,'aPosition'),normal:gl.getAttribLocation(program,'aNormal'),
-   color:gl.getAttribLocation(program,'aColor'),mvp:gl.getUniformLocation(program,'uMVP'),
+   color:gl.getAttribLocation(program,'aColor'),material:gl.getAttribLocation(program,'aMaterial'),
+   mvp:gl.getUniformLocation(program,'uMVP'),
    model:gl.getUniformLocation(program,'uModel'),tint:gl.getUniformLocation(program,'uTint'),
-   opacity:gl.getUniformLocation(program,'uOpacity')};
+   opacity:gl.getUniformLocation(program,'uOpacity'),
+   premium:gl.getUniformLocation(program,'uPremium'),
+   camera:gl.getUniformLocation(program,'uCamera')};
   meshTemplates={cube:cube(),sphere:sphere()};
   meshCube=geometry(meshTemplates.cube.v,meshTemplates.cube.i);
   meshSphere=geometry(meshTemplates.sphere.v,meshTemplates.sphere.i);
@@ -217,9 +216,11 @@ const MarbleDropZoneWebGL=(()=>{
   gl.enableVertexAttribArray(loc.pos);
   gl.enableVertexAttribArray(loc.normal);
   gl.enableVertexAttribArray(loc.color);
-  gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,36,0);
-  gl.vertexAttribPointer(loc.normal,3,gl.FLOAT,false,36,12);
-  gl.vertexAttribPointer(loc.color,3,gl.FLOAT,false,36,24);
+  gl.enableVertexAttribArray(loc.material);
+  gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,40,0);
+  gl.vertexAttribPointer(loc.normal,3,gl.FLOAT,false,40,12);
+  gl.vertexAttribPointer(loc.color,3,gl.FLOAT,false,40,24);
+  gl.vertexAttribPointer(loc.material,1,gl.FLOAT,false,40,36);
   gl.drawElements(gl.TRIANGLES,mesh.count,gl.UNSIGNED_SHORT,0);drawCalls++;
  }
  function drawMovingMesh(state,vp){
@@ -227,12 +228,15 @@ const MarbleDropZoneWebGL=(()=>{
   // One batched GPU upload holds real 3D gold pegs, bumper, gate and ball.
   // Cache primitive topology at mount; only positions change each frame.
   const v=[],i=[],sphereRaw=meshTemplates.sphere,cubeRaw=meshTemplates.cube;
-  function add(mesh,p,dims,tint){
-   const offset=v.length/9,col=rgb(tint);
-   for(let k=0;k<mesh.v.length;k+=9)
+  function add(mesh,p,dims,tint,manualMaterial){
+   const offset=v.length/VERTEX_STRIDE,col=rgb(tint),material=materialId(tint,manualMaterial);
+   for(let k=0;k<mesh.v.length;k+=9){
+    const nx=mesh.v[k+3]/dims[0],ny=mesh.v[k+4]/dims[1],
+      nz=mesh.v[k+5]/dims[2],len=Math.hypot(nx,ny,nz)||1;
     v.push(p[0]+mesh.v[k]*dims[0],p[1]+mesh.v[k+1]*dims[1],
       p[2]+mesh.v[k+2]*dims[2],
-      mesh.v[k+3],mesh.v[k+4],mesh.v[k+5],...col);
+      nx/len,ny/len,nz/len,...col,material);
+   }
    for(const index of mesh.i)i.push(offset+index);
   }
   for(const index of state.gold){
@@ -249,7 +253,7 @@ const MarbleDropZoneWebGL=(()=>{
     add(sphereRaw,[xw(p.x)+.12,yw(p.y)-.14,.03],
       [.49,.19,.07],'#071b2c');
     add(sphereRaw,[xw(p.x),yw(p.y),1.43],
-      [.43,.43,.43],p.color||'#ffd96e');
+      [.43,.43,.43],p.color||'#ffd96e',3);
   }
   else if(!state.done){
    const owner=state.roster[state.turn%state.roster.length];
@@ -259,7 +263,7 @@ const MarbleDropZoneWebGL=(()=>{
    add(cubeRaw,[x-.53,y+.13,.70],[.08,.69,.22],'#ffdf94');
    add(cubeRaw,[x+.53,y+.13,.70],[.08,.69,.22],'#ffdf94');
    add(cubeRaw,[x,y+.79,.70],[.62,.11,.29],'#fff0af');
-   add(sphereRaw,[x,y,1.43],[.43,.43,.43],owner?.color||'#ffce73');
+   add(sphereRaw,[x,y,1.43],[.43,.43,.43],owner?.color||'#ffce73',3);
   }
   if(state.round===DropZone.ROUNDS&&Number.isInteger(state.jackpotBin)){
     const k=state.jackpotBin,cx=xw(80+52.5+k*105),cy=yw(752);
@@ -318,7 +322,10 @@ const MarbleDropZoneWebGL=(()=>{
   }
   const ext=gl.getExtension('WEBGL_debug_renderer_info');
   debugGPU=String(ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER));
-  quality=/swiftshader|llvmpipe|software/i.test(debugGPU)?.55:1;
+  const software=/swiftshader|llvmpipe|software/i.test(debugGPU);
+  quality=software?.55:1;
+  const forced=new URLSearchParams(location.search).get('dropzoneMaterial');
+  surfaceQuality=forced==='basic'||forced==='premium'?forced:(software?'basic':'premium');
   frame=0;drawCalls=0;backdropUrl='';contextLost=false;fpsLost=0;lastEventKey='';geometryProbe=null;
   resize();setup();labelsCreate();
   contextLossHandler=e=>{e.preventDefault();contextLost=true;};
@@ -401,6 +408,8 @@ const MarbleDropZoneWebGL=(()=>{
   gl.viewport(0,0,canvas.width,canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.useProgram(program);drawCalls=0;
+  gl.uniform1f(loc.premium,surfaceQuality==='premium'?1:0);
+  gl.uniform3fv(loc.camera,new Float32Array([4.9,1.0,32.5]));
   // Baked *actual 3D* cabinet, pegged field, dividers and eight bucket slots.
   gl.uniformMatrix4fv(loc.model,false,identity());
   gl.uniformMatrix4fv(loc.mvp,false,vp);
@@ -433,9 +442,14 @@ const MarbleDropZoneWebGL=(()=>{
   singleCanvas:!!canvas&&canvas.parentElement?.querySelectorAll('canvas').length===1,
   labels:labels?.children.length||0,backdrop:!!backdropUrl,
   gpu:debugGPU,resolution:[canvas?.width||0,canvas?.height||0],
-  originalRulesModified:false,geometryProbe,
+  originalRulesModified:false,geometryProbe,surfaceQuality,
+  materialAttributeFloats:VERTEX_STRIDE,
   meshTemplatesCached:!!meshTemplates,cameraTarget:[3.0,0,0],
   jackpotIndexSource:'DropZone.state.jackpotBin'};}
- return Object.freeze({mount,unmount,draw:render,debug,
+ function setSurfaceQuality(next){
+  if(!gl||!['basic','premium'].includes(next))return false;
+  surfaceQuality=next;return true;
+ }
+ return Object.freeze({mount,unmount,draw:render,debug,setSurfaceQuality,
    get canvas(){return canvas;},get active(){return !!gl&&!contextLost;}});
 })();
