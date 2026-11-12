@@ -69,3 +69,17 @@ automated browser QA uses to preserve its proof that the real marble writes
 visible pixels. The performance benchmark and actual player preview use no
 synchronous readbacks. This is a reduction in render cost, not yet evidence
 of acceptable hardware frame rates.
+
+
+## Phase 4b — recover the 3D game after real graphics-context loss
+
+The browser smoke test uses \`WEBGL_lose_context\` to discard the **actual**
+GPU context while a Drop Zone game exists, waits for the renderer to report
+\`contextLost\`, then restores the context and demands fresh real WebGL
+geometry and shader resources. It verifies that the original authoritative
+turn, drop count and score have not been reset and there is still exactly
+one canvas. It saves a separate restored-scene screenshot.
+
+This test is limited to software Chromium; it is not proof of physical-TV
+driver stability, power suspension, network reconnect or a 20-minute session.
+If restoration breaks, CI fails and PR #55 must remain a draft.

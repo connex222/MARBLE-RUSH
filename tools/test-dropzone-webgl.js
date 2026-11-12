@@ -30,6 +30,11 @@ assert.ok(gl.includes('sphere(6,9)') &&
  gl.includes('staticTriangles=i.length/3') &&
  gl.includes('dynamicTriangles=i.length/3'),
  'True 3D geometry LOD and no unnecessary production pixel readbacks');
+assert.ok(gl.includes('contextLosses=0,contextRestores=0')&&
+ gl.includes('contextLosses++')&&
+ gl.includes('contextRestores++')&&
+ gl.includes('setup();contextRestores++;contextLost=false;'),
+ 'Do not claim WebGL recovery without rebuilding actual GPU resources');
 assert.ok(gl.includes('meshTemplates.sphere')&&
  gl.includes('projectToStage(world,vp)')&&
  gl.includes("lookAt([4.9,1.0,32.5],[3.0,0,0])")&&

@@ -15,6 +15,7 @@ const MarbleDropZoneWebGL=(()=>{
  let labels=null,notice=null,contextLost=false,contextLossHandler=null,contextRestoreHandler=null;
  let lastEventKey='',fpsLost=0,geometryProbe=null,meshTemplates=null;
  let staticTriangles=0,dynamicTriangles=0,pixelProbeEnabled=false;
+ let contextLosses=0,contextRestores=0;
  let surfaceQuality='basic',reviewOverlay=null,reviewFrames=0,reviewFps=0,reviewFrameAt=0;
  const LIGHT_CAMERA=new Float32Array([4.9,1.0,32.5]);
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -328,13 +329,18 @@ const MarbleDropZoneWebGL=(()=>{
   surfaceQuality=forced==='basic'||forced==='premium'?forced:(software?'basic':'premium');
   frame=0;drawCalls=0;backdropUrl='';contextLost=false;fpsLost=0;
   lastEventKey='';geometryProbe=null;reviewFrames=0;reviewFps=0;reviewFrameAt=performance.now();
-  staticTriangles=0;dynamicTriangles=0;
+  staticTriangles=0;dynamicTriangles=0;contextLosses=0;contextRestores=0;
   // Reading pixels synchronously stalls a real GPU: restrict readback to
   // an explicit diagnostic query. Normal play and benchmarks never do it.
   pixelProbeEnabled=new URLSearchParams(location.search).get('probe3d')==='1';
   resize();setup();labelsCreate();createHardwareOverlay();
-  contextLossHandler=e=>{e.preventDefault();contextLost=true;};
-  contextRestoreHandler=()=>{contextLost=false;setup();};
+  contextLossHandler=e=>{e.preventDefault();contextLost=true;contextLosses++;};
+  contextRestoreHandler=()=>{
+    // Rebuild only the WebGL resource handles; the authoritative DropZone
+    // session and the exclusive TV canvas are intentionally retained.
+    // Keep the lost flag until ALL shaders and buffers exist again.
+    setup();contextRestores++;contextLost=false;
+  };
   canvas.addEventListener('webglcontextlost',contextLossHandler);
   canvas.addEventListener('webglcontextrestored',contextRestoreHandler);
   canvas.dataset.graphics='dropzone-webgl-native-3d';return true;
@@ -477,6 +483,7 @@ const MarbleDropZoneWebGL=(()=>{
   hardwareFpsSample:reviewFps,hardwareQaOverlayActive:!!reviewOverlay,
   materialAttributeFloats:VERTEX_STRIDE,
   staticTriangles,dynamicTriangles,pixelProbeEnabled,
+  contextLost,contextLosses,contextRestores,
   meshTemplatesCached:!!meshTemplates,cameraTarget:[3.0,0,0],
   jackpotIndexSource:'DropZone.state.jackpotBin'};}
  function setSurfaceQuality(next){

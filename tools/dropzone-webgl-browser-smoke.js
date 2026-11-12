@@ -123,6 +123,54 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   assert.equal(scored.turn,1);assert.equal(scored.drops,1);
   assert.ok(scored.score>=50&&scored.score<=1000);
   proof.physics={first,flight,scored};
+  // Deliberately lose and restore the actual WebGL GPU context, not a CSS
+  // canvas. The original rule engine must retain every completed score.
+  const recovery=await page.evaluate(()=>{
+    const canvas=document.getElementById('partyStageCanvas');
+    const ctx=canvas.getContext('webgl2')||canvas.getContext('webgl');
+    const extension=ctx.getExtension('WEBGL_lose_context');
+    if(!extension)return {supported:false};
+    window.__dropZoneContextRecovery=extension;
+    const state=window.__MR.MODES.dropzone.session().state;
+    const before={turn:state.turn,drops:state.roster[0].drops,
+      score:state.roster[0].score,frame:MarbleDropZoneWebGL.debug().frame};
+    extension.loseContext();
+    return {supported:true,before};
+  });
+  assert.equal(recovery.supported,true,
+    'Chromium should support WEBGL_lose_context for this recovery test');
+  await page.waitForFunction(()=>MarbleDropZoneWebGL.debug().contextLost,
+    null,{timeout:9000});
+  assert.equal(await page.evaluate(()=>MarbleDropZoneWebGL.active),false);
+  await page.evaluate(()=>window.__dropZoneContextRecovery.restoreContext());
+  await page.waitForFunction(()=>
+    MarbleDropZoneWebGL.active&&
+    MarbleDropZoneWebGL.debug().contextRestores===1,
+    null,{timeout:14000});
+  await page.waitForFunction(previous=>
+    MarbleDropZoneWebGL.debug().frame>previous,
+    recovery.before.frame,{timeout:14000});
+  const restored=await page.evaluate(()=>{
+    const st=window.__MR.MODES.dropzone.session().state;
+    const canvas=document.getElementById('partyStageCanvas');
+    return {turn:st.turn,drops:st.roster[0].drops,score:st.roster[0].score,
+      graphics:MarbleDropZoneWebGL.debug(),
+      canvasCount:canvas.parentElement.querySelectorAll('canvas').length,
+      owner:window.__MR.partyScreen.assertExclusive(),
+      glError:(canvas.getContext('webgl2')||canvas.getContext('webgl')).getError()};
+  });
+  assert.equal(restored.graphics.contextRestores,1);
+  assert.equal(restored.graphics.contextLosses,1);
+  assert.equal(restored.glError,0);
+  assert.equal(restored.owner,true);
+  assert.equal(restored.canvasCount,1);
+  assert.equal(restored.score,recovery.before.score,
+    'GPU context reset destroyed authoritative Drop Zone scores');
+  assert.equal(restored.drops,recovery.before.drops);
+  assert.equal(restored.turn,recovery.before.turn);
+  assert.ok(restored.graphics.staticTriangles>18000);
+  proof.gpuRecovery={supported:true,restored};
+  await page.screenshot({path:'qa-dropzone-webgl-after-gpu-restore.png'});
   // Switch back to the normal Derby Canvas2D, no WebGL remnants.
   await page.evaluate(()=>window.__MR.Game.toLobby());
   await page.locator('#partyModeCards .partyModeCard[data-mode="derby"]').click();
