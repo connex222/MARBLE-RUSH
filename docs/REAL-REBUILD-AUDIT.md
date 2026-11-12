@@ -150,6 +150,26 @@ The approved `assets/raw` Party Pack deliverables are **PNG raster images** (sty
 
 Capture matching 1920×1080 TV shots for Derby, Drop Zone, Brawl, Curling and Golf from both the previous development build and the improvement build; label source commit and phase. Pair each with relevant phone screenshots, gameplay state trace and CI artefact. Visual changes to unaffected game layouts may be minimal: **do not falsely market unchanged art as a new generation of 3D assets**. All changed architecture and mode behaviour must be documented.
 
+## 12 November 2026 mechanic-led visual clarity pass
+
+- **Derby first:** live on-track rank numbers now derive from actual runner
+  distances. The result overlay shows a human's *settled* ticket as WIN or
+  LOSS with real virtual-gem stake, payout and net, rather than merely naming
+  the heat winner. Existing 6-runner catch-up zoom remains physics-derived.
+- **Brawl next:** the closing camera smoothly tracks only a small weighted
+  centre of surviving marbles (max 24px horizontal, 18px vertical) and zooms
+  at most 7.5%. It respects reduced motion, does not cut off the rim, and the
+  original shockwave/escape/knockout rules are unchanged.
+- **Curling:** a measurement line is drawn between the *genuine nearest stone*
+  and the rules engine's button (1140,265) during an end's results phase.
+- **Golf:** the TV guidance now displays actual marble-to-cup distance derived
+  from physical ball and cup coordinates, not a fabricated landing prediction.
+- **Drop Zone:** the approved cabinet remains state-derived and deliberately
+  unchanged until any separate gameplay defect is demonstrated.
+
+These are truthful, incremental art-direction changes, not a new 3D mesh
+renderer or a substitute for an artist-led AAA asset overhaul.
+
 ## 12 November 2026 performance pass — a single detached backdrop raster
 
 Each mode now reuses a single 1920×1080 detached raster of **only approved static art and ambient lighting** for up to 850 ms, via `MarbleSceneCache`. Physics, hazards, camera, balls, collisions, scores and results remain live, on the same exclusive visible canvas. The cache is not a game layer, has no independent frame loop, is cleared on mode switch and never mounts a second DOM element. Its one-buffer memory ceiling is 8,294,400 bytes; automated tests verify this and active mode ownership. Speed improvements must still be established from measured frames, not asserted from architecture alone.
