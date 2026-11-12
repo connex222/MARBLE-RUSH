@@ -132,7 +132,7 @@ const MarblePartyScreen=(()=>{
       p95FrameIntervalMs:percentile(r.frameIntervals,.95),
       p95DrawMs:percentile(r.drawSamples,.95),
       measurements:r.frameIntervals.length,
-      fpsEstimateReliable:r.frameIntervals.length>=120,
+      fpsEstimateReliable:r.frameIntervals.length>=40,
       slowFrameShare:r.intervals?
         r.slowIntervals/r.intervals:0,
       renderFailures:r.renderFailures,active:active===r.mode,
