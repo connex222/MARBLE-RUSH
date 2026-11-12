@@ -41,8 +41,8 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   assert.equal(first.canvasCount,1,'More than one active stage canvas');
   assert.equal(first.webgl,true);
   assert.equal(first.pegs,85);assert.equal(first.slots,8);
-  assert.ok(first.graphics.realMeshes&&first.graphics.drawCalls>=6&&
-   first.graphics.drawCalls<=16,'Must batch native 3D pegs');
+  assert.ok(first.graphics.realMeshes&&first.graphics.drawCalls>=2&&
+   first.graphics.drawCalls<=4,'Must batch native 3D pegs');
   assert.equal(first.graphics.labels,9,'Eight scored bins and one event callout');
   console.log('DROPZONE-3D-PIXEL-PROBE '+JSON.stringify(first.graphics.geometryProbe));
   assert.equal(first.graphics.geometryProbe?.error,0,
