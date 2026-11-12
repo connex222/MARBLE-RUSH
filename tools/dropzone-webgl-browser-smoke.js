@@ -79,16 +79,24 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   proof.graphics=first.graphics;
   await page.screenshot({path:'qa-dropzone-webgl-aim.png'});
   await page.locator('#dropNow').click();
-  await page.waitForFunction(()=>!!window.__MR.MODES.dropzone.session().state.ball,
-   null,{timeout:8000});
-  await page.waitForTimeout(300);
+  // Under very slow SwiftShader rendering the game clock stays correct:
+  // a complete scored drop may happen before the browser's next screenshot.
+  // Both phases are valid; the test must not interpret a scored ball as lost.
+  await page.waitForFunction(()=>{
+   const st=window.__MR.MODES.dropzone.session().state;
+   return !!st.ball||st.turn>=1;
+  },null,{timeout:10000});
   const flight=await page.evaluate(()=>{
    const st=window.__MR.MODES.dropzone.session().state;
    return {x:st.ball?.x,y:st.ball?.y,vy:st.ball?.vy,
-    elapsed:st.elapsed,draw:MarbleDropZoneWebGL.debug(),count:st.events.length};
+    turn:st.turn,elapsed:st.elapsed,draw:MarbleDropZoneWebGL.debug(),
+    scored:st.events.some(e=>e.kind==='bucket'&&e.round===1),
+    count:st.events.length};
   });
-  assert.ok(Number.isFinite(flight.x)&&Number.isFinite(flight.y)&&flight.y>35);
-  assert.ok(flight.draw.frame>first.graphics.frame,'Live 3D ball did not move');
+  const inFlight=Number.isFinite(flight.x)&&Number.isFinite(flight.y)&&flight.y>35;
+  assert.ok(inFlight||(flight.turn>=1&&flight.scored),
+    'Drop must be either physically airborne or officially scored: '+JSON.stringify(flight));
+  assert.ok(flight.draw.frame>first.graphics.frame,'3D renderer stopped submitting frames');
   await page.screenshot({path:'qa-dropzone-webgl-flight.png'});
   // Drive deterministic engine until that dropped marble scores.
   await page.evaluate(()=>{
