@@ -187,6 +187,10 @@ const MarblePartyUI=(()=>{
    return {lanes,finishTop:fTop,finishBot:fBot};
  }
  function runners(c,state,assets,geometry,reduce){
+   // Position callouts come from true race distances, including ties; no
+   // cosmetic ranking or fake pass events.
+   const order=(state.horses||[]).slice().sort((a,b)=>b.x-a.x||a.id-b.id);
+   const placing=new Map(order.map((horse,i)=>[horse.id,i+1]));
    for(let i=0;i<6;i++){
      const h=state.horses[i],lane=geometry.lanes[i];
      if(!h||!lane)continue;
@@ -210,7 +214,9 @@ const MarblePartyUI=(()=>{
      const labelX=clamp(x,left+53,right-70),labelY=y-r-29;
      roundBox(c,labelX-58,labelY-12,116,27,8,'rgba(8,15,34,.89)','#ffde8b',1.6);
      c.fillStyle='#fff9ec';c.font='800 '+Math.round(17+depth*3)+'px Nunito,sans-serif';
-     c.textAlign='center';c.fillText(h.name,labelX,labelY+8);
+     c.textAlign='center';
+     c.fillText(state.phase==='racing'?placing.get(h.id)+' · '+h.name:h.name,
+       labelX,labelY+8,110);
    }
  }
  function effects(c,assets,s,g,reduce){
@@ -245,8 +251,16 @@ const MarblePartyUI=(()=>{
      c.font='900 50px Fredoka,sans-serif';c.fillText('HEAT '+s.round+' WINNER',960,510);
      c.fillStyle='#ffd163';c.font='900 110px Fredoka,sans-serif';
      c.fillText(winner?.name||'WINNER',960,631);
-     c.font='800 25px Nunito,sans-serif';c.fillStyle='#fff8e9';
-     c.fillText('VIRTUAL GEMS PAID · NEXT HEAT STARTS SHORTLY',960,698);
+     const viewer=(s.roster||[]).find(p=>!p.cpu);
+     const ticket=viewer?.bets?.find(b=>b.round===s.round);
+     let verdict='OFFICIAL RESULT · NEXT HEAT STARTS SHORTLY';
+     if(ticket){
+       verdict=ticket.payout>0?
+         'YOUR PICK WON · '+ticket.payout+' ◆ PAID · +'+(ticket.payout-ticket.stake)+' ◆ NET':
+         'YOUR PICK LOST · '+ticket.stake+' ◆ STAKE · NEXT HEAT AWAITS';
+     }
+     c.font='900 26px Nunito,sans-serif';c.fillStyle=ticket?.payout?'#c1ffe6':'#fff8e9';
+     c.fillText(verdict,960,698,1150);
      c.restore();
    }
  }
