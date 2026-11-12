@@ -25,7 +25,7 @@ const MarblePartyUI=(()=>{
  function activate(next,options={}){
    if(next!=='derby'&&next!=='dropzone')return false;
    // Native WebGL owns the canvas, but its HUD must remain identical.
-   if(next==='derby'&&options.hudOnly){
+   if((next==='derby'||next==='dropzone')&&options.hudOnly){
      stage=document.querySelector('[data-screen="party-stage"]');
      canvas=null;ctx=null;
      if(!stage)return false;
@@ -586,7 +586,7 @@ const MarblePartyUI=(()=>{
    }
  }
 
- return Object.freeze({activate,updateDerby,drawDerby,drawDropZone,
+ return Object.freeze({activate,updateDerby,updateDropZone,drawDerby,drawDropZone,
    get derbyFraming(){return {zoom:derbyZoom,target:derbyZoomTarget,spread:derbySpread};}
  });
 })();

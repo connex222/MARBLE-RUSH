@@ -10,11 +10,15 @@ const MarblePartyScreen=(()=>{
   // Opt-in native-mesh pilot; normal Derby and all other games stay untouched.
   const derby3dReview=typeof location!=='undefined'&&
     new URLSearchParams(location.search).get('derby3d')==='1';
+  const drop3dReview=typeof location!=='undefined'&&
+    new URLSearchParams(location.search).get('dropzone3d')==='1';
   const definitions=Object.freeze({
     derby:   {renderer:derby3dReview?'derby-webgl-mesh-pilot-v1':'derby-track-v3', panels:['ppTitleArea','ppBoardLabel','ppTicker','ppBetPanel','ppLeaderPanel'],
       draw:(s,assets,options)=>derby3dReview?MarbleDerbyWebGL.draw(s,assets,options):MarblePartyUI.drawDerby(s,assets,options)},
-    dropzone:{renderer:'dropzone-cabinet-v3', panels:['ppDropHeader','ppDropPanel','ppDropStandings','ppDropStats'],
-      draw:(s,assets,options)=>MarblePartyUI.drawDropZone(s,assets,options)},
+    dropzone:{renderer:drop3dReview?'dropzone-webgl-native-3d-v1':'dropzone-cabinet-v3',
+      panels:['ppDropHeader','ppDropPanel','ppDropStandings','ppDropStats'],
+      draw:(s,assets,options)=>drop3dReview?
+        MarbleDropZoneWebGL.draw(s,assets,options):MarblePartyUI.drawDropZone(s,assets,options)},
     brawl:   {renderer:'brawl-arena-v3', panels:['ppBrawlHeader','ppBrawlStats','ppBrawlPanel','ppBrawlStandings'],
       draw:(s,assets,options)=>MarbleBrawlUI.draw(s,assets,options)},
     curling: {renderer:'curling-rink-v3', panels:['ppCurlHud'],
@@ -46,9 +50,10 @@ const MarblePartyScreen=(()=>{
     ensure();
     if(active!==null)unmount();
     canvas=document.getElementById('partyStageCanvas');
-    if(name==='derby'&&derby3dReview){
-      // Remove Canvas2D from the DOM before obtaining WebGL.
-      MarbleDerbyWebGL.mount(canvas);
+    if((name==='derby'&&derby3dReview)||(name==='dropzone'&&drop3dReview)){
+      // Remove Canvas2D from DOM before requesting the single WebGL context.
+      if(name==='derby')MarbleDerbyWebGL.mount(canvas);
+      else MarbleDropZoneWebGL.mount(canvas);
       canvas=document.getElementById('partyStageCanvas');
     }
     const def=definitions[name];
@@ -73,7 +78,9 @@ const MarblePartyScreen=(()=>{
     }[name];
     document.getElementById(scoreboard)?.replaceChildren();
     if(name==='derby'||name==='dropzone'){
-      if(!MarblePartyUI.activate(name,{hudOnly:name==='derby'&&derby3dReview}))throw Error(name+' illustrator cannot acquire stage');
+      if(!MarblePartyUI.activate(name,{hudOnly:
+        (name==='derby'&&derby3dReview)||(name==='dropzone'&&drop3dReview)}))
+        throw Error(name+' illustrator cannot acquire stage');
     }
     report={mode:name,renderer:def.renderer,mountAt:performance.now(),frames:0,
       firstFrameAt:null,lastFrameAt:null,renderMsTotal:0,renderMsMax:0,
@@ -90,11 +97,12 @@ const MarblePartyScreen=(()=>{
     }
     if(report)history.push({...report,unmountAt:performance.now()});
     const wasDerby3d=active==='derby'&&derby3dReview;
+    const wasDrop3d=active==='dropzone'&&drop3dReview;
     active=null;report=null;
-    if(wasDerby3d){
-      MarbleDerbyWebGL.unmount();
+    if(wasDerby3d)MarbleDerbyWebGL.unmount();
+    if(wasDrop3d)MarbleDropZoneWebGL.unmount();
+    if(wasDerby3d||wasDrop3d)
       canvas=document.getElementById('partyStageCanvas');
-    }
     if(stage){
       stage.removeAttribute('data-mode');
       stage.removeAttribute('data-owner');
@@ -155,7 +163,8 @@ const MarblePartyScreen=(()=>{
       renderFailures:r.renderFailures,atmosphereCache:MarbleSceneCache.stats(),active:active===r.mode,
       raceCanvasHidden:!!raceCanvas?.hidden,
       authoritativeClock:MarblePartyClock.stats(),
-      graphics:active==='derby'&&derby3dReview?MarbleDerbyWebGL.debug():null
+      graphics:active==='derby'&&derby3dReview?MarbleDerbyWebGL.debug():
+        active==='dropzone'&&drop3dReview?MarbleDropZoneWebGL.debug():null
     });
   }
   function assertExclusive(){
@@ -170,7 +179,10 @@ const MarblePartyScreen=(()=>{
       })&&
       (active!=='derby'||!derby3dReview||
        (MarbleDerbyWebGL.active&&MarbleDerbyWebGL.canvas===canvas&&
-        MarbleDerbyWebGL.debug().realMeshes));
+        MarbleDerbyWebGL.debug().realMeshes))&&
+      (active!=='dropzone'||!drop3dReview||
+       (MarbleDropZoneWebGL.active&&MarbleDropZoneWebGL.canvas===canvas&&
+        MarbleDropZoneWebGL.debug().realMeshes));
   }
   return Object.freeze({isMode,mount,unmount,render,telemetry,assertExclusive,
     get active(){return active;},
