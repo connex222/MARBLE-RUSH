@@ -9,6 +9,7 @@ const brawl=read('src/modes/party-brawl-ui-v2.js');
 const curling=read('src/modes/party-curling-ui-v2.js');
 const golf=read('src/modes/party-golf-ui-v2.js');
 const host=read('src/modes/party-screen-host.js');
+const sceneCache=read('src/modes/party-scene-cache.js');
 const build=read('tools/build.js');
 const modes=['derby','dropzone','brawl','curling','golf'];
 assert.equal((html.match(/id="partyStageCanvas"/g)||[]).length,1,
@@ -54,6 +55,14 @@ assert.ok(!build.includes("'party-fx'")&&
  !fs.existsSync(path.join(root,'src/modes/party-fx.js')),
  'Retired overlay still bundled or checked in');
 assert.ok(build.includes("'party-screen-host'"));
+assert.ok(build.includes("'party-scene-cache'"));
+assert.ok(host.includes('MarbleSceneCache.keepOnly(name)')&&
+ host.includes('MarbleSceneCache.clear()'),'Scene cache not attached to exclusive host lifetime');
+assert.ok(!sceneCache.includes('appendChild')&&!sceneCache.includes('setInterval')&&
+ !sceneCache.includes('requestAnimationFrame'),'Background buffer must not own a second DOM game or animation loop');
+for(const file of [derby,brawl,curling,golf])
+ assert.ok(file.includes('MarbleSceneCache.paint('),
+  'One of five modes has no reusable background cache');
 assert.ok(!/PartyFX\.draw/.test(tv+host));
 assert.ok(derby.includes('pp_derby_bg')&&
  derby.includes('pp_derby_surface_main')&&
