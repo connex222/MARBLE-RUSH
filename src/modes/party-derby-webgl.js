@@ -8,7 +8,7 @@
 const MarbleDerbyWebGL=(()=>{
   'use strict';
   const LENGTH=1500, LANES=6, TAU=Math.PI*2;
-  let canvas=null,gl=null,program=null,meshBox=null,meshSphere=null,meshPlane=null;
+  let canvas=null,gl=null,program=null,meshBox=null,meshSphere=null,meshPlane=null,meshStatic=null;
   let locations=null,lost=false,drawCalls=0,frameCount=0;
   let cameraX=0,cameraDistance=42,cameraLast=0,cameraSpread=0;
   let round=0,textureCache=new Map(),resourceList=[],contextLostListener=null;
@@ -69,7 +69,9 @@ const MarbleDerbyWebGL=(()=>{
       for(let k=0;k<4;k++)vertices.push(...face.p[k],...face.n,...[[0,0],[1,0],[1,1],[0,1]][k]);
       indices.push(start,start+1,start+2,start,start+2,start+3);
     }
-    return geometry(vertices,indices);
+    const mesh=geometry(vertices,indices);
+    mesh.rawVertices=vertices;mesh.rawIndices=indices;
+    return mesh;
   }
   function sphereGeometry(){
     const v=[],ind=[],rows=14,cols=22;
@@ -93,15 +95,19 @@ const MarbleDerbyWebGL=(()=>{
   }
   const VS=[
     'attribute vec3 aPosition; attribute vec3 aNormal; attribute vec2 aUV;',
+    'attribute vec3 aVertexColor;',
     'uniform mat4 uMVP; uniform mat4 uModel;',
     'varying vec3 vNormal; varying vec2 vUV; varying vec3 vWorld;',
-    'void main(){vNormal=normalize(mat3(uModel)*aNormal);vUV=aUV;',
+    'varying vec3 vVertexColor;',
+    'void main(){vVertexColor=aVertexColor;vNormal=normalize(mat3(uModel)*aNormal);vUV=aUV;',
     'vWorld=(uModel*vec4(aPosition,1.0)).xyz;',
     'gl_Position=uMVP*vec4(aPosition,1.0);}'
   ].join('\n');
   const FS=[
     'precision mediump float;',
     'varying vec3 vNormal; varying vec2 vUV; varying vec3 vWorld;',
+    'varying vec3 vVertexColor;',
+    'uniform float uUseVertexColor;',
     'uniform vec3 uColor; uniform sampler2D uTexture;',
     'uniform float uTextured; uniform float uPattern; uniform float uOpacity;',
     'void main(){',
@@ -109,6 +115,7 @@ const MarbleDerbyWebGL=(()=>{
     'if(uTextured>0.5){ink=texture2D(uTexture,vUV);',
     'if(uPattern<1.5){ink.rgb*=uColor;}',
     'if(ink.a<0.12)discard;}',
+    'ink.rgb*=mix(vec3(1.0),vVertexColor,clamp(uUseVertexColor,0.0,1.0));',
     'vec3 n=normalize(vNormal);',
     'float sun=max(dot(n,normalize(vec3(-0.37,0.87,0.52))),0.0);',
     'float fill=max(dot(n,normalize(vec3(0.62,0.19,-0.77))),0.0);',
@@ -140,6 +147,8 @@ const MarbleDerbyWebGL=(()=>{
     locations={position:gl.getAttribLocation(program,'aPosition'),
       normal:gl.getAttribLocation(program,'aNormal'),
       uv:gl.getAttribLocation(program,'aUV'),
+      vertexColor:gl.getAttribLocation(program,'aVertexColor'),
+      useVertexColor:gl.getUniformLocation(program,'uUseVertexColor'),
       mvp:gl.getUniformLocation(program,'uMVP'),
       model:gl.getUniformLocation(program,'uModel'),
       color:gl.getUniformLocation(program,'uColor'),
@@ -148,6 +157,7 @@ const MarbleDerbyWebGL=(()=>{
       pattern:gl.getUniformLocation(program,'uPattern'),
       opacity:gl.getUniformLocation(program,'uOpacity')};
     meshBox=boxGeometry();meshSphere=sphereGeometry();meshPlane=planeGeometry();
+    meshStatic=createStaticTrack();
     gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
     gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
     gl.clearColor(0.025,0.065,0.12,1);
@@ -189,7 +199,7 @@ const MarbleDerbyWebGL=(()=>{
     const fresh=canvas.cloneNode(false);
     fresh.removeAttribute('data-graphics');fresh.removeAttribute('data-renderer-error');
     canvas.replaceWith(fresh);
-    canvas=null;gl=null;program=null;meshBox=null;meshSphere=null;meshPlane=null;
+    canvas=null;gl=null;program=null;meshBox=null;meshSphere=null;meshPlane=null;meshStatic=null;
     resourceList=[];textureCache.clear();lost=false;
   }
   function color(hex){
@@ -216,6 +226,8 @@ const MarbleDerbyWebGL=(()=>{
     gl.uniformMatrix4fv(locations.mvp,false,mvp);
     gl.uniformMatrix4fv(locations.model,false,model);
     gl.uniform3fv(locations.color,color(tint));
+    gl.uniform1f(locations.useVertexColor,0);
+    gl.disableVertexAttribArray(locations.vertexColor);
     gl.uniform1f(locations.pattern,options.pattern?1:0);
     gl.uniform1f(locations.opacity,options.opacity==null?1:options.opacity);
     const tex=options.image?texture(options.key,options.image):null;
@@ -231,6 +243,71 @@ const MarbleDerbyWebGL=(()=>{
     gl.vertexAttribPointer(locations.uv,2,gl.FLOAT,false,32,24);
     gl.drawElements(gl.TRIANGLES,mesh.count,gl.UNSIGNED_SHORT,0);drawCalls++;
   }
+
+  // The 3D arena has 100+ immutable cuboids. Bake all those *actual* 3D
+  // triangles into ONE GPU buffer with per-vertex tint. This eliminates
+  // >90 separate shader state switches/draws on software and low-end GPUs.
+  // The six moving marbles still use their own mesh/model matrix every frame.
+  function createStaticTrack(){
+    const vertices=[],indices=[],baseV=meshBox.rawVertices,baseI=meshBox.rawIndices;
+    function add(loc,size,hex){
+      const rgb=color(hex),offset=vertices.length/11;
+      for(let k=0;k<baseV.length;k+=8){
+        vertices.push(loc[0]+baseV[k]*size[0],
+          loc[1]+baseV[k+1]*size[1],loc[2]+baseV[k+2]*size[2],
+          baseV[k+3],baseV[k+4],baseV[k+5],baseV[k+6],baseV[k+7],
+          rgb[0],rgb[1],rgb[2]);
+      }
+      for(const index of baseI)indices.push(offset+index);
+    }
+    add([0,-.75,0],[33.5,.8,15],'#523f64');
+    add([0,-.27,0],[32.5,.35,14],'#c99055');
+    add([0,-.02,0],[31.5,.18,12.9],'#132a43');
+    for(let lane=0;lane<LANES;lane++){
+      const z=-5.23+lane*2.09;
+      add([0,.21,z-1.00],[31,.065,.07],'#f5dd91');
+      for(let k=0;k<=5;k++)add([-14.65+k*5.86,.20,z],[.08,.04,.95],'#b5e6e7');
+      add([-15,.27,z],[.09,.04,1.73],'#ffffff');
+      add([15,.27,z],[.12,.04,1.73],lane%2?'#141c36':'#ffffff');
+    }
+    for(const z of [-6.8,6.8])add([0,.65,z],[32,.42,.33],'#dba75e');
+    for(let k=0;k<9;k++){
+      const x=-14+k*3.5;
+      add([x,1.65,-8.2],[.34,3.3,.34],'#8f88aa');
+      add([x,3.38,-8.2],[.55,.55,.55],'#f9d78a');
+      add([x,.75,8.25],[.38,1.5,.4],'#6b6d90');
+    }
+    for(let seat=0;seat<4;seat++)
+      add([0,1.4+seat*.68,-10.3-seat*.68],[29,.42,1],
+        seat%2?'#5b536f':'#64758d');
+    // Finish gantry only; starting arch obstructed the TV's first heat.
+    for(const z of [-7.3,7.3])
+      add([15.7,1.95,z],[.22,3.9,.30],'#f3d48f');
+    add([15.7,4.02,0],[.30,.29,15.2],'#f6dd99');
+    if(vertices.length/11>65535)throw Error('Static track exceeds WebGL1 vertex-index limit');
+    return geometry(vertices,indices);
+  }
+  function drawStaticTrack(viewProjection){
+    gl.uniformMatrix4fv(locations.mvp,false,viewProjection);
+    gl.uniformMatrix4fv(locations.model,false,ident());
+    gl.uniform3fv(locations.color,new Float32Array([1,1,1]));
+    gl.uniform1f(locations.pattern,0);
+    gl.uniform1f(locations.opacity,1);
+    gl.uniform1f(locations.textured,0);
+    gl.uniform1f(locations.useVertexColor,1);
+    gl.bindTexture(gl.TEXTURE_2D,null);
+    gl.bindBuffer(gl.ARRAY_BUFFER,meshStatic.vertex);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,meshStatic.index);
+    for(const k of ['position','normal','uv','vertexColor'])
+      gl.enableVertexAttribArray(locations[k]);
+    gl.vertexAttribPointer(locations.position,3,gl.FLOAT,false,44,0);
+    gl.vertexAttribPointer(locations.normal,3,gl.FLOAT,false,44,12);
+    gl.vertexAttribPointer(locations.uv,2,gl.FLOAT,false,44,24);
+    gl.vertexAttribPointer(locations.vertexColor,3,gl.FLOAT,false,44,32);
+    gl.drawElements(gl.TRIANGLES,meshStatic.count,gl.UNSIGNED_SHORT,0);
+    drawCalls++;
+  }
+
   function draw(s,assets,options={}){
     if(!gl||lost||!s||!Array.isArray(s.horses)||s.horses.length!==LANES)return false;
     const positions=s.horses.map(h=>clamp(Number(h.x)||0,0,LENGTH));
@@ -253,37 +330,12 @@ const MarbleDerbyWebGL=(()=>{
     gl.viewport(0,0,canvas.width,canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);drawCalls=0;
-    // Geometrically raised track and six real extruded lanes.
-    paint(meshBox,vp,[0,-.75,0],[33.5,.8,15],'#523f64');
-    paint(meshBox,vp,[0,-.27,0],[32.5,.35,14],'#c99055');
-    paint(meshBox,vp,[0,-.02,0],[31.5,.18,12.9],'#132a43');
+    // One pre-baked world-space 3D arena draw, six live textured lane tops.
+    drawStaticTrack(vp);
     for(let lane=0;lane<LANES;lane++){
       const z=-5.23+lane*2.09;
       paint(meshBox,vp,[0,.12,z],[30.5,.12,1.9],lane%2?'#4f6d87':'#657f92',{
         key:'pp_derby_surface_main',image:assets?.pp_derby_surface_main});
-      paint(meshBox,vp,[0,.21,z-1.00],[31,.065,.07],'#f5dd91');
-      for(let k=0;k<=5;k++)paint(meshBox,vp,[-14.65+k*5.86,.20,z],[.08,.04,.95],'#b5e6e7');
-      // Start and finish marks are real world geometry, not HUD decoration.
-      paint(meshBox,vp,[-15,.27,z],[.09,.04,1.73],'#ffffff');
-      paint(meshBox,vp,[15,.27,z],[.12,.04,1.73],lane%2?'#141c36':'#ffffff');
-    }
-    // Restrained physical grandstands, pillars, rails, lights.
-    for(const z of [-6.8,6.8])paint(meshBox,vp,[0,.65,z],[32,.42,.33],'#dba75e');
-    for(let k=0;k<9;k++){
-      const x=-14+k*3.5;
-      paint(meshBox,vp,[x,1.65,-8.2],[.34,3.3,.34],'#8f88aa');
-      paint(meshBox,vp,[x,3.38,-8.2],[.55,.55,.55],'#f9d78a');
-      paint(meshBox,vp,[x,.75,8.25],[.38,1.5,.4],'#6b6d90');
-    }
-    for(let seat=0;seat<4;seat++){
-      paint(meshBox,vp,[0,1.4+seat*.68,-10.3-seat*.68],[29,.42,1.0],
-        seat%2?'#5b536f':'#64758d');
-    }
-    for(const gate of [15.7]){
-      for(const z of [-7.3,7.3]){
-        paint(meshBox,vp,[gate,1.95,z],[.22,3.9,.30],gate>0?'#f3d48f':'#88e5da');
-      }
-      paint(meshBox,vp,[gate,4.02,0],[.30,.29,15.2],gate>0?'#f6dd99':'#7ce6df');
     }
     // Approved approved-stage props are physically positioned in 3D space.
     if(assets?.pp_derby_prop_grandstand)

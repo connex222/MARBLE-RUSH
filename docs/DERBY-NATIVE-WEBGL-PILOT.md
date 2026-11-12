@@ -37,3 +37,7 @@ Do not port the experimental renderer to Drop Zone/Brawl/Curling/Golf until the 
 ## Browser pilot observation — first playable screenshot
 
 The initial GitHub Actions software-Chromium run proved 116 actual draw calls per frame, nine loaded textures, exclusive WebGL ownership, a native GPU program and live authoritative race positions. Its measured headless software frame rate was about **5.1 FPS** (12 frames, average draw 207 ms). This is **not acceptable 1080p target-device performance** and must not be presented as a pass. That run revealed a real typed-resource cleanup error on Derby's finale; the following revision records buffer/shader/program types and removes the large foreground start arch. Passing CI remains necessary before requesting physical acceptance. Real-TV hardware must be measured separately.
+
+## Track draw-call batching
+
+The stadium's immutable lanes, cuboid rails, distance marks and gantry are pre-transformed into **one combined WebGL triangle buffer with per-vertex colours**. The six real marble spheres, six textured lane surfaces and contextual props remain independently drawn using the same camera/depth buffer. This is geometry batching, **not** a Canvas2D screenshot or faux 3D image layer. The effect on software Chromium is measured by the subsequent CI run; this is not itself a 60 FPS claim.

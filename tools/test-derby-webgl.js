@@ -9,7 +9,8 @@ const build=read('tools/build.js');
 assert.ok(gl.includes('gl.createShader(')&&gl.includes('gl.createBuffer(')&&
   gl.includes('gl.drawElements(')&&gl.includes('gl.enable(gl.DEPTH_TEST)'),
   'Pilot has no genuine WebGL mesh/vertex/depth pipeline');
-assert.ok(gl.includes('sphereGeometry()')&&gl.includes('boxGeometry()')&&
+assert.ok(gl.includes('createStaticTrack()')&&gl.includes('drawStaticTrack(vp)')&&
+  gl.includes('sphereGeometry()')&&gl.includes('boxGeometry()')&&
   gl.includes('perspective(')&&gl.includes('lookAt('),
   'Pilot lacks actual 3D geometry or perspective camera');
 assert.ok(gl.includes('Number(h.x)')&&gl.includes('LENGTH=1500')&&

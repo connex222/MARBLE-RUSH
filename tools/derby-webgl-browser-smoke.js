@@ -43,7 +43,7 @@ const fs=require('node:fs');
    assert.equal(initial.graphics,'webgl-real-meshes');
    assert.ok(/WebGL/.test(initial.gpu||''),'Native WebGL context not obtained');
    assert.equal(initial.mesh.realMeshes,true);
-   assert.ok(initial.mesh.drawCalls>=40,'No live scene geometry drawn');
+   assert.ok(initial.mesh.drawCalls>=10&&initial.mesh.drawCalls<=35,'Static geometry must be batched into real 3D meshes');
    console.log('DERBY-WEBGL-MESH-COUNT '+JSON.stringify(initial.mesh));
    assert.ok(initial.draw.frames>=2,'Derby not rendering in main frame loop');
    console.log('DERBY-WEBGL-HEADLESS-METRICS '+JSON.stringify(initial.draw));
