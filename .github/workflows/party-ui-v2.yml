@@ -1,0 +1,132 @@
+name: MARBLE RUSH real rebuild — five exclusive stages, physics and multiplayer QA
+on:
+  push:
+    branches:
+      - dev/party-pack-ui-v2-rebuild
+      - improvement/marble-rush-real-rebuild
+  pull_request:
+    paths:
+      - src/tv.html
+      - src/tv.js
+      - src/modes/party-ui-v2.js
+      - src/modes/party-screen-host.js
+      - src/modes/party-scene-cache.js
+      - src/modes/party-tv-qa.js
+      - tools/test-tv-qa.js
+      - tools/tv-qa-browser-smoke.js
+      - tools/party-rejoin-browser-smoke.js
+      - server/server.js
+      - tools/test-party-scene-cache.js
+      - src/modes/derby.js
+      - src/modes/dropzone.js
+      - src/modes/brawl.js
+      - src/modes/party-brawl-ui-v2.js
+      - src/modes/party-curling-ui-v2.js
+      - src/modes/curling.js
+      - src/modes/golf.js
+      - src/modes/party-golf-ui-v2.js
+      - tools/test-golf.js
+      - tools/test-brawl-balance.js
+      - docs/REAL-REBUILD-AUDIT.md
+      - src/play.html
+      - tools/party-ui-v2-*.js
+      - tools/test-party-ui-v2.js
+      - tools/build.js
+permissions:
+  contents: read
+jobs:
+  derby-ui-rebuild:
+    name: Verify all five rebuilt game screens, phones and preserved Grand Prix
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate every surviving rules engine and new UI source
+        run: |
+          for f in src/tv.js src/modes/registry.js src/modes/party-tv-qa.js src/modes/party-scene-cache.js src/modes/party-screen-host.js src/modes/party-ui-v2.js src/modes/party-brawl-ui-v2.js src/modes/party-curling-ui-v2.js src/modes/party-golf-ui-v2.js src/modes/derby.js src/modes/dropzone.js src/modes/brawl.js src/modes/curling.js src/modes/golf.js tools/build.js; do
+            node --check "$f"
+          done
+          node tools/test-party-scene-cache.js
+          node tools/test-tv-qa.js
+          node tools/test-party-foundations.js
+          node tools/test-derby.js
+          node tools/test-dropzone.js
+          node tools/test-brawl.js
+          node tools/test-brawl-balance.js
+          node tools/test-curling.js
+          node tools/test-golf.js
+          node tests/phase7-golf.test.js
+          node tools/test-party-aaa-phase2.js
+          node tools/test-party-presentation.js
+          node tools/test-party-fx.js
+          node tools/test-phase8-integration.js
+          node tools/test-party-ui-v2.js
+      - name: Prove ALL 200 approved raw images/audio are byte-identical to active Party Pack baseline
+        run: |
+          git fetch --depth=1 origin dev/party-pack-ui-v2-rebuild
+          if ! git diff --quiet FETCH_HEAD HEAD -- assets/raw; then
+            echo "ERROR: approved source artwork or audio changed during real rebuild" >&2
+            git diff --name-status FETCH_HEAD HEAD -- assets/raw
+            exit 1
+          fi
+          echo "PASS: all 200 approved raw art files and bundled raw audio unchanged"
+      - name: Confirm original Grand Prix physics matches main exactly
+        run: |
+          git fetch --depth=1 origin main
+          git show FETCH_HEAD:src/engine.js > /tmp/marble-rush-main-engine.js
+          node tools/test-grandprix-regression.js /tmp/marble-rush-main-engine.js
+      - name: Build without touching production
+        run: npm run build
+      - name: Verify approved artwork, phone assets and no old mode canvases
+        run: |
+          node tools/test-phase4-release.js
+          node tools/audit-art.js
+      - name: Install browser for visual and phone acceptance
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.57.0
+          # Ubuntu runners already include browser runtime libraries.
+          # Avoid apt-get --with-deps: the Ubuntu mirror intermittently fails DNS
+          # and breaks game CI before any browser tests can execute.
+          npx playwright install --only-shell chromium
+      - name: Verify all five new TV stages plus original Grand Prix in Chromium
+        run: |
+          set -e
+          PORT=35993 node server/server.js >/tmp/mr-ui-v2-browser.log 2>&1 &
+          game_pid=$!
+          trap 'kill "$game_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/party-ui-v2-browser-smoke.js
+          node tools/tv-qa-browser-smoke.js
+      - name: Verify two phones use five new modes, including Golf, over WebSockets
+        run: |
+          set -e
+          PORT=35993 node server/server.js >/tmp/mr-ui-v2-phones.log 2>&1 &
+          game_pid=$!
+          trap 'kill "$game_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/party-ui-v2-multiplayer-smoke.js
+          node tools/party-rejoin-browser-smoke.js
+      - name: Upload screenshots and independent build for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: marble-rush-real-rebuild-five-mode-review
+          if-no-files-found: ignore
+          path: |
+            qa-ui-v2-*.png
+            qa-real-*.png
+            qa-real-*.json
+            qa-tv-diagnostics-headless-smoke.json
+            public/
+          retention-days: 7

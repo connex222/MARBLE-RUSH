@@ -183,56 +183,8 @@ const MarbleDerby=(()=>{
         secondsLeft:state.phase==='betting'?Math.max(0,Math.ceil(12-state.phaseTime)):0
       };
     }
-    function draw(ctx,w=1920,h=1080){
-      ctx.save();ctx.scale(w/1920,h/1080);
-      const bg=ctx.createLinearGradient(0,0,1920,1080);
-      bg.addColorStop(0,'#141833');bg.addColorStop(1,'#42345a');
-      ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
-     MarblePartyStage.backdrop(ctx,'derby',state.time);
-     MarblePartyStage.frame(ctx,500,202,1373,653,'derby');
-      ctx.fillStyle='#fff6d8';ctx.font='bold 70px Fredoka,sans-serif';
-      ctx.fillText('MARBLE DERBY',65,85);
-      ctx.fillStyle='#ffd46b';ctx.font='bold 30px Nunito,sans-serif';
-      ctx.fillText(`HEAT ${state.round} OF ${ROUNDS} · ${state.course} · ${state.phase.toUpperCase()}`,70,142);
-      const tx=510,ty=210,tw=1350,lane=104;
-      MarblePartyStage.surface(ctx,'derby',tx,ty,tw,628,state.time);
-      for(let i=0;i<HORSES;i++){
-        const strip=ctx.createLinearGradient(tx,ty+i*lane,tx+tw,ty+(i+1)*lane);
-        strip.addColorStop(0,i%2?'rgba(137,72,69,.52)':'rgba(224,153,91,.55)');
-        strip.addColorStop(.5,'rgba(255,242,179,.10)');strip.addColorStop(1,'rgba(22,14,42,.46)');
-        ctx.fillStyle=strip;ctx.fillRect(tx,ty+i*lane,tw,lane);
-        ctx.strokeStyle='#e8cda0';ctx.lineWidth=3;
-        ctx.beginPath();ctx.moveTo(tx,ty+i*lane);ctx.lineTo(tx+tw,ty+i*lane);ctx.stroke();
-        const horse=state.horses[i],x=tx+35+horse.x/LENGTH*(tw-100),y=ty+i*lane+lane/2;
-        MarblePartyStage.marble(ctx,x,y,30,horse.color);
-        ctx.fillStyle='#fff6e7';ctx.font='bold 23px Nunito,sans-serif';
-        ctx.fillText(horse.name,tx+18,ty+i*lane+35);
-        ctx.fillStyle='#ffdd6b';ctx.font='bold 21px Nunito,sans-serif';
-        ctx.fillText(horse.odds.toFixed(1)+'×',tx+235,ty+i*lane+35);
-      }
-      ctx.strokeStyle='#fff5e6';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(tx+tw-60,ty);ctx.lineTo(tx+tw-60,ty+624);ctx.stroke();
-      ctx.fillStyle='#fff4e0';ctx.font='bold 34px Fredoka,sans-serif';
-      ctx.fillText('THE GEM CLUB',70,255);
-      ctx.font='bold 25px Nunito,sans-serif';ctx.fillStyle='#f8db95';
-      ctx.fillText('CHEER METER '+state.hype+'%',70,290);
-      roster.forEach((p,i)=>{
-        const y=320+i*72;
-        ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(91,y-13,15,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#fff7e8';ctx.font='bold 25px Nunito,sans-serif';ctx.fillText(p.name,120,y);
-        ctx.fillStyle='#ffdb77';ctx.font='bold 22px Nunito,sans-serif';ctx.fillText(p.gems+' gems',120,y+27);
-      });
-      ctx.font='bold 27px Nunito,sans-serif';ctx.fillStyle='#fff4e0';
-      const message=state.phase==='betting'?'BACK YOUR MARBLE — 12 SECONDS':
-        state.phase==='racing'?'THEY ARE OFF!':
-        state.phase==='results'?'WINNER: '+state.horses[state.lastWinner].name:
-        'THE DERBY IS COMPLETE';
-      ctx.fillText(message,520,937);
-      ctx.font='bold 21px Nunito,sans-serif';ctx.fillStyle='#ffd46b';
-      ctx.fillText('All gems are virtual game points. No cash or prizes.',530,1000);
-      ctx.restore();
-    }
     newHeat();
-    return {state,bet,action,step,hud,draw,standings,getPlayer};
+    return {state,bet,action,step,hud,standings,getPlayer};
   }
   return Object.freeze({create,ROUNDS,HORSES,LENGTH,STAKES,START_GEMS});
 })();
@@ -244,7 +196,6 @@ registerMode({
   setup({players,seed,onFinish}){marbleDerbyGame=MarbleDerby.create([...players.values()],seed,onFinish);return marbleDerbyGame;},
   startRound(){return marbleDerbyGame;},
   tick(dt){marbleDerbyGame?.step(dt);},
-  draw(ctx,w,h){marbleDerbyGame?.draw(ctx,w,h);},
   onInput(id,k){if(k==='p')marbleDerbyGame?.action(id,'cheer');},
   onAction(id,a,v){return marbleDerbyGame?.action(id,a,v)||false;},
   botTick(){},

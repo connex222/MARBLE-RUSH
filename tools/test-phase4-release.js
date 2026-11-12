@@ -48,10 +48,19 @@ const phone=get('public/play.html');
 for(const id of ['partyBackLobby','partyFinaleStage','partyPresentationCSS','pp_shared_fx_confetti'])
  assert.ok(tv.includes(id),'Missing TV navigation/visual feature: '+id);
 assert.ok(phone.includes('hostExitGame'),'Missing host-phone lobby action');
-assert.ok(tv.includes('PartyFX.draw'),'Missing cinematic FX drawing integration');
-assert.ok(tv.includes('MarblePartyStage'),'Missing premium stage renderer');
+assert.ok(tv.includes('MarblePartyUI.drawDerby'),'Missing new Derby stage renderer');
+assert.ok(tv.includes('MarblePartyUI.drawDropZone'),'Missing new Drop Zone stage renderer');
+assert.ok(tv.includes('MarbleBrawlUI.draw'),'Missing new Bowl Brawl renderer');
+assert.ok(tv.includes('MarbleCurlingUI.draw'),'Missing new Marble Curling renderer');
+assert.ok(tv.includes('MarbleGolfUI.draw'),'Missing new Marble Golf UI renderer');
+assert.ok(tv.includes('partyStageCanvas'),'Missing independent Party Pack stage');
+assert.ok(tv.includes('pp_derby_bg'),'Approved Derby background not wired');
+assert.ok(tv.includes('pp_derby_surface_main'),'Approved track material not wired');
+assert.ok(!tv.includes('MarblePartyStage'),'Legacy Party Pack drawing layer was not removed');
+for(const id of ['derbyCanvas','dropZoneCanvas','brawlCanvas','curlingCanvas','golfCanvas'])
+ assert.ok(!tv.includes(id),'Old mode canvas still compiled: '+id);
 assert.ok(tv.includes('PartyPresentation.applyFinale'),'Missing thematic podium integration');
 const stage=require('../src/modes/party-presentation.js');
 assert.equal(stage.theme('grandprix'),null,'Grand Prix must not receive Party Pack podium');
 for(const mode of modes)assert.ok(stage.theme(mode),'No themed podium for '+mode);
-console.log('PASS Phase 4 RC: 68 new art files, 200 total, 5 audio, TV/phone actions, all five modes, original GP isolated');
+console.log('PASS UI v2 asset gate: 68 approved art files, 200 total, 5 audio, all five new stages and preserved GP');

@@ -340,7 +340,7 @@
         if(externalSource)return;
         while (next < ac.currentTime + 0.12) {
           const s = step % 16, bar = Math.floor(step / 16) % 4, t = next;
-          const race = mode === 'race';
+          const race = mode === 'race' || (mode === 'brawl' && intensity > 0.58);
           if (s % 4 === 0) kick(t);
           if (s === 4 || s === 12) clap(t);
           if (s % 2 === 0 || (race && intensity > 0.5)) hat(t, s % 4 === 2 ? 0.14 : 0.07);
@@ -357,6 +357,8 @@
             if(mode==='golf'&&s===15)note(t,n*voice*2,SPB*1.8,'sine',.035);
           }
           if (race && intensity > 0.5 && s % 2 === 1) note(t, CH[bar][s % 3] * 2, SPB * 0.8, 'sine', 0.05);
+          if (mode === 'brawl' && intensity > .78 && (s === 7 || s === 15))
+            note(t, CH[bar][2]*1.55, SPB*.85, 'sawtooth', .025);
           if (mode === 'lobby' && (s === 7 || s === 15)) note(t, CH[bar][2] * 2, SPB * 2, 'sine', 0.05);
           next += SPB; step++;
         }
@@ -1279,7 +1281,8 @@
       Audio_.play('vo_' + key, { gap: 0.5 });
     }
     function tick() { if (performance.now() / 1000 > hideAt) el.classList.remove('show'); }
-    return { say, tick };
+    function clear() {hideAt=0;el.classList.remove('show');}
+    return { say, tick, clear };
   })();
 
   /* ======================================================================
@@ -1300,11 +1303,12 @@
      ====================================================================== */
   let world = null, state = 'boot', stateT = 0, raceNo = 0;
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
-  // Phase 2: only Grand Prix is playable; other modes remain locked until tested.
+  // Grand Prix remains isolated; five Party Pack games use the exclusive stage.
   let selectedMode = 'grandprix';
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
   let derbyTvHorse = 0;
+  let brawlLastCue='',brawlWarningKey='';
   let attractMode = null, attractUntil = 0, attractFrom = 0;
   const cheerTime = new Map();
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
@@ -1348,6 +1352,7 @@
         derbyTvHorse=0;state='derby';stateT=0;showScreen('derby');Audio_.Music.mode('derby');sendHud(true);return;
       }
       if (selectedMode === 'brawl') {
+        brawlLastCue='';brawlWarningKey='';
         if(!partyRun)this.resetNight();
         MODES.brawl.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishBrawl(ranking)});
         state='brawl';stateT=0;showScreen('brawl');
@@ -1558,6 +1563,7 @@
       else MODES[selectedMode]?.onInput(pid,k);
     },
     onAction(pid, a, v) {
+      MarbleRushQA.noteAction(state,a);
       const isVip = pid === vipId() || pid === 'tv';
       if (a === 'swirl' && players.get(pid)) { players.get(pid).swirl = (v | 0) % SWIRLS.length; if (state === 'lobby') renderLobby(); return; }
       if (a === 'vote') { this.castVote(pid, v | 0); return; }
@@ -1595,8 +1601,11 @@
       }
       if (state === 'curling' && players.has(pid) && ['left','right','aim','power','powerup','powerdown','throw','sweep','curlleft','curlright','predict'].includes(a)) {if(MODES.curling.onAction(pid,a,v)&&['throw','sweep'].includes(a))Audio_.play(a==='throw'?'sfx_golf_putt':'sfx_curl_sweep',{gap:.15,vol:.55});sendHud(true);return;}
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
-      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','spectate'].includes(a)) {
-        if(MODES.brawl.onAction(pid,a,v)&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.18,vol:.8});sendHud(true);return;
+      if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','recover','spectate'].includes(a)) {
+        const accepted=MODES.brawl.onAction(pid,a,v);
+        if(accepted&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.16,vol:.85});
+        if(accepted&&a==='recover')Audio_.play('sfx_bumper',{gap:.14,vol:.95});
+        sendHud(true);return;
       }
       if (state === 'dropzone' && players.has(pid) && ['left','right','aim','drop','predict'].includes(a)) {
         if(MODES.dropzone.onAction(pid,a,v)&&a==='drop')Audio_.play('sfx_drop_release',{gap:.12,vol:.75});
@@ -1881,15 +1890,18 @@
       if (preview) preview.hidden = true;
     }
     if(name!=='lobby')Audio_.stopIntro();
+    // No previous finale announcement may cover the next game's new UI.
+    if(name!=='finale'&&name!=='results')Clatter.clear();
     Audio_.setRoll(0,0);
-    for (const el of document.querySelectorAll('.screen')) el.hidden = el.dataset.screen !== name;
+    const isPartyStage=MarblePartyScreen.isMode(name);
+    const visibleScreen=isPartyStage?'party-stage':name;
+    for (const el of document.querySelectorAll('.screen'))
+      el.hidden = el.dataset.screen !== visibleScreen;
     $('#raceHud').hidden = !(name === 'race');
-    // Phase 3 presentation lives only in the five added modes.
-    // Grand Prix gameplay, tracks, camera and results are untouched.
-    if (typeof PartyPresentation !== 'undefined' &&
-        ['derby','dropzone','brawl','curling','golf'].includes(name)) {
-      PartyPresentation.enter(name,settings.reduce);
-    }
+    // The compositor is now the ONLY owner of stage mount, visibility and
+    // the active renderer. Grand Prix gets its original #cv back on unmount.
+    if(isPartyStage)MarblePartyScreen.mount(name);
+    else MarblePartyScreen.unmount();
     // This is host-only TV navigation and remains available during all modes.
     const lobbyBtn=$('#partyBackLobby');
     lobbyBtn.hidden = !['dropzone','brawl','derby','curling','golf','race','vote','results','finale'].includes(name);
@@ -1974,6 +1986,8 @@
       card.dataset.mode = mode.id;
       card.type = 'button';
       card.dataset.locked = String(!mode.available);
+      card.disabled=!mode.available;
+      card.setAttribute('aria-disabled', String(!mode.available));
       card.setAttribute('aria-pressed', String(mode.id === selectedMode));
       card.setAttribute('aria-label', mode.name + (mode.available ? '' : ', coming soon'));
       const icon = document.createElement('span'); icon.className = 'modeIcon'; icon.textContent = mode.icon;
@@ -1990,9 +2004,8 @@
       box.appendChild(card);
     }
     applyPartyArt();
-    $('#partyModeStatus').textContent = partyLength ? 'Party Night: '+partyLength+' games · eligible modes repeat' :
-      selectedMode === 'brawl' && players.size < 2 ? 'Bowl Brawl needs two or more racers' :
-      'All six Party Pack games playable · choose a mode or Party Night';
+    $('#partyModeStatus').textContent = partyLength ? 'Party Night preview: '+partyLength+' rounds · ready modes repeat' :
+      'UI REBUILD v2 · all five Party Pack modes rebuilt · final visual QA pending';
     const opts = $('#partyNightOptions');
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
@@ -2153,6 +2166,7 @@
     requestAnimationFrame(frame);
     let dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     perfTick(dt);
+    MarbleRushQA.frame(now,state);
     if (state === 'lobby' && attractMode && now < attractUntil) {
       const c = $('#partyAttractCanvas').getContext('2d');
       PartyAttract.preview(c, attractMode, (now - attractFrom)/1000);
@@ -2169,49 +2183,54 @@
     } else if (attractMode && now >= attractUntil) {
       attractMode = null; $('#partyAttractPanel').hidden = true;
     }
-    if (state==='golf') {
-      stateT+=dt;MODES.golf.tick(dt);const canvas=$('#golfCanvas');
-      MODES.golf.draw(canvas.getContext('2d'),canvas.width,canvas.height);
-      {const active=MODES.golf.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'golf',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='curling') {
-      stateT+=dt;MODES.curling.tick(dt);const canvas=$('#curlingCanvas');
-      MODES.curling.draw(canvas.getContext('2d'),canvas.width,canvas.height);
-      {const active=MODES.curling.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'curling',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='derby') {
-      stateT+=dt;MODES.derby.tick(dt);const canvas=$('#derbyCanvas');
-      MODES.derby.draw(canvas.getContext('2d'),canvas.width,canvas.height);
-      {const active=MODES.derby.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'derby',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
-      const derby=MODES.derby.session();
-      const local=derby.state.roster.find(p=>!p.cpu);
-      if(local){
-        $('#derbyRunner').textContent=derby.state.horses[derbyTvHorse].name+' ▶';
-        $('#derbyStake').textContent=local.stake+' gems';
-        $('#derbyPick').disabled=derby.state.phase!=='betting'||derby.state.wagers.has(local.id);
-        $('#derbyCheer').disabled=derby.state.phase!=='racing';
+    // Only one Party Pack visual renderer can own one canvas per TV frame.
+    // The authoritative per-mode rules still tick independently of the UI.
+    if(MarblePartyScreen.isMode(state)){
+      const mode=state;
+      stateT+=dt;MODES[mode].tick(dt);
+      const session=MODES[mode].session();
+      if(mode==='brawl'&&session&&!session.state.done){
+        const st=session.state,pulseIn=st.pulseAt==null?null:st.pulseAt-st.elapsed;
+        const survivors=st.marbles.filter(m=>m.alive).length;
+        Audio_.Music.intensity(Math.max(
+          (380-st.radius)/270,survivors===2?.86:0,
+          pulseIn!=null&&pulseIn<=3?1:0));
+        const warningKey=st.round+':'+st.pulseIndex;
+        if(pulseIn!=null&&pulseIn<=3&&pulseIn>0&&brawlWarningKey!==warningKey){
+          brawlWarningKey=warningKey;
+          Clatter.say('announce',"Shockwave incoming! Brace yourselves!",2);
+        }
+        const cue=(st.events||[]).slice(-30).reverse().find(e=>
+          ['shockwave','knockout','recover'].includes(e.kind)&&
+          typeof e.time==='number'&&st.time-e.time<.9);
+        if(cue){
+          const key=st.round+':'+cue.kind+':'+cue.time;
+          if(key!==brawlLastCue){
+            brawlLastCue=key;
+            if(cue.kind==='shockwave'){
+              Audio_.play('sfx_bumper',{gap:.2,vol:.95});
+              Clatter.say('gasp',"The shockwave's hit the bowl!",2);
+            }else if(cue.kind==='knockout'){
+              const winner=st.roster.find(p=>p.id===cue.id)?.name||'Someone';
+              Audio_.play('crowd_cheer',{gap:.15,vol:.9});
+              Clatter.say('winner',winner+" earns a knockout bonus!",2);
+            }else if(cue.kind==='recover'){
+              Clatter.say('gasp',"What a save! Right off the edge!",2);
+            }
+          }
+        }
       }
+      // Game finishes may synchronously advance to the finale. Never draw
+      // a dead match over a newly mounted result or another Party Night game.
+      if(state===mode&&session){
+        MarblePartyScreen.render(mode,session.state,IMG,{
+          reduce:settings.reduce,selectedHorse:derbyTvHorse
+        });
+      }
+      Clatter.tick();
       hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
-    if (state==='brawl') {
-      stateT+=dt;MODES.brawl.tick(dt);
-      const canvas=$('#brawlCanvas');
-      MODES.brawl.draw(canvas.getContext('2d'),canvas.width,canvas.height);
-      {const active=MODES.brawl.session()?.state; if(active)PartyFX.draw(canvas.getContext('2d'),'brawl',active,active.elapsed??active.time??0,settings.reduce,canvas.width,canvas.height);}
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
-    }
-    if (state==='dropzone') {
-      stateT+=dt;
-      MODES.dropzone.tick(dt);
-      const dzCanvas=$('#dropZoneCanvas');
-      MODES.dropzone.draw(dzCanvas.getContext('2d'),dzCanvas.width,dzCanvas.height);
-      {const active=MODES.dropzone.session()?.state; if(active)PartyFX.draw(dzCanvas.getContext('2d'),'dropzone',active,active.elapsed??active.time??0,settings.reduce,dzCanvas.width,dzCanvas.height);}
-      hudAcc+=dt;
-      if(hudAcc>0.1){hudAcc=0;sendHud(false);}
-      return;
-    }
+
     if (!world) { drawBackground(); return; }
     timeScale = performance.now() / 1000 < slowUntil ? 0.3 : 1;
     const sdt = dt * timeScale;
@@ -2356,21 +2375,7 @@
     }
   });
   $('#btnStart').onclick = () => Game.onAction('tv', 'start');
-  for(const [id,action] of [['golfLeft','left'],['golfRight','right'],
-    ['golfDown','powerdown'],['golfUp','powerup'],['golfShoot','shoot']]) {
-    $('#'+id).onclick=()=>{
-      const g=MODES.golf.session(),p=g?.state.roster[g.state.turn];
-      if(p&&!p.cpu)Game.onAction(p.id,action,['left','right'].includes(action)?2:undefined);
-    };
-  }
-  for(const [id,action] of [['curlLeft','left'],['curlRight','right'],
-    ['curlDown','powerdown'],['curlUp','powerup'],['curlThrow','throw'],['curlSweep','sweep']]){
-    $('#'+id).onclick=()=>{const g=MODES.curling.session();
-      if(!g)return;
-      const p=action==='sweep'?g.state.moving?.id:g.current()?.id;
-      if(p)g.action(p,action,['left','right'].includes(action)?2:undefined);
-    };
-  }
+  // Retired the four old mode control bars along with their canvases.
   $('#derbyRunner').onclick=()=>{const g=MODES.derby.session();
     if(g?.state.phase==='betting')derbyTvHorse=(derbyTvHorse+1)%6;};
   $('#derbyStake').onclick=()=>{const g=MODES.derby.session();
@@ -2384,16 +2389,51 @@
   $('#derbyCheer').onclick=()=>{const g=MODES.derby.session();
     const p=g?.state.roster.find(x=>!x.cpu&&g.state.wagers.has(x.id));
     if(p)g.action(p.id,'cheer');};
-  for(const [id,action] of [['brawlLeft','left'],['brawlRight','right'],['brawlRam','ram'],['brawlAnchor','anchor']]){
+  // New Drop Zone controls send the same authorised actions as phones.
+  // They are part of the replacement stage, not the withdrawn legacy bar.
+  for(const [id,action] of [['dropLeft','left'],['dropRight','right'],['dropNow','drop']]){
     $('#'+id).onclick=()=>{
-      const active=MODES.brawl.session()?.state.marbles.find(m=>m.alive);
-      if(active)MODES.brawl.onAction(active.id,action,['left','right'].includes(action)?2:undefined);
+      const g=MODES.dropzone.session(),owner=g?.owner();
+      if(owner&&!owner.cpu)Game.onAction(owner.id,action,action==='drop'?undefined:2);
     };
   }
-  for (const [id,action] of [['dropLeft','left'],['dropRight','right'],['dropNow','drop']]) {
-    $(`#${id}`).onclick = () => {
-      const active=MODES.dropzone.session()?.owner();
-      if(active) MODES.dropzone.onAction(active.id,action,action==='drop'?undefined:2);
+  // New Bowl Brawl combat controls use the original authoritative action router.
+  for(const [id,action] of [['ppBrawlLeft','left'],['ppBrawlRight','right'],
+                             ['ppBrawlRam','ram'],['ppBrawlAnchor','anchor'],
+                             ['ppBrawlRecover','recover']]){
+    $('#'+id).onclick=()=>{
+      const g=MODES.brawl.session();
+      const p=g?.state.roster.find(x=>!x.cpu&&g.current(x.id)?.alive);
+      if(p)Game.onAction(p.id,action,action==='left'||action==='right'?2:0);
+    };
+  }
+  // Curling v2 TV controls use the same authorised actions as connected phones.
+  // The current player is read from the unchanged deterministic turn engine.
+  for(const [id,action,value] of [
+    ['ppCurlLeft','left',2],['ppCurlRight','right',2],
+    ['ppCurlPowerDown','powerdown',0],['ppCurlPowerUp','powerup',0],
+    ['ppCurlLeftSpin','curlleft',0],['ppCurlRightSpin','curlright',0],
+    ['ppCurlThrow','throw',0],['ppCurlSweepBtn','sweep',0]
+  ]){
+    $('#'+id).onclick=()=>{
+      const g=MODES.curling.session();
+      if(!g)return;
+      const p=(g.state.phase==='slide'&&g.state.moving)
+        ?g.state.roster.find(q=>q.id===g.state.moving.id)
+        :g.current();
+      if(p&&!p.cpu)Game.onAction(p.id,action,value);
+    };
+  }
+  // Marble Golf v2 TV controls use the unchanged authorised player-action
+  // router. A CPU turn never accepts fake human TV input.
+  for(const [id,action,value] of [
+    ['ppGolfLeft','left',1],['ppGolfRight','right',1],
+    ['ppGolfPowerDown','powerdown',0],['ppGolfPowerUp','powerup',0],
+    ['ppGolfPreview','preview',0],['ppGolfShoot','shoot',0]
+  ]){
+    $('#'+id).onclick=()=>{
+      const g=MODES.golf.session(),player=g?.current();
+      if(player&&!player.cpu)Game.onAction(player.id,action,value);
     };
   }
   for (const b of document.querySelectorAll('[data-party]')) {
@@ -2420,7 +2460,8 @@
     };
   }
   // test hooks for automated checks
-  window.__MR = { Audio_, Game, players, MODES, PartyNight, PartyCoordinator, DropZone, BowlBrawl, MarbleDerby, MarbleCurling, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, addCpu, addKeyboard, settings };
+  window.__MR = { Audio_, Game, players, MODES, PartyNight, PartyCoordinator, DropZone, BowlBrawl, MarbleDerby, MarbleCurling, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, get partyScreen(){return MarblePartyScreen;}, get derbyCamera(){return MarblePartyUI.derbyFraming;}, get brawlCamera(){return MarbleBrawlUI.framing;}, qaDiagnostics:MarbleRushQA, addCpu, addKeyboard, settings };
 
+  MarbleRushQA.init();
   requestAnimationFrame(frame);
 })();

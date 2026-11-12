@@ -157,30 +157,482 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
   border:calc(5*var(--u)) solid var(--gold);border-radius:calc(22*var(--u));overflow:hidden;
   background:#131831;box-shadow:0 calc(16*var(--u)) calc(45*var(--u)) rgba(0,0,0,.65);pointer-events:none}
 #partyAttractCanvas{display:block;width:100%;height:100%}
-#dropZoneCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#dropZoneHelp{position:absolute;right:calc(65*var(--u));bottom:calc(20*var(--u));
- display:flex;gap:calc(14*var(--u));align-items:center;z-index:5}
-#dropZoneHelp .btn{font-size:calc(23*var(--u));padding:calc(11*var(--u)) calc(18*var(--u))}
-#dropZoneHelp .btn.go{font-size:calc(24*var(--u));padding:calc(13*var(--u)) calc(23*var(--u))}
-#brawlCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#brawlHelp{position:absolute;right:calc(60*var(--u));bottom:calc(20*var(--u));
- display:flex;gap:calc(11*var(--u));align-items:center;z-index:5}
-#brawlHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(15*var(--u))}
-#brawlHelp .btn.go{font-size:calc(24*var(--u));padding:calc(12*var(--u)) calc(22*var(--u))}
-#derbyCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#derbyHelp{position:absolute;right:calc(60*var(--u));bottom:calc(20*var(--u));
-display:flex;gap:calc(12*var(--u));align-items:center;z-index:5}
-#derbyHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(16*var(--u))}
-#derbyHelp .btn.go{font-size:calc(23*var(--u))}
-#golfCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#golfHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));display:flex;gap:calc(9*var(--u));z-index:5}
-#golfHelp .btn{font-size:calc(21*var(--u));padding:calc(10*var(--u)) calc(14*var(--u))}
-#golfHelp .btn.go{font-size:calc(24*var(--u))}
-#curlingCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-#curlingHelp{position:absolute;bottom:calc(20*var(--u));right:calc(52*var(--u));
-display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
-#curlingHelp .btn{font-size:calc(19*var(--u));padding:calc(10*var(--u)) calc(13*var(--u))}
-#curlingHelp .btn.go{font-size:calc(22*var(--u))}
+/* PARTY PACK UI v2 — shared full-screen stage, independent from Grand Prix. */
+#partyStage{position:fixed;inset:0;isolation:isolate;overflow:hidden;background:#0b142a}
+#partyStageCanvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}
+#partyStage:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+ background:linear-gradient(90deg,rgba(6,12,29,.65) 0%,transparent 30%),
+ linear-gradient(0deg,rgba(6,11,30,.93) 0%,transparent 16%)}
+.ppHud{position:absolute;inset:0;z-index:2;pointer-events:none;color:#fff6df}
+.ppKicker{font:900 calc(19*var(--u)) Nunito,sans-serif;letter-spacing:.16em;color:#ffe5aa}
+#ppTitleArea{position:absolute;left:calc(58*var(--u));top:calc(44*var(--u));max-width:calc(1080*var(--u))}
+#ppTitleArea h1{font:900 calc(84*var(--u)) Fredoka,sans-serif;line-height:.94;letter-spacing:-.02em;
+ color:#fff6df;-webkit-text-stroke:calc(2*var(--u)) #f6d48c;
+ text-shadow:0 calc(8*var(--u)) calc(6*var(--u)) #14162e,0 0 calc(46*var(--u)) #ffe3a653;
+ margin:calc(9*var(--u)) 0}
+#ppTitleArea .ppSubtitle{display:flex;gap:calc(19*var(--u));align-items:center;
+ font:800 calc(22*var(--u)) Nunito,sans-serif;color:#fff2bf}
+#ppTitleArea .ppSubtitle span{padding:calc(6*var(--u)) calc(17*var(--u));border:calc(2*var(--u)) solid #ffdca7a8;
+ border-radius:999px;background:#111a38dc}
+#ppBoardLabel{position:absolute;top:calc(242*var(--u));left:calc(495*var(--u));
+ font:900 calc(21*var(--u)) Nunito,sans-serif;letter-spacing:.08em;color:#ffe6a9;
+ text-shadow:0 4px 6px #030713}
+#ppTicker{position:absolute;top:calc(184*var(--u));left:calc(1270*var(--u));
+ display:flex;gap:calc(13*var(--u));align-items:center;
+ font:900 calc(21*var(--u)) Nunito,sans-serif;color:#fff5db}
+#ppTicker .ppClock{min-width:calc(88*var(--u));font:900 calc(35*var(--u)) Fredoka,sans-serif;
+ color:#ffdc78;text-align:center;background:#151d39db;border:2px solid #ffd5917a;
+ border-radius:calc(15*var(--u));padding:calc(5*var(--u))}
+#ppBetPanel{position:absolute;top:calc(307*var(--u));left:calc(50*var(--u));
+ width:calc(330*var(--u));min-height:calc(545*var(--u));padding:calc(26*var(--u));
+ border:calc(3*var(--u)) solid #ffe2a8;border-radius:calc(34*var(--u));
+ background:linear-gradient(156deg,rgba(26,38,69,.95),rgba(24,22,49,.97) 68%,rgba(74,41,51,.97));
+ box-shadow:0 calc(16*var(--u)) calc(50*var(--u)) #0009,inset 0 0 calc(32*var(--u)) #f9c98516}
+#ppBetPanel .ppPanelName{display:block;font:900 calc(24*var(--u)) Fredoka,sans-serif;color:#ffdf8d;
+ border-bottom:calc(2*var(--u)) solid #f5d68c62;padding-bottom:calc(13*var(--u));margin-bottom:calc(15*var(--u))}
+#ppRunnerName{font:900 calc(43*var(--u)) Fredoka,sans-serif;display:block;color:#fff7e0;line-height:1.08;
+ overflow-wrap:break-word}
+#ppOdds{font:900 calc(23*var(--u)) Nunito,sans-serif;color:#ffc86b;display:block;
+ margin-top:calc(8*var(--u))}
+#ppBetPanel .ppDivider{height:calc(2*var(--u));background:#ffffff30;margin:calc(18*var(--u)) 0}
+#ppBetPanel .ppActions{display:grid;grid-template-columns:1fr 1fr;gap:calc(10*var(--u));pointer-events:auto}
+#ppBetPanel .ppAction{border:2px solid #f6dfb1;border-radius:calc(15*var(--u));
+ background:linear-gradient(160deg,#344971,#17203e);color:#fff9e8;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;padding:calc(13*var(--u)) calc(7*var(--u));
+ min-height:calc(59*var(--u));cursor:pointer;box-shadow:0 calc(4*var(--u)) 0 #090e22}
+#ppBetPanel .ppAction.ppPrimary{grid-column:span 2;background:linear-gradient(165deg,#ffca67,#e86f3d);
+ color:#2c1630;font:900 calc(21*var(--u)) Fredoka,sans-serif;border-color:#fff0b6;
+ box-shadow:0 calc(6*var(--u)) 0 #78382e}
+#ppBetPanel .ppAction.ppCheer{grid-column:span 2;border-color:#c6f4e3;
+ background:linear-gradient(140deg,#307d7d,#164563)}
+#ppBetPanel .ppAction:focus-visible{outline:4px solid white;outline-offset:2px}
+#ppBetPanel .ppAction:disabled{opacity:.54;filter:saturate(.5);cursor:default;box-shadow:none}
+#ppBetHint{font:700 calc(18*var(--u)) Nunito,sans-serif;line-height:1.3;
+ color:#e4e8f4;margin-top:calc(18*var(--u))}
+#ppLeaderPanel{position:absolute;bottom:calc(22*var(--u));left:calc(410*var(--u));
+ width:calc(1455*var(--u));min-height:calc(112*var(--u));border-radius:calc(26*var(--u));
+ border:calc(3*var(--u)) solid #ffdf9e8b;background:linear-gradient(115deg,#101a35ee,#1b2446ee,#141d39ee);
+ box-shadow:0 8px 40px #000b;padding:calc(10*var(--u)) calc(22*var(--u))}
+#ppLeaderPanel .ppLeaderHead{display:flex;align-items:center;justify-content:space-between;
+ color:#ffdc96;font:900 calc(22*var(--u)) Nunito,sans-serif;letter-spacing:.09em}
+#ppRankRows{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:calc(6*var(--u)) calc(16*var(--u));margin-top:calc(8*var(--u))}
+.ppRankRow{display:flex;align-items:center;gap:calc(11*var(--u));min-width:0;
+ font:800 calc(19*var(--u)) Nunito,sans-serif;background:#28304e93;
+ border-radius:calc(12*var(--u));border-left:calc(4*var(--u)) solid var(--runner);
+ padding:calc(6*var(--u))}
+.ppRankPos{color:#ffdc85;min-width:calc(23*var(--u))}
+.ppRankBall{display:block;flex:none;width:calc(16*var(--u));height:calc(16*var(--u));
+ border-radius:50%;background:radial-gradient(circle at 25% 20%,white,var(--runner) 45%,#16192b 90%)}
+.ppRankRow b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppRankRow strong{color:#ffe0a7;white-space:nowrap}
+.ppHype{display:flex;align-items:center;gap:calc(9*var(--u));font:800 calc(19*var(--u)) Nunito,sans-serif;color:#fff5dd}
+.ppHypeTrack{height:calc(12*var(--u));width:calc(120*var(--u));border:1px solid #ffffff6a;
+ border-radius:999px;overflow:hidden;background:#0c1428}
+#ppHypeFill{display:block;height:100%;width:0;background:linear-gradient(90deg,#f65b7a,#ffc15b,#fef0af)}
+@media(prefers-reduced-motion:reduce){#partyStage *{animation:none!important;transition:none!important}}
+
+
+/* DROP ZONE v2: separate prize-show design, not the withdrawn flat pegboard. */
+#partyStage[data-mode="dropzone"]{background:#071a2c}
+#ppDropHeader{position:absolute;left:calc(58*var(--u));top:calc(39*var(--u));
+ display:flex;flex-direction:column;gap:calc(7*var(--u));max-width:calc(1190*var(--u))}
+#ppDropHeader h1{font:900 calc(92*var(--u)) Fredoka,sans-serif;line-height:.93;margin:0;
+ color:#fff5d5;-webkit-text-stroke:calc(2*var(--u)) #f5bb6b;
+ text-shadow:0 calc(8*var(--u)) calc(7*var(--u)) #043444,0 0 calc(43*var(--u)) #21c3c04c}
+#ppDropHeader .ppDropCaps{display:flex;gap:calc(11*var(--u));align-items:center;
+ font:900 calc(21*var(--u)) Nunito,sans-serif}
+#ppDropHeader .ppDropCaps span{padding:calc(7*var(--u)) calc(18*var(--u));
+ background:#0a314adf;border:calc(2*var(--u)) solid #8debd2a8;
+ border-radius:calc(18*var(--u));color:#ffe3a2}
+#ppDropStats{position:absolute;left:calc(1230*var(--u));top:calc(60*var(--u));
+ display:flex;align-items:center;gap:calc(14*var(--u));pointer-events:none;
+ color:#fff3cf;font:900 calc(20*var(--u)) Nunito,sans-serif}
+#ppDropStats .ppDropTimer{display:inline-block;min-width:calc(90*var(--u));
+ padding:calc(9*var(--u)) calc(16*var(--u));border-radius:calc(19*var(--u));
+ background:#153550ec;border:calc(3*var(--u)) solid #ffc965;
+ font:900 calc(36*var(--u)) Fredoka,sans-serif;text-align:center;color:#fff1c8}
+#ppDropPanel{position:absolute;top:calc(254*var(--u));left:calc(49*var(--u));
+ width:calc(314*var(--u));padding:calc(21*var(--u));min-height:calc(585*var(--u));
+ border-radius:calc(32*var(--u));border:calc(3*var(--u)) solid #ffdfa1;
+ background:linear-gradient(160deg,#0e3b4cf2,#102944f6 58%,#322a46f1);
+ box-shadow:0 calc(18*var(--u)) calc(56*var(--u)) #000a,
+ inset 0 0 calc(25*var(--u)) #5de8d61c}
+#ppDropPanel .ppDropSmall{display:block;font:900 calc(20*var(--u)) Nunito,sans-serif;
+ letter-spacing:.08em;color:#aaf9e5}
+#ppDropPanel .ppDropName{display:block;font:900 calc(38*var(--u)) Fredoka,sans-serif;
+ color:#fff4ce;line-height:1.15;word-break:break-word;
+ margin:calc(13*var(--u)) 0}
+#ppDropPanel .ppDropAimLabel{display:block;color:#ffe1a2;
+ font:900 calc(20*var(--u)) Nunito,sans-serif;margin-top:calc(17*var(--u))}
+#ppDropPanel .ppDropAim{font:900 calc(60*var(--u)) Fredoka,sans-serif;
+ color:#fff1bd;line-height:1.05}
+#ppDropPanel .ppDropKeyline{height:calc(2*var(--u));margin:calc(20*var(--u)) 0;
+ background:linear-gradient(90deg,#f1d79ca6,#c4ffed24)}
+#ppDropPanel .ppDropButtons{display:grid;grid-template-columns:1fr 1fr;gap:calc(12*var(--u));
+ pointer-events:auto;margin-top:calc(20*var(--u))}
+.ppDropButtons button{font:900 calc(18*var(--u)) Nunito,sans-serif;
+ border-radius:calc(16*var(--u));padding:calc(13*var(--u)) calc(6*var(--u));
+ min-height:calc(64*var(--u));cursor:pointer;color:#fff7db;
+ border:calc(2*var(--u)) solid #bbefdd;background:linear-gradient(155deg,#2b7f80,#104958);
+ box-shadow:0 calc(6*var(--u)) 0 #0b2b43}
+.ppDropButtons button:focus-visible{outline:calc(4*var(--u)) solid #fff8db;outline-offset:calc(3*var(--u))}
+.ppDropButtons button:disabled{opacity:.48;cursor:default;filter:grayscale(.4);box-shadow:none}
+#dropNow{grid-column:1 / -1;background:linear-gradient(165deg,#ffedb6,#f0ae55 60%,#d27654);
+ color:#2a263d;font:900 calc(35*var(--u)) Fredoka,sans-serif;
+ border-color:#fff9e7;min-height:calc(93*var(--u));box-shadow:0 calc(7*var(--u)) 0 #92482c}
+#ppDropHint{color:#e6f6f5;font:800 calc(18*var(--u)) Nunito,sans-serif;
+ line-height:1.34;margin-top:calc(22*var(--u))}
+#ppDropStandings{position:absolute;right:calc(44*var(--u));top:calc(260*var(--u));
+ width:calc(367*var(--u));height:calc(604*var(--u));padding:calc(20*var(--u));
+ background:linear-gradient(148deg,#0c3049f7,#0c203ff7);
+ border:calc(3*var(--u)) solid #ffdb91;border-radius:calc(30*var(--u));
+ box-shadow:0 calc(17*var(--u)) calc(40*var(--u)) #000b}
+#ppDropStandings .ppDropListHead{font:900 calc(25*var(--u)) Fredoka,sans-serif;
+ color:#ffdb8c;padding-bottom:calc(13*var(--u));border-bottom:2px solid #ffdf9673}
+#ppDropRankRows{display:grid;gap:calc(9*var(--u));margin-top:calc(15*var(--u))}
+.ppDropRankRow{display:flex;align-items:center;gap:calc(9*var(--u));height:calc(48*var(--u));
+ padding:calc(6*var(--u)) calc(9*var(--u));border-left:calc(5*var(--u)) solid var(--drop-color);
+ border-radius:calc(11*var(--u));background:#28506a74;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;min-width:0}
+.ppDropRankRow>span{color:#ffdf98;min-width:calc(22*var(--u))}
+.ppDropMarble{display:block;flex:none;width:calc(18*var(--u));height:calc(18*var(--u));
+ border-radius:50%;background:radial-gradient(circle at 28% 25%,#fff,var(--drop-color) 50%,#0a2030)}
+.ppDropRankRow>strong{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppDropRankRow>b{color:#ffe3a8;white-space:nowrap;font-variant-numeric:tabular-nums}
+#ppDropStandings .ppDropBonus{display:grid;grid-template-columns:1fr auto;gap:calc(8*var(--u));
+ padding-top:calc(19*var(--u));margin-top:calc(19*var(--u));
+ border-top:2px solid #c7eada42;font:900 calc(19*var(--u)) Nunito,sans-serif}
+#ppDropStandings .ppDropBonus strong{color:#ffdf95}
+#ppDropStandings .ppDropWarning{margin-top:calc(13*var(--u));
+ font:800 calc(16*var(--u)) Nunito,sans-serif;color:#bfedeb;line-height:1.35}
+#partyStage[data-mode="dropzone"] #ppDropHeader .ppKicker{color:#b1fff0}
+#partyStage[data-mode="dropzone"] #ppDropStandings[hidden],
+#partyStage[data-mode="dropzone"] #ppDropPanel[hidden]{display:none}
+
+
+/* BOWL BRAWL UI V2 — theatrical elimination arena, isolated TV composition. */
+#partyStage[data-mode="brawl"]{background:#170e29}
+#ppBrawlHeader{position:absolute;top:calc(42*var(--u));left:calc(56*var(--u));
+ max-width:calc(900*var(--u))}
+#ppBrawlHeader .ppKicker{color:#ffba9b}
+#ppBrawlHeader h1{margin:calc(8*var(--u)) 0 calc(9*var(--u));
+ font:900 calc(93*var(--u)) Fredoka,sans-serif;line-height:.9;color:#fff1d6;
+ -webkit-text-stroke:calc(2.5*var(--u)) #f8a35c;
+ text-shadow:0 calc(8*var(--u)) calc(6*var(--u)) #271635,
+ 0 0 calc(34*var(--u)) #f7657448}
+#ppBrawlHeader .ppBrawlRound{display:flex;align-items:center;gap:calc(10*var(--u));
+ font:900 calc(22*var(--u)) Nunito,sans-serif}
+#ppBrawlRound{border-radius:calc(14*var(--u));padding:calc(7*var(--u)) calc(16*var(--u));
+ color:#ffddad;border:calc(2*var(--u)) solid #ffcc9f;
+ background:#2b253eec}
+#ppBrawlPhase{border-radius:calc(14*var(--u));padding:calc(7*var(--u)) calc(16*var(--u));
+ color:#bcfff0;border:calc(2*var(--u)) solid #6be4d2;
+ background:#194e5bec}
+#ppBrawlStats{position:absolute;top:calc(104*var(--u));right:calc(65*var(--u));
+ display:flex;align-items:center;gap:calc(13*var(--u));
+ font:900 calc(23*var(--u)) Nunito,sans-serif;color:#ffe1a4;
+ text-shadow:0 3px 6px #000b}
+#ppBrawlStats strong{font:900 calc(40*var(--u)) Fredoka,sans-serif;color:#fff6d8}
+#ppBrawlStats>div{border:calc(2*var(--u)) solid #f5bd9c;border-radius:calc(20*var(--u));
+ padding:calc(8*var(--u)) calc(16*var(--u));min-width:calc(155*var(--u));
+ background:linear-gradient(135deg,#40273fe8,#19233fe8);
+ display:flex;flex-direction:column;gap:calc(4*var(--u));text-align:center}
+#ppBrawlPanel{position:absolute;left:calc(50*var(--u));top:calc(293*var(--u));
+ width:calc(329*var(--u));min-height:calc(578*var(--u));
+ padding:calc(23*var(--u));border:calc(3*var(--u)) solid #ffe0aa;
+ border-radius:calc(33*var(--u));background:linear-gradient(155deg,#41253fec,#1b2c47f2 57%,#152337f2);
+ box-shadow:0 calc(19*var(--u)) calc(48*var(--u)) #0009}
+#ppBrawlPanel>small{display:block;font:900 calc(19*var(--u)) Nunito,sans-serif;
+ letter-spacing:.07em;color:#c4fff0;margin-bottom:calc(12*var(--u))}
+#ppBrawlPlayer{font:900 calc(39*var(--u)) Fredoka,sans-serif;color:#fff4d7;
+ word-break:break-word;display:block;line-height:1.03}
+#ppBrawlPanel .ppBrawlDivider{height:calc(2*var(--u));background:#ffddaa5f;
+ margin:calc(18*var(--u)) 0}
+.ppBrawlEnergyHead{display:flex;align-items:center;justify-content:space-between;
+ font:900 calc(23*var(--u)) Nunito,sans-serif;color:#ffdda1}
+.ppBrawlEnergyTrack{height:calc(19*var(--u));border-radius:999px;
+ background:#101b33;border:2px solid #ffe3b18c;overflow:hidden;
+ margin:calc(10*var(--u)) 0 calc(25*var(--u))}
+#ppBrawlEnergyFill{display:block;width:75%;height:100%;
+ background:linear-gradient(90deg,#63e8b4,#b5ffb2,#ffe28e);
+ transition:width .15s}
+.ppBrawlActions{display:grid;grid-template-columns:1fr 1fr;gap:calc(11*var(--u));
+ pointer-events:auto}
+.ppBrawlActions button{min-height:calc(68*var(--u));padding:calc(10*var(--u)) calc(5*var(--u));
+ border:calc(2*var(--u)) solid #9becdf;border-radius:calc(16*var(--u));
+ background:linear-gradient(150deg,#255c6e,#192943);color:#fff4de;
+ font:900 calc(21*var(--u)) Nunito,sans-serif;
+ box-shadow:0 calc(5*var(--u)) 0 #091528;cursor:pointer}
+.ppBrawlActions #ppBrawlRam{grid-column:span 2;
+ background:linear-gradient(160deg,#ffe2a5,#ed9b5b 63%,#c85c55);
+ color:#2c2139;font:900 calc(37*var(--u)) Fredoka,sans-serif;
+ min-height:calc(96*var(--u));border-color:#fff5da;
+ box-shadow:0 calc(7*var(--u)) 0 #813e45}
+.ppBrawlActions #ppBrawlAnchor{grid-column:span 2;
+ background:linear-gradient(145deg,#4b6385,#26395f);
+ border-color:#d3d6fc}
+.ppBrawlActions button:disabled{opacity:.47;cursor:default;filter:saturate(.4);box-shadow:none}
+.ppBrawlActions button:focus-visible{outline:calc(4*var(--u)) solid #fff;outline-offset:calc(4*var(--u))}
+#ppBrawlHelp{margin-top:calc(18*var(--u));font:800 calc(17*var(--u)) Nunito,sans-serif;
+ line-height:1.35;color:#d8f4f0}
+#ppBrawlStandings{position:absolute;top:calc(265*var(--u));right:calc(51*var(--u));
+ width:calc(371*var(--u));min-height:calc(620*var(--u));padding:calc(20*var(--u));
+ border:calc(3*var(--u)) solid #ffd69a;border-radius:calc(33*var(--u));
+ background:linear-gradient(150deg,#34223def,#162945ee);
+ box-shadow:0 calc(16*var(--u)) calc(48*var(--u)) #000a}
+#ppBrawlStandings h2{font:900 calc(32*var(--u)) Fredoka,sans-serif;
+ color:#ffdaa0;margin:0;padding-bottom:calc(13*var(--u));
+ border-bottom:2px solid #ffd68d69}
+#ppBrawlRankRows{display:grid;gap:calc(10*var(--u));margin-top:calc(18*var(--u))}
+.ppBrawlRank{display:flex;align-items:center;gap:calc(10*var(--u));
+ min-height:calc(47*var(--u));padding:calc(6*var(--u)) calc(9*var(--u));
+ border-radius:calc(12*var(--u));border-left:calc(5*var(--u)) solid var(--brawl);
+ background:#3d435e91;font:900 calc(19*var(--u)) Nunito,sans-serif}
+.ppBrawlRank>b{color:#ffe0a3;min-width:calc(23*var(--u))}
+.ppBrawlRank>i{width:calc(19*var(--u));height:calc(19*var(--u));border-radius:50%;
+ flex-shrink:0;background:radial-gradient(circle at 24% 21%,white,var(--brawl) 50%,#121d31)}
+.ppBrawlRank>strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppBrawlRank>span{color:#ffe1aa;white-space:nowrap}
+.ppBrawlRank.out{opacity:.46;background:#101d2cbf;text-decoration:line-through}
+.ppBrawlArenaNote{margin-top:calc(21*var(--u));display:grid;grid-template-columns:1fr auto;
+ border-top:2px solid #ffdd9c61;padding-top:calc(19*var(--u));
+ gap:calc(10*var(--u));font:900 calc(21*var(--u)) Nunito,sans-serif}
+.ppBrawlArenaNote strong{color:#fff2b7}
+.ppBrawlWarning{margin-top:calc(15*var(--u));font:800 calc(16*var(--u)) Nunito,sans-serif;
+ color:#d9faf0;line-height:1.35}
+
+
+/* CURLING v2 — alpine miniature ice arena, separate from previous five-game UI. */
+#partyStage[data-mode="curling"]{background:#102f4b}
+#ppCurlHeader{position:absolute;left:calc(57*var(--u));top:calc(42*var(--u));}
+#ppCurlHeader .ppKicker{color:#a9fff0}
+#ppCurlHeader h1{font:900 calc(89*var(--u)) Fredoka,sans-serif;
+ margin:calc(9*var(--u)) 0;color:#fffcec;line-height:.96;
+ -webkit-text-stroke:calc(2*var(--u)) #9bcfe2;
+ text-shadow:0 calc(7*var(--u)) calc(7*var(--u)) #16416b,
+ 0 0 calc(42*var(--u)) #8ffffb69}
+#ppCurlHeader .ppCurlStatus{display:flex;align-items:center;gap:calc(13*var(--u));
+ font:900 calc(23*var(--u)) Nunito,sans-serif;color:#fff6db}
+#ppCurlEnd,#ppCurlPhase{padding:calc(7*var(--u)) calc(17*var(--u));
+ border:calc(2*var(--u)) solid #dafdf2;border-radius:calc(15*var(--u));
+ background:linear-gradient(140deg,#185a6bdb,#214460dc)}
+#ppCurlPhase{color:#fff3bd;border-color:#f3e0a2}
+#ppCurlClockWrap{position:absolute;right:calc(75*var(--u));top:calc(100*var(--u));
+ display:flex;flex-direction:column;text-align:center;gap:calc(4*var(--u));
+ background:linear-gradient(150deg,#134e60ed,#1a3654ef);
+ border:calc(3*var(--u)) solid #dcffeb;border-radius:calc(20*var(--u));
+ padding:calc(12*var(--u)) calc(30*var(--u));box-shadow:0 10px 36px #0008;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;color:#bffff0}
+#ppCurlClock{font:900 calc(45*var(--u)) Fredoka,sans-serif;color:#fff0b5}
+#ppCurlPanel{position:absolute;left:calc(46*var(--u));top:calc(281*var(--u));
+ width:calc(328*var(--u));min-height:calc(640*var(--u));
+ padding:calc(20*var(--u));border:calc(3*var(--u)) solid #ccfff4;
+ border-radius:calc(30*var(--u));
+ background:linear-gradient(157deg,#185b6bf1,#20445fee 56%,#16324eea);
+ box-shadow:0 calc(19*var(--u)) calc(42*var(--u)) #000b}
+#ppCurlPanel>small{display:block;font:900 calc(18*var(--u)) Nunito,sans-serif;
+ color:#fff3b6;letter-spacing:.07em}
+#ppCurlPlayer{font:900 calc(38*var(--u)) Fredoka,sans-serif;line-height:1.12;
+ color:#fffdef;display:block;margin:calc(9*var(--u)) 0 calc(12*var(--u));
+ overflow-wrap:anywhere}
+#ppCurlPanel .ppCurlReadouts{display:grid;grid-template-columns:1fr 1fr;
+ gap:calc(9*var(--u));margin-bottom:calc(14*var(--u))}
+.ppCurlValue{background:linear-gradient(150deg,#102a48db,#173e5ce8);
+ border:1px solid #cafbf0;border-radius:calc(13*var(--u));padding:calc(9*var(--u));
+ text-align:center}
+.ppCurlValue span{display:block;font:900 calc(14*var(--u)) Nunito,sans-serif;
+ letter-spacing:.06em;color:#c5fcf3}
+.ppCurlValue strong{display:block;margin-top:calc(4*var(--u));
+ font:900 calc(29*var(--u)) Fredoka,sans-serif;color:#fff6d8}
+#ppCurlPanel .ppCurlControls{display:grid;grid-template-columns:1fr 1fr;
+ gap:calc(8*var(--u));pointer-events:auto}
+.ppCurlControls button{min-height:calc(58*var(--u));padding:calc(6*var(--u));
+ border:calc(2*var(--u)) solid #e6fffa;border-radius:calc(13*var(--u));
+ background:linear-gradient(160deg,#46839b,#17425e);color:#fff9e7;
+ font:900 calc(17*var(--u)) Nunito,sans-serif;
+ box-shadow:0 calc(4*var(--u)) 0 #102d44;cursor:pointer}
+.ppCurlControls button:disabled{opacity:.43;cursor:default;box-shadow:none}
+.ppCurlControls button:focus-visible{outline:calc(4*var(--u)) solid #fffbe4;outline-offset:calc(3*var(--u))}
+#ppCurlThrow,#ppCurlSweepBtn{grid-column:span 2;
+ font:900 calc(29*var(--u)) Fredoka,sans-serif;
+ min-height:calc(72*var(--u))}
+#ppCurlThrow{background:linear-gradient(155deg,#ffe5b0,#e9aa63 65%,#d17c67);
+ color:#2b3552;border-color:#fffae2}
+#ppCurlSweepBtn{background:linear-gradient(155deg,#8ff5e8,#3fc6bc 65%,#168fa1);
+ color:#16344b;border-color:#e6fffb}
+#ppCurlHelp{font:800 calc(16*var(--u)) Nunito,sans-serif;color:#e0fffa;
+ line-height:1.32;margin-top:calc(14*var(--u))}
+#ppCurlStandings{position:absolute;right:calc(49*var(--u));top:calc(294*var(--u));
+ width:calc(357*var(--u));min-height:calc(598*var(--u));
+ border:calc(3*var(--u)) solid #e7fffa;border-radius:calc(30*var(--u));
+ padding:calc(20*var(--u));
+ background:linear-gradient(150deg,#174b67ef,#15334fec);
+ box-shadow:0 calc(15*var(--u)) calc(40*var(--u)) #000a}
+#ppCurlStandings h2{font:900 calc(30*var(--u)) Fredoka,sans-serif;color:#fff4bd;
+ border-bottom:calc(2*var(--u)) solid #bceee3;
+ padding-bottom:calc(12*var(--u));margin:0}
+#ppCurlRankRows{display:grid;gap:calc(10*var(--u));margin-top:calc(18*var(--u))}
+.ppCurlRank{display:flex;align-items:center;gap:calc(10*var(--u));
+ min-height:calc(43*var(--u));padding:calc(6*var(--u)) calc(9*var(--u));
+ border-left:calc(5*var(--u)) solid var(--curl-marble);
+ border-radius:calc(12*var(--u));background:#376a8680;
+ font:900 calc(19*var(--u)) Nunito,sans-serif}
+.ppCurlRank>b{color:#fff4b3;min-width:calc(23*var(--u))}
+.ppCurlRank>i{width:calc(20*var(--u));height:calc(20*var(--u));flex:none;
+ border-radius:50%;background:radial-gradient(circle at 24% 20%,#fff,var(--curl-marble) 48%,#12314b)}
+.ppCurlRank>strong{flex:1;min-width:0;text-overflow:ellipsis;
+ overflow:hidden;white-space:nowrap}
+.ppCurlRank>span{white-space:nowrap;color:#fff6ce}
+#ppCurlStandings .ppCurlMore{display:grid;grid-template-columns:1fr auto;
+ gap:calc(12*var(--u));padding-top:calc(20*var(--u));
+ border-top:2px solid #c9f8e682;margin-top:calc(21*var(--u));
+ font:900 calc(19*var(--u)) Nunito,sans-serif;color:#d4f9f0}
+#ppCurlStandings .ppCurlMore strong{color:#fff0bc}
+#ppCurlStandings .ppCurlNote{font:800 calc(17*var(--u)) Nunito,sans-serif;
+ color:#d9f7ef;margin-top:calc(20*var(--u));line-height:1.35}
+
+
+/* GOLF V2 — miniature putting theatre. This is a genuine replacement screen,
+   not a new panel on top of the old flat game. */
+#partyStage[data-mode="golf"]{background:#123247}
+#ppGolfHeader{position:absolute;top:calc(39*var(--u));left:calc(55*var(--u));
+ max-width:calc(1040*var(--u));pointer-events:none}
+#ppGolfHeader .ppKicker{color:#ffe6af;letter-spacing:.13em}
+#ppGolfHeader h1{font:900 calc(88*var(--u)) Fredoka,sans-serif;
+ color:#fff4cc;line-height:.95;margin:calc(10*var(--u)) 0;
+ -webkit-text-stroke:calc(2*var(--u)) #edbd7b;
+ text-shadow:0 calc(8*var(--u)) calc(6*var(--u)) #133b3d,
+ 0 0 calc(35*var(--u)) #fef1a452}
+#ppGolfHeader .ppGolfMeta{display:flex;align-items:center;
+ gap:calc(11*var(--u));font:900 calc(21*var(--u)) Nunito,sans-serif}
+#ppGolfHeader .ppGolfMeta span{padding:calc(7*var(--u)) calc(16*var(--u));
+ border:calc(2*var(--u)) solid #ffe6a9;border-radius:calc(14*var(--u));
+ background:linear-gradient(135deg,#22533ddc,#1e4e59ea);color:#fff3c4}
+#ppGolfClockBox{position:absolute;right:calc(60*var(--u));top:calc(106*var(--u));
+ display:flex;align-items:center;gap:calc(17*var(--u));font:900 calc(21*var(--u)) Nunito,sans-serif;
+ color:#ffe5aa;background:linear-gradient(135deg,#214e4be8,#173b51ed);
+ border:calc(2*var(--u)) solid #ffedb4;border-radius:calc(19*var(--u));
+ padding:calc(10*var(--u)) calc(17*var(--u));box-shadow:0 7px 28px #0008}
+#ppGolfClock{font:900 calc(37*var(--u)) Fredoka,sans-serif;color:#fff9df}
+#ppGolfPanel{position:absolute;top:calc(279*var(--u));left:calc(46*var(--u));
+ width:calc(334*var(--u));min-height:calc(641*var(--u));
+ padding:calc(22*var(--u));border:calc(3*var(--u)) solid #f7e5ae;
+ border-radius:calc(32*var(--u));box-shadow:0 calc(17*var(--u)) calc(48*var(--u)) #000b;
+ background:linear-gradient(147deg,#376349ef,#254a56f2 58%,#182c43f2)}
+#ppGolfPanel>small{display:block;color:#ffe1a6;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;letter-spacing:.08em}
+#ppGolfPlayer{display:block;margin:calc(10*var(--u)) 0 calc(16*var(--u));
+ font:900 calc(36*var(--u)) Fredoka,sans-serif;color:#fff5d8;
+ line-height:1.1;overflow-wrap:anywhere}
+.ppGolfValues{display:grid;grid-template-columns:1fr 1fr;gap:calc(9*var(--u));
+ margin-bottom:calc(18*var(--u))}
+.ppGolfValue{padding:calc(9*var(--u));border:2px solid #bff2d7;
+ background:linear-gradient(145deg,#153b3cef,#18364deb);
+ border-radius:calc(13*var(--u));text-align:center;min-width:0}
+.ppGolfValue>span{display:block;font:900 calc(14*var(--u)) Nunito,sans-serif;
+ color:#c2f3dd;letter-spacing:.04em}
+.ppGolfValue>strong{display:block;margin-top:calc(4*var(--u));
+ font:900 calc(28*var(--u)) Fredoka,sans-serif;color:#fff5cc}
+.ppGolfActions{pointer-events:auto;display:grid;grid-template-columns:1fr 1fr;
+ gap:calc(9*var(--u))}
+.ppGolfActions button{min-height:calc(59*var(--u));padding:calc(8*var(--u)) calc(5*var(--u));
+ border:2px solid #e4f7d7;border-radius:calc(13*var(--u));
+ background:linear-gradient(153deg,#3e8070,#1e5360);color:#fffcec;
+ box-shadow:0 calc(5*var(--u)) 0 #122e3c;
+ font:900 calc(18*var(--u)) Nunito,sans-serif;cursor:pointer}
+.ppGolfActions button:focus-visible{outline:calc(4*var(--u)) solid #fff;
+ outline-offset:calc(3*var(--u))}
+.ppGolfActions button:disabled{opacity:.45;cursor:default;box-shadow:none}
+#ppGolfPreview{grid-column:span 2;background:linear-gradient(153deg,#385a7c,#203b61);
+ border-color:#d5ebf9}
+#ppGolfShoot{grid-column:span 2;min-height:calc(98*var(--u));
+ font:900 calc(38*var(--u)) Fredoka,sans-serif;
+ background:linear-gradient(153deg,#fff0c0,#ffc773 64%,#e5845c);
+ color:#3b2d40;border:3px solid #fff8d9;
+ box-shadow:0 calc(7*var(--u)) 0 #a85a47}
+#ppGolfHelp{margin-top:calc(15*var(--u));font:800 calc(16*var(--u)) Nunito,sans-serif;
+ color:#edffe8;line-height:1.35}
+#ppGolfStandings{position:absolute;top:calc(278*var(--u));right:calc(45*var(--u));
+ width:calc(367*var(--u));min-height:calc(622*var(--u));
+ border:calc(3*var(--u)) solid #ffe2a6;border-radius:calc(32*var(--u));
+ padding:calc(20*var(--u));background:linear-gradient(152deg,#375844ee,#19394bee);
+ box-shadow:0 calc(17*var(--u)) calc(45*var(--u)) #000b}
+#ppGolfStandings h2{margin:0;padding-bottom:calc(15*var(--u));
+ font:900 calc(30*var(--u)) Fredoka,sans-serif;color:#ffe1a3;
+ border-bottom:2px solid #e2f2ce7a}
+#ppGolfRankRows{display:grid;gap:calc(9*var(--u));margin-top:calc(16*var(--u))}
+.ppGolfRank{display:flex;align-items:center;gap:calc(9*var(--u));
+ min-height:calc(46*var(--u));padding:calc(7*var(--u));
+ border-left:calc(5*var(--u)) solid var(--golf-ball);
+ border-radius:calc(12*var(--u));background:#2c5c5b8b;
+ font:900 calc(19*var(--u)) Nunito,sans-serif}
+.ppGolfRank>b{color:#ffe4a8;min-width:calc(24*var(--u))}
+.ppGolfRank>i{width:calc(19*var(--u));height:calc(19*var(--u));border-radius:50%;
+ flex:none;background:radial-gradient(circle at 24% 24%,white,var(--golf-ball) 50%,#162b40)}
+.ppGolfRank>strong{flex:1;min-width:0;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.ppGolfRank>span{color:#fff0c3;white-space:nowrap;font-size:calc(17*var(--u))}
+.ppGolfStats{display:grid;grid-template-columns:1fr auto;gap:calc(13*var(--u));
+ margin-top:calc(22*var(--u));padding-top:calc(17*var(--u));
+ border-top:2px solid #d8e9ce6b;color:#d8f7dd;
+ font:900 calc(18*var(--u)) Nunito,sans-serif}
+.ppGolfStats strong{color:#fff0b9}
+#ppGolfStandings p{font:800 calc(16*var(--u)) Nunito,sans-serif;
+ color:#ddf2df;line-height:1.35;margin-top:calc(19*var(--u))}
+
+
+/* BOWL BRAWL MAYHEM — actionable jeopardy, never a decorative warning. */
+#ppBrawlShockBox{
+ margin-top:calc(13*var(--u));width:calc(490*var(--u));
+ padding:calc(8*var(--u)) calc(16*var(--u));
+ background:linear-gradient(110deg,#122b42e8,#463041e8);
+ border:calc(2*var(--u)) solid #ffc07f;
+ border-radius:calc(13*var(--u));box-shadow:0 7px 18px #0008;
+}
+#ppBrawlShockLabel{color:#ffe6a9;font:900 calc(20*var(--u)) Nunito,sans-serif}
+.ppBrawlShockMeter{height:calc(9*var(--u));border-radius:99px;
+ background:#08192c;overflow:hidden;border:1px solid #ffe0a78d;
+ margin-top:calc(7*var(--u))}
+#ppBrawlShockBar{display:block;height:100%;width:0;
+ background:linear-gradient(90deg,#68e6d4,#ffce75,#ff566e);
+ transition:width .12s linear}
+#ppBrawlShockBox.danger{border-color:#ff4a67;
+ background:linear-gradient(100deg,#662840,#3e203cf1);
+ box-shadow:0 0 calc(25*var(--u)) #fc44688f;
+ animation:ppBrawlAlarm .43s ease-in-out infinite alternate}
+@keyframes ppBrawlAlarm{
+ from{filter:brightness(.88)}to{filter:brightness(1.32)}
+}
+#ppBrawlShockBox.blast{border-color:#fffcaf;
+ box-shadow:0 0 calc(40*var(--u)) #ffd77ac0}
+.ppBrawlActions #ppBrawlRecover{
+ grid-column:span 2;min-height:calc(65*var(--u));
+ background:linear-gradient(150deg,#db536c,#732741);color:#fff3e9;
+ border-color:#ffc4ad;font:900 calc(21*var(--u)) Fredoka,sans-serif;
+}
+.ppBrawlActions #ppBrawlRecover:disabled{opacity:.35;filter:grayscale(.7)}
+.ppBrawlActions #ppBrawlRecover:not(:disabled){
+ background:linear-gradient(155deg,#ff7659,#ef365d,#993258);
+ box-shadow:0 calc(5*var(--u)) 0 #782139,0 0 calc(24*var(--u)) #ef557d70;
+ animation:ppBrawlAlarm .42s ease-in-out infinite alternate
+}
+#ppBrawlKillFeed{
+ font:900 calc(19*var(--u)) Nunito,sans-serif;
+ line-height:1.4;color:#ffd9a2;padding:calc(11*var(--u)) calc(12*var(--u));
+ margin-top:calc(14*var(--u));border-left:calc(5*var(--u)) solid #fda56c;
+ border-radius:calc(11*var(--u));background:linear-gradient(110deg,#582a45c9,#1b3b50a8);
+}
+#ppBrawlPanel{padding-bottom:calc(20*var(--u))}
+@media(prefers-reduced-motion:reduce){
+ #ppBrawlShockBox.danger,#ppBrawlActions #ppBrawlRecover:not(:disabled){animation:none}
+}
+
+
+/* Keep the announcer out of Brawl's emergency buttons and edge warning.
+   Grand Prix, Derby and the other mode placements remain unchanged. */
+body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
+ left:calc(430*var(--u));bottom:calc(20*var(--u));
+}
+
 /* ---------- race HUD ---------- */
 #raceHud{position:fixed;inset:0}
 #raceTop{position:absolute;left:calc(40*var(--u));top:calc(30*var(--u));background:rgba(15,17,48,.78);border-radius:calc(20*var(--u));padding:calc(10*var(--u)) calc(22*var(--u))}
@@ -387,55 +839,210 @@ display:flex;gap:calc(8*var(--u));align-items:center;z-index:5}
     </div>
   </section>
 
-  <section class="screen" data-screen="dropzone" hidden>
-    <canvas id="dropZoneCanvas" width="1920" height="1080" aria-label="Drop Zone pegboard game"></canvas>
-    <div id="dropZoneHelp">
-      <button class="btn" id="dropLeft">◀ Left</button>
-      <button class="btn go" id="dropNow">DROP!</button>
-      <button class="btn" id="dropRight">Right ▶</button>
-    </div>
-  </section>
+  <!-- Party Pack v2: ONE fully independent full-screen stage.
+       The five legacy mode screens, buttons, canvases and duplicate UI are gone. -->
+  <section class="screen" id="partyStage" data-screen="party-stage" hidden>
+    <canvas id="partyStageCanvas" width="1920" height="1080" role="img" aria-label="Active Marble Rush Party Pack game arena"></canvas>
+    <div class="ppHud">
+      <header id="ppTitleArea">
+        <div class="ppKicker">MARBLE RUSH PRESENTS · THE PARTY PACK</div>
+        <h1 id="ppModeTitle">MARBLE DERBY</h1>
+        <div class="ppSubtitle">
+          <span id="ppHeat">HEAT 1 / 5</span><span id="ppCourse">GRANDSTAND CIRCUIT</span>
+        </div>
+      </header>
+      <div id="ppBoardLabel">THE GRANDSTAND · LIVE RACING</div>
+      <div id="ppTicker"><span id="ppPhase">PLACE YOUR VIRTUAL GEMS</span><span class="ppClock" id="ppClock">12s</span></div>
+      <aside id="ppBetPanel" aria-label="Marble Derby controls">
+        <span class="ppPanelName">THE GEM CLUB · YOUR PICK</span>
+        <strong id="ppRunnerName">Rocket</strong>
+        <span id="ppOdds">3.5× RETURN</span>
+        <div class="ppDivider"></div>
+        <div class="ppActions">
+          <button type="button" class="ppAction" id="derbyRunner">NEXT RUNNER ▶</button>
+          <button type="button" class="ppAction" id="derbyStake">STAKE · 50 ◆</button>
+          <button type="button" class="ppAction ppPrimary" id="derbyPick">BACK ROCKET</button>
+          <button type="button" class="ppAction ppCheer" id="derbyCheer">CHEER YOUR MARBLE!</button>
+        </div>
+        <p id="ppBetHint">Choose your runner and stake. All gems are virtual game points.</p>
+      </aside>
+      <aside id="ppLeaderPanel" aria-label="Live Derby standings">
+        <div class="ppLeaderHead">
+          <span>◆ THE GEM CLUB · LEADERBOARD</span>
+          <div class="ppHype">CROWD ENERGY
+            <div class="ppHypeTrack"><span id="ppHypeFill"></span></div><span id="ppHypeText">0%</span>
+          </div>
+        </div>
+        <div id="ppRankRows"></div>
+      </aside>
 
-  <section class="screen" data-screen="brawl" hidden>
-    <canvas id="brawlCanvas" width="1920" height="1080" aria-label="Bowl Brawl marble arena"></canvas>
-    <div id="brawlHelp">
-      <button class="btn" id="brawlLeft">◀ Turn</button>
-      <button class="btn go" id="brawlRam">RAM!</button>
-      <button class="btn" id="brawlAnchor">ANCHOR</button>
-      <button class="btn" id="brawlRight">Turn ▶</button>
-    </div>
-  </section>
+      <!-- Drop Zone is a separate visual language on the SAME new stage.
+           No flat legacy Drop Zone canvas or duplicate mode screen exists. -->
+      <header id="ppDropHeader" hidden>
+        <div class="ppKicker">MARBLE RUSH PRESENTS · THE GOLDEN DROP</div>
+        <h1>DROP ZONE</h1>
+        <div class="ppDropCaps">
+          <span id="ppDropRound">ROUND 1 / 5</span>
+          <span>JACKPOT CABINET · LIVE</span>
+        </div>
+      </header>
+      <div id="ppDropStats" hidden>
+        <span id="ppDropTurn">UP NEXT</span>
+        <span class="ppDropTimer" id="ppDropTimer">10s</span>
+      </div>
+      <aside id="ppDropPanel" aria-label="Drop Zone aim and release" hidden>
+        <span class="ppDropSmall">YOU'RE ON THE CHUTE</span>
+        <strong class="ppDropName" id="ppDropOnDeck">Player</strong>
+        <div class="ppDropKeyline"></div>
+        <span class="ppDropAimLabel">DROP POSITION</span>
+        <strong class="ppDropAim" id="ppDropAim">500</strong>
+        <div class="ppDropButtons">
+          <button id="dropLeft" type="button">◀ LEFT</button>
+          <button id="dropRight" type="button">RIGHT ▶</button>
+          <button id="dropNow" type="button">DROP!</button>
+        </div>
+        <p id="ppDropHint">Aim your chute and bank the jackpot.</p>
+      </aside>
+      <aside id="ppDropStandings" aria-label="Drop Zone live scores" hidden>
+        <h2 class="ppDropListHead">THE JACKPOT TABLE</h2>
+        <div id="ppDropRankRows" aria-live="off"></div>
+        <div class="ppDropBonus">
+          <span id="ppDropJackpotLabel">FINAL JACKPOT</span><strong id="ppDropJackpot">1000</strong>
+          <span>LAST DROP</span><strong id="ppDropLast">0 PTS</strong>
+          <span>DROPS PLAYED</span><strong id="ppDropCount">1 / 5</strong>
+        </div>
+        <p class="ppDropWarning">Gold pegs can double a prize. All scores are game points.</p>
+      </aside>
 
-  <section class="screen" data-screen="derby" hidden>
-    <canvas id="derbyCanvas" width="1920" height="1080" aria-label="Marble Derby race and virtual gems scoreboard"></canvas>
-    <div id="derbyHelp">
-      <button class="btn" id="derbyStake">Change stake</button>
-      <button class="btn" id="derbyRunner">Choose runner</button>
-      <button class="btn go" id="derbyPick">Back a marble</button>
-      <button class="btn" id="derbyCheer">CHEER!</button>
-    </div>
-  </section>
+      <!-- Bowl Brawl — genuinely new arena TV presentation. The old canvas and
+           controls are deleted, NOT layered behind this UI. -->
+      <header id="ppBrawlHeader" hidden>
+        <div class="ppKicker">MARBLE RUSH PRESENTS · THE ELIMINATION ARENA</div>
+        <h1>BOWL BRAWL</h1>
+        <div class="ppBrawlRound"><span id="ppBrawlRound">ROUND 1 / 5</span>
+          <span id="ppBrawlPhase">BUMPER BLITZ</span></div>
+        <div id="ppBrawlShockBox" aria-live="polite">
+          <strong id="ppBrawlShockLabel">SHOCKWAVE IN 8.0s</strong>
+          <div class="ppBrawlShockMeter"><span id="ppBrawlShockBar"></span></div>
+        </div>
+      </header>
+      <div id="ppBrawlStats" hidden>
+        <div><span>ROUND CLOCK</span><strong id="ppBrawlTime">42.0s</strong></div>
+        <div><span>STILL IN</span><strong id="ppBrawlAlive">2 / 2</strong></div>
+      </div>
+      <aside id="ppBrawlPanel" aria-label="Bowl Brawl controls" hidden>
+        <small>YOUR MARBLE · COMBAT STATION</small>
+        <strong id="ppBrawlPlayer">WATCH THE ACTION</strong>
+        <div class="ppBrawlDivider"></div>
+        <div class="ppBrawlEnergyHead"><span>RAM ENERGY</span><strong id="ppBrawlEnergy">75%</strong></div>
+        <div class="ppBrawlEnergyTrack"><span id="ppBrawlEnergyFill"></span></div>
+        <div class="ppBrawlActions">
+          <button id="ppBrawlLeft" type="button">◀ TURN</button>
+          <button id="ppBrawlRight" type="button">TURN ▶</button>
+          <button id="ppBrawlRam" type="button">RAM!</button>
+          <button id="ppBrawlAnchor" type="button">⚓ ANCHOR · BRACE</button>
+          <button id="ppBrawlRecover" type="button" disabled>↩ EDGE RECOVERY</button>
+        </div>
+        <p id="ppBrawlHelp">SHOCKWAVE incoming. Recover once near the rim, or RAM opponents out for bonus points.</p>
+      </aside>
+      <aside id="ppBrawlStandings" aria-label="Bowl Brawl live standings" hidden>
+        <h2>BRAWL LEADERBOARD</h2>
+        <div id="ppBrawlRankRows"></div>
+        <div class="ppBrawlArenaNote">
+          <span>ARENA RADIUS</span><strong><span id="ppBrawlRadius">380</span> M</strong>
+        </div>
+        <p class="ppBrawlWarning">Charged knockouts earn +3 bonus points (+5 in the final round). Recover once per round for 35 energy.</p>
+        <div id="ppBrawlKillFeed" aria-live="polite">NO KNOCKOUTS YET · GO GET 'EM</div>
+      </aside>
 
-  <section class="screen" data-screen="golf" hidden>
-    <canvas id="golfCanvas" width="1920" height="1080" aria-label="Marble Golf five-hole miniature course"></canvas>
-    <div id="golfHelp">
-      <button class="btn" id="golfLeft">◀ Aim</button>
-      <button class="btn" id="golfDown">− Power</button>
-      <button class="btn go" id="golfShoot">SHOOT!</button>
-      <button class="btn" id="golfUp">+ Power</button>
-      <button class="btn" id="golfRight">Aim ▶</button>
-    </div>
-  </section>
+      <!-- Marble Curling UI v2: independent TV rink, HUD and stone controls.
+           There is NO previous Curling canvas behind this stage. -->
+      <div id="ppCurlHud" hidden>
+        <header id="ppCurlHeader">
+          <div class="ppKicker">MARBLE RUSH PRESENTS · THE ALPINE ICE HOUSE</div>
+          <h1>MARBLE CURLING</h1>
+          <div class="ppCurlStatus">
+            <span id="ppCurlEnd">END 1 / 5</span>
+            <span id="ppCurlPhase">LINE UP YOUR STONE</span>
+          </div>
+        </header>
+        <div id="ppCurlClockWrap"><span>SHOT CLOCK</span><strong id="ppCurlClock">12s</strong></div>
+        <aside id="ppCurlPanel" aria-label="Marble Curling throw and sweep controls">
+          <small>YOUR TURN · THE ICE HOUSE</small>
+          <strong id="ppCurlPlayer">Player</strong>
+          <div class="ppCurlReadouts">
+            <div class="ppCurlValue"><span>AIM</span><strong id="ppCurlAim">0°</strong></div>
+            <div class="ppCurlValue"><span>POWER</span><strong id="ppCurlPower">68%</strong></div>
+            <div class="ppCurlValue"><span>CURL</span><strong id="ppCurlCurl">STRAIGHT</strong></div>
+            <div class="ppCurlValue"><span>SWEEP</span><strong id="ppCurlSweep">0%</strong></div>
+          </div>
+          <div class="ppCurlControls">
+            <button type="button" id="ppCurlLeft">◀ AIM</button>
+            <button type="button" id="ppCurlRight">AIM ▶</button>
+            <button type="button" id="ppCurlPowerDown">− POWER</button>
+            <button type="button" id="ppCurlPowerUp">+ POWER</button>
+            <button type="button" id="ppCurlLeftSpin">↶ CURL</button>
+            <button type="button" id="ppCurlRightSpin">CURL ↷</button>
+            <button type="button" id="ppCurlThrow">THROW!</button>
+            <button type="button" id="ppCurlSweepBtn">SWEEP!</button>
+          </div>
+          <p id="ppCurlHelp">Aim, set power and curl, then THROW.</p>
+        </aside>
+        <aside id="ppCurlStandings" aria-label="Curling end-by-end scores">
+          <h2>THE ICE LEADERBOARD</h2>
+          <div id="ppCurlRankRows"></div>
+          <div class="ppCurlMore">
+            <span>STONES RELEASED</span><strong id="ppCurlPlayed">0 / 4</strong>
+            <span>ON THE ICE</span><strong id="ppCurlOwner">—</strong>
+            <span>SHOT STATUS</span><strong id="ppCurlShotStatus">AIMING</strong>
+          </div>
+          <p class="ppCurlNote">Two stones each. Nearest the button wins the end. Sweep your own stone while it slides.</p>
+        </aside>
+      </div>
 
-  <section class="screen" data-screen="curling" hidden>
-    <canvas id="curlingCanvas" width="1920" height="1080" aria-label="Marble Curling ice rink and scoring house"></canvas>
-    <div id="curlingHelp">
-      <button class="btn" id="curlLeft">◀ Aim</button>
-      <button class="btn" id="curlDown">− Power</button>
-      <button class="btn go" id="curlThrow">THROW!</button>
-      <button class="btn" id="curlSweep">SWEEP!</button>
-      <button class="btn" id="curlUp">+ Power</button>
-      <button class="btn" id="curlRight">Aim ▶</button>
+      <!-- New Marble Golf TV screen. The legacy Golf canvas and bar are gone. -->
+      <div id="ppGolfHud" hidden>
+        <header id="ppGolfHeader">
+          <div class="ppKicker">MARBLE RUSH PRESENTS · THE MINIATURE MASTERS</div>
+          <h1>MARBLE GOLF</h1>
+          <div class="ppGolfMeta">
+            <span id="ppGolfHole">HOLE 1 / 9</span>
+            <span id="ppGolfName">The Warm-Up</span>
+            <span id="ppGolfPar">PAR 2</span>
+          </div>
+        </header>
+        <div id="ppGolfClockBox"><span id="ppGolfPhase">LINE UP YOUR SHOT</span>
+          <strong id="ppGolfClock">14s</strong></div>
+        <aside id="ppGolfPanel" aria-label="Marble Golf shot controls">
+          <small>YOUR PUTTING STATION</small>
+          <strong id="ppGolfPlayer">Player</strong>
+          <div class="ppGolfValues">
+            <div class="ppGolfValue"><span>AIM</span><strong id="ppGolfAngle">0°</strong></div>
+            <div class="ppGolfValue"><span>POWER</span><strong id="ppGolfPower">60%</strong></div>
+            <div class="ppGolfValue"><span>STROKES THIS HOLE</span><strong id="ppGolfStroke">0 / 7</strong></div>
+            <div class="ppGolfValue"><span>SHOT GUIDE</span><strong id="ppGolfPreviewState">GUIDE OFF</strong></div>
+          </div>
+          <div class="ppGolfActions">
+            <button id="ppGolfLeft" type="button">◀ AIM</button>
+            <button id="ppGolfRight" type="button">AIM ▶</button>
+            <button id="ppGolfPowerDown" type="button">− POWER</button>
+            <button id="ppGolfPowerUp" type="button">+ POWER</button>
+            <button id="ppGolfPreview" type="button">DIRECTION GUIDE</button>
+            <button id="ppGolfShoot" type="button">PUTT!</button>
+          </div>
+          <p id="ppGolfHelp">Aim your shot, set power and putt towards the cup.</p>
+        </aside>
+        <aside id="ppGolfStandings" aria-label="Marble Golf live stroke-play leaderboard">
+          <h2>THE MASTERS BOARD</h2>
+          <div id="ppGolfRankRows"></div>
+          <div class="ppGolfStats">
+            <span>PLAYER TURN</span><strong id="ppGolfTurn">1 / 2</strong>
+            <span>COURSE HAZARD</span><strong id="ppGolfHazard">OPEN FAIRWAY</strong>
+          </div>
+          <p>The fewest total strokes wins. Up to seven strokes per hole.
+             Watch the water, bumpers and moving hazards.</p>
+        </aside>
+      </div>
     </div>
   </section>
 

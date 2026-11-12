@@ -38,6 +38,8 @@ jobs:
           node --check tools/test-brawl.js
           node --check tools/test-derby.js
           node --check tools/test-curling.js
+          node --check tools/test-golf.js
+          node --check tools/test-phase8-integration.js
           node --check tools/test-grandprix-regression.js
           for f in src/modes/*.js; do node --check "$f"; done
       - name: Validate modes and score ledger
@@ -50,6 +52,14 @@ jobs:
         run: npm run test:derby
       - name: Verify 30 seeded Marble Curling matches
         run: npm run test:curling
+      - name: Verify Marble Golf five- and nine-hole championships
+        run: |
+          node tools/test-golf.js
+          node tests/phase7-golf.test.js
+      - name: Verify five new rendering contracts and retired canvases
+        run: |
+          node tools/test-party-ui-v2.js
+          node tools/test-phase8-integration.js
       - name: Compare Grand Prix deterministic physics to main
         run: |
           git fetch --no-tags --depth=1 origin main

@@ -5,6 +5,9 @@
 const BowlBrawl = (() => {
   'use strict';
   const ROUNDS=5, ROUND_TIME=42, START_RADIUS=380, END_RADIUS=110;
+  // Telegraph before each force pulse: players can anchor or retreat.
+  const SHOCK_TIMES=[4,12,24], SHOCK_WARNING=3;
+  const RECOVER_COST=35, RECOVER_MARGIN=85, KO_BONUS=3;
   const MARBLE_RADIUS=22, TAU=2*Math.PI;
   const COLORS=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d','#a7deed','#ffd4a2'];
   const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
@@ -21,7 +24,8 @@ const BowlBrawl = (() => {
     }));
     const state={roster,seed,round:0,elapsed:0,time:0,radius:START_RADIUS,marbles:[],
       active:[],done:false,finishedCalled:false,lastWinner:null,events:[],roundHistory:[],
-      hazard:'clean',hazardAngle:0,spectators:new Set()};
+      hazard:'clean',hazardAngle:0,spectators:new Set(),
+      pulseIndex:0,pulseAt:SHOCK_TIMES[0],lastPulseAt:-99};
     const HAZARDS=['bumpers','ice','rotor','crumbling','clean'];
     function current(id){return state.marbles.find(m=>m.id===id);}
     function alive(){return state.marbles.filter(m=>m.alive);}
@@ -30,13 +34,16 @@ const BowlBrawl = (() => {
     function beginRound(){
       state.round++;state.elapsed=0;state.radius=START_RADIUS;state.lastWinner=null;
       state.hazard=HAZARDS[state.round-1];state.hazardAngle=rng()*TAU;state.spectators=new Set();
+      state.pulseIndex=0;state.pulseAt=SHOCK_TIMES[0];state.lastPulseAt=-99;
       state.events.push({kind:'hazardReveal',hazard:state.hazard,round:state.round,time:state.time});
       const n=roster.length,phase=rng()*TAU;
       state.marbles=roster.map((p,i)=>{
         const ang=TAU*i/n+phase, x=190*Math.cos(ang),y=190*Math.sin(ang);
         return {id:p.id,x,y,vx:0,vy:0,heading:ang+Math.PI,energy:75,
           anchored:0,cooldown:0,alive:true,eliminatedAt:null,ramHits:0,outs:0,
-          cpuWait:.3+rng()*.5};
+          cpuWait:.3+rng()*.5,ramWindow:0,
+          recoverUsed:false,edgeHanging:false,edgeGrace:0,
+          glory:0,kos:0,lastHitBy:null,lastHitTime:-999};
       });
       state.active=state.marbles;
     }
@@ -63,14 +70,36 @@ const BowlBrawl = (() => {
         if(!Number.isFinite(val)||val<0||val>360)return false;
         m.heading=val*Math.PI/180;return true;
       }
+      if(type==='recover'){
+        const distance=Math.hypot(m.x,m.y);
+        const margin=state.radius-MARBLE_RADIUS-distance;
+        if(m.recoverUsed||m.energy<RECOVER_COST||
+           (m.cooldown>0&&!m.edgeHanging)||
+           (!m.edgeHanging&&(margin<0||margin>RECOVER_MARGIN))||distance<1)return false;
+        const nx=-m.x/distance,ny=-m.y/distance;
+        m.energy-=RECOVER_COST;m.recoverUsed=true;m.cooldown=.70;m.anchored=0;
+        m.edgeHanging=false;m.edgeGrace=0;
+        // A genuine inward escape, not an invulnerability or a teleport.
+        m.vx=nx*470;m.vy=ny*470;m.x+=nx*6;m.y+=ny*6;
+        state.events.push({kind:'recover',id:m.id,x:m.x,y:m.y,time:state.time,
+          margin,round:state.round});
+        return true;
+      }
       if(type==='anchor'){
         if(m.energy<15||m.cooldown>0)return false;
-        m.energy-=15;m.anchored=.75;m.cooldown=.65;
+        m.energy-=15;
+        // A warning is a real choice: brace at any point in the three-second
+        // countdown and stay protected through the blast. The trade-off is
+        // remaining almost stationary while enemies may still RAM you.
+        const incoming=state.pulseAt==null?Infinity:state.pulseAt-state.elapsed;
+        m.anchored=incoming>0&&incoming<=SHOCK_WARNING?
+          incoming+.32:.75;
+        m.cooldown=.65;
         state.events.push({kind:'anchor',id:m.id,time:state.time});return true;
       }
       if(type==='ram'){
         if(m.energy<28||m.cooldown>0)return false;
-        m.energy-=28;m.cooldown=.72;m.anchored=0;
+        m.energy-=28;m.cooldown=.72;m.anchored=0;m.ramWindow=.58;
         // A committed forward burst; automatic steering does not erase momentum.
         m.vx+=Math.cos(m.heading)*480;
         m.vy+=Math.sin(m.heading)*480;
@@ -85,6 +114,17 @@ const BowlBrawl = (() => {
         m.cpuWait-=dt;
         if(m.cpuWait>0)continue;
         m.cpuWait=(.33-.15*p.skill)+rng()*.23;
+        const margin=state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y);
+        if((m.edgeHanging||(margin<=RECOVER_MARGIN&&margin>=0))&&
+           !m.recoverUsed&&m.energy>=RECOVER_COST&&
+           (m.cooldown<=0||m.edgeHanging)){
+          action(m.id,'recover');continue;
+        }
+        const pulseAt=SHOCK_TIMES[state.pulseIndex];
+        if(pulseAt!=null&&pulseAt-state.elapsed<1.1&&pulseAt-state.elapsed>0&&
+           margin<180&&m.energy>=15&&m.cooldown<=0){
+          action(m.id,'anchor');continue;
+        }
         const enemy=closest(m);
         if(!enemy)continue;
         const ang=Math.atan2(enemy.y-m.y,enemy.x-m.x);
@@ -118,7 +158,17 @@ const BowlBrawl = (() => {
           b.vx+=impact*nx*bResistance;b.vy+=impact*ny*bResistance;
           if(-vr>140){
             a.ramHits++;b.ramHits++;
-            state.events.push({kind:'hit',id:a.id,other:b.id,impact:-vr,time:state.time});
+            const chargeA=a.ramWindow>0,chargeB=b.ramWindow>0;
+            const speedA=Math.hypot(a.vx,a.vy),speedB=Math.hypot(b.vx,b.vy);
+            const attacker=chargeA&&!chargeB?a:
+              chargeB&&!chargeA?b:
+              chargeA&&chargeB?(speedA>=speedB?a:b):null;
+            const victim=attacker?(attacker===a?b:a):null;
+            if(attacker&&victim){
+              victim.lastHitBy=attacker.id;victim.lastHitTime=state.time;
+            }
+            state.events.push({kind:'hit',id:a.id,other:b.id,impact:-vr,
+              attacker:attacker?.id||null,time:state.time,x:(a.x+b.x)/2,y:(a.y+b.y)/2});
           }
         }
       }
@@ -137,8 +187,9 @@ const BowlBrawl = (() => {
       order.forEach((m,i)=>{
         const p=roster.find(x=>x.id===m.id);
         const points=placement[i]||0;
-        p.points+=points;p.roundPoints.push(points);p.roundRanks.push(i+1);
-        p.knockouts+=m.ramHits;
+        const earned=points+m.glory;
+        p.points+=earned;p.roundPoints.push(earned);p.roundRanks.push(i+1);
+        p.knockouts+=m.kos;
         if(i===0)p.wins++;
       });
       state.lastWinner=order[0]?.id;
@@ -161,12 +212,27 @@ const BowlBrawl = (() => {
         state.radius=rimRadius(state.elapsed) - (state.hazard==='crumbling' ? 14*Math.max(0,Math.sin(state.elapsed*1.35)) : 0);
         if(state.events.length>850)state.events.splice(0,state.events.length-850);
         cpuTick(dt);
+        // 3, 2, 1 ... SHOCKWAVE! The warning is derived directly from
+        // SHOCK_TIMES, so the TV and every phone always show the same clock.
+        if(state.pulseIndex<SHOCK_TIMES.length&&
+           state.elapsed>=SHOCK_TIMES[state.pulseIndex]){
+          state.pulseIndex++;state.pulseAt=SHOCK_TIMES[state.pulseIndex]??null;
+          state.lastPulseAt=state.time;
+          for(const m of state.marbles)if(m.alive){
+            const distance=Math.hypot(m.x,m.y)||1;
+            const push=m.anchored>0?72:310;
+            m.vx+=m.x/distance*push;m.vy+=m.y/distance*push;
+          }
+          state.events.push({kind:'shockwave',round:state.round,
+            pulse:state.pulseIndex,time:state.time});
+        }
         // Pre-announced hazard affects only this deterministic physics step.
         state.hazardAngle+=dt*.9;
         for(const m of state.marbles){
           if(!m.alive)continue;
           m.cooldown=Math.max(0,m.cooldown-dt);
           m.anchored=Math.max(0,m.anchored-dt);
+          m.ramWindow=Math.max(0,m.ramWindow-dt);
           m.energy=clamp(m.energy+19*dt,0,100);
           const onIce=state.hazard==='ice'&&Math.hypot(m.x-75,m.y+35)<140;
           const drag=Math.exp(-(m.anchored>0?7.2:onIce?.22:.8)*dt);
@@ -186,8 +252,36 @@ const BowlBrawl = (() => {
           }
         }
         resolveHits();
-        for(const m of state.marbles)if(m.alive&&Math.hypot(m.x,m.y)>state.radius-MARBLE_RADIUS){
-          m.alive=false;m.eliminatedAt=state.elapsed;m.outs++;
+        // A marble reaching the lip clings for 0.85s: a visible, FAIR
+        // human reaction window rather than an invisible instant knockout.
+        // Teleported or grossly out-of-bounds states still eliminate at once.
+        for(const m of state.marbles)if(m.alive){
+          const boundary=state.radius-MARBLE_RADIUS;
+          let d=Math.hypot(m.x,m.y);
+          if(m.edgeHanging){
+            m.edgeGrace-=dt;
+            if(d<boundary-14){m.edgeHanging=false;m.edgeGrace=0;}
+          }
+          if(d>boundary&&d-boundary<=50&&!m.edgeHanging){
+            m.edgeHanging=true;m.edgeGrace=.85;
+            state.events.push({kind:'edgeHang',id:m.id,
+              x:m.x,y:m.y,time:state.time,round:state.round});
+          }
+          if(m.edgeHanging&&d>boundary+7){
+            const factor=(boundary+7)/d;m.x*=factor;m.y*=factor;
+            m.vx*=.85;m.vy*=.85;
+            d=boundary+7;
+          }
+          if(!(d>boundary&&(!m.edgeHanging||m.edgeGrace<=0)))continue;
+          m.alive=false;m.edgeHanging=false;m.eliminatedAt=state.elapsed;m.outs++;
+          const attacker=m.lastHitBy&&state.time-m.lastHitTime<=2.6?
+            current(m.lastHitBy):null;
+          if(attacker&&attacker!==m){
+            const bonus=state.round===ROUNDS?5:KO_BONUS;
+            attacker.kos++;attacker.glory+=bonus;
+            state.events.push({kind:'knockout',id:attacker.id,victim:m.id,
+              bonus,x:m.x,y:m.y,round:state.round,time:state.time});
+          }
           state.events.push({kind:'out',id:m.id,x:m.x,y:m.y,round:state.round,time:state.time});
           if(alive().length===2)state.events.push({kind:'lastTwo',round:state.round,time:state.time});
         }
@@ -197,79 +291,47 @@ const BowlBrawl = (() => {
     function hud(id){
       const p=roster.find(x=>x.id===id),m=current(id);
       if(!p)return {};
+      const rimGap=m?.alive?state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y):null;
+      const recoverReady=!!m?.alive&&!m.recoverUsed&&
+        (m.cooldown<=0||m.edgeHanging)&&m.energy>=RECOVER_COST&&
+        (m.edgeHanging||(rimGap>=0&&rimGap<=RECOVER_MARGIN));
+      const pulseTime=state.pulseAt;
+      const pulseIn=pulseTime==null?null:Math.max(0,pulseTime-state.elapsed);
       return {
         turnLabel:state.done?'BOWL BRAWL COMPLETE':`ROUND ${state.round}/${ROUNDS} · ${alive().length} IN THE BOWL`,
         roundScore:p.points,energy:Math.round(m?.energy||0),
         modePhase:state.done?'finished':m?.alive?'brawling':'eliminated',
         isTurn:!!m?.alive,
-        hazard:state.hazard,modeControls:!m?.alive&&!state.done&&!state.spectators.has(id)?
+        hazard:state.hazard,
+        pulseIn,
+        edgeDistance:rimGap===null?null:Math.max(0,rimGap),
+        recoverReady,
+        recoveryUsed:!!m?.recoverUsed,
+        edgeHanging:!!m?.edgeHanging,edgeGrace:m?.edgeGrace||0,
+        knockouts:p.knockouts,bonus:m?.glory||0,
+        modeControls:!m?.alive&&!state.done&&!state.spectators.has(id)?
           [{a:'spectate',label:'CHEER THE FINALISTS',v:0}]:m?.alive&&!state.done?[
+          // Keep the emergency button FIRST so it is visible without scrolling.
+          ...(recoverReady?[{a:'recover',label:'SAVE YOUR MARBLE!',v:0}]:[]),
           {a:'left',label:'◀ TURN',v:2},
-          {a:'ram',label:'RAM!',v:0},
           {a:'right',label:'TURN ▶',v:2},
+          {a:'ram',label:'RAM!',v:0},
           {a:'anchor',label:'ANCHOR',v:0}
         ]:[],
-        modeHint:m?.alive?'RAM costs 28 energy · ANCHOR costs 15':'Wait for the next round',
+        modeHint:m?.alive?(
+          recoverReady?'EDGE DANGER! Use your one recovery NOW.':
+          pulseIn!=null&&pulseIn<=SHOCK_WARNING?
+            'SHOCKWAVE IN '+pulseIn.toFixed(1)+'s! ANCHOR braces against the blast.':
+          m.recoverUsed?'Lifeline used · RAM 28 · ANCHOR 15':
+          'RAM for KO bonuses · RECOVER once near the rim'):
+          'Out! Cheer the final duel and get ready for the next round',
         timeRemaining:Math.max(0,Math.ceil(ROUND_TIME-state.elapsed))
       };
     }
-    function draw(ctx,w=1920,h=1080){
-      ctx.save();ctx.scale(w/1920,h/1080);
-      const grad=ctx.createLinearGradient(0,0,1920,1080);
-      grad.addColorStop(0,'#161c43');grad.addColorStop(1,'#46345c');
-      ctx.fillStyle=grad;ctx.fillRect(0,0,1920,1080);
-       MarblePartyStage.backdrop(ctx,'brawl',state.elapsed);
-       MarblePartyStage.frame(ctx,628,88,905,906,'brawl');
-      ctx.fillStyle='#fff4e0';ctx.font='bold 62px Fredoka,sans-serif';ctx.fillText('BOWL BRAWL',76,85);
-      ctx.fillStyle='#ffd23f';ctx.font='bold 29px Nunito,sans-serif';
-      ctx.fillText(`ROUND ${state.round}/${ROUNDS} · ${state.hazard.toUpperCase()} · ${Math.ceil(Math.max(0,ROUND_TIME-state.elapsed))}s`,77,132);
-      const x=1080,y=540,scale=1.03;
-      ctx.save();ctx.translate(x,y);
-      const bg=ctx.createRadialGradient(-140,-140,30,0,0,415);
-      bg.addColorStop(0,'#d2a2b5');bg.addColorStop(.72,'#956881');bg.addColorStop(1,'#433758');
-      ctx.shadowColor='#000c';ctx.shadowBlur=48;ctx.shadowOffsetY=22;
-      ctx.fillStyle='#2b1538';ctx.beginPath();ctx.ellipse(0,24,442,442,0,0,TAU);ctx.fill();
-      ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-      const bowl=ctx.createRadialGradient(-200,-230,30,0,0,440);
-      bowl.addColorStop(0,'#ffe5ee');bowl.addColorStop(.22,'#d7a2cd');
-      bowl.addColorStop(.56,'#a05b8d');bowl.addColorStop(.83,'#533763');bowl.addColorStop(1,'#281739');
-      ctx.fillStyle=bowl;ctx.beginPath();ctx.ellipse(0,0,430,430,0,0,TAU);ctx.fill();
-      for(let ring=400;ring>130;ring-=90){ctx.beginPath();ctx.arc(0,0,ring,0,TAU);
-        ctx.lineWidth=3;ctx.strokeStyle='rgba(255,240,196,.17)';ctx.stroke();}
-      const rim=ctx.createLinearGradient(-390,-390,400,400);
-      rim.addColorStop(0,'#fff9d7');rim.addColorStop(.26,'#ffc85d');rim.addColorStop(.65,'#ab5a66');rim.addColorStop(1,'#fff1a4');
-      ctx.lineWidth=31;ctx.strokeStyle=rim;ctx.beginPath();ctx.arc(0,0,416,0,TAU);ctx.stroke();
-      ctx.lineWidth=6;ctx.strokeStyle='#fffcdf';ctx.beginPath();ctx.arc(0,0,428,Math.PI*1.12,Math.PI*1.88);ctx.stroke();
-      ctx.beginPath();ctx.arc(0,0,state.radius*scale,0,TAU);
-      ctx.strokeStyle='#ffdb73';ctx.lineWidth=13;ctx.stroke();
-      for(const m of state.marbles){
-        if(!m.alive)continue;
-        const p=roster.find(a=>a.id===m.id),px=m.x*scale,py=m.y*scale;
-        ctx.fillStyle='rgba(0,0,0,.24)';ctx.beginPath();ctx.ellipse(px+5,py+10,23,12,0,0,TAU);ctx.fill();
-        MarblePartyStage.marble(ctx,px,py,24,p.color);
-        ctx.strokeStyle=m.anchored>0?'#ffe58e':'#fff';ctx.lineWidth=m.anchored>0?6:2;ctx.stroke();
-        ctx.strokeStyle='#fff';ctx.lineWidth=2;
-        ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+Math.cos(m.heading)*33,py+Math.sin(m.heading)*33);ctx.stroke();
-        ctx.fillStyle='#fff5e7';ctx.font='bold 17px Nunito,sans-serif';ctx.textAlign='center';
-        ctx.fillText(p.name,px,py-38);
-      }
-      ctx.restore();
-      ctx.fillStyle='#fff4e0';ctx.font='bold 35px Fredoka,sans-serif';
-      ctx.fillText('ARENA STANDINGS',60,240);
-      const ranked=standings();
-      ranked.forEach((p,i)=>{
-        const y=305+i*75;
-        ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(85,y-12,15,0,TAU);ctx.fill();
-        ctx.fillStyle='#fff4e0';ctx.font='bold 26px Nunito,sans-serif';ctx.fillText(p.name,116,y);
-        ctx.fillStyle='#ffd23f';ctx.fillText(`${p.points} pts · ${p.wins} wins`,116,y+29);
-      });
-      ctx.fillStyle='#fff4e0';ctx.font='bold 27px Nunito,sans-serif';
-      ctx.fillText(state.done?'CHAMPIONSHIP COMPLETE':'RAM your rivals out · ANCHOR to hold ground',70,1020);
-      ctx.restore();
-    }
-    return {state,current,action,tick,hud,draw,standings,alive,finishRound,rimRadius};
+    return {state,current,action,tick,hud,standings,alive,finishRound,rimRadius};
   }
-  return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS});
+  return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS,
+    SHOCK_TIMES,SHOCK_WARNING,RECOVER_COST,RECOVER_MARGIN,KO_BONUS});
 })();
 if(typeof module!=='undefined')module.exports=BowlBrawl;
 let bowlBrawlGame=null;
@@ -282,7 +344,6 @@ registerMode({
   },
   startRound(){return bowlBrawlGame;},
   tick(dt){bowlBrawlGame?.tick(dt);},
-  draw(ctx,w,h){bowlBrawlGame?.draw(ctx,w,h);},
   onInput(id,k){if(k==='p')bowlBrawlGame?.action(id,'ram');else if(k==='r'){}},
   onAction(id,a,v){return bowlBrawlGame?.action(id,a,v)||false;},
   botTick(){},

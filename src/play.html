@@ -133,6 +133,606 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
 #flash.on{animation:fl .4s ease-out}
 @keyframes fl{0%{opacity:.35}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* DERBY UI V2 — exclusively themed phone view, no change to phone actions.
+   Grand Prix and the other four mode skins retain their previous styling. */
+body[data-mode="derby"][data-s="derby"]:not(.hc){
+ --bg:#0b1830;--bg2:#101a32;--card:#162440;--ink:#fff2d7;
+ --dim:#e8d4ac;--line:#eac47e7f;--gold:#ffd887;
+ background-image:linear-gradient(180deg,rgba(7,17,34,.89),rgba(10,16,37,.94) 50%,rgba(7,12,28,.98)),
+ url('assets/img/pp_derby_bg.webp');
+ background-position:center;background-size:cover;
+}
+body[data-mode="derby"][data-s="derby"] #top{
+ background:linear-gradient(120deg,#111b38f1,#3c2b3ded);
+ border-bottom:2px solid #ffe0a388;box-shadow:0 8px 25px #0007;
+ padding:10px 12px 11px;gap:8px
+}
+body[data-mode="derby"][data-s="derby"] #me{gap:7px}
+body[data-mode="derby"][data-s="derby"] #meName{
+ font-size:18px;max-width:140px;color:#fff3d6;text-shadow:0 2px 3px #000b
+}
+body[data-mode="derby"][data-s="derby"] #meMarble{height:39px;width:39px}
+body[data-mode="derby"][data-s="derby"] #hcBtn{
+ height:36px;font-size:12px;padding:0 9px;color:var(--ink);
+ border:2px solid #ffe0aa7c;background:#182544bb
+}
+body[data-mode="derby"][data-s="derby"] #hostExitGame{
+ font-size:14px;min-height:38px;padding:5px 9px;border-radius:12px;
+ border:2px solid #ffe6b6
+}
+body[data-mode="derby"][data-s="derby"] #look{
+ flex:0 0 auto;min-height:0;margin:14px 14px 7px;padding:11px 12px;
+ background:linear-gradient(140deg,#101d3de9,#34263aef);
+ border:2px solid #ffdfa4ba;border-radius:18px;
+ box-shadow:0 9px 24px #0008
+}
+body[data-mode="derby"][data-s="derby"] #msg{
+ margin:0;font:900 clamp(23px,7vw,31px) Fredoka,sans-serif;color:#ffe4a3;
+ text-shadow:0 3px 5px #000b
+}
+body[data-mode="derby"][data-s="derby"] #sub{
+ margin-top:6px;font:800 15px Nunito,sans-serif;color:#eee6dc;line-height:1.35
+}
+body[data-mode="derby"][data-s="derby"] #vip{padding:0 14px;gap:6px}
+body[data-mode="derby"][data-s="derby"] #vip button{
+ font-size:14px;padding:7px 9px;border-radius:11px
+}
+body[data-mode="derby"][data-s="derby"] #modePanel{
+ flex:0 1 auto;margin:7px 13px 2px;padding:13px 12px 14px;max-height:min(45vh,390px);
+ border:2px solid #ffe0a8b5;border-radius:20px;
+ background:linear-gradient(155deg,#172744ef,#34273eeb);
+ box-shadow:0 12px 30px #000a;overflow-y:auto;overscroll-behavior:contain;
+}
+body[data-mode="derby"][data-s="derby"] #modeTurn{
+ font:900 19px Fredoka,sans-serif;color:#ffe09e;
+ letter-spacing:.03em;padding-bottom:5px
+}
+body[data-mode="derby"][data-s="derby"] #modeReadout{
+ font:800 15px Nunito,sans-serif;color:#fff4da;margin-bottom:10px
+}
+body[data-mode="derby"][data-s="derby"] #modeActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button{
+ min-width:0;min-height:52px;margin:0;padding:8px 5px;
+ border-radius:13px;border:2px solid #ffddb08f;
+ font:800 14px Nunito,sans-serif;color:#fff6df;
+ background:linear-gradient(160deg,#364665,#16203f);
+ box-shadow:0 4px 0 #0a132a;white-space:normal
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button[data-action="bet"]{
+ background:linear-gradient(155deg,#855137,#492b3d);
+ border-color:#f4c480
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button[data-action="stake"]{
+ background:linear-gradient(155deg,#25465b,#132a42)
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button[data-action="cheer"]{
+ grid-column:span 2;background:linear-gradient(140deg,#188e86,#146175);border-color:#a9f5dc
+}
+body[data-mode="derby"][data-s="derby"] #modeActions button[aria-pressed="true"]{
+ border-color:#fff5c8;box-shadow:0 0 0 2px #ffd16a8c,0 4px 0 #0a132a
+}
+body[data-mode="derby"][data-s="derby"] #padZone{
+ flex:1 1 auto;min-height:160px;padding:13px 14px 25px
+}
+body[data-mode="derby"][data-s="derby"][data-derby-phase="betting"] #padZone{
+ display:none!important
+}
+body[data-mode="derby"][data-s="derby"] #pad{
+ width:auto;height:min(100%,min(67vw,255px));max-height:270px;
+ background:radial-gradient(circle at 33% 21%,#fff9e2 0%,#ffd879 17%,#e99547 40%,#c65350 75%,#702641 100%);
+ border:7px solid #ffe1a1;outline:5px solid #95643f;
+ box-shadow:0 10px 0 #7d423b,0 18px 35px #0009,inset 0 8px 14px #fff6df95,
+ inset 0 -18px 28px #4c253eab
+}
+body[data-mode="derby"][data-s="derby"] #padText{
+ color:#251b30;text-shadow:0 1px 0 #ffe5af
+}
+body[data-mode="derby"][data-s="derby"] #padText b{font-size:min(13vw,56px)}
+body[data-mode="derby"][data-s="derby"] #padText span{
+ font-size:min(4.5vw,17px);font-weight:900;max-width:190px
+}
+body[data-mode="derby"][data-s="derby"] #pad:disabled{
+ opacity:.46;filter:grayscale(.6);cursor:default
+}
+body[data-mode="derby"][data-s="derby"] #ring{inset:-13px}
+body[data-mode="derby"][data-s="derby"] #ringFg{stroke:#fff1b9}
+body[data-mode="derby"][data-s="derby"] #ringBg{stroke:#ffdf8e6e}
+@media(max-height:670px){
+ body[data-mode="derby"][data-s="derby"] #look{margin:5px 12px;padding:7px 10px}
+ body[data-mode="derby"][data-s="derby"] #modePanel{max-height:40vh}
+ body[data-mode="derby"][data-s="derby"] #padZone{min-height:105px}
+}
+
+
+/* DROP ZONE v2 — phone is the chute controller and spectator prize predictor.
+   Existing WebSocket action names and player identity remain untouched. */
+body[data-mode="dropzone"][data-s="dropzone"]:not(.hc){
+ --bg:#081d30;--bg2:#0b2941;--card:#103e55;--ink:#fff3ce;
+ --dim:#c8ebde;--line:#62d4c27d;--gold:#ffd67c;
+ background-image:linear-gradient(170deg,rgba(6,25,40,.91),rgba(5,27,42,.90) 47%,rgba(5,16,38,.97)),
+ url('assets/img/pp_dropzone_bg.webp');
+ background-position:center;background-size:cover
+}
+body[data-mode="dropzone"][data-s="dropzone"] #top{
+ background:linear-gradient(130deg,#0b3650fa,#12263df1);
+ padding:10px 11px;border-bottom:2px solid #ffdb8d9e;
+ box-shadow:0 7px 24px #000a;gap:7px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #meName{
+ font:900 18px Fredoka,sans-serif;color:#fff4d4;max-width:140px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #meMarble{height:38px;width:38px}
+body[data-mode="dropzone"][data-s="dropzone"] #hostExitGame{
+ min-height:38px;padding:4px 8px;font-size:13px;border:2px solid #ffe5af
+}
+body[data-mode="dropzone"][data-s="dropzone"] #hcBtn{
+ height:37px;font-size:12px;padding:3px 8px;color:#fff4d4;border-color:#70d4c0
+}
+body[data-mode="dropzone"][data-s="dropzone"] #look{
+ flex:0 0 auto;margin:14px 13px 7px;padding:17px 11px;
+ background:linear-gradient(135deg,#0e4a5feb,#142a45f0);
+ border:2px solid #ffe2a7;border-radius:21px;box-shadow:0 12px 26px #0009
+}
+body[data-mode="dropzone"][data-s="dropzone"] #msg{
+ margin:0;font:900 clamp(23px,6.9vw,31px) Fredoka,sans-serif;
+ color:#ffe2a0;line-height:1.1;text-shadow:0 3px 5px #0009
+}
+body[data-mode="dropzone"][data-s="dropzone"] #sub{
+ color:#d8faf0;font:800 15px Nunito,sans-serif;line-height:1.35;margin-top:7px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #vip{gap:7px;padding:0 12px}
+body[data-mode="dropzone"][data-s="dropzone"] #vip button{
+ font-size:14px;padding:7px 9px;border-radius:11px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modePanel{
+ flex:0 1 auto;max-height:min(48vh,410px);overflow-y:auto;overscroll-behavior:contain;
+ padding:13px;margin:7px 13px 3px;
+ background:linear-gradient(160deg,#0b3b51f1,#152942f1);
+ border:2px solid #ffe2a7;border-radius:20px;box-shadow:0 10px 26px #0009
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeTurn{
+ font:900 19px Fredoka,sans-serif;color:#ffe49e
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeReadout{
+ font:800 15px Nunito,sans-serif;color:#d8f9eb;margin:7px 0 12px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions button{
+ min-width:0;min-height:58px;padding:9px 5px;font:900 16px Nunito,sans-serif;
+ color:#fff5db;border-radius:14px;border:2px solid #90e6d5;
+ background:linear-gradient(165deg,#286d7b,#0e3953);
+ box-shadow:0 5px 0 #082438
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions button[data-action="drop"]{
+ grid-column:span 2;background:linear-gradient(165deg,#ffedb2,#eda94d 70%,#c47746);
+ color:#282334;font:900 27px Fredoka,sans-serif;border-color:#fff5d6;
+ min-height:78px;box-shadow:0 6px 0 #9b5634
+}
+body[data-mode="dropzone"][data-s="dropzone"][data-drop-phase="falling"] #modeActions{
+ grid-template-columns:repeat(4,minmax(0,1fr));gap:7px
+}
+body[data-mode="dropzone"][data-s="dropzone"][data-drop-phase="falling"] #modeActions button[data-action="predict"]{
+ min-height:56px;padding:8px 2px;font-size:15px;border-color:#ffdd8b;
+ background:linear-gradient(150deg,#805d4a,#26465c)
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions button:focus-visible{
+ outline:3px solid #fff7db;outline-offset:3px
+}
+body[data-mode="dropzone"][data-s="dropzone"] #modeActions button[aria-pressed="true"]{
+ border-color:#fff9bc;box-shadow:0 0 0 3px #ffd98a8c,0 4px 0 #082438
+}
+body[data-mode="dropzone"][data-s="dropzone"] #padZone{
+ flex:1 1 auto;min-height:140px;padding:12px 16px 29px
+}
+body[data-mode="dropzone"][data-s="dropzone"]:not([data-drop-phase="aim"]) #padZone,
+body[data-mode="dropzone"][data-s="dropzone"][data-drop-turn="false"] #padZone{
+ display:none!important
+}
+body[data-mode="dropzone"][data-s="dropzone"] #pad{
+ height:min(100%,min(63vw,235px));max-height:255px;
+ width:auto;border:8px solid #ffe29d;
+ background:radial-gradient(circle at 30% 24%,#fff5ca 0%,#fcd573 18%,#b9814e 43%,#3b8c96 76%,#165269 100%);
+ box-shadow:0 11px 0 #705a3d,0 23px 36px #0009,inset 0 10px 16px #fffae4a1;
+}
+body[data-mode="dropzone"][data-s="dropzone"] #padText{
+ color:#152f42;text-shadow:0 1px 0 #fff3c7
+}
+body[data-mode="dropzone"][data-s="dropzone"] #padText b{
+ font:900 min(13vw,54px) Fredoka,sans-serif
+}
+body[data-mode="dropzone"][data-s="dropzone"] #padText span{
+ font:900 min(4.4vw,16px) Nunito,sans-serif
+}
+body[data-mode="dropzone"][data-s="dropzone"] #ringFg{stroke:#fff6cf}
+body[data-mode="dropzone"][data-s="dropzone"] #ringBg{stroke:#c8f9ed81}
+@media(max-height:680px){
+ body[data-mode="dropzone"][data-s="dropzone"] #look{margin:5px 10px;padding:9px}
+ body[data-mode="dropzone"][data-s="dropzone"] #modePanel{max-height:42vh}
+ body[data-mode="dropzone"][data-s="dropzone"] #padZone{min-height:100px}
+}
+
+
+/* Rich spectator state fills the lower phone display after a marble launches. */
+body[data-mode="dropzone"][data-s="dropzone"] #dropGuide:not([hidden]){
+ flex:1;min-height:0;margin:11px 15px 24px;padding:15px;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:10px;text-align:center;overflow:hidden;
+ border:2px solid #f8d99d7c;border-radius:23px;
+ background:radial-gradient(circle at 50% 30%,rgba(31,158,168,.32),transparent 65%),
+   linear-gradient(180deg,#103449c9,#102038df);
+ box-shadow:inset 0 0 24px #31cbb316,0 15px 22px #0007
+}
+#dropGuide img{display:block;width:min(63vw,210px);height:min(28vh,230px);
+ object-fit:contain;filter:drop-shadow(0 10px 18px #000a)}
+#dropGuide strong{font:900 clamp(20px,6.5vw,27px) Fredoka,sans-serif;
+ color:#ffe2a0;text-shadow:0 3px 5px #000a;line-height:1.15}
+#dropGuide p{font:800 14px Nunito,sans-serif;color:#ccf9ef;line-height:1.32;
+ max-width:290px}
+@media(max-height:680px){
+ body[data-mode="dropzone"][data-s="dropzone"] #dropGuide:not([hidden]){
+  gap:4px;padding:7px;margin:4px 10px 8px
+ }
+ #dropGuide img{height:min(20vh,135px)}
+}
+
+
+/* BOWL BRAWL v2 — exclusive pocket-arena combat station.
+   Zero overlap with Grand Prix, Derby or Drop Zone screen designs. */
+body[data-mode="brawl"][data-s="brawl"]:not(.hc){
+ --bg:#180f2c;--bg2:#221730;--card:#302448;--ink:#fff1db;
+ --dim:#e5bdd0;--line:#efba948c;--gold:#ffdb9c;
+ background-image:linear-gradient(165deg,rgba(24,12,40,.88),rgba(18,17,40,.94) 62%,rgba(13,13,30,.98)),
+ url('assets/img/pp_brawl_bg.webp');
+ background-position:center;background-size:cover
+}
+body[data-mode="brawl"][data-s="brawl"] #top{
+ background:linear-gradient(135deg,#4b2a46f7,#182b42f0);
+ padding:10px 10px;border-bottom:2px solid #f9bd9c;gap:8px;
+ box-shadow:0 8px 22px #0008
+}
+body[data-mode="brawl"][data-s="brawl"] #meMarble{height:39px;width:39px}
+body[data-mode="brawl"][data-s="brawl"] #meName{font-size:18px;max-width:130px;color:#fff3da}
+body[data-mode="brawl"][data-s="brawl"] #hostExitGame{
+ font-size:13px;min-height:38px;border:2px solid #ffcbad;padding:4px 9px
+}
+body[data-mode="brawl"][data-s="brawl"] #hcBtn{
+ font-size:12px;padding:4px 8px;height:37px;border-color:#d6b9b1;color:#fff1db
+}
+body[data-mode="brawl"][data-s="brawl"] #look{
+ flex:0 0 auto;margin:12px 12px 7px;padding:13px 11px;
+ border:2px solid #fdd6a3;border-radius:20px;
+ background:linear-gradient(140deg,#502942ed,#192b44f1);
+ box-shadow:0 11px 29px #0009
+}
+body[data-mode="brawl"][data-s="brawl"] #msg{
+ margin:0;font:900 clamp(22px,7vw,32px) Fredoka,sans-serif;
+ color:#ffe4a2;line-height:1.12;text-shadow:0 3px 5px #000a
+}
+body[data-mode="brawl"][data-s="brawl"] #sub{
+ font:800 15px Nunito,sans-serif;color:#f7e2d4;line-height:1.32
+}
+body[data-mode="brawl"][data-s="brawl"] #vip{gap:5px;padding:0 11px}
+body[data-mode="brawl"][data-s="brawl"] #vip button{
+ padding:7px 10px;font-size:14px;border-radius:12px
+}
+body[data-mode="brawl"][data-s="brawl"] #modePanel{
+ flex:0 1 auto;max-height:min(66vh,580px);overflow-y:auto;
+ padding:13px 12px 15px;margin:7px 12px 3px;
+ background:linear-gradient(150deg,#3d2946ed,#172e43ee);
+ border:2px solid #ffc99f;border-radius:22px;
+ box-shadow:0 13px 33px #000a
+}
+body[data-mode="brawl"][data-s="brawl"] #modeTurn{
+ font:900 20px Fredoka,sans-serif;color:#ffdd9e
+}
+body[data-mode="brawl"][data-s="brawl"] #modeReadout{
+ margin:8px 0 14px;padding:10px;border-radius:11px;
+ font:900 16px Nunito,sans-serif;color:#d8fff1;
+ background:#13354ad1;border:1px solid #a4e5ce
+}
+body[data-mode="brawl"][data-s="brawl"] #modeActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px
+}
+body[data-mode="brawl"][data-s="brawl"] #modeActions button{
+ min-width:0;min-height:76px;padding:9px 6px;
+ border:2px solid #c8f7e9;border-radius:17px;
+ background:linear-gradient(155deg,#335c76,#223251);
+ color:#fff6db;font:900 17px Nunito,sans-serif;
+ box-shadow:0 5px 0 #0d1732;white-space:normal
+}
+body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="ram"]{
+ grid-column:span 2;min-height:109px;
+ background:linear-gradient(155deg,#ffe5ae,#e99866 62%,#c5565d);
+ color:#35203c;font:900 39px Fredoka,sans-serif;
+ border:3px solid #fff8db;box-shadow:0 7px 0 #833e46;
+ text-shadow:0 2px 0 #fff2d289
+}
+body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="anchor"]{
+ grid-column:span 2;min-height:74px;
+ border-color:#bce0fa;background:linear-gradient(155deg,#586492,#283a62);
+ font:900 22px Fredoka,sans-serif
+}
+body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="spectate"]{
+ grid-column:span 2;min-height:90px;
+ background:linear-gradient(155deg,#ffcf8d,#da6b74);
+ color:#321d34;font:900 22px Fredoka,sans-serif
+}
+body[data-mode="brawl"][data-s="brawl"] #modeActions button:focus-visible{
+ outline:3px solid #fff9dd;outline-offset:3px
+}
+body[data-mode="brawl"][data-s="brawl"] #padZone{display:none!important}
+body[data-mode="brawl"][data-s="brawl"] #brawlGuide:not([hidden]){
+ flex:1;min-height:0;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:9px;
+ padding:12px;margin:9px 13px 22px;
+ border-radius:21px;border:2px solid #ffd6a4a9;
+ background:linear-gradient(150deg,#4a2746dc,#142a40df);
+ box-shadow:0 12px 25px #0008;text-align:center
+}
+#brawlGuide img{width:min(55vw,205px);height:min(23vh,168px);
+ object-fit:contain;filter:drop-shadow(0 8px 15px #0008)}
+#brawlGuide strong{font:900 24px Fredoka,sans-serif;color:#ffe2a2}
+#brawlGuide p{font:800 14px Nunito,sans-serif;color:#e5f7ee;line-height:1.3}
+@media(max-height:700px){
+ body[data-mode="brawl"][data-s="brawl"] #look{padding:8px;margin:5px 11px}
+ body[data-mode="brawl"][data-s="brawl"] #modePanel{max-height:65vh;padding:9px}
+ body[data-mode="brawl"][data-s="brawl"] #modeActions button{min-height:59px}
+ body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="ram"]{min-height:82px}
+ #brawlGuide img{height:100px}
+}
+
+
+/* CURLING UI v2 — bespoke ice-house phone controller; no legacy boost pad. */
+body[data-mode="curling"][data-s="curling"]:not(.hc){
+ --bg:#0b2840;--bg2:#15506a;--card:#1a5367;
+ --ink:#fff9e9;--dim:#cff6f2;--line:#98e9dd98;--gold:#fce7aa;
+ background-image:linear-gradient(175deg,#07263de8,#0a3045e9 48%,#082038f7),
+   url('assets/img/pp_curling_bg.webp');
+ background-position:center;background-size:cover
+}
+body[data-mode="curling"][data-s="curling"] #top{
+ background:linear-gradient(130deg,#165c76f7,#1a354ff3);
+ padding:10px;border-bottom:2px solid #e4fff6;
+ box-shadow:0 9px 25px #0009;gap:8px
+}
+body[data-mode="curling"][data-s="curling"] #meMarble{width:39px;height:39px}
+body[data-mode="curling"][data-s="curling"] #meName{
+ font:900 18px Fredoka,sans-serif;max-width:140px;color:#fffbe9
+}
+body[data-mode="curling"][data-s="curling"] #hostExitGame{
+ font-size:13px;min-height:38px;padding:4px 9px;border:2px solid #e6fdf7
+}
+body[data-mode="curling"][data-s="curling"] #hcBtn{
+ height:37px;font-size:12px;padding:4px 8px;border-color:#b3f4e7;color:#fffcec
+}
+body[data-mode="curling"][data-s="curling"] #look{
+ flex:0 0 auto;margin:12px 12px 6px;padding:14px 11px;
+ border:2px solid #d5fff7;border-radius:20px;
+ background:linear-gradient(130deg,#155b72eb,#173956f0);
+ box-shadow:0 12px 26px #0008
+}
+body[data-mode="curling"][data-s="curling"] #msg{
+ margin:0;font:900 clamp(23px,7vw,32px) Fredoka,sans-serif;
+ color:#fff4be;text-shadow:0 3px 5px #062435b7;line-height:1.12
+}
+body[data-mode="curling"][data-s="curling"] #sub{
+ font:800 15px Nunito,sans-serif;line-height:1.32;color:#defcf5;margin-top:7px
+}
+body[data-mode="curling"][data-s="curling"] #vip{padding:0 12px;gap:6px}
+body[data-mode="curling"][data-s="curling"] #vip button{
+ border-radius:12px;padding:7px 10px;font-size:14px
+}
+body[data-mode="curling"][data-s="curling"] #modePanel{
+ flex:0 1 auto;max-height:min(68vh,590px);overflow-y:auto;
+ padding:13px;margin:7px 12px 4px;
+ background:linear-gradient(150deg,#1a5a70ed,#18334fee);
+ border:2px solid #d4fff7;border-radius:21px;
+ box-shadow:0 13px 32px #0009
+}
+body[data-mode="curling"][data-s="curling"] #modeTurn{
+ font:900 20px Fredoka,sans-serif;color:#fff1bd
+}
+body[data-mode="curling"][data-s="curling"] #modeReadout{
+ font:900 15px Nunito,sans-serif;color:#e5fdfa;
+ margin:8px 0 13px;padding:10px 9px;
+ background:#14384cdc;border:1px solid #b8f6e3;border-radius:12px
+}
+body[data-mode="curling"][data-s="curling"] #modeActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+body[data-mode="curling"][data-s="curling"] #modeActions button{
+ min-width:0;min-height:64px;padding:9px 5px;
+ border:2px solid #d5fff3;border-radius:14px;
+ background:linear-gradient(160deg,#3b879b,#195571);
+ color:#fffced;font:900 16px Nunito,sans-serif;
+ box-shadow:0 5px 0 #0c2c47;white-space:normal
+}
+body[data-mode="curling"][data-s="curling"] #modeActions button[data-action="throw"]{
+ grid-column:span 2;min-height:98px;
+ background:linear-gradient(155deg,#fff9d5,#f4c779 62%,#de936d);
+ border:3px solid #fffdf1;color:#24425c;
+ box-shadow:0 7px 0 #b27a5e;font:900 38px Fredoka,sans-serif
+}
+body[data-mode="curling"][data-s="curling"] #modeActions button[data-action="sweep"]{
+ grid-column:span 2;min-height:115px;
+ background:linear-gradient(145deg,#d6fff6,#67dec9 55%,#259ca8);
+ color:#123d50;border:3px solid #f8fffa;
+ font:900 40px Fredoka,sans-serif;box-shadow:0 7px 0 #1a788a
+}
+body[data-mode="curling"][data-s="curling"] #modeActions button[data-action="predict"]{
+ background:linear-gradient(135deg,#387b86,#1d4662);
+ font-size:15px;min-height:60px
+}
+body[data-mode="curling"][data-s="curling"] #modeActions button:focus-visible{
+ outline:3px solid white;outline-offset:3px
+}
+body[data-mode="curling"][data-s="curling"] #padZone{display:none!important}
+body[data-mode="curling"][data-s="curling"] #curlGuide:not([hidden]){
+ flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;
+ align-items:center;gap:9px;margin:9px 13px 22px;padding:14px;
+ border:2px solid #ddfff6;border-radius:22px;
+ background:linear-gradient(135deg,#245d6ae6,#103e5ce7);text-align:center;
+ box-shadow:0 14px 26px #0008
+}
+#curlGuide img{max-width:min(62vw,230px);height:min(24vh,171px);
+ object-fit:contain;filter:drop-shadow(0 10px 17px #001f31af)}
+#curlGuide strong{font:900 25px Fredoka,sans-serif;color:#fff1b5}
+#curlGuide p{font:800 14px Nunito,sans-serif;color:#d9fff7;line-height:1.33}
+@media(max-height:690px){
+ body[data-mode="curling"][data-s="curling"] #look{margin:5px 10px;padding:9px}
+ body[data-mode="curling"][data-s="curling"] #modePanel{max-height:65vh;padding:9px}
+ body[data-mode="curling"][data-s="curling"] #modeActions button{min-height:53px}
+ body[data-mode="curling"][data-s="curling"] #modeActions button[data-action="throw"],
+ body[data-mode="curling"][data-s="curling"] #modeActions button[data-action="sweep"]{min-height:80px}
+ #curlGuide img{height:108px}
+}
+
+
+/* GOLF V2 · refined miniature-masters putting controller, not the old boost UI. */
+body[data-mode="golf"][data-s="golf"]:not(.hc){
+ --bg:#122d38;--bg2:#214a46;--card:#2b5f53;--ink:#fff8e2;
+ --dim:#d9f8de;--line:#b9e4bd9e;--gold:#ffdb98;
+ background-image:linear-gradient(175deg,#102f34df,#12352de9 54%,#112b3df8),
+ url('assets/img/pp_golf_bg.webp');
+ background-size:cover;background-position:center
+}
+body[data-mode="golf"][data-s="golf"] #top{
+ background:linear-gradient(130deg,#2d6150f8,#263947f3);
+ padding:10px 11px;border-bottom:2px solid #ffe5ab;
+ box-shadow:0 9px 25px #0008;gap:7px
+}
+body[data-mode="golf"][data-s="golf"] #meMarble{width:40px;height:40px}
+body[data-mode="golf"][data-s="golf"] #meName{
+ font:900 18px Fredoka,sans-serif;max-width:140px;color:#fffae6
+}
+body[data-mode="golf"][data-s="golf"] #hostExitGame{
+ font-size:13px;min-height:38px;padding:5px 9px;border:2px solid #fff0c1
+}
+body[data-mode="golf"][data-s="golf"] #hcBtn{
+ height:37px;padding:4px 8px;font-size:12px;color:#fff8df;border-color:#dfefcc
+}
+body[data-mode="golf"][data-s="golf"] #look{
+ flex:0 0 auto;margin:12px 12px 7px;padding:13px 11px;
+ background:linear-gradient(130deg,#3c6650eb,#1d4450ee);
+ border:2px solid #ffdfa8;border-radius:21px;box-shadow:0 12px 26px #0008
+}
+body[data-mode="golf"][data-s="golf"] #msg{
+ font:900 clamp(23px,7vw,32px) Fredoka,sans-serif;
+ color:#ffe1a4;line-height:1.12;margin:0;text-shadow:0 3px 5px #0009
+}
+body[data-mode="golf"][data-s="golf"] #sub{
+ font:800 15px Nunito,sans-serif;color:#e8fbdf;line-height:1.3;margin-top:7px
+}
+body[data-mode="golf"][data-s="golf"] #vip{gap:6px;padding:0 11px}
+body[data-mode="golf"][data-s="golf"] #vip button{
+ padding:7px 10px;font-size:14px;border-radius:11px
+}
+body[data-mode="golf"][data-s="golf"] #modePanel{
+ flex:0 1 auto;max-height:min(68vh,590px);overflow-y:auto;
+ padding:13px;margin:7px 12px 3px;
+ background:linear-gradient(146deg,#3a7054ed,#183b4ff0);
+ border:2px solid #fbe7b5;border-radius:21px;
+ box-shadow:0 13px 35px #0009
+}
+body[data-mode="golf"][data-s="golf"] #modeTurn{
+ font:900 20px Fredoka,sans-serif;color:#fff1b6
+}
+body[data-mode="golf"][data-s="golf"] #modeReadout{
+ margin:8px 0 13px;padding:10px;background:#153c41e3;
+ border:1px solid #c9ecca;border-radius:12px;
+ font:900 15px Nunito,sans-serif;color:#eff9df
+}
+body[data-mode="golf"][data-s="golf"] #modeActions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button{
+ min-width:0;min-height:66px;padding:9px 5px;
+ border:2px solid #dff1ca;border-radius:14px;
+ background:linear-gradient(155deg,#448978,#245666);
+ box-shadow:0 5px 0 #143745;color:#fffbe8;
+ font:900 17px Nunito,sans-serif;white-space:normal
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button[data-action="preview"]{
+ grid-column:span 2;background:linear-gradient(150deg,#4a647b,#203d58);
+ border-color:#d5eaf0
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button[data-action="shoot"]{
+ grid-column:span 2;min-height:105px;
+ background:linear-gradient(155deg,#fff4d3,#efc173 66%,#d98756);
+ border:3px solid #fffbe4;color:#33413c;
+ font:900 38px Fredoka,sans-serif;box-shadow:0 7px 0 #99593e
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button[data-action="cheer"]{
+ grid-column:span 2;min-height:87px;
+ background:linear-gradient(155deg,#f4d6a2,#d97d62);
+ color:#342f3c;font:900 26px Fredoka,sans-serif
+}
+body[data-mode="golf"][data-s="golf"] #modeActions button:focus-visible{
+ outline:3px solid #fff;outline-offset:3px
+}
+body[data-mode="golf"][data-s="golf"] #padZone{display:none!important}
+body[data-mode="golf"][data-s="golf"] #golfGuide:not([hidden]){
+ flex:1;min-height:0;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:9px;text-align:center;
+ margin:8px 13px 22px;padding:13px;
+ background:linear-gradient(148deg,#386c55e8,#1c4453e8);
+ border:2px solid #ffe1a8;border-radius:23px;
+ box-shadow:0 13px 28px #0009
+}
+#golfGuide img{height:min(23vh,165px);max-width:min(60vw,225px);
+ object-fit:contain;filter:drop-shadow(0 8px 19px #0008)}
+#golfGuide strong{font:900 25px Fredoka,sans-serif;color:#ffe9ae}
+#golfGuide p{font:800 14px Nunito,sans-serif;color:#e7f9e6;line-height:1.3}
+@media(max-height:700px){
+ body[data-mode="golf"][data-s="golf"] #look{margin:5px 10px;padding:8px}
+ body[data-mode="golf"][data-s="golf"] #modePanel{padding:9px;max-height:66vh}
+ body[data-mode="golf"][data-s="golf"] #modeActions button{min-height:54px}
+ body[data-mode="golf"][data-s="golf"] #modeActions button[data-action="shoot"]{min-height:83px}
+ #golfGuide img{height:min(17vh,110px)}
+}
+
+
+/* BRAWL MAYHEM — phone urgency responds to real danger, not decorative timers. */
+body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="recover"]{
+ grid-column:span 2;min-height:96px;order:-5;
+ font:900 25px Fredoka,sans-serif;letter-spacing:.02em;
+ background:linear-gradient(145deg,#ffe1a1,#ff6571 45%,#e82f64);
+ color:#261c33;border:3px solid #fff6cb;
+ box-shadow:0 7px 0 #922f52,0 0 26px #ff637f8f;
+ animation:brawlPhonePanic .35s ease-in-out infinite alternate;
+}
+@keyframes brawlPhonePanic{
+ from{filter:brightness(.86);box-shadow:0 7px 0 #922f52,0 0 15px #ff637f71}
+ to{filter:brightness(1.23);box-shadow:0 7px 0 #922f52,0 0 34px #ff637fba}
+}
+body[data-brawl-warning="true"] #look{
+ border-color:#ff6d88!important;
+ box-shadow:0 0 29px #f52f70a0,0 12px 26px #0009!important
+}
+body[data-brawl-warning="true"] #msg{color:#fff1bc!important}
+body[data-brawl-near="true"] #modePanel{
+ border-color:#ff547c!important;
+ box-shadow:0 0 27px #ff4b7ca6,0 13px 33px #000a!important;
+}
+body[data-mode="brawl"][data-s="brawl"] #modeReadout{
+ border:2px solid #ffc99f;font-size:16px;
+}
+@media(max-height:700px){
+ body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="recover"]{
+  min-height:77px;font-size:23px
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-mode="brawl"][data-s="brawl"] #modeActions button[data-action="recover"]{
+  animation:none
+ }
+}
+
 </style>
 </head>
 <body>
@@ -166,6 +766,26 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     <div id="modeReadout"></div>
     <div id="modeActions"></div>
   </section>
+  <aside id="dropGuide" hidden aria-label="Drop Zone spectator display">
+    <img src="assets/img/pp_dropzone_prop_gold_bucket.webp" alt="" loading="lazy">
+    <strong id="dropGuideTitle">WATCH THE JACKPOT</strong>
+    <p id="dropGuideCopy">Choose a prize and watch the marble on the TV.</p>
+  </aside>
+  <aside id="brawlGuide" hidden aria-label="Bowl Brawl knockout spectator screen">
+    <img src="assets/img/pp_brawl_prop_spin_hazard.webp" alt="" loading="lazy">
+    <strong>BRAWL SPECTATOR CLUB</strong>
+    <p>Cheer for the survivors and prepare for the next round!</p>
+  </aside>
+  <aside id="curlGuide" hidden aria-label="Curling spectator and shot preparation">
+    <img src="assets/img/pp_curling_prop_ice_blocks.webp" alt="" loading="lazy">
+    <strong id="curlGuideTitle">WATCH THE ICE</strong>
+    <p id="curlGuideText">Choose the nearest stone and prepare for your next end.</p>
+  </aside>
+  <aside id="golfGuide" hidden aria-label="Marble Golf clubhouse spectator display">
+    <img src="assets/img/pp_golf_prop_windmill.webp" alt="" loading="lazy">
+    <strong id="golfGuideTitle">THE CLUBHOUSE</strong>
+    <p id="golfGuideBody">Watch the putt on the TV and prepare for your shot.</p>
+  </aside>
   <button id="cheer" type="button" hidden>CHEER!</button>
   <div id="padZone">
     <button id="pad" aria-label="Tap to boost, hold to grip">
@@ -196,7 +816,11 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 10); store.set('mr_pid', pid); }
   let swirl = +(store.get('mr_swirl') || Math.floor(Math.random() * 12));
   const params = new URLSearchParams(location.search);
-  $('#inCode').value = (params.get('room') || store.get('mr_room') || '').toUpperCase();
+  const requestedRoom=(params.get('room')||'').trim().toUpperCase();
+  const resumeRoom=(store.get('mr_room')||'').trim().toUpperCase();
+  const autoResume=!!store.get('mr_name')&&/^[A-HJ-NP-Z]{4}$/.test(requestedRoom)&&
+    requestedRoom===resumeRoom;
+  $('#inCode').value = (requestedRoom || resumeRoom).toUpperCase();
   $('#inName').value = store.get('mr_name') || '';
   if (store.get('mr_hc') === '1') document.body.classList.add('hc');
   // Replace the text logo only when the approved artwork loads correctly.
@@ -236,8 +860,22 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
   let ws = null, open = false, joined = false, retry = 0, hud = null;
   function connect() {
     ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
-    ws.onopen = () => { open = true; retry = 0; $('#banner').hidden = true; if (joined) doJoin(true); };
-    ws.onclose = () => { open = false; if (joined) $('#banner').hidden = false; setTimeout(connect, Math.min(6000, 600 * ++retry)); };
+    ws.onopen = () => { open = true; retry = 0; $('#banner').hidden = true;
+      // Refreshing the SAME explicitly joined room may silently resume.
+      if (joined || autoResume) doJoin(true);
+    };
+    ws.onclose = e => {
+      open = false;
+      if(e.code===4009){
+        // Avoid infinite WebSocket takeover ping-pong between two open tabs.
+        joined=false;$('#ctl').hidden=true;$('#join').hidden=false;
+        $('#btnJoin').disabled=false;
+        $('#joinErr').textContent='This marble was reopened in another tab. Close the other tab before reconnecting.';
+        return;
+      }
+      if (joined) $('#banner').hidden = false;
+      setTimeout(connect, Math.min(6000, 600 * ++retry));
+    };
     ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch(x){ return; } onMsg(m); };
   }
   function send(m) { if (open) ws.send(JSON.stringify(m)); }
@@ -311,7 +949,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     const pts=Number.isFinite(h.roundScore)?Math.round(h.roundScore):null;
     const power=Number.isFinite(h.power)?Math.max(0,Math.min(100,Math.round(h.power))):null;
     const aim=Number.isFinite(h.aim)?Math.round(h.aim):null;
-    $('#modeReadout').textContent=[pts===null?'':pts+' pts',power===null?'':'Power '+power+'%',Number.isFinite(h.energy)?'Energy '+Math.round(h.energy)+'%':'',aim===null?'':'Aim '+aim+(h.mode==='dropzone'?' px':'°')].filter(Boolean).join(' · ');
+    $('#modeReadout').textContent=[pts===null?'':(h.mode==='derby'?pts+' ◆ virtual gems':h.mode==='golf'?pts+' total strokes':pts+' pts'),power===null?'':'Power '+power+'%',Number.isFinite(h.energy)?'Energy '+Math.round(h.energy)+'%':'',aim===null?'':'Aim '+aim+(h.mode==='dropzone'?' px':'°')].filter(Boolean).join(' · ');
     const cheer=$('#cheer');
     cheer.hidden=!(h.s==='race' && (!h.inRace || h.fin));
     cheer.disabled=!h.cheerReady;
@@ -326,6 +964,7 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         button.type='button';
         button.textContent=String(control.label||control.a).slice(0,30);
         button.setAttribute('aria-pressed',String(!!control.selected));
+        button.dataset.action=control.a; // Mode-specific appearance; action messages unchanged
         button.onclick=()=>{audio();buzz(14);send({t:'act',a:control.a,v:control.v});};
         box.appendChild(button);
       }
@@ -348,6 +987,56 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     $('#pad').classList.toggle('super', h.boost >= 100 && (h.s === 'race'));
     document.body.dataset.s = h.s;
     document.body.dataset.mode = h.mode || 'grandprix';
+    if(h.mode==='brawl'&&h.s==='brawl'){
+      document.body.dataset.brawlWarning=String(h.pulseIn!=null&&h.pulseIn<=3);
+      document.body.dataset.brawlNear=String(!!h.recoverReady);
+    }else{
+      delete document.body.dataset.brawlWarning;
+      delete document.body.dataset.brawlNear;
+    }
+    if(h.mode==='brawl'&&h.s==='brawl')document.body.dataset.brawlPhase=h.modePhase||'';
+    else delete document.body.dataset.brawlPhase;
+    const golfGuide=$('#golfGuide');
+    if(h.mode==='golf'&&h.s==='golf'&&!h.isTurn){
+      golfGuide.hidden=false;
+      $('#golfGuideTitle').textContent=h.modePhase==='results'?'HOLE COMPLETE':'THE CLUBHOUSE';
+      $('#golfGuideBody').textContent=h.modePhase==='results'?
+        'Check your strokes. Fewest total shots wins the Masters!':
+        h.modePhase==='rolling'?'Follow the marble and watch the cup!':
+        'Your next putt is coming. Cheer the golfer or watch the course.';
+    }else golfGuide.hidden=true;
+    const curlGuide=$('#curlGuide');
+    if(h.mode==='curling'&&h.s==='curling'&&!h.isTurn){
+      curlGuide.hidden=false;
+      $('#curlGuideTitle').textContent=h.modePhase==='results'?'MEASURING THE HOUSE':'WATCH THE ICE';
+      $('#curlGuideText').textContent=h.modePhase==='results'?
+        'Closest stones earn end points. The next end starts automatically.':
+        'Choose a marble to support while the other player throws.';
+    }else curlGuide.hidden=true;
+    const brawlGuide=$('#brawlGuide');
+    brawlGuide.hidden=!(h.s==='brawl'&&h.mode==='brawl'&&!h.isTurn);
+    const guide=$('#dropGuide');
+    if(h.mode==='dropzone'&&h.s==='dropzone'&&(h.modePhase!=='aim'||!h.isTurn)){
+      guide.hidden=false;
+      $('#dropGuideTitle').textContent=h.modePhase==='falling'?'WATCH THE PRIZE BINS':'YOUR TURN IS COMING';
+      $('#dropGuideCopy').textContent=h.modePhase==='falling'&&h.isTurn?
+        'Choose a score above before the marble reaches the bottom.':
+        h.modePhase==='falling'?'Watch the falling marble on the TV.':'Get ready to line up your chute!';
+    }else guide.hidden=true;
+    if(h.mode==='dropzone'&&h.s==='dropzone'){
+      document.body.dataset.dropPhase=h.modePhase||'';
+      document.body.dataset.dropTurn=String(!!h.isTurn);
+    }else{
+      delete document.body.dataset.dropPhase;
+      delete document.body.dataset.dropTurn;
+    }
+    if(h.mode==='derby'&&h.s==='derby'){
+      document.body.dataset.derbyPhase=h.modePhase||'';
+      $('#pad').disabled=!(h.modePhase==='racing'&&h.myBet&&h.isTurn);
+    }else{
+      delete document.body.dataset.derbyPhase;
+      $('#pad').disabled=false;
+    }
     const it = $('#item');
     if (h.s !== 'race') h = Object.assign({}, h, { item: null });
     it.disabled = !h.item;
@@ -385,30 +1074,45 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
         if(h.vip)vip=[['lobby','Back to Lobby']];
         break;
       case 'golf':
-        setText('', h.modePhase==='aim'&&h.isTurn?'YOUR SHOT':h.modePhase==='rolling'?'MARBLE IN MOTION':h.modePhase==='results'?'HOLE RESULTS':'MARBLE GOLF',
-          'Hole '+(h.hole||1)+'/5 · '+(h.roundScore||0)+' strokes · '+(h.modeHint||''));
-        if(h.vip)vip=[['lobby','End game & lobby']];
+        setText('',h.modePhase==='aim'&&h.isTurn?'LINE UP THE PUTT':
+          h.modePhase==='rolling'?'MARBLE ON THE GREEN':
+          h.modePhase==='results'?'HOLE SCORECARD':'MARBLE GOLF',
+          'Hole '+(h.hole||1)+'/'+(h.holes||9)+' · PAR '+(h.par||2)+
+          ' · '+(h.roundScore||0)+' total strokes · '+(h.modeHint||''));
+        // Persistent header Lobby button is the only host exit.
         break;
       case 'curling':
-        setText('',h.modePhase==='aim'&&h.isTurn?'YOUR THROW':h.modePhase==='slide'&&h.isTurn?'SWEEP!':h.modePhase==='results'?'END RESULTS':'MARBLE CURLING',
-          (h.roundScore||0)+' points · '+(h.modeHint||h.turnLabel||''));
-        if(h.vip)vip=[['lobby','End game & lobby']];
+        setText('',h.modePhase==='aim'&&h.isTurn?'LINE UP YOUR STONE':
+          h.modePhase==='slide'&&h.isTurn?'SWEEP THE ICE!':
+          h.modePhase==='results'?'MEASURING THE HOUSE':'MARBLE CURLING',
+          'End '+(h.end||1)+'/5 · '+(h.roundScore||0)+' points · '+(h.modeHint||''));
+        // VIP can always return from the persistent header control.
         break;
       case 'derby':
         setText('',h.modePhase==='betting'?'PLACE YOUR BET':h.modePhase==='racing'?'THEY ARE OFF!':h.modePhase==='results'?'HEAT RESULTS':'DERBY FINISHED',
           (h.gems||0)+' virtual gems · '+(h.modeHint||h.turnLabel||''));
-        if(h.vip)vip=[['lobby','End game & lobby']];
+        // Persistent header lobby button already exists: no duplicate host exit.
         break;
-      case 'brawl':
-        setText('', h.modePhase==='eliminated'?'OUT OF THE BOWL':h.modePhase==='finished'?'BRAWL COMPLETE':'BOWL BRAWL',
-          (h.roundScore||0)+' points · '+(h.turnLabel||'Bowl Brawl'));
-        if(h.vip)vip=[['lobby','End game & lobby']];
+      case 'brawl': {
+        const urgent=!!h.recoverReady;
+        const incoming=h.pulseIn!=null&&h.pulseIn<=3;
+        setText('',urgent?'EDGE DANGER — SAVE NOW!':
+          incoming?'SHOCKWAVE IN '+h.pulseIn.toFixed(1)+'s!':
+          h.modePhase==='eliminated'?'KNOCKED OUT!':
+          h.modePhase==='finished'?'BRAWL COMPLETE':'SURVIVE THE BOWL',
+          (h.roundScore||0)+' pts · '+Math.round(h.energy||0)+'% energy · '+
+          (h.modeHint||'RAM rivals out · ANCHOR to brace.'));
+        // One host exit remains in the persistent header, not repeated here.
         break;
-      case 'dropzone':
-        setText('', h.isTurn?'YOUR DROP':h.modePhase==='falling'?'MARBLE IN PLAY':'WAIT FOR YOUR TURN',
+      }
+      case 'dropzone': {
+        const dropping=h.modePhase==='aim'&&h.isTurn;
+        const predicting=h.modePhase==='falling'&&h.isTurn;
+        setText('', dropping?'LINE UP YOUR DROP':predicting?'PREDICT THE PRIZE':h.modePhase==='falling'?'MARBLE IN PLAY':'WATCH THE JACKPOT',
           (h.roundScore||0)+' points · '+(h.turnLabel||'Drop Zone'));
-        if (h.vip) vip=[['lobby','End game & lobby']];
+        // The top header already has the VIP's persistent Lobby button.
         break;
+      }
       case 'race':
         if(h.vip)vip=[['lobby','Back to Lobby']];
         if (!h.inRace) { setText('', 'Watch the TV!', 'You join the next race'); break; }
@@ -439,7 +1143,6 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
     // Phone layout adapter. New mode controls are activated only as their modes ship.
     const labels = {
       grandprix: ['TAP', 'boost · hold to grip'],
-      derby: ['NUDGE', 'cheer your pick'],
       dropzone: ['DROP', 'tap to release'],
       derby: ['CHEER!', 'back your marble, cheer once per heat'],
       brawl: ['RAM', 'hold to anchor'],

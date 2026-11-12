@@ -47,7 +47,7 @@ const MarbleGolf = (() => {
     function resetBall() {
       state.ball={x:state.layout.start[0],y:state.layout.start[1],vx:0,vy:0};
       state.strokes=0;state.angle=0;state.power=60;state.phase='aim';
-      state.clock=0;state.cpuDelay=.5;state.comments=new Set();
+      state.clock=0;state.cpuDelay=.5;state.comments=new Set();state.ghost=null;
     }
     function newHole() {
       state.hole++;state.turn=0;state.layout=state.layouts[state.hole-1];resetBall();
@@ -102,6 +102,7 @@ const MarbleGolf = (() => {
           y:state.ball.y+Math.sin(a)*115};return true;
       }
       if(kind==='shoot') {
+        state.ghost=null; // Hint is for the selected stroke only.
         state.shotFrom={x:state.ball.x,y:state.ball.y};
         const theta=state.angle*Math.PI/180, speed=240+state.power*8.5;
         state.ball.vx=Math.cos(theta)*speed;
@@ -220,66 +221,16 @@ const MarbleGolf = (() => {
         roundScore:p.strokes,modePhase:state.phase,isTurn:yourTurn,
         power:state.power,aim:state.angle,strokes:state.strokes,ghost:state.ghost,
         obstacle:state.layout.moving||null,
-        modeHint:yourTurn?'Aim, set power, and SHOOT!':state.phase==='rolling'?'Marble rolling…':'Wait for your turn',
-        modeControls:!yourTurn&&!state.comments.has(id)?[{a:'cheer',label:'CHEER!',v:0}]:yourTurn?[
+        modeHint:yourTurn?'Aim, set power, then PUTT!':state.phase==='rolling'?'Marble rolling…':'Wait for your turn',
+        modeControls:!yourTurn&&current()?.id!==id&&!state.comments.has(id)?
+          [{a:'cheer',label:'CHEER!',v:0}]:yourTurn?[
           {a:'left',label:'◀ AIM',v:1},{a:'right',label:'AIM ▶',v:1},
           {a:'powerdown',label:'− POWER',v:0},{a:'powerup',label:'+ POWER',v:0},
-          {a:'preview',label:'TRAJECTORY',v:0},{a:'shoot',label:'SHOOT!',v:0}]:[],
-        hole:state.hole,par:state.layout.par,activePlayer:current()?.name||''};
-    }
-    function draw(ctx,w=1920,h=1080) {
-      ctx.save();ctx.scale(w/1920,h/1080);
-      const bg=ctx.createLinearGradient(0,0,1920,1080);
-      bg.addColorStop(0,'#18273b');bg.addColorStop(1,'#384d60');
-      ctx.fillStyle=bg;ctx.fillRect(0,0,1920,1080);
-       MarblePartyStage.backdrop(ctx,'golf',state.elapsed);
-       MarblePartyStage.frame(ctx,548,231,1305,625,'golf');
-      ctx.fillStyle='#fff5df';ctx.font='bold 67px Fredoka,sans-serif';ctx.fillText('MARBLE GOLF',64,88);
-      ctx.fillStyle='#ffd984';ctx.font='bold 28px Nunito,sans-serif';
-      ctx.fillText(`HOLE ${state.hole} OF ${state.holes} · ${state.layout.name} · PAR ${state.layout.par}`,65,137);
-      const ox=555,oy=240,s=1.04;
-      ctx.save();ctx.translate(ox,oy);ctx.scale(s,s);
-      MarblePartyStage.surface(ctx,'golf',0,0,W,H,state.elapsed);
-      for(let x=35;x<W;x+=65){ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=35;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-      ctx.strokeStyle='#f3e1b4';ctx.lineWidth=17;ctx.strokeRect(0,0,W,H);
-      for(const water of state.layout.water){
-        const pool=ctx.createLinearGradient(water[0],water[1],water[0]+water[2],water[1]+water[3]);
-        pool.addColorStop(0,'#123b7a');pool.addColorStop(.48,'#42c8ef');pool.addColorStop(1,'#175582');
-        ctx.fillStyle=pool;ctx.shadowColor='#072d55';ctx.shadowBlur=16;ctx.fillRect(...water);ctx.shadowBlur=0;
-        ctx.strokeStyle='#d5f8fb';ctx.lineWidth=6;ctx.strokeRect(...water);
-        for(let i=1;i<4;i++){ctx.strokeStyle='rgba(255,255,255,.38)';ctx.lineWidth=2;
-          ctx.beginPath();ctx.moveTo(water[0]+12,water[1]+i*water[3]/4);ctx.lineTo(water[0]+water[2]-12,water[1]+i*water[3]/4+5*Math.sin(state.elapsed+i));ctx.stroke();}}
-      for(const wall of state.layout.walls)MarblePartyStage.obstacle(ctx,...wall);
-      for(const o of state.layout.bumpers){MarblePartyStage.halo(ctx,o[0],o[1],o[2]*2.1,'#f7c76d');MarblePartyStage.peg(ctx,o[0],o[1],o[2],'#ffa763');}
-      const cup=state.layout.cup;
-      MarblePartyStage.halo(ctx,cup[0],cup[1],76,'#fce078');
-      ctx.fillStyle='#17222d';ctx.shadowColor='#03191d';ctx.shadowBlur=22;ctx.beginPath();ctx.arc(cup[0],cup[1],31,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-      ctx.strokeStyle='#fff8e0';ctx.lineWidth=5;ctx.stroke();
-      ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(cup[0],cup[1]);ctx.lineTo(cup[0],cup[1]-78);ctx.stroke();
-      ctx.fillStyle='#e84b55';ctx.beginPath();ctx.moveTo(cup[0],cup[1]-78);ctx.lineTo(cup[0]+58,cup[1]-58);ctx.lineTo(cup[0],cup[1]-41);ctx.fill();
-      const b=state.ball,p=current();
-      if(state.phase==='aim'&&p){
-        const a=state.angle*Math.PI/180;
-        ctx.setLineDash([9,9]);ctx.strokeStyle='#fff8c0';ctx.lineWidth=5;ctx.beginPath();
-        ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+Math.cos(a)*(120+state.power*2),b.y+Math.sin(a)*(120+state.power*2));
-        ctx.stroke();ctx.setLineDash([]);
-      }
-      MarblePartyStage.marble(ctx,b.x,b.y,R,p?.color||'#f7d35c');
-      ctx.restore();
-      ctx.font='bold 34px Fredoka,sans-serif';ctx.fillStyle='#fff5df';ctx.fillText('SCORECARD',65,238);
-      standings().forEach((p,i)=>{
-        const y=305+i*76;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(90,y-11,14,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#fff5df';ctx.font='bold 24px Nunito,sans-serif';ctx.fillText(p.name,116,y);
-        ctx.fillStyle='#ffda87';ctx.fillText(`${p.strokes} strokes · ${p.holeScores.join(' / ')||'—'}`,116,y+29);
-      });
-      ctx.fillStyle='#fff5df';ctx.font='bold 28px Nunito,sans-serif';
-      ctx.fillText(state.done?'THE GOLF CHAMPION IS CROWNED':
-        state.phase==='results'?`HOLE ${state.hole} COMPLETE`:
-        `${current()?.name||''} · SHOT ${Math.min(MAX_STROKES,state.strokes+1)}/${MAX_STROKES}`,568,970);
-      ctx.restore();
+          {a:'preview',label:'SHOT GUIDE',v:0},{a:'shoot',label:'PUTT!',v:0}]:[],
+        hole:state.hole,holes:state.holes,par:state.layout.par,activePlayer:current()?.name||''};
     }
     newHole();
-    return {state,action,step,hud,draw,standings,current,player};
+    return {state,action,step,hud,standings,current,player};
   }
   return Object.freeze({create,HOLES,FULL_HOLES,MAX_STROKES,LAYOUTS,CHAMPIONSHIP_HOLES});
 })();
@@ -291,7 +242,6 @@ registerMode({
   setup({players,seed,onFinish,championship=true}){marbleGolfGame=MarbleGolf.create([...players.values()],seed,onFinish,{championship});return marbleGolfGame;},
   startRound(){return marbleGolfGame;},
   tick(dt){marbleGolfGame?.step(dt);},
-  draw(ctx,w,h){marbleGolfGame?.draw(ctx,w,h);},
   onInput(id,k){if(k==='p')marbleGolfGame?.action(id,'shoot');},
   onAction(id,a,v){return marbleGolfGame?.action(id,a,v)||false;},
   botTick(){},hud(player){return marbleGolfGame?.hud(player.id)||{};},
