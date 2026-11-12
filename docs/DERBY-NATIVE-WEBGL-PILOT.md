@@ -57,3 +57,7 @@ The first reviewed headless screenshot showed three defects despite passing game
 ## Phase 1D — eliminate oversized inert apron
 
 The approved 1C screenshot still showed a huge dark empty foreground beneath the track. The root cause was the 3D platform's 15-unit half-depth against only about 7 units of playable six-lane width—not the platform height. This correction tightens all three plinth layers to the actual arena footprint while preserving positions, collisions, camera and original assets. It also updates the QA guard so the oversized slab cannot silently return.
+
+## Phase 1E — reduce audience confusion and overlapping scenery
+
+The 1D screenshot proved the stage footprint fix, but decorative giant marbles in the approved backdrop appeared below the live field and the additional full-width 3D bleachers obscured the stadium. A lightweight GPU backdrop fade now keeps the upper scenic environment and de-emphasises background-only marbles beneath the game; large duplicate 3D bleacher tiers have been retired in favour of small arena-side lamps. Live track, balls, physics and approved raw art are unchanged. This is a screen readability improvement, not proof of AAA art quality or real-TV frame rate.

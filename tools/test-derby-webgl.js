@@ -9,7 +9,9 @@ const build=read('tools/build.js');
 assert.ok(gl.includes('gl.createShader(')&&gl.includes('gl.createBuffer(')&&
   gl.includes('gl.drawElements(')&&gl.includes('gl.enable(gl.DEPTH_TEST)'),
   'Pilot has no genuine WebGL mesh/vertex/depth pipeline');
-assert.ok(gl.includes("key==='pp_derby_bg'?0:1")&&
+assert.ok(gl.includes('float scenic=1.0-smoothstep(0.38,0.62,vUV.y)')&&
+  !gl.includes("add([0,1.4+seat*.52,-9.8-seat*.62]")&&
+  gl.includes("key==='pp_derby_bg'?0:1")&&
   !gl.includes("add([15.7,4.02,0]")&&
   gl.includes("add([0,-.39,0],[33.6,.20,7.9]"),
   'Inverted scenery or a large foreground obstruction returned');

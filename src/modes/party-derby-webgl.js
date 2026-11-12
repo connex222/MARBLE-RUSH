@@ -118,7 +118,14 @@ const MarbleDerbyWebGL=(()=>{
     'if(uPattern<1.5){ink.rgb*=uColor;}',
     'if(ink.a<0.12)discard;}',
     'ink.rgb*=mix(vec3(1.0),vVertexColor,clamp(uUseVertexColor,0.0,1.0));',
-    'if(uUnlit>0.5){gl_FragColor=ink;return;}',
+    'if(uUnlit>0.5){',
+    // Only the real 3D marbles on the track are contestants. The approved
+    // 2D stadium background also contains decorative large marbles lower
+    // down, so gently fade the backdrop before those can be mistaken
+    // for live participants.
+    'float scenic=1.0-smoothstep(0.38,0.62,vUV.y);',
+    'ink.rgb=mix(vec3(0.045,0.085,0.145),ink.rgb,scenic);',
+    'gl_FragColor=ink;return;}',
     'vec3 n=normalize(vNormal);',
     'float sun=max(dot(n,normalize(vec3(-0.37,0.87,0.52))),0.0);',
     'float fill=max(dot(n,normalize(vec3(0.62,0.19,-0.77))),0.0);',
@@ -305,14 +312,13 @@ const MarbleDerbyWebGL=(()=>{
       add([x,.64,-7.0],[.13,.51,.14],'#9fd9d5');
       add([x,.57,7.0],[.12,.32,.12],'#f6c57d');
     }
-    // Grandstand stays behind the six lanes, rather than swallowing the arena.
-    for(let seat=0;seat<4;seat++)
-      add([0,1.4+seat*.52,-9.8-seat*.62],[27,.32,.87],
-        seat%2?'#6c4b5b':'#80676c');
-    for(let k=0;k<5;k++){
-      const x=-12+k*6;
-      add([x,2.3,-12.0],[.20,4.2,.22],'#d2a76b');
-      add([x,4.5,-12.0],[.55,.30,.55],'#ffe3a2');
+    // Keep the playable 3D arena separate from its already approved,
+    // scenic-background grandstand: duplicate huge 3D bleacher slabs
+    // hid the artwork and made the lane camera needlessly busy.
+    for(let k=0;k<7;k++){
+      const x=-14+k*4.7;
+      add([x,.65,-7.4],[.14,.85,.14],'#c8a974');
+      add([x,1.12,-7.4],[.28,.20,.28],'#ffe6ba');
     }
     // Checkered finish is physically in every lane; a single compact
     // back-side floodlight marks the finish without crossing the racers.
