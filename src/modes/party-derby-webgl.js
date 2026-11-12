@@ -259,7 +259,7 @@ const MarbleDerbyWebGL=(()=>{
       paint(meshBox,vp,[0,.12,z],[30.5,.12,1.9],lane%2?'#4f6d87':'#657f92',{
         key:'pp_derby_surface_main',image:assets?.pp_derby_surface_main});
       paint(meshBox,vp,[0,.21,z-1.00],[31,.065,.07],'#f5dd91');
-      for(let k=0;k<=10;k++)paint(meshBox,vp,[-14.65+k*2.93,.20,z],[.08,.04,.95],'#b5e6e7');
+      for(let k=0;k<=5;k++)paint(meshBox,vp,[-14.65+k*5.86,.20,z],[.08,.04,.95],'#b5e6e7');
       // Start and finish marks are real world geometry, not HUD decoration.
       paint(meshBox,vp,[-15,.27,z],[.09,.04,1.73],'#ffffff');
       paint(meshBox,vp,[15,.27,z],[.12,.04,1.73],lane%2?'#141c36':'#ffffff');
@@ -276,18 +276,18 @@ const MarbleDerbyWebGL=(()=>{
       paint(meshBox,vp,[0,1.4+seat*.68,-10.3-seat*.68],[29,.42,1.0],
         seat%2?'#5b536f':'#64758d');
     }
-    for(const gate of [-15.3,15.3]){
+    for(const gate of [-15.7,15.7]){
       for(const z of [-7.3,7.3]){
-        paint(meshBox,vp,[gate,3.2,z],[.45,6.4,.48],gate>0?'#f3d48f':'#88e5da');
+        paint(meshBox,vp,[gate,1.95,z],[.22,3.9,.30],gate>0?'#f3d48f':'#88e5da');
       }
-      paint(meshBox,vp,[gate,6.5,0],[.6,.58,15.2],gate>0?'#f6dd99':'#7ce6df');
+      paint(meshBox,vp,[gate,4.02,0],[.30,.29,15.2],gate>0?'#f6dd99':'#7ce6df');
     }
     // Approved approved-stage props are physically positioned in 3D space.
     if(assets?.pp_derby_prop_grandstand)
-      paint(meshPlane,vp,[3,4.25,-13.1],[11,5.2,1],'#ffffff',{
+      paint(meshPlane,vp,[6.5,2.1,-12.2],[3.7,1.5,1],'#ffffff',{
         key:'pp_derby_prop_grandstand',image:assets.pp_derby_prop_grandstand,opacity:.92});
     if(assets?.pp_derby_prop_hay_bales)
-      paint(meshPlane,vp,[10.8,1.65,8.9],[2.2,1.7,1],'#ffffff',{
+      paint(meshPlane,vp,[10.4,1.1,8.9],[1.3,0.9,1],'#ffffff',{
         key:'pp_derby_prop_hay_bales',image:assets.pp_derby_prop_hay_bales,opacity:.92});
     // Every marble is an actual triangulated sphere at the authoritative x.
     for(const h of s.horses){

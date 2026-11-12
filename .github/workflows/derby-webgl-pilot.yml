@@ -3,6 +3,14 @@ on:
   push:
     branches:
       - improvement/marble-rush-derby-true3d
+    paths:
+      - src/modes/party-derby-webgl.js
+      - src/modes/party-screen-host.js
+      - src/modes/party-ui-v2.js
+      - tools/derby-webgl-browser-smoke.js
+      - tools/test-derby-webgl.js
+      - tools/build.js
+      - .github/workflows/derby-webgl-pilot.yml
   workflow_dispatch:
 permissions:
   contents: read
