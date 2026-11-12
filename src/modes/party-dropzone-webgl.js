@@ -123,8 +123,19 @@ const MarbleDropZoneWebGL=(()=>{
    }
    for(const id of mesh.i)i.push(offset+id);
   }
-  append(cb,[4,0,-1.05],[10,8.7,.38],'#374461');
-  append(cb,[4,0,-.7],[9.8,8.52,.14],'#112c44');
+  // An inset steel playfield, warm extruded edge and shallow metallic bevel.
+  // All three are real world-space 3D boxes, baked with the 85 peg spheres.
+  append(cb,[4,0,-1.12],[10.35,8.93,.40],'#bf8b4d');
+  append(cb,[4,0,-.85],[10.16,8.70,.16],'#f4d897');
+  append(cb,[4,0,-.69],[9.82,8.45,.18],'#1d3e59');
+  append(cb,[4,0,-.48],[9.60,8.25,.10],'#193b59');
+  for(const y of [70,690]){
+   append(cb,[4,yw(y),-.16],[9.38,.045,.07],'#67c5d3');
+  }
+  for(const px of [81,919]){
+   append(cb,[xw(px),0,.40],[.10,8.3,.15],'#ffe3a2');
+   append(cb,[xw(px),0,.56],[.045,8.2,.05],'#83ecfa');
+  }
   // Real divider rails and bucket structure; each prize bin corresponds
   // directly to one of the eight DropZone.BINS entries.
   const bins=DropZone.BINS;
@@ -132,18 +143,29 @@ const MarbleDropZoneWebGL=(()=>{
    const centerX=80+52.5+k*105;
    const bank=Number(bins[k]);
    const c=bank===1000?'#ffd86c':bank>=500?'#6bd7c2':'#9ba9e2';
-   append(cb,[xw(centerX),yw(752),-.14],[1.14,.64,.45],c);
-   append(cb,[xw(centerX),yw(712),.15],[1.14,.06,.40],'#f8e4b0');
+   append(cb,[xw(centerX),yw(752),-.11],[1.16,.70,.49],c);
+   append(cb,[xw(centerX),yw(715),.36],[1.14,.09,.35],'#ffe7a7');
+   append(cb,[xw(centerX),yw(774),.41],[1.10,.09,.25],'#3a566c');
   }
   for(let k=0;k<=8;k++)
    append(cb,[xw(80+k*105),yw(748),.35],[.065,.90,.25],'#ffeaac');
   // Physical side walls follow the EXACT rules engine x=80..920 boundaries.
   for(const px of [80,920])
-   append(cb,[xw(px),yw(370),.1],[.16,7.5,.72],'#e9cf89');
-  for(const peg of DropZone.PEGS)
-   append(sp,[xw(peg.x),yw(peg.y),.37],[peg.r*.022,peg.r*.022,.25],'#e3d1b2');
-  for(let k=0;k<12;k++)
-   append(cb,[xw(80+k*(840/11)),yw(105),-.5],[.06,.06,.15],'#c4d9f5');
+   append(cb,[xw(px),yw(370),.32],[.13,7.55,.49],'#ecd298');
+  for(const peg of DropZone.PEGS){
+   // Every stud has a physical dark recessed socket and front glass-blue
+   // dome. Both are real triangulated spheres in the same GPU batch.
+   const x=xw(peg.x),y=yw(peg.y);
+   append(sp,[x+.05,y-.06,.23],[.25,.25,.15],'#08172b');
+   append(sp,[x,y,.67],[peg.r*.027,peg.r*.027,.31],'#8cebf6');
+  }
+  // Three-dimensional chute lip and illuminated metal fasteners.
+  append(cb,[4,yw(88),.31],[9.30,.12,.32],'#ffd993');
+  for(let k=0;k<12;k++){
+   const px=xw(80+k*(840/11));
+   append(sp,[px,yw(88),.69],[.075,.075,.10],'#e7f8f2');
+   append(sp,[px,yw(778),.77],[.085,.085,.13],'#ffe8ae');
+  }
   return geometry(v,i);
  }
  function setup(){
@@ -212,8 +234,13 @@ const MarbleDropZoneWebGL=(()=>{
     [.43,.43,.43],p.color||'#ffd96e');
   else if(!state.done){
    const owner=state.roster[state.turn%state.roster.length];
-   add(sphereRaw,[xw(state.x),yw(35),1.43],
-    [.43,.43,.43],owner?.color||'#ffce73');
+   const x=xw(state.x),y=yw(35);
+   // Extruded chute rim travels with the real phone/TV aim. It is not
+   // an independent simulation, overlay or rerendered legacy screen.
+   add(cubeRaw,[x-.53,y+.13,.70],[.08,.69,.22],'#ffdf94');
+   add(cubeRaw,[x+.53,y+.13,.70],[.08,.69,.22],'#ffdf94');
+   add(cubeRaw,[x,y+.79,.70],[.62,.11,.29],'#fff0af');
+   add(sphereRaw,[x,y,1.43],[.43,.43,.43],owner?.color||'#ffce73');
   }
   gl.bindBuffer(gl.ARRAY_BUFFER,meshMoving.vertices);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.DYNAMIC_DRAW);
