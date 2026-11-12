@@ -13,7 +13,7 @@ const MarbleDropZoneWebGL=(()=>{
  let canvas=null,gl=null,program=null,meshCube=null,meshSphere=null,meshStatic=null,loc=null;
  let resources=[],frame=0,drawCalls=0,quality=1,debugGPU='',backdropUrl='';
  let labels=null,notice=null,contextLost=false,contextLossHandler=null,contextRestoreHandler=null;
- let lastEventKey='',fpsLost=0;
+ let lastEventKey='',fpsLost=0,geometryProbe=null;
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const xw=x=>4+(x-500)*.022;
  const yw=y=>(400-y)*.019;
@@ -224,7 +224,7 @@ const MarbleDropZoneWebGL=(()=>{
   const ext=gl.getExtension('WEBGL_debug_renderer_info');
   debugGPU=String(ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER));
   quality=/swiftshader|llvmpipe|software/i.test(debugGPU)?.55:1;
-  frame=0;drawCalls=0;backdropUrl='';contextLost=false;fpsLost=0;lastEventKey='';
+  frame=0;drawCalls=0;backdropUrl='';contextLost=false;fpsLost=0;lastEventKey='';geometryProbe=null;
   resize();setup();labelsCreate();
   contextLossHandler=e=>{e.preventDefault();contextLost=true;};
   contextRestoreHandler=()=>{contextLost=false;setup();};
@@ -312,6 +312,15 @@ const MarbleDropZoneWebGL=(()=>{
   const gateX=500+115*Math.sin(s.elapsed*.9);
   drawMesh(meshCube,vp,[xw(gateX),yw(598),.75],[1.16,.16,.42],'#77dbe5');
   const p=s.ball;
+  // First-frame GPU readback verifies a drawn marble becomes actual pixels.
+  const probePoint=p?[xw(p.x),yw(p.y),1.18]:[xw(s.x),yw(35),1.16];
+  const point=[...probePoint,1];
+  const clip=[0,1,2,3].map(row=>
+    vp[row]*point[0]+vp[4+row]*point[1]+vp[8+row]*point[2]+vp[12+row]);
+  const probeX=clamp(Math.round((1+clip[0]/clip[3])*canvas.width/2),0,canvas.width-1);
+  const probeY=clamp(Math.round((1+clip[1]/clip[3])*canvas.height/2),0,canvas.height-1);
+  const beforePixel=new Uint8Array(4),afterPixel=new Uint8Array(4);
+  if(frame===0)gl.readPixels(probeX,probeY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,beforePixel);
   if(p){
    drawMesh(meshSphere,vp,[xw(p.x),yw(p.y),1.18],[.37,.37,.37],
     p.color||'#ffd66e');
@@ -321,6 +330,11 @@ const MarbleDropZoneWebGL=(()=>{
    drawMesh(meshSphere,vp,[xw(s.x),yw(35),1.16],[.40,.40,.40],
     s.roster[s.turn%s.roster.length]?.color||'#ffcd68',.55);
    gl.depthMask(true);
+  }
+  if(frame===0){
+    gl.readPixels(probeX,probeY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,afterPixel);
+    geometryProbe={at:[probeX,probeY],before:[...beforePixel],
+      after:[...afterPixel],error:gl.getError()};
   }
   setBackdrop(assets);updateBins(s);
   MarblePartyUI.updateDropZone(s);
@@ -333,7 +347,7 @@ const MarbleDropZoneWebGL=(()=>{
   singleCanvas:!!canvas&&canvas.parentElement?.querySelectorAll('canvas').length===1,
   labels:labels?.children.length||0,backdrop:!!backdropUrl,
   gpu:debugGPU,resolution:[canvas?.width||0,canvas?.height||0],
-  originalRulesModified:false};}
+  originalRulesModified:false,geometryProbe};}
  return Object.freeze({mount,unmount,draw:render,debug,
    get canvas(){return canvas;},get active(){return !!gl&&!contextLost;}});
 })();

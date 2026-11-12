@@ -44,6 +44,12 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   assert.ok(first.graphics.realMeshes&&first.graphics.drawCalls>=6&&
    first.graphics.drawCalls<=16,'Must batch native 3D pegs');
   assert.equal(first.graphics.labels,9,'Eight scored bins and one event callout');
+  console.log('DROPZONE-3D-PIXEL-PROBE '+JSON.stringify(first.graphics.geometryProbe));
+  assert.equal(first.graphics.geometryProbe?.error,0,
+    'WebGL rendered a GL error even though draw calls completed');
+  assert.notDeepEqual(first.graphics.geometryProbe?.before,
+    first.graphics.geometryProbe?.after,
+    'Native 3D marble draw call did not change its actual pixel; mesh invisible');
   proof.graphics=first.graphics;
   await page.screenshot({path:'qa-dropzone-webgl-aim.png'});
   await page.locator('#dropNow').click();
