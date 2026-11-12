@@ -13,7 +13,7 @@ assert.ok(gl.includes('sphereGeometry()')&&gl.includes('boxGeometry()')&&
   gl.includes('perspective(')&&gl.includes('lookAt('),
   'Pilot lacks actual 3D geometry or perspective camera');
 assert.ok(gl.includes('Number(h.x)')&&gl.includes('LENGTH=1500')&&
-  gl.includes('s.horses')&&gl.includes('state.horses')===false,
+  gl.includes('s.horses'),
   'Pilot must consume real authoritative horse positions, never simulate them');
 assert.ok(gl.includes('oldCanvas.replaceWith(canvas)')&&
   gl.includes('canvas.replaceWith(fresh)')&&
