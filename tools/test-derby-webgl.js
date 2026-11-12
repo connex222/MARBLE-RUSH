@@ -30,6 +30,9 @@ assert.ok(host.includes("MarblePartyUI.drawDerby(s,assets,options)"),
 assert.ok(original.includes('updateDerby')&&
   original.includes("options.hudOnly"),'Original live Derby betting HUD was not reused');
 assert.ok(build.includes("'party-derby-webgl'"),'Standalone build excludes pilot renderer');
+assert.ok(gl.includes("kind:'buffer'")&&gl.includes("kind:'shader'")&&
+  gl.includes("kind:'program'")&&!gl.includes('gl.isBuffer(r)'),
+  'WebGL teardown must not pass a shader/program to isBuffer');
 assert.ok(!gl.includes('registerMode(')&&!gl.includes('new WebSocket('),
   'Renderer must never own game rules or phone networking');
 console.log('PASS Derby true-3D architecture: native triangles/lighting/depth, one canvas, real positions, opt-in flag, original mode preserved.');

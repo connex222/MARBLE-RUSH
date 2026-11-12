@@ -88,7 +88,8 @@ const fs=require('node:fs');
    assert.equal(final.done,true);
    assert.equal(final.history,5);
    assert.ok(final.totalGems.every(Number.isFinite));
-   evidence.frames=initial.draw.frames;evidence.renderer=initial.renderer;
+   evidence.frames=initial.draw.frames;evidence.performance=initial.draw;
+   evidence.renderer=initial.renderer;
    evidence.graphics=initial.mesh;evidence.completedFiveHeats=final;
    // Switching to 2D must destroy the WebGL surface and acquire a fresh 2D
    // context, never reveal the old Derby or Brawl screen.

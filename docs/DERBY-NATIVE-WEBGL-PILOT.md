@@ -33,3 +33,7 @@ No Render action or production deploy is wired to this preview or CI.
 ## Rollout decision
 
 Do not port the experimental renderer to Drop Zone/Brawl/Curling/Golf until the Derby proof is visually better at TV distance, the single active scene is verified by browser tests and a physical TV/phone session has been accepted. Preserve the other four modes, their assets and rules meanwhile.
+
+## Browser pilot observation — first playable screenshot
+
+The initial GitHub Actions software-Chromium run proved 116 actual draw calls per frame, nine loaded textures, exclusive WebGL ownership, a native GPU program and live authoritative race positions. Its measured headless software frame rate was about **5.1 FPS** (12 frames, average draw 207 ms). This is **not acceptable 1080p target-device performance** and must not be presented as a pass. That run revealed a real typed-resource cleanup error on Derby's finale; the following revision records buffer/shader/program types and removes the large foreground start arch. Passing CI remains necessary before requesting physical acceptance. Real-TV hardware must be measured separately.

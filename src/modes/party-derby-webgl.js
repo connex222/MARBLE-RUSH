@@ -51,7 +51,7 @@ const MarbleDerbyWebGL=(()=>{
     gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,i);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(indices),gl.STATIC_DRAW);
-    resourceList.push(v,i);
+    resourceList.push({kind:'buffer',object:v},{kind:'buffer',object:i});
     return {vertex:v,index:i,count:indices.length};
   }
   function boxGeometry(){
@@ -126,7 +126,7 @@ const MarbleDerbyWebGL=(()=>{
     gl.shaderSource(sh,source);gl.compileShader(sh);
     if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))
       throw Error('Derby WebGL shader: '+gl.getShaderInfoLog(sh));
-    resourceList.push(sh);return sh;
+    resourceList.push({kind:'shader',object:sh});return sh;
   }
   function setup(){
     resourceList=[];textureCache=new Map();
@@ -135,7 +135,7 @@ const MarbleDerbyWebGL=(()=>{
     gl.linkProgram(program);
     if(!gl.getProgramParameter(program,gl.LINK_STATUS))
       throw Error('Derby WebGL program: '+gl.getProgramInfoLog(program));
-    resourceList.push(program);
+    resourceList.push({kind:'program',object:program});
     gl.useProgram(program);
     locations={position:gl.getAttribLocation(program,'aPosition'),
       normal:gl.getAttribLocation(program,'aNormal'),
@@ -177,9 +177,12 @@ const MarbleDerbyWebGL=(()=>{
     if(gl){
       for(const t of textureCache.values())gl.deleteTexture(t);
       for(const r of resourceList){
-        if(gl.isBuffer(r))gl.deleteBuffer(r);
-        else if(gl.isShader(r))gl.deleteShader(r);
-        else if(gl.isProgram(r))gl.deleteProgram(r);
+        // WebGL2 is* methods reject objects of the wrong resource type.
+        // Track types explicitly so a finished Derby can ALWAYS return
+        // to Grand Prix, Party Night, or another Party Pack renderer.
+        if(r.kind==='buffer')gl.deleteBuffer(r.object);
+        else if(r.kind==='shader')gl.deleteShader(r.object);
+        else if(r.kind==='program')gl.deleteProgram(r.object);
       }
     }
     // Restore a fresh, uninitialised canvas for the other four Canvas2D modes.
@@ -276,7 +279,7 @@ const MarbleDerbyWebGL=(()=>{
       paint(meshBox,vp,[0,1.4+seat*.68,-10.3-seat*.68],[29,.42,1.0],
         seat%2?'#5b536f':'#64758d');
     }
-    for(const gate of [-15.7,15.7]){
+    for(const gate of [15.7]){
       for(const z of [-7.3,7.3]){
         paint(meshBox,vp,[gate,1.95,z],[.22,3.9,.30],gate>0?'#f3d48f':'#88e5da');
       }
