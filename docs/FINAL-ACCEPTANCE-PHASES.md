@@ -1,8 +1,8 @@
 # MARBLE RUSH — Final Alpha Release-Candidate Phase Gates
 
-Branch: \`improvement/marble-rush-real-rebuild\`  
+Branch: `improvement/marble-rush-real-rebuild`  
 Release decision: **DO NOT MERGE OR DEPLOY** until the owner approves the actual TV/phones and final visual style.  
-Source baseline: \`dev/party-pack-ui-v2-rebuild\`; original Grand Prix baseline: \`main\`.
+Source baseline: `dev/party-pack-ui-v2-rebuild`; original Grand Prix baseline: `main`.
 
 ## Status matrix
 
@@ -24,16 +24,16 @@ Source baseline: \`dev/party-pack-ui-v2-rebuild\`; original Grand Prix baseline:
 
 ## Your independent test package
 
-On Windows, use \`tools/OPEN-REAL-REBUILD-PREVIEW.bat\` on the improvement branch. It clones a separate folder, installs dependencies using \`npm install\` (**not \`npm ci\`**), runs mandatory unit checks, builds and opens the preview TV. This does not modify GitHub \`main\` or Render.
+On Windows, use `tools/OPEN-REAL-REBUILD-PREVIEW.bat` on the improvement branch. It clones a separate folder, installs dependencies using `npm install` (**not `npm ci`**), runs mandatory unit checks, builds and opens the preview TV. This does not modify GitHub `main` or Render.
 
 The updated launcher opens:
 
-- TV with local QA: \`http://localhost:36002/tv?qa=1\`
-- Normal uncluttered TV: \`http://localhost:36002/tv\`
+- TV with local QA: `http://localhost:36002/tv?qa=1`
+- Normal uncluttered TV: `http://localhost:36002/tv`
 - Phones: scan the QR or use the TV machine's private LAN IP and the room code. Connect to the *same Wi-Fi*.
 - Close the separate server window to stop the preview.
 
-The local QA panel shows the active renderer, frame intervals and missed-frame share. Select **SAVE QA REPORT (.JSON)** after testing each game. The downloaded \`MARBLE-RUSH-PHYSICAL-TV-QA.json\` records **only local display timing, no player names or network data**; it does not upload to a server. Its default form fields remain null because it cannot observe physical devices or give itself a PASS.
+The local QA panel shows the active renderer, frame intervals and missed-frame share. Select **SAVE QA REPORT (.JSON)** after testing each game. The downloaded `MARBLE-RUSH-PHYSICAL-TV-QA.json` records **only local display timing, no player names or network data**; it does not upload to a server. Its default form fields remain null because it cannot observe physical devices or give itself a PASS.
 
 ## Physical acceptance procedure — no fabricated results
 
@@ -55,14 +55,15 @@ The local QA panel shows the active renderer, frame intervals and missed-frame s
 
 ## Tests/artefacts that MUST be green before requesting merge
 
-- \`tools/test-party-scene-cache.js\`: a single detached (non-DOM) approved scenery buffer, correct invalidation, no second animation loop.
-- \`tools/test-tv-qa.js\` and \`tools/tv-qa-browser-smoke.js\`: QA opt-in isolation, local JSON report, no false hardware claims.
-- \`tools/test-party-ui-v2.js\` and \`tools/test-phase8-integration.js\`: correct mode mapping, no legacy canvases.
-- \`tools/test-brawl.js\`, \`tools/test-brawl-balance.js\`: deterministic real shockwaves, rescues, KO points, 120 seeded CPU playthroughs and comeback rates.
-- \`tools/party-ui-v2-browser-smoke.js\`: five exact new stages, five complete playthroughs, Finale, reset matrix, GP and Derby camera.
-- \`tools/party-ui-v2-multiplayer-smoke.js\`: real two-phone WebSocket controls for all five Party Pack games.
-- \`tools/test-grandprix-regression.js\`: original engine identical to \`main\`.
-- Asset integrity: all **200 approved source files remain byte-for-byte unchanged** against the active baseline \`dev/party-pack-ui-v2-rebuild\`.
+- `tools/test-party-scene-cache.js`: a single detached (non-DOM) approved scenery buffer, correct invalidation, no second animation loop.
+- `tools/test-tv-qa.js` and `tools/tv-qa-browser-smoke.js`: QA opt-in isolation, local JSON report, no false hardware claims.
+- `tools/test-party-ui-v2.js` and `tools/test-phase8-integration.js`: correct mode mapping, no legacy canvases.
+- `tools/test-brawl.js`, `tools/test-brawl-balance.js`: deterministic real shockwaves, rescues, KO points, 120 seeded CPU playthroughs and comeback rates.
+- `tools/party-rejoin-browser-smoke.js`: auto-resume a saved room, preserve player ID and prevent duplicate-tab controller takeover.
+- `tools/party-ui-v2-browser-smoke.js`: five exact new stages, five complete playthroughs, Finale, reset matrix, GP and Derby camera.
+- `tools/party-ui-v2-multiplayer-smoke.js`: real two-phone WebSocket controls for all five Party Pack games.
+- `tools/test-grandprix-regression.js`: original engine identical to `main`.
+- Asset integrity: all **200 approved source files remain byte-for-byte unchanged** against the active baseline `dev/party-pack-ui-v2-rebuild`.
 - Review package: five side-by-side screenshots, phone controls, frame and input reports, compiled preview. No artifact is a substitute for a physical test.
 
 ## Stop conditions
