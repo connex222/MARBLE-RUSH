@@ -53,3 +53,7 @@ Performance changes: the fragment shader computes expensive specular highlights 
 ## Phase 1C — screenshot-driven composition corrections
 
 The first reviewed headless screenshot showed three defects despite passing gameplay QA: the full-screen approved image was vertically inverted, the finish gantry crossed the contenders diagonally, and the raised arena base consumed excessive TV height. This revision corrects the environment UV upload orientation, replaces the finish arch with an unobtrusive back-side marker (the physically checkered finish still spans each lane), reduces podium thickness, and places small runner labels to the left of their 3D marbles rather than above them. Tests explicitly prevent these three regressions. All input/physics/game logic remains untouched.
+
+## Phase 1D — eliminate oversized inert apron
+
+The approved 1C screenshot still showed a huge dark empty foreground beneath the track. The root cause was the 3D platform's 15-unit half-depth against only about 7 units of playable six-lane width—not the platform height. This correction tightens all three plinth layers to the actual arena footprint while preserving positions, collisions, camera and original assets. It also updates the QA guard so the oversized slab cannot silently return.
