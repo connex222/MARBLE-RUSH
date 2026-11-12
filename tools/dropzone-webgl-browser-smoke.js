@@ -93,9 +93,12 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
     scored:st.events.some(e=>e.kind==='bucket'&&e.round===1),
     count:st.events.length};
   });
-  const inFlight=Number.isFinite(flight.x)&&Number.isFinite(flight.y)&&flight.y>35;
-  assert.ok(inFlight||(flight.turn>=1&&flight.scored),
-    'Drop must be either physically airborne or officially scored: '+JSON.stringify(flight));
+  // A newly released marble legitimately starts at y=35 with positive vy.
+  // A two-frame headless browser may inspect it before its first physics step.
+  const releasedOrMoving=Number.isFinite(flight.x)&&
+    Number.isFinite(flight.y)&&flight.y>=35&&Number.isFinite(flight.vy)&&flight.vy>0;
+  assert.ok(releasedOrMoving||(flight.turn>=1&&flight.scored),
+    'Drop must be released, airborne or officially scored: '+JSON.stringify(flight));
   assert.ok(flight.draw.frame>first.graphics.frame,'3D renderer stopped submitting frames');
   await page.screenshot({path:'qa-dropzone-webgl-flight.png'});
   // Drive deterministic engine until that dropped marble scores.
