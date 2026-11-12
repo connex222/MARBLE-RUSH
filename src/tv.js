@@ -1303,7 +1303,7 @@
      ====================================================================== */
   let world = null, state = 'boot', stateT = 0, raceNo = 0;
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
-  // Phase 2: only Grand Prix is playable; other modes remain locked until tested.
+  // Grand Prix remains isolated; five Party Pack games use the exclusive stage.
   let selectedMode = 'grandprix';
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
@@ -1563,6 +1563,7 @@
       else MODES[selectedMode]?.onInput(pid,k);
     },
     onAction(pid, a, v) {
+      MarbleRushQA.noteAction(state,a);
       const isVip = pid === vipId() || pid === 'tv';
       if (a === 'swirl' && players.get(pid)) { players.get(pid).swirl = (v | 0) % SWIRLS.length; if (state === 'lobby') renderLobby(); return; }
       if (a === 'vote') { this.castVote(pid, v | 0); return; }
@@ -2165,6 +2166,7 @@
     requestAnimationFrame(frame);
     let dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     perfTick(dt);
+    MarbleRushQA.frame(now,state);
     if (state === 'lobby' && attractMode && now < attractUntil) {
       const c = $('#partyAttractCanvas').getContext('2d');
       PartyAttract.preview(c, attractMode, (now - attractFrom)/1000);
@@ -2460,5 +2462,6 @@
   // test hooks for automated checks
   window.__MR = { Audio_, Game, players, MODES, PartyNight, PartyCoordinator, DropZone, BowlBrawl, MarbleDerby, MarbleCurling, get partyRun() { return partyRun; }, get partyLength() { return partyLength; }, get selectedMode() { return selectedMode; }, get world() { return world; }, get state() { return state; }, get partyScreen(){return MarblePartyScreen;}, get derbyCamera(){return MarblePartyUI.derbyFraming;}, get brawlCamera(){return MarbleBrawlUI.framing;}, addCpu, addKeyboard, settings };
 
+  MarbleRushQA.init();
   requestAnimationFrame(frame);
 })();
