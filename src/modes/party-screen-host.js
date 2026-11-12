@@ -53,6 +53,7 @@ const MarblePartyScreen=(()=>{
     }
     const def=definitions[name];
     MarbleSceneCache.keepOnly(name);
+    MarblePartyClock.reset();
     for(const id of allPanels){
       const element=document.getElementById(id);
       if(!element)throw Error('Missing Party Pack panel: '+id);
@@ -153,6 +154,7 @@ const MarblePartyScreen=(()=>{
         r.slowIntervals/r.intervals:0,
       renderFailures:r.renderFailures,atmosphereCache:MarbleSceneCache.stats(),active:active===r.mode,
       raceCanvasHidden:!!raceCanvas?.hidden,
+      authoritativeClock:MarblePartyClock.stats(),
       graphics:active==='derby'&&derby3dReview?MarbleDerbyWebGL.debug():null
     });
   }

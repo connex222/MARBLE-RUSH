@@ -9,6 +9,9 @@ on:
       - src/modes/party-ui-v2.js
       - tools/derby-webgl-browser-smoke.js
       - tools/derby-webgl-render-benchmark.js
+      - src/modes/party-frame-clock.js
+      - tools/test-party-frame-clock.js
+      - src/tv.js
       - tools/test-derby-webgl.js
       - tools/build.js
       - .github/workflows/derby-webgl-pilot.yml
@@ -34,6 +37,9 @@ jobs:
           node --check src/modes/party-ui-v2.js
           node --check tools/derby-webgl-browser-smoke.js
           node --check tools/derby-webgl-render-benchmark.js
+          node --check src/modes/party-frame-clock.js
+          node --check tools/test-party-frame-clock.js
+          node tools/test-party-frame-clock.js
           node --check tools/test-derby-webgl.js
           node tools/test-derby-webgl.js
           node tools/test-party-ui-v2.js

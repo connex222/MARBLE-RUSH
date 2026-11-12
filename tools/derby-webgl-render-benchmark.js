@@ -44,6 +44,7 @@ const samples=[];
      mode:window.__MR.MODES.derby.session().state.phase,
      metrics:window.__MR.partyScreen.telemetry(),
      gpu:MarbleDerbyWebGL.debug(),
+     clock:MarblePartyClock.stats(),
      stageBackground:!!document.getElementById('partyStage').style.backgroundImage,
      isolated:window.__MR.partyScreen.assertExclusive()
     }));
@@ -55,11 +56,17 @@ const samples=[];
     assert.equal(end.gpu.scenicSource,backend==='css'?'css-static-approved-art':'webgl-fullscreen-texture');
     assert.equal(end.stageBackground,backend==='css');
     assert.deepEqual(pageErrors,[]);
+    // This is the P0 invariant the earlier test exposed: eight seconds
+    // of game time must not turn into two when SwiftShader renders slowly.
+    const engineSeconds=end.gameTime-start.gameTime;
+    assert.ok(engineSeconds>=elapsed*.75,
+      'Low FPS slowed authoritative Derby clock: '+engineSeconds.toFixed(2)+' game seconds / '+elapsed.toFixed(2)+' wall seconds');
     const result={backend,environment:'Playwright Chromium + SwiftShader software renderer',
      hardwareCertified:false,windowPixels:[1920,1080],requestedSeconds:seconds,
      elapsedSeconds:+elapsed.toFixed(2),sampledFrames:frames,
      deliveredFrameRate:+(frames/elapsed).toFixed(2),
-     engineSeconds:+(end.gameTime-start.gameTime).toFixed(2),
+     engineSeconds:+engineSeconds.toFixed(2),
+     clockCatchUp:end.clock,
      renderer:end.gpu.gpuLabel,canvasBacking:end.gpu.backingPixels,
      qualityScale:end.gpu.qualityScale,drawCalls:end.gpu.drawCalls,
      hostP95FrameIntervalMs:end.metrics.p95FrameIntervalMs,

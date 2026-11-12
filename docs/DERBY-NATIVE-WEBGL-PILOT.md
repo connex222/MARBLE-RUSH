@@ -72,3 +72,12 @@ A QA-only \`?derby3d=1&derbyBackdrop=gpu\` option retains the older full-screen 
 The camera now tilts more top-down, framing all six lanes lower in the TV picture, and the enlarged marble models rotate by displayed world distance divided by visible radius. This corrects a prior 3D-visual roll mismatch without modifying the Derby engine, betting, phone networking or other game modes.
 
 The remaining release blockers are **physical-TV performance at 1080p on the target GPU**, high-quality visual acceptance at television distance, and independent real-phone Wi-Fi/reconnect testing.
+
+
+## P0 — clock-correct 5 FPS versus 60 FPS gameplay
+
+The longer software-Chromium A/B discovered a **real rules-clock bug** in the TV's Party Pack host: each rendered frame was capped to 0.05 seconds of gameplay, so an eight-second interval at approximately 4.5 FPS advanced the authoritative game clock only 1.75–1.85 seconds. This was **not** a trustworthy performance/synchronisation outcome.
+
+New \`src/modes/party-frame-clock.js\` is the bounded wall-time adapter. Each visible Party Pack frame integrates up to 0.5 seconds of actual elapsed time using at most ten 0.05-second calls into the *unchanged* authoritative mode engine. It stops immediately if an engine finishes and routes to another screen. It protects against massive resumption gaps after a tab sleeps. The original Grand Prix frame logic and physics remain untouched.
+
+A dedicated deterministic test runs the exact same Derby rules under 60 FPS and 5 FPS display schedules, proving eight seconds of gameplay elapse in each while the six marbles, phase and gems agree. A revised browser A/B rejects results where simulated game time is less than 75% of elapsed wall time, and records any discarded time for independent assessment. This is a P0 reliability fix; it does not claim software SwiftShader has become fast enough.
