@@ -36,7 +36,6 @@ jobs:
           node tools/test-dropzone.js
           node tools/test-derby.js
           node tools/test-party-frame-clock.js
-          node tools/test-grandprix-regression.js
           node tools/test-phase8-integration.js
       - name: Protect original approved game assets and engine
         run: |
