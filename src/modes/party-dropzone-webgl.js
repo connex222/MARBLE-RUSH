@@ -512,6 +512,8 @@ const MarbleDropZoneWebGL=(()=>{
  }
  function render(s,assets,opts={}){
   if(!gl||contextLost||!s||!Array.isArray(s.pegs)||s.pegs.length!==85)return false;
+  // Resize before drawing so a quality transition never wipes a finished TV frame.
+  tuneQuality();
   const vp=mul(perspective(39*DEG,canvas.width/canvas.height,.4,120),
     // Camera pulls back just enough to clear the DROP ZONE masthead
     // without sliding under the right prize-table HUD.
@@ -546,7 +548,6 @@ const MarbleDropZoneWebGL=(()=>{
   setBackdrop(assets);updateBins(s,vp);
   MarblePartyUI.updateDropZone(s);
   updateHardwareOverlay();
-  tuneQuality();
   frame++;
   if(frame%120===0&&gl.getError()!==gl.NO_ERROR)return false;
   return true;
