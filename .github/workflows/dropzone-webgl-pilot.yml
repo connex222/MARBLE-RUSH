@@ -1,0 +1,73 @@
+name: MARBLE RUSH Drop Zone genuine WebGL pilot — review only
+on:
+  push:
+    branches:
+      - improvement/marble-rush-dropzone-real3d
+    paths:
+      - src/modes/party-dropzone-webgl.js
+      - src/modes/party-screen-host.js
+      - src/modes/party-ui-v2.js
+      - tools/dropzone-webgl-browser-smoke.js
+      - tools/dropzone-webgl-performance.js
+      - tools/OPEN-DROPZONE-3D-PREVIEW.bat
+      - docs/DROPZONE-NATIVE-WEBGL-PILOT.md
+      - tools/test-dropzone-webgl.js
+      - tools/build.js
+      - .github/workflows/dropzone-webgl-pilot.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dropzone-webgl:
+    name: Native 3D Plinko, genuine physics and cross-mode canvas QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Check source and gameplay contracts
+        run: |
+          node --check src/modes/party-dropzone-webgl.js
+          node --check src/modes/party-screen-host.js
+          node --check src/modes/party-ui-v2.js
+          node --check tools/dropzone-webgl-browser-smoke.js
+          node --check tools/dropzone-webgl-performance.js
+          node tools/test-dropzone-webgl.js
+          node tools/test-dropzone.js
+          node tools/test-derby.js
+          node tools/test-party-frame-clock.js
+          node tools/test-phase8-integration.js
+      - name: Protect original approved game assets and engine
+        run: |
+          git fetch --depth=1 origin main
+          git diff --quiet FETCH_HEAD HEAD -- assets/raw src/engine.js src/modes/grandprix.js src/modes/dropzone.js src/modes/derby.js
+      - name: Build standalone TV and phone HTML
+        run: npm run build
+      - name: Run native WebGL and canvas-switch browser QA
+        run: |
+          set -e
+          npm install --no-save --no-audit --no-fund playwright@1.57.0
+          npx playwright install --only-shell chromium
+          PORT=35993 node server/server.js > /tmp/mr-dz3d.log 2>&1 &
+          game_pid=$!
+          trap 'kill "$game_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/dropzone-webgl-browser-smoke.js
+          node tools/dropzone-webgl-performance.js
+      - name: Upload real-renderer test artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dropzone-real-webgl-review
+          if-no-files-found: ignore
+          path: |
+            qa-dropzone-webgl-*.png
+            qa-dropzone-webgl-*.json
+          retention-days: 7
