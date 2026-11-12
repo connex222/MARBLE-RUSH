@@ -10,6 +10,8 @@ on:
       - src/tv.js
       - src/modes/party-ui-v2.js
       - src/modes/party-screen-host.js
+      - src/modes/party-scene-cache.js
+      - tools/test-party-scene-cache.js
       - src/modes/derby.js
       - src/modes/dropzone.js
       - src/modes/brawl.js
@@ -41,9 +43,10 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Validate every surviving rules engine and new UI source
         run: |
-          for f in src/tv.js src/modes/registry.js src/modes/party-screen-host.js src/modes/party-ui-v2.js src/modes/party-brawl-ui-v2.js src/modes/party-curling-ui-v2.js src/modes/party-golf-ui-v2.js src/modes/derby.js src/modes/dropzone.js src/modes/brawl.js src/modes/curling.js src/modes/golf.js tools/build.js; do
+          for f in src/tv.js src/modes/registry.js src/modes/party-scene-cache.js src/modes/party-screen-host.js src/modes/party-ui-v2.js src/modes/party-brawl-ui-v2.js src/modes/party-curling-ui-v2.js src/modes/party-golf-ui-v2.js src/modes/derby.js src/modes/dropzone.js src/modes/brawl.js src/modes/curling.js src/modes/golf.js tools/build.js; do
             node --check "$f"
           done
+          node tools/test-party-scene-cache.js
           node tools/test-party-foundations.js
           node tools/test-derby.js
           node tools/test-dropzone.js
