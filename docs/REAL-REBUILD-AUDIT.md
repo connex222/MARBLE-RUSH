@@ -150,6 +150,10 @@ The approved `assets/raw` Party Pack deliverables are **PNG raster images** (sty
 
 Capture matching 1920×1080 TV shots for Derby, Drop Zone, Brawl, Curling and Golf from both the previous development build and the improvement build; label source commit and phase. Pair each with relevant phone screenshots, gameplay state trace and CI artefact. Visual changes to unaffected game layouts may be minimal: **do not falsely market unchanged art as a new generation of 3D assets**. All changed architecture and mode behaviour must be documented.
 
+## 12 November 2026 performance pass — a single detached backdrop raster
+
+Each mode now reuses a single 1920×1080 detached raster of **only approved static art and ambient lighting** for up to 850 ms, via `MarbleSceneCache`. Physics, hazards, camera, balls, collisions, scores and results remain live, on the same exclusive visible canvas. The cache is not a game layer, has no independent frame loop, is cleared on mode switch and never mounts a second DOM element. Its one-buffer memory ceiling is 8,294,400 bytes; automated tests verify this and active mode ownership. Speed improvements must still be established from measured frames, not asserted from architecture alone.
+
 ## 12 November 2026 review — what is verified and what remains inadequate
 
 **Baseline provenance:** five before images come from `dev/party-pack-ui-v2-rebuild`'s
