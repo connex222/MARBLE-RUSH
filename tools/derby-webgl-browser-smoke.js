@@ -69,7 +69,7 @@ const fs=require('node:fs');
    assert.equal(during.phase,'racing');
    assert.ok(during.horseX.some(x=>x>0),'Physics engine did not progress');
    assert.ok(during.leadText.startsWith('LIVE LEADER'),'Leader HUD not real state');
-   assert.ok(during.drawCalls>=40&&during.isolated,'3D track was not drawn during the real race');
+   assert.ok(during.drawCalls>=10&&during.drawCalls<=35&&during.isolated,'Batched 3D track was not drawn during the real race');
    await page.screenshot({path:'qa-derby-webgl-3d-racing.png'});
    // Capture the same five-heat rules engine completing, with no new rules.
    await page.evaluate(()=>{
