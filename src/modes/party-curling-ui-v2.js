@@ -231,7 +231,9 @@ const MarbleCurlingUI=(()=>{
    const c=$('partyStageCanvas')?.getContext('2d',{alpha:false});
    if(!c||!s||!Array.isArray(s.stones))return false;
    c.save();c.setTransform(1,0,0,1,0,0);
-   bg(c,assets,s.elapsed||0);
+   MarbleSceneCache.paint('curling',c,assets,
+     ['pp_curling_bg','pp_curling_prop_alpine_lodge','pp_curling_prop_ice_blocks'],
+     brush=>bg(brush,assets,s.elapsed||0));
    // A single shallow broadcast camera transforms BOTH ice and every
    // simulated stone. Results and the TV control HUD remain horizontal.
    c.save();
