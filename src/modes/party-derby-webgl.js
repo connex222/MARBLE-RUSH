@@ -119,7 +119,7 @@ const MarbleDerbyWebGL=(()=>{
     'if(ink.a<0.12)discard;}',
     'ink.rgb*=mix(vec3(1.0),vVertexColor,clamp(uUseVertexColor,0.0,1.0));',
     'if(uUnlit>0.5){gl_FragColor=ink;return;}',
-    'vec3 n=normalize(vNormal);'
+    'vec3 n=normalize(vNormal);',
     'float sun=max(dot(n,normalize(vec3(-0.37,0.87,0.52))),0.0);',
     'float fill=max(dot(n,normalize(vec3(0.62,0.19,-0.77))),0.0);',
     'float light=0.42+sun*0.51+fill*0.18;',
