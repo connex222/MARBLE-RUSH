@@ -13,6 +13,7 @@ on:
       - src/modes/party-scene-cache.js
       - src/modes/party-tv-qa.js
       - tools/test-tv-qa.js
+      - tools/tv-qa-browser-smoke.js
       - tools/test-party-scene-cache.js
       - src/modes/derby.js
       - src/modes/dropzone.js
@@ -101,6 +102,7 @@ jobs:
             sleep 1
           done
           node tools/party-ui-v2-browser-smoke.js
+          node tools/tv-qa-browser-smoke.js
       - name: Verify two phones use five new modes, including Golf, over WebSockets
         run: |
           set -e
@@ -122,5 +124,6 @@ jobs:
             qa-ui-v2-*.png
             qa-real-*.png
             qa-real-*.json
+            qa-tv-diagnostics-headless-smoke.json
             public/
           retention-days: 7
