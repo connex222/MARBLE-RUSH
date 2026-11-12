@@ -30,7 +30,7 @@ const MarbleRushQA=(()=>{
       'width:320px;max-width:32vw;border:2px solid #e6d39b;border-radius:12px;'+
       'background:rgba(6,16,28,.93);color:#f9f4df;padding:12px;'+
       'box-sizing:border-box;font:600 14px/1.4 ui-monospace,Consolas,monospace;'+
-      'box-shadow:0 7px 25px #0009;pointer-events:auto';
+      'box-shadow:0 7px 25px #0009;pointer-events:none';
    const heading=document.createElement('strong');
    heading.textContent='MARBLE RUSH · TV QA (LOCAL)';
    heading.style.cssText='display:block;color:#ffe0a0;font-size:14px';
@@ -42,7 +42,8 @@ const MarbleRushQA=(()=>{
    save.type='button';save.id='marbleRushQaSave';
    save.textContent='SAVE QA REPORT (.JSON)';
    save.style.cssText='width:100%;background:#e9bd75;color:#17253b;'+
-      'border:0;border-radius:7px;padding:9px;cursor:pointer;font-weight:900';
+      'border:0;border-radius:7px;padding:9px;cursor:pointer;font-weight:900;'+
+      'pointer-events:auto';
    save.addEventListener('click',()=>{
      const blob=new Blob([JSON.stringify(report(),null,2)],{type:'application/json'});
      const a=document.createElement('a'),url=URL.createObjectURL(blob);
