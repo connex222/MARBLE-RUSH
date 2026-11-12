@@ -59,7 +59,10 @@ const MarbleRushQA=(()=>{
  }
  function noteAction(mode,action){
    if(!enabled||!MarblePartyScreen.isMode(mode)||typeof action!=='string')return;
-   const item={mode,action:action.slice(0,24),received:performance.now()};
+   const item={mode,action:action.slice(0,24),received:performance.now(),handlerToNextFrameMs:null};
+   // Capture at handler receipt. If the next frame is missing/delayed, leave
+   // latency null rather than silently discarding the action.
+   actions.push(item);if(actions.length>MAX_SAMPLES)actions.shift();
    pending.push(item);
    if(pending.length>80)pending.shift();
  }
@@ -83,13 +86,15 @@ const MarbleRushQA=(()=>{
    }
    // The next animation callback is only a proxy for handler-to-paint delay.
    // It does not assert that a rejected gameplay action changed a pixel.
-   for(const p of pending){
-     if(now>=p.received&&now-p.received<2500){
-       actions.push({mode:p.mode,action:p.action,handlerToNextFrameMs:asNumber(now-p.received)});
-       if(actions.length>MAX_SAMPLES)actions.shift();
+   pending=pending.filter(p=>{
+     const elapsed=now-p.received;
+     if(elapsed>=0&&elapsed<2500){
+       p.handlerToNextFrameMs=asNumber(elapsed);return false;
      }
-   }
-   pending=[];
+     // Some browsers report the scheduled RAF timestamp slightly earlier
+     // than a handler which ran in the same visual frame. Keep until next.
+     return elapsed<2500;
+   });
    if(now-lastUI<600||!lines)return;lastUI=now;
    const r=key?recordFor(key):null;
    const median=r?percentile(r.times,.5):null;
@@ -131,7 +136,10 @@ const MarbleRushQA=(()=>{
      device:{viewport:[innerWidth,innerHeight],pixelRatio:devicePixelRatio,
        visibility:document.visibilityState},
      metrics:modes,
-     handlerToFrameSamples:actions.slice(),
+     handlerToFrameSamples:actions.map(({mode,action,handlerToNextFrameMs})=>({
+       mode,action,handlerToNextFrameMs
+     })),
+     awaitingNextFrame:pending.length,
      rendererIsolationPassed:MarblePartyScreen.active?
        MarblePartyScreen.assertExclusive():null,
      limitations:[
