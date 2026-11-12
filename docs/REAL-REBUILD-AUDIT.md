@@ -149,3 +149,45 @@ The approved `assets/raw` Party Pack deliverables are **PNG raster images** (sty
 ## Evidence process
 
 Capture matching 1920×1080 TV shots for Derby, Drop Zone, Brawl, Curling and Golf from both the previous development build and the improvement build; label source commit and phase. Pair each with relevant phone screenshots, gameplay state trace and CI artefact. Visual changes to unaffected game layouts may be minimal: **do not falsely market unchanged art as a new generation of 3D assets**. All changed architecture and mode behaviour must be documented.
+
+## 12 November 2026 review — what is verified and what remains inadequate
+
+**Baseline provenance:** five before images come from `dev/party-pack-ui-v2-rebuild`'s
+successful CI run `43054153324` (source commit `324010c1`); five after images
+come from improvement-branch CI run `43110470509` (commit `7a4fc67e`).
+Files are the existing `qa-ui-v2-{derby-live,dropzone-aim,brawl-live,curling-aim,golf-aim}.png`.
+The baseline and after screenshots show **very similar visual compositions**:
+the important improvement is removal of duplicate ownership and consolidation
+of physics-driven screen routing, not a completely new series of 3D environments.
+These image pairs are different live moments, **not pixel-matched renders**.
+No claim of upgraded native mesh rendering is justified.
+
+**Automated test evidence:**
+- Five normal complete mode playthroughs and original Grand Prix regression
+  pass; replay/reset isolation runs all five additional modes again.
+- Source-verified no legacy canvases, one live host, shared race canvas hidden,
+  and UI groups hidden unless owned by the current mode.
+- 120 simulated five-round Bowl Brawl matches (40 seeds each at 2, 4 and 8
+  players) ran with real physics: mid-match leader reversal 40.0%, 47.5% and
+  42.5% respectively; average knockouts 1.925, 6.3 and 16.1 per match.
+  These are **CPU simulations**, not measured human excitement.
+- Five Playwright phone-to-TV control samples: Derby 77ms, Drop Zone 124ms,
+  Brawl 100ms, Curling 111ms, Golf 115ms. Median 111ms; five-sample maximum
+  (reported p95) 124ms. **Do not interpret five observations as a robust
+  network p95 or physical Wi-Fi latency**.
+
+**Open critical performance issue:** Initial one-second headless Chromium CI
+samples at 1920x1080 reported just 18.6 FPS Derby, 16.2 Drop Zone,
+20.7 Brawl, 18.3 Curling and 17.4 Golf. Average actual draw calls
+were 0.56–1.75ms, so it is **not proven** that Canvas drawing itself is the
+bottleneck. These are small and hardware-unrepresentative browser-CI samples.
+Instrumentation now captures p95 frame interval, p95 draw time and more
+frames per mode. Nevertheless **these results are not a 60fps performance pass**.
+Measure on the user's target Windows/TV hardware before approving.
+
+**Release status remains BLOCKED:** manual 1080p/4K TV usability, 2–4 physical
+mobile devices on the same Wi-Fi, input latency and reconnection, long sessions,
+and human judgement of hazard clarity/agency and spectator comprehension.
+A genuine artistic step-change beyond the current approved raster dioramas
+would require separate production art work, not more CSS layers. Preserve the
+original image bytes and Grand Prix architecture throughout.
