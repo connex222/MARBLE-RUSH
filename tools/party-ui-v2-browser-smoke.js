@@ -40,6 +40,14 @@ const fs=require('node:fs');
    assert.equal(report.oldGrandPrixCanvasHidden,true);
    assert.ok(report.performance.frames>=2,mode+' rendered no continuous frames');
    assert.equal(report.performance.renderFailures,0,mode+' renderer failed to paint');
+   assert.equal(report.performance.atmosphereCache?.active,mode,
+     mode+' did not own the correct detached background buffer');
+   assert.equal(report.performance.atmosphereCache?.bufferCount,1,
+     mode+' created multiple background buffers or none');
+   assert.ok(report.performance.atmosphereCache.hits>=5,
+     mode+' failed to reuse the approved scenery between frames');
+   assert.ok(report.performance.atmosphereCache.allocatedBytes<=1920*1080*4,
+     mode+' retained too much scenery memory');
    assert.ok(report.performance.measurements>=30,
      mode+' insufficient measured frame intervals for even a CI smoke');
    assert.ok(Number.isFinite(report.performance.p95FrameIntervalMs)&&
