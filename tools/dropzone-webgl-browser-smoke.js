@@ -47,6 +47,10 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   assert.equal(first.graphics.meshTemplatesCached,true,'3D shape topology cache absent');
   assert.equal(first.graphics.materialAttributeFloats,10);
   assert.equal(first.graphics.pixelProbeEnabled,true);
+  assert.equal(first.graphics.autoScaleEnabled,true);
+  assert.equal(first.graphics.resolutionScale,.55);
+  assert.equal(await page.evaluate(()=>MarbleDropZoneWebGL.recommendScale(12,.8,.55,1)),.66);
+
   assert.ok(first.graphics.staticTriangles>18000&&
     first.graphics.staticTriangles<28000,
     'Real fixed 3D pegs should be both present and less costly: '+first.graphics.staticTriangles);
@@ -170,6 +174,27 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   assert.equal(restored.turn,recovery.before.turn);
   assert.ok(restored.graphics.staticTriangles>18000);
   proof.gpuRecovery={supported:true,restored};
+  // Resize the actual live GPU canvas while preserving the same physical
+  // camera aspect, 85 pegs, rules state, score and single-renderer ownership.
+  const scaled=await page.evaluate(()=>{
+    const before=MarbleDropZoneWebGL.debug().resolution;
+    const accepted=MarbleDropZoneWebGL.setResolutionScale(.48);
+    const g=MarbleDropZoneWebGL.debug();
+    const c=document.getElementById('partyStageCanvas');
+    const st=window.__MR.MODES.dropzone.session().state;
+    return {before,accepted,after:g.resolution,scale:g.resolutionScale,
+      auto:g.autoScaleEnabled,owner:window.__MR.partyScreen.assertExclusive(),
+      score:st.roster[0].score,turn:st.turn};
+  });
+  assert.equal(scaled.accepted,true);
+  assert.equal(scaled.scale,.48);
+  assert.equal(scaled.auto,false,'Manual review scale must disable automatic changes');
+  assert.ok(scaled.after[0]<scaled.before[0]);
+  assert.equal(scaled.after[0]*9,scaled.after[1]*16);
+  assert.equal(scaled.owner,true);
+  assert.equal(scaled.score,recovery.before.score);
+  assert.equal(scaled.turn,recovery.before.turn);
+
   await page.screenshot({path:'qa-dropzone-webgl-after-gpu-restore.png'});
   // Switch back to the normal Derby Canvas2D, no WebGL remnants.
   await page.evaluate(()=>window.__MR.Game.toLobby());

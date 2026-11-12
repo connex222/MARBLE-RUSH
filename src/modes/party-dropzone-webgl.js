@@ -15,6 +15,9 @@ const MarbleDropZoneWebGL=(()=>{
  let labels=null,notice=null,contextLost=false,contextLossHandler=null,contextRestoreHandler=null;
  let lastEventKey='',fpsLost=0,geometryProbe=null,meshTemplates=null;
  let staticTriangles=0,dynamicTriangles=0,pixelProbeEnabled=false;
+ let autoScaleEnabled=false,qualityFloor=.5,qualityCeiling=1,materialForced=false;
+ let scaleWindowAt=0,scaleWindowFrames=0,scaleSampleFps=0,scaleLowWindows=0,scaleHighWindows=0;
+ let lastScaleAt=0,scaleAdjustments=0,lastScaleReason='initial';
  let contextLosses=0,contextRestores=0;
  let surfaceQuality='basic',reviewOverlay=null,reviewFrames=0,reviewFps=0,reviewFrameAt=0;
  const LIGHT_CAMERA=new Float32Array([4.9,1.0,32.5]);
@@ -284,6 +287,63 @@ const MarbleDropZoneWebGL=(()=>{
   bindMesh(meshMoving);
  }
 
+ // Pure deterministic policy — suitable for direct Node tests, no timers
+ // or hardware assumptions. Real changes require a whole FPS sample window.
+ function recommendScale(fps,current,minScale,maxScale){
+  if(!Number.isFinite(fps)||fps<=0)return current;
+  if(fps<25&&current>minScale)
+   return Math.max(minScale,Math.round(current*.82*100)/100);
+  if(fps>56&&current<maxScale)
+   return Math.min(maxScale,Math.round((current+.09)*100)/100);
+  return current;
+ }
+ function applyScale(next,why,now){
+  const target=clamp(Math.round(next*100)/100,qualityFloor,qualityCeiling);
+  if(Math.abs(target-quality)<.005)return false;
+  quality=target;resize();
+  lastScaleAt=now;scaleAdjustments++;lastScaleReason=why;
+  return true;
+ }
+ function tuneQuality(){
+  if(!autoScaleEnabled)return;
+  const now=performance.now();
+  if(typeof document!=='undefined'&&document.hidden){
+   scaleWindowAt=now;scaleWindowFrames=0;scaleLowWindows=0;scaleHighWindows=0;
+   return;
+  }
+  scaleWindowFrames++;
+  const span=now-scaleWindowAt;
+  if(span<4000||scaleWindowFrames<6)return;
+  scaleSampleFps=scaleWindowFrames*1000/span;
+  scaleWindowAt=now;scaleWindowFrames=0;
+  scaleLowWindows=scaleSampleFps<25?scaleLowWindows+1:0;
+  scaleHighWindows=scaleSampleFps>56?scaleHighWindows+1:0;
+  if(now-lastScaleAt<9500)return;
+  // First shed expensive reflections before reducing the entire scene's
+  // pixel resolution; retain explicit material override for art reviews.
+  if(scaleLowWindows>=2&&surfaceQuality==='premium'&&!materialForced){
+   surfaceQuality='basic';lastScaleAt=now;
+   lastScaleReason='low-fps-material';scaleAdjustments++;
+   scaleLowWindows=0;return;
+  }
+  if(scaleLowWindows>=2){
+   if(applyScale(recommendScale(scaleSampleFps,quality,qualityFloor,qualityCeiling),
+     'low-fps-resolution',now))scaleLowWindows=0;
+  }else if(scaleHighWindows>=4){
+   const raised=recommendScale(scaleSampleFps,quality,qualityFloor,qualityCeiling);
+   if(applyScale(raised,'high-fps-resolution',now))scaleHighWindows=0;
+   else if(surfaceQuality==='basic'&&!materialForced&&quality>=qualityCeiling){
+    surfaceQuality='premium';lastScaleAt=now;scaleAdjustments++;
+    lastScaleReason='high-fps-material';scaleHighWindows=0;
+   }
+  }
+ }
+ function setResolutionScale(next){
+  if(!gl||!Number.isFinite(next)||next<.35||next>1)return false;
+  autoScaleEnabled=false;
+  return applyScale(next,'manual-review',performance.now())||
+    Math.abs(quality-clamp(Math.round(next*100)/100,qualityFloor,qualityCeiling))<.005;
+ }
  function resize(){
   if(!canvas)return;
   canvas.width=Math.round(1920*quality/16)*16;
@@ -324,12 +384,25 @@ const MarbleDropZoneWebGL=(()=>{
   const ext=gl.getExtension('WEBGL_debug_renderer_info');
   debugGPU=String(ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER));
   const software=/swiftshader|llvmpipe|software/i.test(debugGPU);
-  quality=software?.55:1;
-  const forced=new URLSearchParams(location.search).get('dropzoneMaterial');
-  surfaceQuality=forced==='basic'||forced==='premium'?forced:(software?'basic':'premium');
+  const params=new URLSearchParams(location.search);
+  qualityFloor=software?.40:.55;qualityCeiling=software?.55:1;
+  const forcedScale=params.get('dropzoneScale'),numberScale=Number(forcedScale);
+  const hasManualScale=forcedScale!==null&&forcedScale!==''&&
+    Number.isFinite(numberScale)&&numberScale>=.35&&numberScale<=1;
+  if(hasManualScale)qualityFloor=Math.min(qualityFloor,numberScale);
+  if(hasManualScale)qualityCeiling=Math.max(qualityCeiling,numberScale);
+  quality=hasManualScale?clamp(numberScale,qualityFloor,qualityCeiling):
+    qualityCeiling;
+  autoScaleEnabled=!hasManualScale&&params.get('dropzoneAdaptive')!=='0';
+  const forced=params.get('dropzoneMaterial');
+  materialForced=forced==='basic'||forced==='premium';
+  surfaceQuality=materialForced?forced:(software?'basic':'premium');
   frame=0;drawCalls=0;backdropUrl='';contextLost=false;fpsLost=0;
   lastEventKey='';geometryProbe=null;reviewFrames=0;reviewFps=0;reviewFrameAt=performance.now();
   staticTriangles=0;dynamicTriangles=0;contextLosses=0;contextRestores=0;
+  scaleWindowAt=performance.now();scaleWindowFrames=0;scaleSampleFps=0;
+  scaleLowWindows=0;scaleHighWindows=0;lastScaleAt=scaleWindowAt;
+  scaleAdjustments=0;lastScaleReason='initial';
   // Reading pixels synchronously stalls a real GPU: restrict readback to
   // an explicit diagnostic query. Normal play and benchmarks never do it.
   pixelProbeEnabled=new URLSearchParams(location.search).get('probe3d')==='1';
@@ -370,6 +443,7 @@ const MarbleDropZoneWebGL=(()=>{
   canvas=null;gl=null;program=null;meshCube=null;meshSphere=null;meshStatic=null;meshMoving=null;
   loc=null;resources=[];meshTemplates=null;backdropUrl='';contextLost=false;
   reviewFrames=0;reviewFps=0;staticTriangles=0;dynamicTriangles=0;pixelProbeEnabled=false;
+  autoScaleEnabled=false;scaleWindowFrames=0;scaleLowWindows=0;scaleHighWindows=0;
  }
  function setBackdrop(assets){
   const image=assets?.pp_dropzone_bg;
@@ -432,7 +506,9 @@ const MarbleDropZoneWebGL=(()=>{
   reviewFps=reviewFrames/elapsed;reviewFrames=0;reviewFrameAt=now;
   reviewOverlay.textContent='REAL 3D · '+surfaceQuality.toUpperCase()+
     ' · '+reviewFps.toFixed(1)+' FPS · '+canvas.width+'x'+canvas.height+
-    ' · '+drawCalls+' draws\n'+debugGPU.slice(0,80);
+    ' · '+drawCalls+' draws · scale '+quality.toFixed(2)+
+    (autoScaleEnabled?' AUTO':' FIXED')+'\n'+
+    lastScaleReason+' · '+debugGPU.slice(0,70);
  }
  function render(s,assets,opts={}){
   if(!gl||contextLost||!s||!Array.isArray(s.pegs)||s.pegs.length!==85)return false;
@@ -470,6 +546,7 @@ const MarbleDropZoneWebGL=(()=>{
   setBackdrop(assets);updateBins(s,vp);
   MarblePartyUI.updateDropZone(s);
   updateHardwareOverlay();
+  tuneQuality();
   frame++;
   if(frame%120===0&&gl.getError()!==gl.NO_ERROR)return false;
   return true;
@@ -482,6 +559,8 @@ const MarbleDropZoneWebGL=(()=>{
   originalRulesModified:false,geometryProbe,surfaceQuality,
   hardwareFpsSample:reviewFps,hardwareQaOverlayActive:!!reviewOverlay,
   materialAttributeFloats:VERTEX_STRIDE,
+  resolutionScale:quality,qualityFloor,qualityCeiling,autoScaleEnabled,
+  scaleSampleFps,scaleAdjustments,lastScaleReason,
   staticTriangles,dynamicTriangles,pixelProbeEnabled,
   contextLost,contextLosses,contextRestores,
   meshTemplatesCached:!!meshTemplates,cameraTarget:[3.0,0,0],
@@ -491,5 +570,6 @@ const MarbleDropZoneWebGL=(()=>{
   surfaceQuality=next;return true;
  }
  return Object.freeze({mount,unmount,draw:render,debug,setSurfaceQuality,
+   setResolutionScale,recommendScale,
    get canvas(){return canvas;},get active(){return !!gl&&!contextLost;}});
 })();

@@ -83,3 +83,10 @@ one canvas. It saves a separate restored-scene screenshot.
 This test is limited to software Chromium; it is not proof of physical-TV
 driver stability, power suspension, network reconnect or a 20-minute session.
 If restoration breaks, CI fails and PR #55 must remain a draft.
+
+
+## Adaptive TV GPU budget (review-only)
+
+The experimental renderer now measures displayed frames in 4-second windows and can reduce its WebGL backing resolution **without modifying world coordinates, physics, game clock, phone controls or camera geometry**. There are hard floors (55% on hardware GPU, 40% on detected software renderer) and a 9.5-second cooldown between changes. Two consecutive slow windows (below 25 FPS) are needed before a downgrade; for hardware GPU the unforced premium material pass is disabled first. Four sustained fast windows (above 56 FPS) permit gradual recovery. The monitor labels AUTO or FIXED and records the last adjustment reason; the quality telemetry exposes exact samples and transitions.
+
+Review overrides: `&dropzoneAdaptive=0` disables automatic changes. `&dropzoneScale=0.60` requests a fixed backing scale and also disables automatic changes. Explicit `&dropzoneMaterial=premium` or `basic` is respected by the policy. The browser smoke test covers an actual live WebGL backing resize after graphics-context restoration, with score, turn and canvas ownership preserved. All production default screens remain unchanged.

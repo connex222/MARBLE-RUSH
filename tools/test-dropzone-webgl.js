@@ -35,6 +35,11 @@ assert.ok(gl.includes('contextLosses=0,contextRestores=0')&&
  gl.includes('contextRestores++')&&
  gl.includes('setup();contextRestores++;contextLost=false;'),
  'Do not claim WebGL recovery without rebuilding actual GPU resources');
+assert.ok(gl.includes('function recommendScale(')&&
+ gl.includes('function tuneQuality()')&&gl.includes("get('dropzoneAdaptive')!=='0'")&&
+ gl.includes('materialForced')&&gl.includes('qualityFloor=software?.40:.55')&&
+ gl.includes('resize();')&&gl.includes('setResolutionScale,recommendScale,'),
+ 'Automatic GPU resolution hysteresis, software floor, material fallback and manual review override');
 assert.ok(gl.includes('meshTemplates.sphere')&&
  gl.includes('projectToStage(world,vp)')&&
  gl.includes("lookAt([4.9,1.0,32.5],[3.0,0,0])")&&
@@ -67,3 +72,13 @@ assert.ok(ui.includes('updateDropZone,drawDerby')&&
  'Exact original Drop Zone HUD must also work in 3D');
 assert.ok(build.includes("'party-dropzone-webgl'"),'New renderer absent from standalone build');
 console.log('PASS: real WebGL Drop Zone cabinet, 85 engine pegs, 8 bins, live authoritative ball, no duplicate canvas, HUD preserved.');
+
+const vm=require('node:vm');
+const sandbox={URLSearchParams,Float32Array,Math,console};
+const policy=vm.runInNewContext(gl+'\nMarbleDropZoneWebGL.recommendScale',sandbox);
+assert.equal(policy(12,.8,.55,1),.66);
+assert.equal(policy(60,.66,.55,1),.75);
+assert.equal(policy(30,.8,.55,1),.8);
+assert.equal(policy(NaN,.8,.55,1),.8);
+assert.equal(policy(10,.40,.40,.55),.40);
+console.log('PASS: pure deterministic adaptive GPU quality thresholds and min/max clamps.');
