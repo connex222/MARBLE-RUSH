@@ -43,6 +43,34 @@ const fs=require('node:fs');
   assert.equal(d.manual.physicalPhonesConnected,null,
     'Headless browser must not report any physical phones');
   assert.ok(d.limitations.some(x=>x.includes('not physical')));
+  // Exercise Golf in the same local opt-in recorder. Its absence in the
+  // owner's November physical sample must not pass unnoticed in CI.
+  await page.evaluate(()=>window.__MR.Game.toLobby());
+  await page.locator('#partyModeCards .partyModeCard[data-mode="golf"]').click();
+  await page.waitForFunction(()=>window.__MR.selectedMode==='golf');
+  await page.locator('#btnStart').click();
+  await page.waitForFunction(()=>window.__MR.partyScreen.active==='golf' &&
+    document.getElementById('ppGolfRankRows')?.children.length>=2,{timeout:12000});
+  await page.waitForTimeout(2400);
+  await page.locator('#ppGolfRight').click();
+  await page.locator('#ppGolfPowerUp').click();
+  await page.locator('#ppGolfShoot').click();
+  await page.waitForFunction(()=>window.__MR.MODES.golf.session().state.phase==='rolling',
+    {timeout:12000});
+  await page.waitForTimeout(500);
+  const golfReport=await page.evaluate(()=>window.__MR.qaDiagnostics.report());
+  assert.ok(golfReport.metrics.golf?.sampleCount>=25,
+    'Golf is missing from the opt-in TV frame report');
+  assert.ok(golfReport.metrics.golf?.p95FrameIntervalMs>0,
+    'Golf frame intervals were not recorded');
+  assert.ok(golfReport.metrics.derby?.sampleCount>=25,
+    'Switching to Golf erased earlier Derby frames');
+  assert.ok(golfReport.rendererIsolationPassed,
+    'Golf did not maintain the exclusive visible stage');
+  assert.equal(golfReport.manual.physicalPhonesConnected,null,
+    'Golf browser QA must never certify real phones');
+  assert.equal(golfReport.manual.tv1080p,null,
+    'Golf browser QA must never certify a physical TV');
   const downloadPromise=page.waitForEvent('download');
   await page.locator('#marbleRushQaSave').click();
   const download=await downloadPromise;
@@ -52,6 +80,8 @@ const fs=require('node:fs');
   const saved=JSON.parse(fs.readFileSync(file,'utf8'));
   assert.equal(saved.version,'tv-qa-v1');
   assert.ok(saved.metrics.derby.sampleCount>=25);
+  assert.ok(saved.metrics.golf?.sampleCount>=25,
+    'Exported JSON omitted Golf measurements');
   await page.evaluate(()=>window.__MR.Game.toLobby());
   const hidden=await page.evaluate(()=>document.getElementById('partyStage').hidden);
   assert.equal(hidden,true);
@@ -62,7 +92,7 @@ const fs=require('node:fs');
     'Opt-in diagnostics leaked into regular players game');
   assert.equal(await normal.evaluate(()=>window.__MR.qaDiagnostics.enabled),false);
   await normal.close();
-  console.log('PASS TV diagnostics browser: opt-in only, original exclusive Derby stage, frames, action-to-RAF proxy, downloaded local report, no false physical claims.');
+  console.log('PASS TV diagnostics browser: opt-in only, exclusive Derby and Golf stages, per-mode frames, action-to-RAF proxy, downloaded local report, no false physical claims.');
  }catch(e){console.error('FAIL TV diagnostics browser smoke:',e);process.exitCode=1;}
  finally{await browser.close();}
 })();
