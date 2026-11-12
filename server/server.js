@@ -103,7 +103,7 @@ wss.on('connection', ws => {
       const pid = String(m.pid || '').slice(0, 24);
       if (!pid) return;
       const old = room.players.get(pid);
-      if (old && old !== ws) { old.replaced = true; try { old.close(); } catch (e) { /* gone */ } }
+      if (old && old !== ws) { old.replaced = true; try { old.close(4009, 'Session opened elsewhere'); } catch (e) { /* gone */ } }
       ws.role = 'player'; ws.room = code; ws.pid = pid;
       ws.name = String(m.name || 'Racer').slice(0, 16);
       ws.swirl = Number.isInteger(m.swirl) ? m.swirl : 0;
@@ -114,6 +114,8 @@ wss.on('connection', ws => {
     }
     if (ws.role === 'player') {
       const room = rooms.get(ws.room); if (!room) return;
+      // A superseded tab cannot continue sending race/party inputs.
+      if (room.players.get(ws.pid) !== ws) return;
       room.last = now;
       if (m.t === 'in' && (m.k === 'p' || m.k === 'r' || m.k === 'i')) out(room.host, { t: 'in', pid: ws.pid, k: m.k });
       else if (m.t === 'act' && typeof m.a === 'string') out(room.host, { t: 'act', pid: ws.pid, a: m.a.slice(0, 16), v: m.v });
