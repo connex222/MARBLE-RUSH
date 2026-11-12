@@ -44,6 +44,16 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   assert.ok(first.graphics.realMeshes&&first.graphics.drawCalls>=2&&
    first.graphics.drawCalls<=4,'Must batch native 3D pegs');
   assert.equal(first.graphics.labels,9,'Eight scored bins and one event callout');
+  assert.equal(first.graphics.meshTemplatesCached,true,'3D shape topology cache absent');
+  assert.deepEqual(first.graphics.cameraTarget,[3.5,0,0]);
+  const slots=await page.evaluate(()=>
+    [...document.querySelectorAll('#ppDrop3dBinLabels [data-bin]')]
+     .map(x=>({i:Number(x.dataset.bin),left:parseFloat(x.style.left),
+       top:parseFloat(x.style.top)})));
+  assert.equal(slots.length,8);
+  assert.ok(slots.every((x,i)=>x.left>17&&x.left<80&&x.top>50&&x.top<94&&
+    (i===0||x.left>slots[i-1].left)),
+   '3D-scored bins escaped HUD-safe viewport: '+JSON.stringify(slots));
   console.log('DROPZONE-3D-PIXEL-PROBE '+JSON.stringify(first.graphics.geometryProbe));
   assert.equal(first.graphics.geometryProbe?.error,0,
     'WebGL rendered a GL error even though draw calls completed');

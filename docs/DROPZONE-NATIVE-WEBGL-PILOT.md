@@ -22,3 +22,8 @@ A game event displays a short visual cue only from a real \`goldPeg\`, \`jackpot
 2. Switching back to ordinary Derby/Grand Prix must restore 2D with no residual 3D canvas, labels or background.
 3. Physical 1080p TV computer must sustain target FPS and show a polished, legible board from across the room; compare directly to original approved 2D production screen.
 4. The current native 3D art is an engineering prototype, not automatic AAA visual acceptance. Do not merge this preview just because technical CI is green.
+
+
+## Phase 2 visual and performance refinement
+
+The software-rendered screenshot exposed cabinet intrusion under the right-hand scoreboard and an unused dark upper face. The camera offsets the complete genuine 3D board left, real brass marquee studs and medallions fill the blank upper face, and all eight bin labels are anchored to projected 3D bin coordinates instead of arbitrary percentages. A physical jackpot frame is rendered only at the final-round engine-selected index. The live ball has a small 3D shadow derived from its real coordinates. Shape topology is cached on mount, eliminating per-frame sphere/cube construction. No alteration to rules or production default. Physical-device QA remains mandatory.

@@ -11,6 +11,12 @@ assert.ok(gl.includes('gl.createShader(')&&gl.includes('gl.createBuffer(')&&
  gl.includes('perspective(')&&gl.includes('lookAt(')&&
  gl.includes('bakedPanel()')&&gl.includes('append(sp,'),
  'Native 3D Drop Zone requires genuine depth-tested triangulated pegs and boxes');
+assert.ok(gl.includes('meshTemplates.sphere')&&
+ gl.includes('projectToStage(world,vp)')&&
+ gl.includes("lookAt([5.4,1.0,31],[3.5,0,0])")&&
+ gl.includes('state.round===DropZone.ROUNDS')&&
+ gl.includes('k=state.jackpotBin'),
+ 'Projected physical prize labels, frame-safe camera, final jackpot and topology caching');
 assert.ok(gl.includes('DropZone.PEGS')&&gl.includes('DropZone.BINS')&&
  gl.includes('state.pegs')&&gl.includes('state.gold')&&
  gl.includes('const p=state.ball;')&&
