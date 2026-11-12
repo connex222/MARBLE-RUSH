@@ -1,6 +1,6 @@
-# MARBLE RUSH — Drop Zone **actual native 3D** proof (review branch)
+# MARBLE RUSH — Drop Zone native WebGL 3D (merged opt-in pilot)
 
-Branch: \`improvement/marble-rush-dropzone-real3d\`. **Do not merge or deploy until it is visually and technically accepted.**
+**Merged into `main` on 12 November 2026 in [PR #55](https://github.com/connex222/MARBLE-RUSH/pull/55). This 3D screen is an opt-in experiment, not the approved default renderer.** The approved 2D version remains standard. Keep `dropzone3d=1` opt-in until physical-TV performance, visual acceptance and multi-phone endurance testing are passed.
 
 ## Scope
 
@@ -21,7 +21,7 @@ A game event displays a short visual cue only from a real \`goldPeg\`, \`jackpot
 1. GitHub Actions browser must show the 85 mesh pegs and genuine 3D ball moving with the engine, one active renderer at a time, and complete a scoring action.
 2. Switching back to ordinary Derby/Grand Prix must restore 2D with no residual 3D canvas, labels or background.
 3. Physical 1080p TV computer must sustain target FPS and show a polished, legible board from across the room; compare directly to original approved 2D production screen.
-4. The current native 3D art is an engineering prototype, not automatic AAA visual acceptance. Do not merge this preview just because technical CI is green.
+4. The native 3D art is an engineering prototype, not automatic AAA visual acceptance. **Do not enable the preview by default or present it as a production-quality replacement simply because the code was merged and CI is green.**
 
 
 ## Phase 2 visual and performance refinement
@@ -82,7 +82,7 @@ one canvas. It saves a separate restored-scene screenshot.
 
 This test is limited to software Chromium; it is not proof of physical-TV
 driver stability, power suspension, network reconnect or a 20-minute session.
-If restoration breaks, CI fails and PR #55 must remain a draft.
+If restoration breaks in future, CI must fail; fix the regression before enabling the pilot more broadly.
 
 
 ## Adaptive TV GPU budget (review-only)
@@ -102,3 +102,8 @@ The browser QA now simulates unavailable WebGL (with the original 2D canvas stil
 ### Phase 5: real time-based adaptive QA
 
 The automated software-Chromium browser now continues beyond its initial performance sample until the production adaptive controller actually reduces the *real WebGL drawing buffer*. The test verifies a transition labelled `low-fps-resolution`, reduced width and height with the same 16:9 ratio, continuous authoritative time, and one exclusive canvas. It saves an additional screenshot and before/after JSON. This is still only slow software-Chromium evidence — real TV hardware performance remains unverified.
+
+
+## Consolidated opt-in integration — 12 November 2026
+
+PR #55 has been merged into `main` with its automated QA, adaptive WebGL rendering, graphics-context recovery, and automatic fallback to the approved original Canvas2D stage. The original 2D cabinet is still the **default** and remains the visually preferred production version. This merge is not a physical GPU / 1080p performance sign-off. Real-phone reconnection, actual TV FPS, audio and 20-minute endurance remain to be completed before enabling native 3D by default.

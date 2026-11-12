@@ -163,3 +163,14 @@ Merged via [PR #49](https://github.com/connex222/MARBLE-RUSH/pull/49) to `main`.
 - **Release documents:** [Phase 3 acceptance](docs/PARTY-PHASE3-FINAL-ACCEPTANCE.md) and [Phase 4 readiness and rollback](docs/PARTY-PHASE4-RELEASE-READINESS.md).
 - **Hosting:** production <https://marble-rush.onrender.com>, deployed from `main` by Render automatic deployment.
 - **Remaining checks:** real TV premium-quality review, physical phone multiplayer, narration/hiss listening and dependency vulnerability review before wider distribution.
+
+
+## Native 3D pilot integration — 12 November 2026 (PRs #54 and #55)
+
+Both genuine-WebGL pilots are merged into `main`, **off by default**. Normal players still use the approved Canvas2D presentation; Grand Prix, original rules, all five Party Pack families, avatars and audio have not been redesigned.
+
+- **Marble Derby:** `/tv?derby3d=1` enables the optional 3D race preview (PR #54).
+- **Drop Zone:** `/tv?dropzone3d=1` enables the optional 3D physical Plinko cabinet (PR #55). All 85 real engine pegs, eight score bins, original physics and phone controls remain authoritative. If WebGL fails, it automatically restores the original 2D cabinet without discarding the active game.
+- **Diagnostics:** `/tv?dropzone3d=1&debug3d=1` shows actual observed browser FPS, GPU, display-buffer size and active quality; `&dropzoneMaterial=premium`, `&dropzoneAdaptive=0`, `&dropzoneScale=0.60` control manual review. The source-of-truth release and QA details are in [Drop Zone WebGL Pilot](docs/DROPZONE-NATIVE-WEBGL-PILOT.md).
+- **Test record:** five pre-merge GitHub Actions workflows passed, including genuine GPU context-loss/restoration, native rendered-pixel proof, scoring and exclusive renderer handoff. Headless SwiftShader frame rates were still well below a usable TV target and cannot certify target GPU performance.
+- **Release gate:** This integration is an engineering pilot **not an approved visual replacement**. Do not turn either 3D flag on by default until a physical 1080p TV and 2–4 phone session proves sustained frame rate, readable visuals, session stability and reconnection. Current original approved 2D screens remain the product standard.
