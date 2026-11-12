@@ -22,6 +22,14 @@ assert.ok(
  gl.includes('createHardwareOverlay()') &&
  gl.includes('reviewOverlay.remove()'),
  'Premium shader / matte metal glass and marble pipeline / opt-in GPU hardware monitor');
+assert.ok(gl.includes('sphere(6,9)') &&
+ gl.includes('sphere(14,20)') &&
+ gl.includes('meshTemplates.ball') &&
+ gl.includes("get('probe3d')==='1'") &&
+ gl.includes('if(pixelProbeEnabled&&frame===0)') &&
+ gl.includes('staticTriangles=i.length/3') &&
+ gl.includes('dynamicTriangles=i.length/3'),
+ 'True 3D geometry LOD and no unnecessary production pixel readbacks');
 assert.ok(gl.includes('meshTemplates.sphere')&&
  gl.includes('projectToStage(world,vp)')&&
  gl.includes("lookAt([4.9,1.0,32.5],[3.0,0,0])")&&

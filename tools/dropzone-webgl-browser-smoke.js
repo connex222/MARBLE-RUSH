@@ -16,7 +16,7 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
  page.on('pageerror',e=>errors.push(e.message));
  const proof={reviewOnly:true,physicalTv:false,mode:'dropzone',graphics:null,physics:null,otherMode:null};
  try{
-  await page.goto(BASE+'/tv?dropzone3d=1',{waitUntil:'domcontentloaded'});
+  await page.goto(BASE+'/tv?dropzone3d=1&probe3d=1',{waitUntil:'domcontentloaded'});
   await page.locator('#btnBoot').click();
   await page.locator('#btnKb').click();
   await page.locator('#btnCpu').click();
@@ -46,6 +46,13 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   assert.equal(first.graphics.labels,9,'Eight scored bins and one event callout');
   assert.equal(first.graphics.meshTemplatesCached,true,'3D shape topology cache absent');
   assert.equal(first.graphics.materialAttributeFloats,10);
+  assert.equal(first.graphics.pixelProbeEnabled,true);
+  assert.ok(first.graphics.staticTriangles>18000&&
+    first.graphics.staticTriangles<28000,
+    'Real fixed 3D pegs should be both present and less costly: '+first.graphics.staticTriangles);
+  assert.ok(first.graphics.dynamicTriangles>400&&
+    first.graphics.dynamicTriangles<2500,
+    'Higher-quality moving marble should remain a genuine 3D mesh');
   assert.equal(first.graphics.surfaceQuality,'basic',
     'Software SwiftShader must default to cheaper material shading');
   const frameBefore=first.graphics.frame;

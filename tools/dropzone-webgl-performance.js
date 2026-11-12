@@ -46,6 +46,10 @@ const intervalMs=Number(process.env.DROPZONE_BENCH_MS||6500);
   assert.equal(end.hud.renderFailures,0,'WebGL renderer failed a frame');
   assert.equal(end.graphics.drawCalls,2,'Batching has regressed');
   assert.equal(end.graphics.meshTemplatesCached,true);
+  assert.equal(end.graphics.pixelProbeEnabled,false,
+    'Live software/GPU benchmark must not stall on synchronous GPU pixel readback');
+  assert.ok(end.graphics.staticTriangles>18000&&end.graphics.staticTriangles<28000);
+  assert.ok(end.graphics.dynamicTriangles>400&&end.graphics.dynamicTriangles<2500);
   assert.ok(end.graphics.hardwareQaOverlayActive);
   assert.ok(end.monitor?.includes('FPS'),'On-screen target hardware frame monitor failed');
   assert.deepEqual(errors,[]);
@@ -59,6 +63,9 @@ const intervalMs=Number(process.env.DROPZONE_BENCH_MS||6500);
     engineAdvancedSeconds:+gameDuration.toFixed(2),
     engineAdvanceRatio:+(gameDuration/duration).toFixed(3),
     drawCalls:end.graphics.drawCalls,
+    staticTriangles:end.graphics.staticTriangles,
+    dynamicTriangles:end.graphics.dynamicTriangles,
+    pixelProbeEnabled:end.graphics.pixelProbeEnabled,
     liveOnscreenMonitor:end.monitor,
     meanDrawMs:+end.hud.averageDrawMs.toFixed(2),
     p95DrawMs:end.hud.p95DrawMs,

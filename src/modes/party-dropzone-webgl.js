@@ -14,6 +14,7 @@ const MarbleDropZoneWebGL=(()=>{
  let resources=[],frame=0,drawCalls=0,quality=1,debugGPU='',backdropUrl='';
  let labels=null,notice=null,contextLost=false,contextLossHandler=null,contextRestoreHandler=null;
  let lastEventKey='',fpsLost=0,geometryProbe=null,meshTemplates=null;
+ let staticTriangles=0,dynamicTriangles=0,pixelProbeEnabled=false;
  let surfaceQuality='basic',reviewOverlay=null,reviewFrames=0,reviewFps=0,reviewFrameAt=0;
  const LIGHT_CAMERA=new Float32Array([4.9,1.0,32.5]);
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -108,7 +109,9 @@ const MarbleDropZoneWebGL=(()=>{
   return {v,i};
  }
  function bakedPanel(){
-  const v=[],i=[],cb=cube(),sp=sphere(8,12);
+  // Small fixed metal studs need fewer facets than the one hero marble:
+  // 219 real 3D fixed spheres now use 6x9 instead of 8x12 topology.
+  const v=[],i=[],cb=cube(),sp=sphere(6,9);
   function append(mesh,pos,scaleVec,tint,manualMaterial){
    const offset=v.length/VERTEX_STRIDE,col=rgb(tint),material=materialId(tint,manualMaterial);
    for(let k=0;k<mesh.v.length;k+=9){
@@ -176,6 +179,7 @@ const MarbleDropZoneWebGL=(()=>{
    append(sp,[px,yw(88),.69],[.075,.075,.10],'#e7f8f2');
    append(sp,[px,yw(778),.77],[.085,.085,.13],'#ffe8ae');
   }
+  staticTriangles=i.length/3;
   return geometry(v,i);
  }
  function setup(){
@@ -194,7 +198,9 @@ const MarbleDropZoneWebGL=(()=>{
    opacity:gl.getUniformLocation(program,'uOpacity'),
    premium:gl.getUniformLocation(program,'uPremium'),
    camera:gl.getUniformLocation(program,'uCamera')};
-  meshTemplates={cube:cube(),sphere:sphere()};
+  // Different genuine mesh topology per visible size: a detailed hero ball,
+  // modest moving bumpers, and cheap fixed pegs. Never simplify the gameplay.
+  meshTemplates={cube:cube(),sphere:sphere(7,10),ball:sphere(14,20)};
   // No extra obsolete 9-float GPU buffers; both live draws use material-aware VBOs.
   meshStatic=bakedPanel();
   meshMoving=geometry([],[]);
@@ -219,7 +225,8 @@ const MarbleDropZoneWebGL=(()=>{
   // Static and dynamic draw objects now share the verified world-space MVP.
   // One batched GPU upload holds real 3D gold pegs, bumper, gate and ball.
   // Cache primitive topology at mount; only positions change each frame.
-  const v=[],i=[],sphereRaw=meshTemplates.sphere,cubeRaw=meshTemplates.cube;
+  const v=[],i=[],sphereRaw=meshTemplates.sphere,
+   ballRaw=meshTemplates.ball,cubeRaw=meshTemplates.cube;
   function add(mesh,p,dims,tint,manualMaterial){
    const offset=v.length/VERTEX_STRIDE,col=rgb(tint),material=materialId(tint,manualMaterial);
    for(let k=0;k<mesh.v.length;k+=9){
@@ -244,7 +251,7 @@ const MarbleDropZoneWebGL=(()=>{
   if(p){
     add(sphereRaw,[xw(p.x)+.12,yw(p.y)-.14,.03],
       [.49,.19,.07],'#071b2c');
-    add(sphereRaw,[xw(p.x),yw(p.y),1.43],
+    add(ballRaw,[xw(p.x),yw(p.y),1.43],
       [.43,.43,.43],p.color||'#ffd96e',3);
   }
   else if(!state.done){
@@ -255,7 +262,7 @@ const MarbleDropZoneWebGL=(()=>{
    add(cubeRaw,[x-.53,y+.13,.70],[.08,.69,.22],'#ffdf94');
    add(cubeRaw,[x+.53,y+.13,.70],[.08,.69,.22],'#ffdf94');
    add(cubeRaw,[x,y+.79,.70],[.62,.11,.29],'#fff0af');
-   add(sphereRaw,[x,y,1.43],[.43,.43,.43],owner?.color||'#ffce73',3);
+   add(ballRaw,[x,y,1.43],[.43,.43,.43],owner?.color||'#ffce73',3);
   }
   if(state.round===DropZone.ROUNDS&&Number.isInteger(state.jackpotBin)){
     const k=state.jackpotBin,cx=xw(80+52.5+k*105),cy=yw(752);
@@ -268,6 +275,7 @@ const MarbleDropZoneWebGL=(()=>{
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,meshMoving.indices);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(i),gl.DYNAMIC_DRAW);
   meshMoving.count=i.length;
+  dynamicTriangles=i.length/3;
   gl.uniformMatrix4fv(loc.model,false,identity());
   gl.uniformMatrix4fv(loc.mvp,false,vp);
   gl.uniform3fv(loc.tint,new Float32Array([1,1,1]));
@@ -320,6 +328,10 @@ const MarbleDropZoneWebGL=(()=>{
   surfaceQuality=forced==='basic'||forced==='premium'?forced:(software?'basic':'premium');
   frame=0;drawCalls=0;backdropUrl='';contextLost=false;fpsLost=0;
   lastEventKey='';geometryProbe=null;reviewFrames=0;reviewFps=0;reviewFrameAt=performance.now();
+  staticTriangles=0;dynamicTriangles=0;
+  // Reading pixels synchronously stalls a real GPU: restrict readback to
+  // an explicit diagnostic query. Normal play and benchmarks never do it.
+  pixelProbeEnabled=new URLSearchParams(location.search).get('probe3d')==='1';
   resize();setup();labelsCreate();createHardwareOverlay();
   contextLossHandler=e=>{e.preventDefault();contextLost=true;};
   contextRestoreHandler=()=>{contextLost=false;setup();};
@@ -351,7 +363,7 @@ const MarbleDropZoneWebGL=(()=>{
   canvas.replaceWith(blank);
   canvas=null;gl=null;program=null;meshCube=null;meshSphere=null;meshStatic=null;meshMoving=null;
   loc=null;resources=[];meshTemplates=null;backdropUrl='';contextLost=false;
-  reviewFrames=0;reviewFps=0;
+  reviewFrames=0;reviewFps=0;staticTriangles=0;dynamicTriangles=0;pixelProbeEnabled=false;
  }
  function setBackdrop(assets){
   const image=assets?.pp_dropzone_bg;
@@ -441,9 +453,10 @@ const MarbleDropZoneWebGL=(()=>{
   const probeX=clamp(Math.round((1+clip[0]/clip[3])*canvas.width/2),0,canvas.width-1);
   const probeY=clamp(Math.round((1+clip[1]/clip[3])*canvas.height/2),0,canvas.height-1);
   const beforePixel=new Uint8Array(4),afterPixel=new Uint8Array(4);
-  if(frame===0)gl.readPixels(probeX,probeY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,beforePixel);
+  if(pixelProbeEnabled&&frame===0)
+    gl.readPixels(probeX,probeY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,beforePixel);
   drawMovingMesh(s,vp);
-  if(frame===0){
+  if(pixelProbeEnabled&&frame===0){
     gl.readPixels(probeX,probeY,1,1,gl.RGBA,gl.UNSIGNED_BYTE,afterPixel);
     geometryProbe={at:[probeX,probeY],before:[...beforePixel],
       after:[...afterPixel],error:gl.getError()};
@@ -463,6 +476,7 @@ const MarbleDropZoneWebGL=(()=>{
   originalRulesModified:false,geometryProbe,surfaceQuality,
   hardwareFpsSample:reviewFps,hardwareQaOverlayActive:!!reviewOverlay,
   materialAttributeFloats:VERTEX_STRIDE,
+  staticTriangles,dynamicTriangles,pixelProbeEnabled,
   meshTemplatesCached:!!meshTemplates,cameraTarget:[3.0,0,0],
   jackpotIndexSource:'DropZone.state.jackpotBin'};}
  function setSurfaceQuality(next){

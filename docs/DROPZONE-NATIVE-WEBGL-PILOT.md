@@ -45,3 +45,27 @@ The two actual WebGL triangle batches now carry a tenth float per vertex: 0 matt
 The local Windows preview launcher opens \`/tv?dropzone3d=1&debug3d=1\`. An opt-in, disposable text monitor shows FPS observed on that physical browser, GPU, draw calls, active material mode and backing canvas resolution. For A/B comparison use \`&dropzoneMaterial=basic\` or \`&dropzoneMaterial=premium\`. No second canvas or render loop is created.
 
 CI deliberately toggles premium shader on the software GPU, checks for rendering errors, and captures a third screenshot, then returns to the cheaper shader before the regular scoring and game-mode-switch acceptance. The dedicated performance script confirms the hardware-monitor DOM text exists. CI software frame rates remain inconclusive for 1080p television acceptance.
+
+
+## Phase 4 — preserve hero-marble quality while reducing GPU geometry
+
+The field contains 85 physical obstacles, each built from a recessed and front-facing
+native 3D sphere. Together with decorative studs there are 219 small static sphere
+instances. Their topology has been reduced from 8×12 (192 triangles each) to 6×9
+(108 triangles each). Expected static triangle reduction is approximately 43%.
+The **single player marble has been upgraded** to a smoother 14×20 sphere
+(560 triangles), while bumpers and highlights use 7×10 geometry. No peg coordinates,
+collision radii, rules, scoring or controller inputs have changed.
+
+The native 3D renderer reports the *actual* indexed triangle counts in
+\`MarbleDropZoneWebGL.debug().staticTriangles\` and \`.dynamicTriangles\`.
+Browser QA asserts the geometry remains genuinely three-dimensional but within
+the budget. The physics and game clock are unchanged.
+
+Prior code called synchronous \`gl.readPixels\` twice on the very first frame of
+**every game**. This is a GPU/CPU synchronization point which can cause stalls.
+Now it is available **only** with \`?dropzone3d=1&probe3d=1\`, which
+automated browser QA uses to preserve its proof that the real marble writes
+visible pixels. The performance benchmark and actual player preview use no
+synchronous readbacks. This is a reduction in render cost, not yet evidence
+of acceptable hardware frame rates.
