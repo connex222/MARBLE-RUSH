@@ -268,9 +268,15 @@ const MarbleGolfUI=(()=>{
     s.layout?.water?.length?'WATER TRAP':s.layout?.walls?.length?'TIGHT WALLS':'OPEN FAIRWAY';
   for(const id of ['ppGolfLeft','ppGolfRight','ppGolfPowerDown','ppGolfPowerUp',
                    'ppGolfPreview','ppGolfShoot'])$(id).disabled=!human;
+  // Read distance from the real simulation ball and this hole's actual cup.
+  // Never pretend the first-bounce guide predicts a finishing position.
+  const toCup=s.ball&&s.layout?.cup?
+    Math.round(Math.hypot(s.ball.x-s.layout.cup[0],
+      s.ball.y-s.layout.cup[1])):null;
   $('ppGolfHelp').textContent=human?
-    'Adjust aim and power. The guide indicates initial direction, not the outcome.':
-    s.phase==='rolling'?'Your marble is rolling. Watch for the cup!':'The next player takes their turn.';
+    'DISTANCE TO CUP '+toCup+' · Set power and aim; this guide is NOT a predicted landing.':
+    s.phase==='rolling'?'ROLLING · '+toCup+' course units from the cup.':
+    'The next player takes their turn.';
   const rank=s.roster.slice().sort((a,b)=>a.strokes-b.strokes||b.wins-a.wins||
     s.roster.indexOf(a)-s.roster.indexOf(b));
   const key=rank.map(q=>q.id+':'+q.strokes+':'+q.holeScores.length).join('|')+'|'+s.hole;
