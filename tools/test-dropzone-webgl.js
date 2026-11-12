@@ -61,6 +61,13 @@ assert.ok(gl.includes('old.replaceWith(canvas)')&&
  gl.includes('canvas.replaceWith(blank)')&&
  gl.includes("stage.style.removeProperty(name)"),
  'Only one party canvas and clean handover to Grand Prix/other modes');
+assert.ok(host.includes("drop3dActive=false")&&
+ host.includes("drop3dFallback='gpu-unavailable'")&&
+ host.includes("MarblePartyUI.activate('dropzone',{hudOnly:false})")&&
+ host.includes("fallbackToCanvas2D('gpu-recovery-timeout')")&&
+ host.includes("fallbackToCanvas2D('gpu-render-failure')")&&
+ host.includes("stage.dataset.renderer=currentRenderer(name)"),
+ 'WebGL review must fall back to original Canvas2D without resetting gameplay');
 assert.ok(host.includes("get('dropzone3d')==='1'")&&
  host.includes("MarbleDropZoneWebGL.mount(canvas)")&&
  host.includes("MarbleDropZoneWebGL.unmount()")&&

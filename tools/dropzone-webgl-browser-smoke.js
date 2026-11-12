@@ -217,6 +217,57 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   await page.evaluate(()=>window.__MR.Game.toLobby());
   const gp=await page.evaluate(()=>!document.getElementById('cv').hidden);
   assert.equal(gp,true,'Original Grand Prix canvas not restored');
+  // Force WebGL acquisition failure on the exclusive stage (but not
+  // Canvas2D), then start the *same* Drop Zone game from the same lobby.
+  // The original physics, player and controls must continue untouched.
+  const fallbackPage=await browser.newPage({viewport:{width:1920,height:1080}});
+  const fallbackErrors=[];
+  fallbackPage.on('pageerror',e=>fallbackErrors.push(String(e.message)));
+  await fallbackPage.addInitScript(()=>{
+    const original=HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext=function(kind,...options){
+      if(this.id==='partyStageCanvas'&&
+        (kind==='webgl'||kind==='webgl2'))return null;
+      return original.call(this,kind,...options);
+    };
+  });
+  await fallbackPage.goto(BASE+'/tv?dropzone3d=1',{waitUntil:'domcontentloaded'});
+  for(const sel of ['#btnBoot','#btnKb','#btnCpu',
+   '#partyModeCards .partyModeCard[data-mode="dropzone"]','#btnStart'])
+   await fallbackPage.locator(sel).click();
+  await fallbackPage.waitForFunction(()=>
+    window.__MR?.partyScreen?.renderer==='dropzone-cabinet-v3',
+    null,{timeout:15000});
+  const fallback=await fallbackPage.evaluate(()=>{
+    const screen=window.__MR.partyScreen;
+    const state=window.__MR.MODES.dropzone.session().state;
+    const c=document.getElementById('partyStageCanvas');
+    return {renderer:screen.renderer,owner:screen.assertExclusive(),
+      fallback:screen.telemetry().dropzone3dFallback,
+      canvasCount:document.querySelectorAll('#partyStage canvas').length,
+      twoD:!!c.getContext('2d'), pegs:state.pegs.length,
+      notice:document.getElementById('ppDrop3dFallback')?.textContent};
+  });
+  assert.equal(fallback.renderer,'dropzone-cabinet-v3');
+  assert.equal(fallback.fallback,'gpu-unavailable');
+  assert.equal(fallback.owner,true);assert.equal(fallback.canvasCount,1);
+  assert.equal(fallback.twoD,true);assert.equal(fallback.pegs,85);
+  assert.ok(fallback.notice?.includes('original 2D'));
+  await fallbackPage.locator('#dropNow').click();
+  await fallbackPage.evaluate(()=>{
+    const g=window.__MR.MODES.dropzone.session();
+    if(!g.state.ball)throw Error('2D GPU fallback could not release a marble');
+    let n=0;while(g.state.turn===0&&n++<2400)g.step(.05);
+    if(g.state.turn!==1||g.state.roster[0].drops!==1)
+      throw Error('2D GPU fallback did not retain the real rules engine');
+  });
+  await fallbackPage.screenshot({path:'qa-dropzone-webgl-fallback-2d.png'});
+  await fallbackPage.evaluate(()=>window.__MR.Game.toLobby());
+  assert.equal(await fallbackPage.evaluate(()=>
+    !!document.getElementById('cv')&&!document.getElementById('cv').hidden),true);
+  assert.deepEqual(fallbackErrors,[]);
+  proof.gpuUnavailableFallback=fallback;
+  await fallbackPage.close();
   assert.deepEqual(errors,[],'Browser exceptions: '+errors.join(', '));
   proof.otherMode=after;
   fs.writeFileSync('qa-dropzone-webgl-review.json',JSON.stringify(proof,null,2));
