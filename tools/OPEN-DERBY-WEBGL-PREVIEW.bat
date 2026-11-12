@@ -50,8 +50,9 @@ call npm run build
 if errorlevel 1 goto failed
 echo [4/4] Opening native WebGL Derby prototype at port 36004...
 echo.
-echo TV with local performance recorder: http://localhost:36002/tv?qa=1
-echo Clean TV (no diagnostics):         http://localhost:36002/tv
+echo Native 3D Derby:      http://localhost:36004/tv?derby3d=1
+echo 3D Derby with QA:     http://localhost:36004/tv?derby3d=1^&qa=1
+echo Current 2D comparison: http://localhost:36004/tv
 echo Phones: scan the TV room QR or use your computer's LAN IP
 echo         and the four-letter room code.
 echo.
