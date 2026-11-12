@@ -269,7 +269,9 @@ const MarblePartyUI=(()=>{
    if(mode!=='derby'||!ctx||!state||!Array.isArray(state.horses))return false;
    const t=Number(state.time)||0;
    ctx.save();ctx.setTransform(1,0,0,1,0,0);
-   backdrop(ctx,assets,t);
+   MarbleSceneCache.paint('derby',ctx,assets,
+     ['pp_derby_bg','pp_derby_prop_grandstand','pp_derby_prop_hay_bales'],
+     c=>backdrop(c,assets,t));
    const zoom=frameDerbyCamera(state,!!opts.reduce);
    ctx.save();
    // Scale ALL physical track features and real marbles together around
@@ -515,7 +517,9 @@ const MarblePartyUI=(()=>{
    if(mode!=='dropzone'||!ctx||!state||!Array.isArray(state.pegs))return false;
    const t=Number(state.elapsed)||0;
    ctx.save();ctx.setTransform(1,0,0,1,0,0);
-   dropBackdrop(ctx,assets,t);
+   MarbleSceneCache.paint('dropzone',ctx,assets,
+     ['pp_dropzone_bg','pp_dropzone_prop_glass_chute'],
+     c=>dropBackdrop(c,assets,t));
    dzCabinet(ctx,assets,Object.assign({reduceMotion:!!opts.reduce},state),t);
    if(!opts.reduce)dropDramatics(ctx,assets,state);
    ctx.restore();
