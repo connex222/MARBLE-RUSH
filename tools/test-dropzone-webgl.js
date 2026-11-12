@@ -15,7 +15,7 @@ assert.ok(
  gl.includes('VERTEX_STRIDE=10') &&
  gl.includes('varying float vMaterial') &&
  gl.includes('gl.vertexAttribPointer(loc.material,1,gl.FLOAT,false,40,36)') &&
- gl.includes("surfaceQuality=forced==='basic'||forced==='premium'") &&
+ gl.includes("surfaceQuality=materialForced?forced:(software?'basic':'premium')") &&
  gl.includes('gl.uniform1f(loc.premium') &&
  gl.includes('materialId(tint,manualMaterial)') &&
  gl.includes('setSurfaceQuality(next)') &&
