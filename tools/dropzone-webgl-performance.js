@@ -26,7 +26,9 @@ const intervalMs=Number(process.env.DROPZONE_BENCH_MS||6500);
   const start=await page.evaluate(()=>({
     time:performance.now(),
     frames:window.__MR.partyScreen.telemetry().frames,
-    advanced:MarblePartyClock.stats().advancedSeconds
+    advanced:MarblePartyClock.stats().advancedSeconds,
+    initialResolution:MarbleDropZoneWebGL.debug().resolution,
+    initialScale:MarbleDropZoneWebGL.debug().resolutionScale
   }));
   await page.waitForTimeout(intervalMs);
   const end=await page.evaluate(()=>({
@@ -76,6 +78,36 @@ const intervalMs=Number(process.env.DROPZONE_BENCH_MS||6500);
     p95FrameIntervalMs:end.hud.p95FrameIntervalMs,
     note:'Frame rate here is not a pass for TV hardware, gaming laptops, mobile Wi-Fi or input latency.'
   };
+  // A 6.5-second sample cannot cross the two slow 4-second windows plus
+  // cooldown required by the actual adaptive controller. Prove the live
+  // renderer reacts to sustained software-GPU load, not just a pure policy.
+  await page.waitForFunction(()=>
+    MarbleDropZoneWebGL.debug().scaleAdjustments>=1,
+    null,{timeout:28000});
+  const adjusted=await page.evaluate(()=>{
+    const st=window.__MR.MODES.dropzone.session().state,
+      g=MarbleDropZoneWebGL.debug();
+    return {scale:g.resolutionScale,resolution:g.resolution,
+      changes:g.scaleAdjustments,reason:g.lastScaleReason,
+      elapsed:st.elapsed,owner:window.__MR.partyScreen.assertExclusive(),
+      canvases:document.querySelectorAll('#partyStage canvas').length,
+      gameClock:MarblePartyClock.stats().advancedSeconds};
+  });
+  assert.ok(adjusted.changes>=1,'Automatic graphics downshift never happened');
+  assert.equal(adjusted.reason,'low-fps-resolution');
+  assert.ok(adjusted.scale<start.initialScale);
+  assert.ok(adjusted.resolution[0]<start.initialResolution[0],
+    'Adaptive policy did not actually resize the GPU drawing buffer');
+  assert.equal(adjusted.resolution[0]*9,adjusted.resolution[1]*16);
+  assert.ok(adjusted.gameClock>end.advanced);
+  assert.equal(adjusted.owner,true);
+  assert.equal(adjusted.canvases,1);
+  result.automaticDownshift={
+    initialScale:start.initialScale,initialResolution:start.initialResolution,
+    ...adjusted,hardwareCertified:false
+  };
+  await page.screenshot({path:'qa-dropzone-webgl-adaptive-quality.png'});
+  console.log('DROPZONE-WEBGL-AUTO-DOWNSHIFT '+JSON.stringify(result.automaticDownshift));
   fs.writeFileSync('qa-dropzone-webgl-performance.json',JSON.stringify(result,null,2));
   console.log('DROPZONE-WEBGL-SOFTWARE-PERF '+JSON.stringify(result));
   console.log('PASS actual canvas frame count and authoritative clock despite slow software GPU');
