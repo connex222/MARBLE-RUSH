@@ -177,6 +177,9 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
   // Resize the actual live GPU canvas while preserving the same physical
   // camera aspect, 85 pegs, rules state, score and single-renderer ownership.
   const scaled=await page.evaluate(()=>{
+    // Explicitly establish the upper software quality setting; adaptive
+    // tuning may otherwise have already brought the canvas below .48.
+    MarbleDropZoneWebGL.setResolutionScale(.55);
     const before=MarbleDropZoneWebGL.debug().resolution;
     const accepted=MarbleDropZoneWebGL.setResolutionScale(.48);
     const g=MarbleDropZoneWebGL.debug();
