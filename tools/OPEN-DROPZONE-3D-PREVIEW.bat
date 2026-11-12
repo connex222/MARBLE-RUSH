@@ -46,9 +46,9 @@ echo TV physical test: check real FPS, 3D perspective, bin alignment,
 echo full 5 rounds, 2-4 phones, reconnects, and 20 minutes of play.
 echo Do NOT treat GitHub SwiftShader results as actual TV frame rate.
 echo.
+start "MARBLE RUSH review server" /D "%TARGET%" cmd /k "set PORT=36005&& node server/server.js"
+timeout /t 4 /nobreak >nul
 start "" "http://localhost:36005/tv?dropzone3d=1"
-set "PORT=36005"
-node server/server.js
 goto :done
 :fail
 echo.
