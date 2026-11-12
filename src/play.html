@@ -816,7 +816,11 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
   if (!pid) { pid = 'p' + Math.random().toString(36).slice(2, 10); store.set('mr_pid', pid); }
   let swirl = +(store.get('mr_swirl') || Math.floor(Math.random() * 12));
   const params = new URLSearchParams(location.search);
-  $('#inCode').value = (params.get('room') || store.get('mr_room') || '').toUpperCase();
+  const requestedRoom=(params.get('room')||'').trim().toUpperCase();
+  const resumeRoom=(store.get('mr_room')||'').trim().toUpperCase();
+  const autoResume=!!store.get('mr_name')&&/^[A-HJ-NP-Z]{4}$/.test(requestedRoom)&&
+    requestedRoom===resumeRoom;
+  $('#inCode').value = (requestedRoom || resumeRoom).toUpperCase();
   $('#inName').value = store.get('mr_name') || '';
   if (store.get('mr_hc') === '1') document.body.classList.add('hc');
   // Replace the text logo only when the approved artwork loads correctly.
@@ -856,8 +860,22 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
   let ws = null, open = false, joined = false, retry = 0, hud = null;
   function connect() {
     ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
-    ws.onopen = () => { open = true; retry = 0; $('#banner').hidden = true; if (joined) doJoin(true); };
-    ws.onclose = () => { open = false; if (joined) $('#banner').hidden = false; setTimeout(connect, Math.min(6000, 600 * ++retry)); };
+    ws.onopen = () => { open = true; retry = 0; $('#banner').hidden = true;
+      // Refreshing the SAME explicitly joined room may silently resume.
+      if (joined || autoResume) doJoin(true);
+    };
+    ws.onclose = e => {
+      open = false;
+      if(e.code===4009){
+        // Avoid infinite WebSocket takeover ping-pong between two open tabs.
+        joined=false;$('#ctl').hidden=true;$('#join').hidden=false;
+        $('#btnJoin').disabled=false;
+        $('#joinErr').textContent='This marble was reopened in another tab. Close the other tab before reconnecting.';
+        return;
+      }
+      if (joined) $('#banner').hidden = false;
+      setTimeout(connect, Math.min(6000, 600 * ++retry));
+    };
     ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch(x){ return; } onMsg(m); };
   }
   function send(m) { if (open) ws.send(JSON.stringify(m)); }
