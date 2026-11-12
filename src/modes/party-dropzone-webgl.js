@@ -14,7 +14,8 @@ const MarbleDropZoneWebGL=(()=>{
  let resources=[],frame=0,drawCalls=0,quality=1,debugGPU='',backdropUrl='';
  let labels=null,notice=null,contextLost=false,contextLossHandler=null,contextRestoreHandler=null;
  let lastEventKey='',fpsLost=0,geometryProbe=null,meshTemplates=null;
- let surfaceQuality='basic';
+ let surfaceQuality='basic',reviewOverlay=null,reviewFrames=0,reviewFps=0,reviewFrameAt=0;
+ const LIGHT_CAMERA=new Float32Array([4.9,1.0,32.5]);
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const xw=x=>4+(x-500)*.022;
  const yw=y=>(400-y)*.019;
@@ -194,21 +195,12 @@ const MarbleDropZoneWebGL=(()=>{
    premium:gl.getUniformLocation(program,'uPremium'),
    camera:gl.getUniformLocation(program,'uCamera')};
   meshTemplates={cube:cube(),sphere:sphere()};
-  meshCube=geometry(meshTemplates.cube.v,meshTemplates.cube.i);
-  meshSphere=geometry(meshTemplates.sphere.v,meshTemplates.sphere.i);
+  // No extra obsolete 9-float GPU buffers; both live draws use material-aware VBOs.
   meshStatic=bakedPanel();
   meshMoving=geometry([],[]);
   gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0,0,0,0);
- }
- function drawMesh(mesh,vp,position,dimensions,tint,opacity=1){
-  const model=mul(translate(...position),scale(...dimensions));
-  gl.uniformMatrix4fv(loc.model,false,model);
-  gl.uniformMatrix4fv(loc.mvp,false,mul(vp,model));
-  gl.uniform3fv(loc.tint,rgb(tint));
-  gl.uniform1f(loc.opacity,opacity);
-  bindMesh(mesh);
  }
  function bindMesh(mesh){
   gl.bindBuffer(gl.ARRAY_BUFFER,mesh.vertices);
@@ -326,8 +318,9 @@ const MarbleDropZoneWebGL=(()=>{
   quality=software?.55:1;
   const forced=new URLSearchParams(location.search).get('dropzoneMaterial');
   surfaceQuality=forced==='basic'||forced==='premium'?forced:(software?'basic':'premium');
-  frame=0;drawCalls=0;backdropUrl='';contextLost=false;fpsLost=0;lastEventKey='';geometryProbe=null;
-  resize();setup();labelsCreate();
+  frame=0;drawCalls=0;backdropUrl='';contextLost=false;fpsLost=0;
+  lastEventKey='';geometryProbe=null;reviewFrames=0;reviewFps=0;reviewFrameAt=performance.now();
+  resize();setup();labelsCreate();createHardwareOverlay();
   contextLossHandler=e=>{e.preventDefault();contextLost=true;};
   contextRestoreHandler=()=>{contextLost=false;setup();};
   canvas.addEventListener('webglcontextlost',contextLossHandler);
@@ -347,6 +340,7 @@ const MarbleDropZoneWebGL=(()=>{
   canvas.removeEventListener('webglcontextlost',contextLossHandler);
   canvas.removeEventListener('webglcontextrestored',contextRestoreHandler);
   if(labels){labels.remove();labels=null;notice=null;}
+  if(reviewOverlay){reviewOverlay.remove();reviewOverlay=null;}
   if(stage){
    for(const name of ['background-image','background-size','background-position','background-repeat'])
     stage.style.removeProperty(name);
@@ -357,6 +351,7 @@ const MarbleDropZoneWebGL=(()=>{
   canvas.replaceWith(blank);
   canvas=null;gl=null;program=null;meshCube=null;meshSphere=null;meshStatic=null;meshMoving=null;
   loc=null;resources=[];meshTemplates=null;backdropUrl='';contextLost=false;
+  reviewFrames=0;reviewFps=0;
  }
  function setBackdrop(assets){
   const image=assets?.pp_dropzone_bg;
@@ -399,6 +394,28 @@ const MarbleDropZoneWebGL=(()=>{
   notice.textContent=message;
   lastEventKey=event.kind+':'+event.time;
  }
+ function createHardwareOverlay(){
+  if(new URLSearchParams(location.search).get('debug3d')!=='1')return;
+  reviewOverlay=document.createElement('output');
+  reviewOverlay.id='ppDrop3dHardwareQA';
+  reviewOverlay.setAttribute('aria-label','Native 3D local frame monitor');
+  Object.assign(reviewOverlay.style,{position:'absolute',left:'34%',bottom:'2%',zIndex:'4',
+    padding:'7px 12px',background:'rgba(5,15,31,.92)',color:'#ffe5ad',
+    border:'1px solid #cfac70',borderRadius:'6px',font:'700 13px monospace',
+    pointerEvents:'none',whiteSpace:'pre'});
+  reviewOverlay.textContent='REAL 3D GPU · sampling frames…';
+  canvas.parentElement.appendChild(reviewOverlay);
+ }
+ function updateHardwareOverlay(){
+  if(!reviewOverlay)return;
+  reviewFrames++;
+  const now=performance.now(),elapsed=(now-reviewFrameAt)/1000;
+  if(elapsed<1)return;
+  reviewFps=reviewFrames/elapsed;reviewFrames=0;reviewFrameAt=now;
+  reviewOverlay.textContent='REAL 3D · '+surfaceQuality.toUpperCase()+
+    ' · '+reviewFps.toFixed(1)+' FPS · '+canvas.width+'x'+canvas.height+
+    ' · '+drawCalls+' draws\n'+debugGPU.slice(0,80);
+ }
  function render(s,assets,opts={}){
   if(!gl||contextLost||!s||!Array.isArray(s.pegs)||s.pegs.length!==85)return false;
   const vp=mul(perspective(39*DEG,canvas.width/canvas.height,.4,120),
@@ -409,7 +426,7 @@ const MarbleDropZoneWebGL=(()=>{
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.useProgram(program);drawCalls=0;
   gl.uniform1f(loc.premium,surfaceQuality==='premium'?1:0);
-  gl.uniform3fv(loc.camera,new Float32Array([4.9,1.0,32.5]));
+  gl.uniform3fv(loc.camera,LIGHT_CAMERA);
   // Baked *actual 3D* cabinet, pegged field, dividers and eight bucket slots.
   gl.uniformMatrix4fv(loc.model,false,identity());
   gl.uniformMatrix4fv(loc.mvp,false,vp);
@@ -433,16 +450,18 @@ const MarbleDropZoneWebGL=(()=>{
   }
   setBackdrop(assets);updateBins(s,vp);
   MarblePartyUI.updateDropZone(s);
+  updateHardwareOverlay();
   frame++;
   if(frame%120===0&&gl.getError()!==gl.NO_ERROR)return false;
   return true;
  }
- function debug(){return {api:gl?'WebGL':'none',realMeshes:!!meshSphere&&!!meshStatic,
+ function debug(){return {api:gl?'WebGL':'none',realMeshes:!!meshMoving&&!!meshStatic,
   source:'DropZone.state.ball/pegs/gold/elapsed/x/jackpotBin',frame,drawCalls,
   singleCanvas:!!canvas&&canvas.parentElement?.querySelectorAll('canvas').length===1,
   labels:labels?.children.length||0,backdrop:!!backdropUrl,
   gpu:debugGPU,resolution:[canvas?.width||0,canvas?.height||0],
   originalRulesModified:false,geometryProbe,surfaceQuality,
+  hardwareFpsSample:reviewFps,hardwareQaOverlayActive:!!reviewOverlay,
   materialAttributeFloats:VERTEX_STRIDE,
   meshTemplatesCached:!!meshTemplates,cameraTarget:[3.0,0,0],
   jackpotIndexSource:'DropZone.state.jackpotBin'};}
