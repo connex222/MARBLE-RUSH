@@ -27,3 +27,12 @@ A game event displays a short visual cue only from a real \`goldPeg\`, \`jackpot
 ## Phase 2 visual and performance refinement
 
 The software-rendered screenshot exposed cabinet intrusion under the right-hand scoreboard and an unused dark upper face. The camera offsets the complete genuine 3D board left, real brass marquee studs and medallions fill the blank upper face, and all eight bin labels are anchored to projected 3D bin coordinates instead of arbitrary percentages. A physical jackpot frame is rendered only at the final-round engine-selected index. The live ball has a small 3D shadow derived from its real coordinates. Shape topology is cached on mount, eliminating per-frame sphere/cube construction. No alteration to rules or production default. Physical-device QA remains mandatory.
+
+
+## TV-first camera and reproducible hardware review
+
+The next screenshot moved the main board clear of the right prize HUD, but its brass upper left corner touched the main DROP ZONE masthead. The camera was pulled back 1.5 world units and offset towards the right to preserve a safe margin without shrinking the real peg geometry or modifying original gameplay.
+
+\`tools/OPEN-DROPZONE-3D-PREVIEW.bat\` creates a **new private review folder** in Windows Documents; it never overwrites an existing checkout, the production build or another game's assets. Compare the original \`/tv\` with \`/tv?dropzone3d=1\` in the same browser and test TV scaling and real phones.
+
+\`tools/dropzone-webgl-performance.js\` records a same-session eight-second-style headless SwiftShader frame/clock benchmark and stores the exact device name, backing resolution, draw calls, p95 timing and real rules-clock progress. Slow software GPU values must not be misrepresented as target 1080p-TV performance. Actual performance, 20-minute physical TV stability and multi-phone reconnect remain unverified.

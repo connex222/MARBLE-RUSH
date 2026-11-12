@@ -8,6 +8,7 @@ on:
       - src/modes/party-screen-host.js
       - src/modes/party-ui-v2.js
       - tools/dropzone-webgl-browser-smoke.js
+      - tools/dropzone-webgl-performance.js
       - tools/test-dropzone-webgl.js
       - tools/build.js
       - .github/workflows/dropzone-webgl-pilot.yml
@@ -32,6 +33,7 @@ jobs:
           node --check src/modes/party-screen-host.js
           node --check src/modes/party-ui-v2.js
           node --check tools/dropzone-webgl-browser-smoke.js
+          node --check tools/dropzone-webgl-performance.js
           node tools/test-dropzone-webgl.js
           node tools/test-dropzone.js
           node tools/test-derby.js
@@ -56,6 +58,7 @@ jobs:
             sleep 1
           done
           node tools/dropzone-webgl-browser-smoke.js
+          node tools/dropzone-webgl-performance.js
       - name: Upload real-renderer test artefacts
         if: always()
         uses: actions/upload-artifact@v4

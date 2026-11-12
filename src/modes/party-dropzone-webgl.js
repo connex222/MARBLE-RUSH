@@ -395,7 +395,9 @@ const MarbleDropZoneWebGL=(()=>{
  function render(s,assets,opts={}){
   if(!gl||contextLost||!s||!Array.isArray(s.pegs)||s.pegs.length!==85)return false;
   const vp=mul(perspective(39*DEG,canvas.width/canvas.height,.4,120),
-    lookAt([5.4,1.0,31],[3.5,0,0]));
+    // Camera pulls back just enough to clear the DROP ZONE masthead
+    // without sliding under the right prize-table HUD.
+    lookAt([4.9,1.0,32.5],[3.0,0,0]));
   gl.viewport(0,0,canvas.width,canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.useProgram(program);drawCalls=0;
@@ -432,7 +434,7 @@ const MarbleDropZoneWebGL=(()=>{
   labels:labels?.children.length||0,backdrop:!!backdropUrl,
   gpu:debugGPU,resolution:[canvas?.width||0,canvas?.height||0],
   originalRulesModified:false,geometryProbe,
-  meshTemplatesCached:!!meshTemplates,cameraTarget:[3.5,0,0],
+  meshTemplatesCached:!!meshTemplates,cameraTarget:[3.0,0,0],
   jackpotIndexSource:'DropZone.state.jackpotBin'};}
  return Object.freeze({mount,unmount,draw:render,debug,
    get canvas(){return canvas;},get active(){return !!gl&&!contextLost;}});

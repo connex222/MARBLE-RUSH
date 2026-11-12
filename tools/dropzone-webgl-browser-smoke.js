@@ -45,7 +45,7 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
    first.graphics.drawCalls<=4,'Must batch native 3D pegs');
   assert.equal(first.graphics.labels,9,'Eight scored bins and one event callout');
   assert.equal(first.graphics.meshTemplatesCached,true,'3D shape topology cache absent');
-  assert.deepEqual(first.graphics.cameraTarget,[3.5,0,0]);
+  assert.deepEqual(first.graphics.cameraTarget,[3.0,0,0]);
   const slots=await page.evaluate(()=>
     [...document.querySelectorAll('#ppDrop3dBinLabels [data-bin]')]
      .map(x=>({i:Number(x.dataset.bin),left:parseFloat(x.style.left),
