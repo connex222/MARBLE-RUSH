@@ -14,7 +14,7 @@ for(const mode of ['grandprix','derby','dropzone','brawl','curling','golf']){
    tv.includes("selectedMode==='"+mode+"'") ||
    tv.includes('MODES.'+mode+'.setup'),'Mode cannot launch: '+mode);
 }
-for(const name of ['party-ui-v2','party-brawl-ui-v2','party-curling-ui-v2','party-golf-ui-v2','party-screen-host']){
+for(const name of ['party-ui-v2','party-brawl-ui-v2','party-curling-ui-v2','party-golf-ui-v2','party-scene-cache','party-screen-host']){
  assert.ok(build.includes("'"+name+"'"),'Uncompiled stage: '+name);
  assert.ok(read('src/modes/'+name+'.js').length>1000,'Empty new stage: '+name);
 }
