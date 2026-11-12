@@ -1,0 +1,84 @@
+name: MARBLE RUSH Derby real 3D pilot — review only
+on:
+  push:
+    branches:
+      - improvement/marble-rush-derby-true3d
+    paths:
+      - src/modes/party-derby-webgl.js
+      - src/modes/party-screen-host.js
+      - src/modes/party-ui-v2.js
+      - tools/derby-webgl-browser-smoke.js
+      - tools/derby-webgl-render-benchmark.js
+      - src/modes/party-frame-clock.js
+      - tools/test-party-frame-clock.js
+      - src/tv.js
+      - tools/test-derby-webgl.js
+      - tools/build.js
+      - .github/workflows/derby-webgl-pilot.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  derby-webgl:
+    name: Exclusive native-mesh Derby and Grand Prix regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify source syntax and isolation contract
+        run: |
+          node --check src/modes/party-derby-webgl.js
+          node --check src/modes/party-screen-host.js
+          node --check src/modes/party-ui-v2.js
+          node --check tools/derby-webgl-browser-smoke.js
+          node --check tools/derby-webgl-render-benchmark.js
+          node --check src/modes/party-frame-clock.js
+          node --check tools/test-party-frame-clock.js
+          node tools/test-party-frame-clock.js
+          node --check tools/test-derby-webgl.js
+          node tools/test-derby-webgl.js
+          node tools/test-party-ui-v2.js
+          node tools/test-derby.js
+          node tools/test-dropzone.js
+          node tools/test-brawl.js
+          node tools/test-curling.js
+          node tools/test-golf.js
+          node tools/test-phase8-integration.js
+      - name: Source and art custody against main
+        run: |
+          git fetch --depth=1 origin main
+          git diff --quiet FETCH_HEAD HEAD -- assets/raw src/engine.js src/modes/grandprix.js src/modes/derby.js
+          git show FETCH_HEAD:src/engine.js > /tmp/marble-rush-main-engine.js
+          node tools/test-grandprix-regression.js /tmp/marble-rush-main-engine.js
+        shell: bash
+      - name: Build original stand-alone HTML with optional WebGL module
+        run: npm run build
+      - name: Headless real-WebGL review only
+        run: |
+          set -e
+          npm install --no-save --no-audit --no-fund playwright@1.57.0
+          npx playwright install --only-shell chromium
+          PORT=35993 node server/server.js > /tmp/mr-derby3d.log 2>&1 &
+          game_pid=$!
+          trap 'kill "$game_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/derby-webgl-browser-smoke.js
+          DERBY_BENCH_SECONDS=8 node tools/derby-webgl-render-benchmark.js
+      - name: Upload pilot screenshots and reproducible QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: derby-webgl-real-mesh-review
+          if-no-files-found: ignore
+          path: |
+            qa-derby-webgl-*.png
+            qa-derby-webgl-*.json
+          retention-days: 7

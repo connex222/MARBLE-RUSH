@@ -7,9 +7,12 @@
  */
 const MarblePartyScreen=(()=>{
   'use strict';
+  // Opt-in native-mesh pilot; normal Derby and all other games stay untouched.
+  const derby3dReview=typeof location!=='undefined'&&
+    new URLSearchParams(location.search).get('derby3d')==='1';
   const definitions=Object.freeze({
-    derby:   {renderer:'derby-track-v3', panels:['ppTitleArea','ppBoardLabel','ppTicker','ppBetPanel','ppLeaderPanel'],
-      draw:(s,assets,options)=>MarblePartyUI.drawDerby(s,assets,options)},
+    derby:   {renderer:derby3dReview?'derby-webgl-mesh-pilot-v1':'derby-track-v3', panels:['ppTitleArea','ppBoardLabel','ppTicker','ppBetPanel','ppLeaderPanel'],
+      draw:(s,assets,options)=>derby3dReview?MarbleDerbyWebGL.draw(s,assets,options):MarblePartyUI.drawDerby(s,assets,options)},
     dropzone:{renderer:'dropzone-cabinet-v3', panels:['ppDropHeader','ppDropPanel','ppDropStandings','ppDropStats'],
       draw:(s,assets,options)=>MarblePartyUI.drawDropZone(s,assets,options)},
     brawl:   {renderer:'brawl-arena-v3', panels:['ppBrawlHeader','ppBrawlStats','ppBrawlPanel','ppBrawlStandings'],
@@ -42,8 +45,15 @@ const MarblePartyScreen=(()=>{
     if(!isMode(name))throw Error('Unknown Party Pack visual mode: '+name);
     ensure();
     if(active!==null)unmount();
+    canvas=document.getElementById('partyStageCanvas');
+    if(name==='derby'&&derby3dReview){
+      // Remove Canvas2D from the DOM before obtaining WebGL.
+      MarbleDerbyWebGL.mount(canvas);
+      canvas=document.getElementById('partyStageCanvas');
+    }
     const def=definitions[name];
     MarbleSceneCache.keepOnly(name);
+    MarblePartyClock.reset();
     for(const id of allPanels){
       const element=document.getElementById(id);
       if(!element)throw Error('Missing Party Pack panel: '+id);
@@ -63,7 +73,7 @@ const MarblePartyScreen=(()=>{
     }[name];
     document.getElementById(scoreboard)?.replaceChildren();
     if(name==='derby'||name==='dropzone'){
-      if(!MarblePartyUI.activate(name))throw Error(name+' illustrator cannot acquire stage');
+      if(!MarblePartyUI.activate(name,{hudOnly:name==='derby'&&derby3dReview}))throw Error(name+' illustrator cannot acquire stage');
     }
     report={mode:name,renderer:def.renderer,mountAt:performance.now(),frames:0,
       firstFrameAt:null,lastFrameAt:null,renderMsTotal:0,renderMsMax:0,
@@ -79,7 +89,12 @@ const MarblePartyScreen=(()=>{
       return;
     }
     if(report)history.push({...report,unmountAt:performance.now()});
+    const wasDerby3d=active==='derby'&&derby3dReview;
     active=null;report=null;
+    if(wasDerby3d){
+      MarbleDerbyWebGL.unmount();
+      canvas=document.getElementById('partyStageCanvas');
+    }
     if(stage){
       stage.removeAttribute('data-mode');
       stage.removeAttribute('data-owner');
@@ -138,7 +153,9 @@ const MarblePartyScreen=(()=>{
       slowFrameShare:r.intervals?
         r.slowIntervals/r.intervals:0,
       renderFailures:r.renderFailures,atmosphereCache:MarbleSceneCache.stats(),active:active===r.mode,
-      raceCanvasHidden:!!raceCanvas?.hidden
+      raceCanvasHidden:!!raceCanvas?.hidden,
+      authoritativeClock:MarblePartyClock.stats(),
+      graphics:active==='derby'&&derby3dReview?MarbleDerbyWebGL.debug():null
     });
   }
   function assertExclusive(){
@@ -150,11 +167,15 @@ const MarblePartyScreen=(()=>{
       allPanels.every(id=>{
         const element=document.getElementById(id);
         return !!element&&element.hidden===!def.panels.includes(id);
-      });
+      })&&
+      (active!=='derby'||!derby3dReview||
+       (MarbleDerbyWebGL.active&&MarbleDerbyWebGL.canvas===canvas&&
+        MarbleDerbyWebGL.debug().realMeshes));
   }
   return Object.freeze({isMode,mount,unmount,render,telemetry,assertExclusive,
     get active(){return active;},
     get renderer(){return active?definitions[active].renderer:null;},
+    get nativeDerbyPilot(){return derby3dReview;},
     get retiredHistory(){return history.map(r=>({mode:r.mode,frames:r.frames}));}
   });
 })();

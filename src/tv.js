@@ -2164,7 +2164,10 @@
   let lastT = performance.now();
   function frame(now) {
     requestAnimationFrame(frame);
-    let dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+    // Grand Prix retains its original dt clamp; Party Pack separately
+    // integrates bounded wall time to prevent low-FPS slow-motion gameplay.
+    const elapsedWallSeconds=Math.max(0,(now-lastT)/1000);
+    let dt = Math.min(0.05, elapsedWallSeconds); lastT = now;
     perfTick(dt);
     MarbleRushQA.frame(now,state);
     if (state === 'lobby' && attractMode && now < attractUntil) {
@@ -2187,7 +2190,9 @@
     // The authoritative per-mode rules still tick independently of the UI.
     if(MarblePartyScreen.isMode(state)){
       const mode=state;
-      stateT+=dt;MODES[mode].tick(dt);
+      const time=MarblePartyClock.advance(elapsedWallSeconds,
+        dt=>MODES[mode].tick(dt),()=>state===mode);
+      if(state===mode)stateT+=time.advanced;
       const session=MODES[mode].session();
       if(mode==='brawl'&&session&&!session.state.done){
         const st=session.state,pulseIn=st.pulseAt==null?null:st.pulseAt-st.elapsed;
@@ -2228,7 +2233,8 @@
         });
       }
       Clatter.tick();
-      hudAcc+=dt;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
+      // Phone HUD follows the SAME integrated rules clock as the TV arena.
+      hudAcc+=time.advanced;if(hudAcc>.1){hudAcc=0;sendHud(false);}return;
     }
 
     if (!world) { drawBackground(); return; }

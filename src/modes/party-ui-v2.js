@@ -22,9 +22,14 @@ const MarblePartyUI=(()=>{
  }
  // The shared host alone mounts/hides game UI. The Derby/Drop Zone
  // illustrators retain only their per-match HUD cache and canvas binding.
- function activate(next){
+ function activate(next,options={}){
    if(next!=='derby'&&next!=='dropzone')return false;
-   if(!bind())return false;
+   // Native WebGL owns the canvas, but its HUD must remain identical.
+   if(next==='derby'&&options.hudOnly){
+     stage=document.querySelector('[data-screen="party-stage"]');
+     canvas=null;ctx=null;
+     if(!stage)return false;
+   }else if(!bind())return false;
    mode=next;lastHeat=0;lastPhase='';lastSignature='';
    lastHud=-99;entryAt=performance.now();
    derbyZoom=1;derbyZoomTarget=1;derbySpread=0;lastCameraAt=performance.now();
@@ -581,7 +586,7 @@ const MarblePartyUI=(()=>{
    }
  }
 
- return Object.freeze({activate,drawDerby,drawDropZone,
+ return Object.freeze({activate,updateDerby,drawDerby,drawDropZone,
    get derbyFraming(){return {zoom:derbyZoom,target:derbyZoomTarget,spread:derbySpread};}
  });
 })();
