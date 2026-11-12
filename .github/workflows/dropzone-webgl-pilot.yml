@@ -9,6 +9,8 @@ on:
       - src/modes/party-ui-v2.js
       - tools/dropzone-webgl-browser-smoke.js
       - tools/dropzone-webgl-performance.js
+      - tools/OPEN-DROPZONE-3D-PREVIEW.bat
+      - docs/DROPZONE-NATIVE-WEBGL-PILOT.md
       - tools/test-dropzone-webgl.js
       - tools/build.js
       - .github/workflows/dropzone-webgl-pilot.yml
