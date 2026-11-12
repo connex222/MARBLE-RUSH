@@ -12,8 +12,11 @@ assert.ok(gl.includes('gl.createShader(')&&gl.includes('gl.createBuffer(')&&
  gl.includes('bakedPanel()')&&gl.includes('append(sp,'),
  'Native 3D Drop Zone requires genuine depth-tested triangulated pegs and boxes');
 assert.ok(gl.includes('DropZone.PEGS')&&gl.includes('DropZone.BINS')&&
- gl.includes('s.pegs')&&gl.includes('s.gold')&&gl.includes('s.ball')&&
- gl.includes('Math.sin(s.elapsed*1.2)')&&gl.includes('Math.sin(s.elapsed*.9)')&&
+ gl.includes('state.pegs')&&gl.includes('state.gold')&&
+ gl.includes('const p=state.ball;')&&
+ gl.includes('Math.sin(state.elapsed*1.2)')&&
+ gl.includes('Math.sin(state.elapsed*.9)')&&
+ gl.includes('gl.DYNAMIC_DRAW')&&gl.includes('drawMovingMesh(s,vp)')&&
  gl.includes('s.jackpotBin'),
  '3D projection must use the existing physics coordinates and scoring');
 assert.ok(!gl.includes("getContext('2d'")&&!gl.includes('registerMode(')&&
