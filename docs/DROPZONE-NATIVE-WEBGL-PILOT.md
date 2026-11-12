@@ -97,3 +97,8 @@ Review overrides: `&dropzoneAdaptive=0` disables automatic changes. `&dropzoneSc
 Because a preview parameter should **never** make the game unplayable, the host now catches WebGL context creation or shader failures during Drop Zone mount. In that case the single 3D canvas is detached, a fresh native Canvas2D stage is created, and the approved original 2D Drop Zone renderer is activated. The authoritative game session is untouched; the preview explains the fallback in a non-interactive status overlay. In an in-progress game, an unrecovered WebGL context after eight seconds or three consecutive non-context-loss render failures also triggers a clean 2D fallback rather than a permanent blank game. A context restored within that grace period keeps its native 3D renderer.
 
 The browser QA now simulates unavailable WebGL (with the original 2D canvas still working), verifies exclusive screen ownership and the actual full first scoring action, and returns to Grand Prix. It also retains the existing successful WebGL-loss/restoration test. This does **not** certify GPU driver stability on a physical TV.
+
+
+### Phase 5: real time-based adaptive QA
+
+The automated software-Chromium browser now continues beyond its initial performance sample until the production adaptive controller actually reduces the *real WebGL drawing buffer*. The test verifies a transition labelled `low-fps-resolution`, reduced width and height with the same 16:9 ratio, continuous authoritative time, and one exclusive canvas. It saves an additional screenshot and before/after JSON. This is still only slow software-Chromium evidence — real TV hardware performance remains unverified.
