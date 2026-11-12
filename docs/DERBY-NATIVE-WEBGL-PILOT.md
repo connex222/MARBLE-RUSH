@@ -41,3 +41,10 @@ The initial GitHub Actions software-Chromium run proved 116 actual draw calls pe
 ## Track draw-call batching
 
 The stadium's immutable lanes, cuboid rails, distance marks and gantry are pre-transformed into **one combined WebGL triangle buffer with per-vertex colours**. The six real marble spheres, six textured lane surfaces and contextual props remain independently drawn using the same camera/depth buffer. This is geometry batching, **not** a Canvas2D screenshot or faux 3D image layer. The effect on software Chromium is measured by the subsequent CI run; this is not itself a 60 FPS claim.
+
+
+## Phase 1B — visual integration and TV-safe camera
+
+The approved `pp_derby_bg` environment is now rendered as a WebGL texture **inside the same backbuffer** as the native 3D stadium, not as an old DOM game scene. The track plinth, lanes, checkered finish, stands and safe-height rails are real camera-projected triangles. Six position-anchored player labels form **new HUD only** and are detached on unmount; no legacy game screen has ownership. The camera restricts lateral follow movement, widens for stragglers, and uses steady reduced-motion framing.
+
+Performance changes: the fragment shader computes expensive specular highlights only on marble surfaces, periodically samples GPU errors instead of every frame, and adaptively reduces the one canvas' backing resolution if rendering stays slow while preserving full-resolution DOM controls. The actual render scale and GPU name are recorded in QA telemetry; no result is automatically described as physical-TV performance. Software-Chromium measurement and real-TV assessment remain separate acceptance gates.

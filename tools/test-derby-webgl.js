@@ -9,6 +9,10 @@ const build=read('tools/build.js');
 assert.ok(gl.includes('gl.createShader(')&&gl.includes('gl.createBuffer(')&&
   gl.includes('gl.drawElements(')&&gl.includes('gl.enable(gl.DEPTH_TEST)'),
   'Pilot has no genuine WebGL mesh/vertex/depth pipeline');
+assert.ok(gl.includes("key:'pp_derby_bg'")&&gl.includes('updateRunnerTags(s,vp)')&&
+  gl.includes('resizeQuality()')&&gl.includes('qualityScale')&&
+  gl.includes('frameCount%120===0'),
+  'Pilot must reuse approved backdrop, show labelled real positions and adapt resolution');
 assert.ok(gl.includes('createStaticTrack()')&&gl.includes('drawStaticTrack(vp)')&&
   gl.includes('sphereGeometry()')&&gl.includes('boxGeometry()')&&
   gl.includes('perspective(')&&gl.includes('lookAt('),

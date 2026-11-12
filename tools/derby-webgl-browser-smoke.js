@@ -41,6 +41,9 @@ const fs=require('node:fs');
    assert.equal(initial.visibleScreens,1);
    assert.equal(initial.gpHidden,true);
    assert.equal(initial.graphics,'webgl-real-meshes');
+   assert.equal(initial.mesh.runnerTagCount,6,'Each live runner needs a readable nameplate');
+   assert.ok(initial.mesh.textureCount>=9,'Approved backdrop and marble textures must be loaded');
+   assert.ok(initial.mesh.backingPixels[0]>=960,'WebGL adaptive resolution was invalid');
    assert.ok(/WebGL/.test(initial.gpu||''),'Native WebGL context not obtained');
    assert.equal(initial.mesh.realMeshes,true);
    assert.ok(initial.mesh.drawCalls>=10&&initial.mesh.drawCalls<=35,'Static geometry must be batched into real 3D meshes');
@@ -69,6 +72,9 @@ const fs=require('node:fs');
    assert.equal(during.phase,'racing');
    assert.ok(during.horseX.some(x=>x>0),'Physics engine did not progress');
    assert.ok(during.leadText.startsWith('LIVE LEADER'),'Leader HUD not real state');
+   const liveNames=await page.evaluate(()=>
+     [...document.querySelectorAll('#ppDerby3dRunnerTags span')].map(e=>e.textContent));
+   assert.equal(liveNames.length,6,'The real 3D race lost its six runner labels');
    assert.ok(during.drawCalls>=10&&during.drawCalls<=35&&during.isolated,'Batched 3D track was not drawn during the real race');
    await page.screenshot({path:'qa-derby-webgl-3d-racing.png'});
    // Capture the same five-heat rules engine completing, with no new rules.
@@ -102,13 +108,15 @@ const fs=require('node:fs');
      const stage=document.getElementById('partyStage'),canvas=document.getElementById('partyStageCanvas');
      return {mode:stage.dataset.mode,isolated:window.__MR.partyScreen.assertExclusive(),
        canvasCount:stage.querySelectorAll('canvas').length,
-       got2d:!!canvas.getContext('2d'),glFlag:canvas.dataset.graphics||null};
+       got2d:!!canvas.getContext('2d'),glFlag:canvas.dataset.graphics||null,
+       staleDerbyTags:!!document.getElementById('ppDerby3dRunnerTags')};
    });
    assert.equal(switchCheck.mode,'dropzone');
    assert.equal(switchCheck.isolated,true);
    assert.equal(switchCheck.canvasCount,1);
    assert.equal(switchCheck.got2d,true,'WebGL context leaked into the next 2D game');
    assert.equal(switchCheck.glFlag,null);
+   assert.equal(switchCheck.staleDerbyTags,false,'Derby 3D labels leaked over Drop Zone');
    evidence.otherModesUntouched=switchCheck;
    await page.evaluate(()=>window.__MR.Game.toLobby());
    const restored=await page.evaluate(()=>({

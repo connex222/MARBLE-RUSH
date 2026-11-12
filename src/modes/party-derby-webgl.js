@@ -11,6 +11,8 @@ const MarbleDerbyWebGL=(()=>{
   let canvas=null,gl=null,program=null,meshBox=null,meshSphere=null,meshPlane=null,meshStatic=null;
   let locations=null,lost=false,drawCalls=0,frameCount=0;
   let cameraX=0,cameraDistance=42,cameraLast=0,cameraSpread=0;
+  let qualityScale=1,gpuLabel='unknown',slowFrames=0,fastFrames=0;
+  let runnerTags=null;
   let round=0,textureCache=new Map(),resourceList=[],contextLostListener=null;
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const ident=()=>new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
@@ -107,7 +109,7 @@ const MarbleDerbyWebGL=(()=>{
     'precision mediump float;',
     'varying vec3 vNormal; varying vec2 vUV; varying vec3 vWorld;',
     'varying vec3 vVertexColor;',
-    'uniform float uUseVertexColor;',
+    'uniform float uUseVertexColor; uniform float uUnlit;',
     'uniform vec3 uColor; uniform sampler2D uTexture;',
     'uniform float uTextured; uniform float uPattern; uniform float uOpacity;',
     'void main(){',
@@ -116,13 +118,15 @@ const MarbleDerbyWebGL=(()=>{
     'if(uPattern<1.5){ink.rgb*=uColor;}',
     'if(ink.a<0.12)discard;}',
     'ink.rgb*=mix(vec3(1.0),vVertexColor,clamp(uUseVertexColor,0.0,1.0));',
-    'vec3 n=normalize(vNormal);',
+    'if(uUnlit>0.5){gl_FragColor=ink;return;}',
+    'vec3 n=normalize(vNormal);'
     'float sun=max(dot(n,normalize(vec3(-0.37,0.87,0.52))),0.0);',
     'float fill=max(dot(n,normalize(vec3(0.62,0.19,-0.77))),0.0);',
     'float light=0.42+sun*0.51+fill*0.18;',
-    'float shine=pow(max(dot(reflect(normalize(vec3(0.37,-0.87,-0.52)),n),',
-    'normalize(vec3(0.15,0.66,0.74))),0.0),19.0);',
+    'float shine=0.0;',
     'if(uPattern>0.5){',
+    'shine=pow(max(dot(reflect(normalize(vec3(0.37,-0.87,-0.52)),n),',
+    'normalize(vec3(0.15,0.66,0.74))),0.0),14.0);',
     'float stripe=sin(atan(n.z,n.x)*5.0+n.y*14.0+vWorld.x*0.7);',
     'ink.rgb=mix(ink.rgb,vec3(1.0,0.94,0.81),0.17*(0.5+0.5*stripe));',
     'shine*=2.6;light+=0.15;}',
@@ -149,6 +153,7 @@ const MarbleDerbyWebGL=(()=>{
       uv:gl.getAttribLocation(program,'aUV'),
       vertexColor:gl.getAttribLocation(program,'aVertexColor'),
       useVertexColor:gl.getUniformLocation(program,'uUseVertexColor'),
+      unlit:gl.getUniformLocation(program,'uUnlit'),
       mvp:gl.getUniformLocation(program,'uMVP'),
       model:gl.getUniformLocation(program,'uModel'),
       color:gl.getUniformLocation(program,'uColor'),
@@ -177,6 +182,14 @@ const MarbleDerbyWebGL=(()=>{
       throw Error('Derby WebGL unavailable on this browser/GPU. Remove ?derby3d=1 to use normal Derby.');
     }
     lost=false;frameCount=0;drawCalls=0;round=0;cameraLast=0;cameraX=0;cameraDistance=42;
+    const rendererExt=gl.getExtension('WEBGL_debug_renderer_info');
+    gpuLabel=String(rendererExt?
+      gl.getParameter(rendererExt.UNMASKED_RENDERER_WEBGL):
+      gl.getParameter(gl.RENDERER));
+    qualityScale=/swiftshader|llvmpipe|software/i.test(gpuLabel)?0.55:1;
+    slowFrames=0;fastFrames=0;
+    resizeQuality();
+    createRunnerTags();
     contextLostListener=e=>{e.preventDefault();lost=true;};
     canvas.addEventListener('webglcontextlost',contextLostListener);
     canvas.addEventListener('webglcontextrestored',()=>{lost=false;setup();});
@@ -195,6 +208,7 @@ const MarbleDerbyWebGL=(()=>{
         else if(r.kind==='program')gl.deleteProgram(r.object);
       }
     }
+    if(runnerTags){runnerTags.remove();runnerTags=null;}
     // Restore a fresh, uninitialised canvas for the other four Canvas2D modes.
     const fresh=canvas.cloneNode(false);
     fresh.removeAttribute('data-graphics');fresh.removeAttribute('data-renderer-error');
@@ -227,6 +241,7 @@ const MarbleDerbyWebGL=(()=>{
     gl.uniformMatrix4fv(locations.model,false,model);
     gl.uniform3fv(locations.color,color(tint));
     gl.uniform1f(locations.useVertexColor,0);
+    gl.uniform1f(locations.unlit,options.unlit?1:0);
     gl.disableVertexAttribArray(locations.vertexColor);
     gl.uniform1f(locations.pattern,options.pattern?1:0);
     gl.uniform1f(locations.opacity,options.opacity==null?1:options.opacity);
@@ -260,26 +275,40 @@ const MarbleDerbyWebGL=(()=>{
       }
       for(const index of baseI)indices.push(offset+index);
     }
-    add([0,-.75,0],[33.5,.8,15],'#523f64');
-    add([0,-.27,0],[32.5,.35,14],'#c99055');
-    add([0,-.02,0],[31.5,.18,12.9],'#132a43');
+    // Three physically raised layers give the stadium mass and silhouette,
+    // with the approved soil surface inset on top of the lane geometry.
+    add([0,-.77,0],[33.6,.78,15.1],'#493449');
+    add([0,-.29,0],[33,.40,14.6],'#dfab64');
+    add([0,-.03,0],[31.8,.16,13.2],'#3a3646');
+    const runnerColours=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d'];
     for(let lane=0;lane<LANES;lane++){
       const z=-5.23+lane*2.09;
-      add([0,.21,z-1.00],[31,.065,.07],'#f5dd91');
+      add([0,.21,z-1.00],[31,.055,.06],'#fff0bd');
+      add([-15.27,.33,z],[.20,.15,1.35],runnerColours[lane]);
+      for(let square=0;square<4;square++){
+        add([14.57,.35,z-.73+square*.46],[.26,.045,.43],
+          (lane+square)%2?'#17243a':'#fff7dc');
+      }
       for(let k=0;k<=5;k++)add([-14.65+k*5.86,.20,z],[.08,.04,.95],'#b5e6e7');
       add([-15,.27,z],[.09,.04,1.73],'#ffffff');
       add([15,.27,z],[.12,.04,1.73],lane%2?'#141c36':'#ffffff');
     }
-    for(const z of [-6.8,6.8])add([0,.65,z],[32,.42,.33],'#dba75e');
-    for(let k=0;k<9;k++){
-      const x=-14+k*3.5;
-      add([x,1.65,-8.2],[.34,3.3,.34],'#8f88aa');
-      add([x,3.38,-8.2],[.55,.55,.55],'#f9d78a');
-      add([x,.75,8.25],[.38,1.5,.4],'#6b6d90');
+    // Low profile front safety lip: no giant fence covering the contestants.
+    for(const z of [-6.8,6.8])add([0,.40,z],[32,.24,.22],'#ffe5a3');
+    for(let k=0;k<13;k++){
+      const x=-15+k*2.5;
+      add([x,.64,-7.0],[.13,.51,.14],'#9fd9d5');
+      add([x,.57,7.0],[.12,.32,.12],'#f6c57d');
     }
+    // Grandstand stays behind the six lanes, rather than swallowing the arena.
     for(let seat=0;seat<4;seat++)
-      add([0,1.4+seat*.68,-10.3-seat*.68],[29,.42,1],
-        seat%2?'#5b536f':'#64758d');
+      add([0,1.4+seat*.52,-9.8-seat*.62],[27,.32,.87],
+        seat%2?'#6c4b5b':'#80676c');
+    for(let k=0;k<5;k++){
+      const x=-12+k*6;
+      add([x,2.3,-12.0],[.20,4.2,.22],'#d2a76b');
+      add([x,4.5,-12.0],[.55,.30,.55],'#ffe3a2');
+    }
     // Finish gantry only; starting arch obstructed the TV's first heat.
     for(const z of [-7.3,7.3])
       add([15.7,1.95,z],[.22,3.9,.30],'#f3d48f');
@@ -295,6 +324,7 @@ const MarbleDerbyWebGL=(()=>{
     gl.uniform1f(locations.opacity,1);
     gl.uniform1f(locations.textured,0);
     gl.uniform1f(locations.useVertexColor,1);
+    gl.uniform1f(locations.unlit,0);
     gl.bindTexture(gl.TEXTURE_2D,null);
     gl.bindBuffer(gl.ARRAY_BUFFER,meshStatic.vertex);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,meshStatic.index);
@@ -308,33 +338,124 @@ const MarbleDerbyWebGL=(()=>{
     drawCalls++;
   }
 
+
+  function resizeQuality(){
+    if(!canvas)return;
+    canvas.width=Math.max(960,Math.round(1920*qualityScale/16)*16);
+    canvas.height=Math.max(540,Math.round(1080*qualityScale/16)*16);
+    // Always preserve 16:9 even when backing resolution changes.
+    canvas.height=Math.round(canvas.width*9/16);
+  }
+  function adaptQuality(drawMs){
+    if(!Number.isFinite(drawMs)||frameCount<5)return;
+    if(drawMs>29){slowFrames++;fastFrames=0;}
+    else if(drawMs<13){fastFrames++;slowFrames=0;}
+    else{slowFrames=Math.max(0,slowFrames-1);fastFrames=0;}
+    if(slowFrames>=7&&qualityScale>.51){
+      qualityScale=Math.max(.5,Math.round((qualityScale-.12)*100)/100);
+      resizeQuality();slowFrames=0;
+    }else if(fastFrames>=180&&qualityScale<.99){
+      qualityScale=Math.min(1,Math.round((qualityScale+.08)*100)/100);
+      resizeQuality();fastFrames=0;
+    }
+  }
+  function createRunnerTags(){
+    const stage=canvas?.parentElement;
+    if(!stage)return;
+    runnerTags=document.createElement('div');
+    runnerTags.id='ppDerby3dRunnerTags';
+    runnerTags.setAttribute('aria-label','Live Derby runner positions');
+    Object.assign(runnerTags.style,{
+      position:'absolute',inset:'0',zIndex:'2',
+      pointerEvents:'none',overflow:'hidden'
+    });
+    const names=['Rocket','Whirlwind','Comet','Gold Rush','Lightning','Lucky'];
+    for(let i=0;i<LANES;i++){
+      const tag=document.createElement('span');
+      tag.dataset.runner=String(i);
+      tag.textContent=names[i];
+      Object.assign(tag.style,{
+        position:'absolute',left:'50%',top:'50%',
+        transform:'translate(-50%,-140%)',
+        font:'900 clamp(11px, .9vw, 17px) Nunito, sans-serif',
+        color:'#fffaf0',textShadow:'0 2px 4px #000',
+        whiteSpace:'nowrap',padding:'3px 9px',
+        borderRadius:'9px',background:'rgba(11,21,43,.84)',
+        border:'1px solid rgba(255,255,255,.75)',
+        boxShadow:'0 3px 7px #0008'
+      });
+      runnerTags.appendChild(tag);
+    }
+    stage.appendChild(runnerTags);
+  }
+  function updateRunnerTags(s,viewProjection){
+    if(!runnerTags)return;
+    const sorted=s.horses.slice().sort((a,b)=>
+      (Number(b.x)||0)-(Number(a.x)||0)||a.id-b.id);
+    const places=new Map(sorted.map((h,i)=>[h.id,i+1]));
+    for(const h of s.horses){
+      const el=runnerTags.children[h.id];
+      if(!el)continue;
+      const x=-15+clamp(Number(h.x)||0,0,LENGTH)/LENGTH*30,
+        z=-5.23+h.id*2.09;
+      const px=viewProjection[0]*x+viewProjection[4]*1.8+
+        viewProjection[8]*z+viewProjection[12];
+      const py=viewProjection[1]*x+viewProjection[5]*1.8+
+        viewProjection[9]*z+viewProjection[13];
+      const pw=viewProjection[3]*x+viewProjection[7]*1.8+
+        viewProjection[11]*z+viewProjection[15];
+      const screenX=(.5+.5*px/pw)*100,screenY=(.5-.5*py/pw)*100;
+      const visible=pw>0&&screenX>18&&screenX<96&&
+        screenY>24&&screenY<76;
+      el.hidden=!visible;
+      if(!visible)continue;
+      el.style.left=screenX.toFixed(2)+'%';
+      el.style.top=screenY.toFixed(2)+'%';
+      el.style.borderColor=h.color||'#fff7cc';
+      const label=h.name+' · '+places.get(h.id);
+      if(el.textContent!==label)el.textContent=label;
+    }
+  }
+
   function draw(s,assets,options={}){
     if(!gl||lost||!s||!Array.isArray(s.horses)||s.horses.length!==LANES)return false;
     const positions=s.horses.map(h=>clamp(Number(h.x)||0,0,LENGTH));
     const lo=Math.min(...positions),hi=Math.max(...positions);
     const spread=hi-lo;cameraSpread=spread;
-    const desiredX=(hi+lo)/(2*LENGTH)*30-15;
-    const desiredDistance=24+spread/LENGTH*24;
+    // Fair broadcast framing: never chase the leader off the TV-safe track.
+    // We only nudge centre toward the pack; all six marbles remain in shot.
+    const desiredX=clamp(((hi+lo)/(2*LENGTH)*30-15)*.18,-2.8,2.8);
+    const wide=clamp((spread-130)/620,0,1);
+    const desiredDistance=38+wide*13;
     const now=performance.now(),dt=clamp((now-cameraLast)/1000,0,.05);
     cameraLast=now;
     const ease=1-Math.exp(-2.1*dt);
-    if(options.reduce){cameraX=0;cameraDistance=48;}
+    if(options.reduce){cameraX=0;cameraDistance=54;}
     else{
       cameraX+=(desiredX-cameraX)*ease;
       cameraDistance+=(desiredDistance-cameraDistance)*ease;
     }
-    if(s.round!==round){round=s.round;cameraDistance=options.reduce?48:40;}
+    if(s.round!==round){round=s.round;cameraDistance=options.reduce?54:43;}
     const view=lookAt([cameraX+1.2,cameraDistance*.61,cameraDistance*.90],[cameraX,0,0]);
     const proj=perspective(50*Math.PI/180,canvas.width/canvas.height,.5,175);
     const vp=multiply(proj,view);
     gl.viewport(0,0,canvas.width,canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);drawCalls=0;
+    // Approved 3D racing artwork is the atmosphere, not a competing game
+    // screen. It is textured INSIDE this same GPU backbuffer before the live
+    // camera-projected track, so no old interface exists underneath.
+    if(assets?.pp_derby_bg?.complete&&assets.pp_derby_bg.naturalWidth){
+      gl.disable(gl.DEPTH_TEST);gl.depthMask(false);
+      paint(meshPlane,ident(),[0,0,0],[1,1,1],'#c8c5d8',{
+        key:'pp_derby_bg',image:assets.pp_derby_bg,unlit:true});
+      gl.depthMask(true);gl.enable(gl.DEPTH_TEST);
+    }
     // One pre-baked world-space 3D arena draw, six live textured lane tops.
     drawStaticTrack(vp);
     for(let lane=0;lane<LANES;lane++){
       const z=-5.23+lane*2.09;
-      paint(meshBox,vp,[0,.12,z],[30.5,.12,1.9],lane%2?'#4f6d87':'#657f92',{
+      paint(meshBox,vp,[0,.12,z],[30.5,.12,1.9],lane%2?'#e0c39d':'#f4dcaa',{
         key:'pp_derby_surface_main',image:assets?.pp_derby_surface_main});
     }
     // Approved approved-stage props are physically positioned in 3D space.
@@ -354,6 +475,7 @@ const MarbleDerbyWebGL=(()=>{
       paint(meshBox,vp,[x,-.01,z],[.74,.028,.74],'#152b38',{opacity:.44});
     }
     frameCount++;
+    updateRunnerTags(s,vp);
     MarblePartyUI.updateDerby(s,options.selectedHorse||0);
     const label=document.getElementById('ppBoardLabel');
     if(label){
@@ -363,11 +485,19 @@ const MarbleDerbyWebGL=(()=>{
         s.phase==='results'?'OFFICIAL WINNER · '+(s.horses[s.lastWinner]?.name||'PENDING').toUpperCase():
         'FIVE-HEAT DERBY COMPLETE';
     }
-    return gl.getError()===gl.NO_ERROR;
+    // GPU errors are sampled occasionally; synchronously querying after
+    // every draw stalls slower WebGL implementations.
+    if(frameCount%120===0&&gl.getError()!==gl.NO_ERROR)return false;
+    // Adaptive backing resolution only changes the single WebGL canvas.
+    // TV DOM text remains full-resolution; never claim this equals monitor FPS.
+    adaptQuality(performance.now()-now);
+    return true;
   }
   function debug(){return {api:gl?'WebGL':'unmounted',realMeshes:!!meshSphere&&!!meshBox,
     singleCanvas:!!canvas&&canvas.parentElement?.querySelectorAll('canvas').length===1,
     frameCount,drawCalls,cameraX,cameraDistance,cameraSpread,contextLost:lost,
+    qualityScale,backingPixels:[canvas?.width||0,canvas?.height||0],gpuLabel,
+    runnerTagCount:runnerTags?.children?.length||0,
     textureCount:textureCache.size,positionsSource:'MarbleDerby.state.horses[*].x'};}
   return Object.freeze({mount,unmount,draw,debug,
     get active(){return !!gl&&!lost;},get canvas(){return canvas;}});
