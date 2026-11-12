@@ -43,6 +43,7 @@ const MarblePartyScreen=(()=>{
     ensure();
     if(active!==null)unmount();
     const def=definitions[name];
+    MarbleSceneCache.keepOnly(name);
     for(const id of allPanels){
       const element=document.getElementById(id);
       if(!element)throw Error('Missing Party Pack panel: '+id);
@@ -88,6 +89,7 @@ const MarblePartyScreen=(()=>{
       const element=document.getElementById(id);if(element)element.hidden=true;
     }
     if(canvas)canvas.hidden=true;
+    MarbleSceneCache.clear();
     if(raceCanvas)raceCanvas.hidden=false;
   }
   function render(name,sessionState,assets,options={}){
@@ -135,7 +137,7 @@ const MarblePartyScreen=(()=>{
       fpsEstimateReliable:r.frameIntervals.length>=40,
       slowFrameShare:r.intervals?
         r.slowIntervals/r.intervals:0,
-      renderFailures:r.renderFailures,active:active===r.mode,
+      renderFailures:r.renderFailures,atmosphereCache:MarbleSceneCache.stats(),active:active===r.mode,
       raceCanvasHidden:!!raceCanvas?.hidden
     });
   }
