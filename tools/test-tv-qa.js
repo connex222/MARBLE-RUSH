@@ -39,6 +39,12 @@ assert.equal(qa.enabled,true);
 qa.init();qa.init();
 assert.equal(appends.length,1,'QA created duplicate overlay');
 assert.equal(appends[0].id,'marbleRushQaDiagnostics');
+assert.match(appends[0].style.cssText,/pointer-events:none/,
+  'Diagnostics panel must not block underlying lobby and mode controls');
+const saveButton=appends[0].children.find(el=>el.id==='marbleRushQaSave');
+assert.ok(saveButton,'QA export button missing');
+assert.match(saveButton.style.cssText,/pointer-events:auto/,
+  'Report export must remain clickable when panel is click-through');
 qa.noteAction('brawl','ram');
 for(let i=0;i<200;i++){clock=i*16.7;qa.frame(clock,'brawl');}
 const result=qa.report();
