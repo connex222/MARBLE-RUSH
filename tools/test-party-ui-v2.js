@@ -10,6 +10,7 @@ const curling=read('src/modes/party-curling-ui-v2.js');
 const golf=read('src/modes/party-golf-ui-v2.js');
 const host=read('src/modes/party-screen-host.js');
 const sceneCache=read('src/modes/party-scene-cache.js');
+const physicalDiagnostics=read('src/modes/party-tv-qa.js');
 const build=read('tools/build.js');
 const modes=['derby','dropzone','brawl','curling','golf'];
 assert.equal((html.match(/id="partyStageCanvas"/g)||[]).length,1,
@@ -56,6 +57,12 @@ assert.ok(!build.includes("'party-fx'")&&
  'Retired overlay still bundled or checked in');
 assert.ok(build.includes("'party-screen-host'"));
 assert.ok(build.includes("'party-scene-cache'"));
+assert.ok(build.includes("'party-tv-qa'"));
+assert.ok(tv.includes('MarbleRushQA.frame(now,state)')&&
+ tv.includes('MarbleRushQA.noteAction(state,a)'),
+ 'Local diagnostics must share the existing frame loop and action routing');
+assert.ok(!physicalDiagnostics.includes('requestAnimationFrame('),
+ 'QA recorder cannot create a second renderer or frame loop');
 assert.ok(host.includes('MarbleSceneCache.keepOnly(name)')&&
  host.includes('MarbleSceneCache.clear()'),'Scene cache not attached to exclusive host lifetime');
 assert.ok(!sceneCache.includes('appendChild')&&!sceneCache.includes('setInterval')&&
