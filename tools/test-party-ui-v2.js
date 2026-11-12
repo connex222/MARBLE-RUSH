@@ -64,6 +64,17 @@ for(const file of [derby,brawl,curling,golf])
  assert.ok(file.includes('MarbleSceneCache.paint('),
   'One of five modes has no reusable background cache');
 assert.ok(!/PartyFX\.draw/.test(tv+host));
+assert.ok(derby.includes('YOUR PICK WON')&&derby.includes('YOUR PICK LOST')&&
+ derby.includes('placing.get(h.id)'),
+ 'Derby winner/loser feedback and genuine live positions disappeared');
+assert.ok(brawl.includes('function cameraFor(s,reduce)')&&
+ brawl.includes('const targetZoom=Math.min(1.075'),
+ 'Brawl bounded camera and reduced-motion behaviour missing');
+assert.ok(curling.includes("s.phase==='results'&&s.stones.length")&&
+ curling.includes('Math.hypot(a.x-1140,a.y-265)'),
+ 'Curling nearest-stone physical measurement missing');
+assert.ok(golf.includes('Math.hypot(s.ball.x-s.layout.cup[0]'),
+ 'Golf live distance-to-cup guidance missing');
 assert.ok(derby.includes('pp_derby_bg')&&
  derby.includes('pp_derby_surface_main')&&
  derby.includes('pp_derby_prop_grandstand')&&
