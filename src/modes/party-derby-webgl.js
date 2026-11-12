@@ -281,9 +281,10 @@ const MarbleDerbyWebGL=(()=>{
     // Three physically raised layers give the stadium mass and silhouette,
     // with the approved soil surface inset on top of the lane geometry.
     // TV-safe low plinth: no opaque 200-pixel slab below the contenders.
-    add([0,-.39,0],[33.6,.20,15.1],'#493449');
-    add([0,-.19,0],[33,.15,14.6],'#dfab64');
-    add([0,-.03,0],[31.8,.16,13.2],'#3a3646');
+    // Tight stadium apron to the real six-lane width: no giant empty forecourt.
+    add([0,-.39,0],[33.6,.20,7.9],'#493449');
+    add([0,-.19,0],[33,.15,7.6],'#dfab64');
+    add([0,-.03,0],[31.8,.16,6.95],'#3a3646');
     const runnerColours=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d'];
     for(let lane=0;lane<LANES;lane++){
       const z=-5.23+lane*2.09;
