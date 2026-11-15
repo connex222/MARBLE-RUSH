@@ -1,4 +1,4 @@
-name: MARBLE RUSH real rebuild — five exclusive stages, physics and multiplayer QA
+name: MARBLE RUSH Grand Prix single-game public release QA
 on:
   push:
     branches:
@@ -36,7 +36,7 @@ permissions:
   contents: read
 jobs:
   derby-ui-rebuild:
-    name: Verify all five rebuilt game screens, phones and preserved Grand Prix
+    name: Verify public Grand Prix plus archived modes in localhost QA
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -66,6 +66,7 @@ jobs:
           node tools/test-party-fx.js
           node tools/test-phase8-integration.js
           node tools/test-party-ui-v2.js
+          node tools/test-single-game-release.js
       - name: Prove ALL 200 approved raw images/audio are byte-identical to active Party Pack baseline
         run: |
           git fetch --depth=1 origin dev/party-pack-ui-v2-rebuild
@@ -103,6 +104,7 @@ jobs:
             if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
             sleep 1
           done
+          node tools/single-game-browser-smoke.js
           node tools/party-ui-v2-browser-smoke.js
           node tools/tv-qa-browser-smoke.js
       - name: Verify two phones use five new modes, including Golf, over WebSockets
@@ -124,6 +126,7 @@ jobs:
           name: marble-rush-real-rebuild-five-mode-review
           if-no-files-found: ignore
           path: |
+            qa-single-marble-rush-*.png
             qa-ui-v2-*.png
             qa-real-*.png
             qa-real-*.json
