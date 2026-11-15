@@ -77,6 +77,14 @@
   /* ---------- Assets (manifest written by the build; optional) ---------- */
   const IMG = {};
   const SND = {};
+  // Creative Claw original cues are development-review only. Missing or CORS-
+  // blocked media uses the existing procedural fallback without blocking play.
+  const BRAWL_AUDIO_PREVIEW=new URLSearchParams(location.search).get('brawl3d')==='1';
+  if(BRAWL_AUDIO_PREVIEW)Object.assign(SND,{
+    music_brawl_crucible:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/7428c6c7-d474-4a51-8492-1d5c58f87243.mp3',
+    sfx_brawl_ram:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/773c0591-886e-4586-866b-3b8c1843cd98.mp3',
+    sfx_brawl_shockwave:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/02c78a6c-99cd-432b-abc0-5cc9668a5ed9.mp3'
+  });
   fetch('assets/manifest.json').then(r => r.ok ? r.json() : null).then(man => {
     if (!man) return;
     (man.images || []).forEach(o => {
@@ -163,6 +171,7 @@
           .then(b => ac.decodeAudioData(b)).then(buf => {
             buffers[k] = buf;
             if(k==='music_party')Music.useTrack(buf);
+            if(k==='music_brawl_crucible')Music.useBrawlTrack(buf);
             if(k==='vo_party_intro' && state==='lobby' && !introDone) startIntro();
           })
           .catch(() => { delete buffers[k]; });
@@ -302,6 +311,7 @@
     /* Original adaptive Web Audio Party Pack score. No external samples required. */
     const Music = (() => {
       let next = 0, step = 0, timer = null, externalTrack = null, externalSource = null;
+      let brawlTrack=null,brawlSource=null;
       const BPM = 128, SPB = 60 / BPM / 4; // sixteenth notes
       const ROOTS = [146.83, 123.47, 98.0, 110.0]; // D3 B2 G2 A2
       const CH = [[293.66, 369.99, 440], [246.94, 293.66, 369.99], [196, 246.94, 293.66], [220, 277.18, 329.63]];
@@ -337,7 +347,7 @@
         o.connect(g); g.connect(music); o.start(t); o.stop(t + dur + 0.02);
       }
       function schedule() {
-        if(externalSource)return;
+        if(externalSource||brawlSource)return;
         while (next < ac.currentTime + 0.12) {
           const s = step % 16, bar = Math.floor(step / 16) % 4, t = next;
           const race = mode === 'race' || (mode === 'brawl' && intensity > 0.58);
@@ -370,10 +380,26 @@
           externalTrack=buffer;
           externalSource=ac.createBufferSource();
           externalSource.buffer=externalTrack;externalSource.loop=true;
-          externalSource.connect(music);
+          if(mode!=='brawl'||!BRAWL_AUDIO_PREVIEW)externalSource.connect(music);
           externalSource.start();
         },
-        mode(m) { mode = m; },
+        useBrawlTrack(buffer){
+          brawlTrack=buffer;
+          if(mode==='brawl'&&BRAWL_AUDIO_PREVIEW)this.mode('brawl');
+        },
+        mode(m) {
+          mode=m;
+          if(brawlSource){
+            try{brawlSource.stop();}catch(_){}
+            brawlSource.disconnect();brawlSource=null;
+          }
+          if(externalSource)externalSource.disconnect();
+          if(mode==='brawl'&&BRAWL_AUDIO_PREVIEW&&brawlTrack){
+            brawlSource=ac.createBufferSource();
+            brawlSource.buffer=brawlTrack;brawlSource.loop=true;
+            brawlSource.connect(music);brawlSource.start();
+          }else if(externalSource)externalSource.connect(music);
+        },
         intensity(v) { intensity = v; },
       };
     })();
@@ -1524,6 +1550,7 @@
         for (const p of players.values()) p.points = outcome.totals.get(p.id) || 0;
       }
       state = 'finale'; stateT = 0;
+      if(BRAWL_AUDIO_PREVIEW&&selectedMode==='brawl')Audio_.Music.mode('lobby');
       const list = [...players.values()];
       const aw = giveAwards(list);
       for (const p of list) p.award = aw.get(p.id);
@@ -2220,7 +2247,7 @@
           if(key!==brawlLastCue){
             brawlLastCue=key;
             if(cue.kind==='shockwave'){
-              Audio_.play('sfx_bumper',{gap:.2,vol:.95});
+              Audio_.play(BRAWL_AUDIO_PREVIEW?'sfx_brawl_shockwave':'sfx_bumper',{gap:.2,vol:.70});
               Clatter.say('gasp',"The shockwave's hit the bowl!",2);
             }else if(cue.kind==='knockout'){
               const winner=st.roster.find(p=>p.id===cue.id)?.name||'Someone';
