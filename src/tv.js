@@ -1377,8 +1377,8 @@
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
   // Grand Prix remains isolated; five Party Pack games use the exclusive stage.
   let selectedMode = 'grandprix';
-  // Single-game release: the original Grand Prix and all seven tracks are the
-  // entire published product. Keep experimental modes archived in this repo,
+  // Single-game release: Grand Prix has seven protected original tracks plus
+  // three new courses. Keep experimental modes archived in this repo,
   // available only behind the explicit localhost-only test flag below.
   // Never expose add-ons or Party Night on the live TV or phone.
   const BRAWL_PUBLISHED = false;
