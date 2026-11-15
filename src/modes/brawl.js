@@ -45,6 +45,8 @@ const BowlBrawl = (() => {
       state.pulseIndex=0;state.pulseAt=SHOCK_TIMES[0];state.lastPulseAt=-99;
       state.events.push({kind:'hazardReveal',hazard:state.hazard,round:state.round,time:state.time});
       const n=roster.length,phase=rng()*TAU,spawnRadius=n<=2?145:n<=4?165:190;
+      if(n===2&&(state.round===1||state.round===ROUNDS))
+        state.events.push({kind:'duel',round:state.round,time:state.time});
       state.marbles=roster.map((p,i)=>{
         const ang=TAU*i/n+phase, x=spawnRadius*Math.cos(ang),y=spawnRadius*Math.sin(ang);
         const heading=ang+Math.PI;
