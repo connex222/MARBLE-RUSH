@@ -20,7 +20,7 @@ assert.match(hardwareQa,/hardwareApproved:null/,'browser telemetry must not asse
 assert.match(hardwareQa,/brawl3d:lastCrucible/,'Crucible GPU snapshot missing from QA report');
 const arena=read('src/modes/party-brawl-webgl.js');
 const tv=read('src/tv.html');
-assert.match(brawlEngine,/const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=240/,
+assert.match(brawlEngine,/const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=325/,
   'the spinning arm must physically exist in the authoritative engine');
 assert.match(brawlEngine,/const along=clamp\(m\.x\*ax\+m\.y\*ay,0,SWEEPER_LENGTH\)/,
   'rotor collider must span the real swept segment');
