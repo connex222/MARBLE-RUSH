@@ -145,6 +145,7 @@
     const buffers = {};
     let introDone=false;
     let introSource=null, introEnvelope=null, introTimer=null;
+    let brawlVoiceDuckUntil=0,lastMusicTarget=-1;
     function init() {
       if (ac) return;
       ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -312,7 +313,28 @@
       rollGain.gain.setTargetAtTime(settings.sfx ? Math.min(0.32, level) : 0, t, 0.08);
       rollFilter.frequency.setTargetAtTime(380 + pitch * 900, t, 0.1);
     }
-    function setMusic(on) { if (music && ac) music.gain.setTargetAtTime(on ? 0.34 : 0, ac.currentTime, 0.3); }
+    function refreshMusicMix() {
+      if(!music||!ac)return;
+      const duck=state==='brawl'&&performance.now()<brawlVoiceDuckUntil;
+      // Voice remains intelligible without increasing the overall TV volume.
+      const target=settings.music?(duck?.12:.34):0;
+      if(target!==lastMusicTarget){
+        music.gain.setTargetAtTime(target,ac.currentTime,duck?.12:.30);
+        lastMusicTarget=target;
+      }
+    }
+    function duckForAnnouncer(seconds=2.6) {
+      if(state!=='brawl')return;
+      brawlVoiceDuckUntil=Math.max(brawlVoiceDuckUntil,performance.now()+seconds*1000);
+      refreshMusicMix();
+    }
+    function setMusic(on) {
+      if(music&&ac){
+        const duck=state==='brawl'&&performance.now()<brawlVoiceDuckUntil;
+        lastMusicTarget=on?(duck?.12:.34):0;
+        music.gain.setTargetAtTime(lastMusicTarget,ac.currentTime,.30);
+      }
+    }
     function setSfx(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 0.8 : 0, ac.currentTime, 0.1); if(!on)stopIntro(); }
 
     /* Original adaptive Web Audio Party Pack score. No external samples required. */
@@ -411,7 +433,7 @@
       };
     })();
 
-    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, Music: { mode: m => ac && Music.mode(m), intensity: v => ac && Music.intensity(v) }, get debug() { return { introPlaying: !!introSource, introDone, rollGain: rollGain?.gain.value||0, state }; }, get on() { return !!ac; } };
+    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, duckForAnnouncer, refreshMusicMix, Music: { mode: m => ac && Music.mode(m), intensity: v => ac && Music.intensity(v) }, get debug() { return { introPlaying: !!introSource, introDone, rollGain: rollGain?.gain.value||0, state }; }, get on() { return !!ac; } };
   })();
 
   /* ======================================================================
@@ -1311,9 +1333,11 @@
         portrait.parentElement.classList.add('withArt');
       }
       el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+      if(state==='brawl')Audio_.duckForAnnouncer(2.6);
       Audio_.play('vo_' + key, { gap: 0.5 });
     }
-    function tick() { if (performance.now() / 1000 > hideAt) el.classList.remove('show'); }
+    function tick() { if (performance.now() / 1000 > hideAt) el.classList.remove('show');
+      if(state==='brawl')Audio_.refreshMusicMix(); }
     function clear() {hideAt=0;el.classList.remove('show');}
     return { say, tick, clear };
   })();
