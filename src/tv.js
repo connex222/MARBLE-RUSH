@@ -1305,6 +1305,10 @@
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
   // Grand Prix remains isolated; five Party Pack games use the exclusive stage.
   let selectedMode = 'grandprix';
+  // Release isolation: leave Grand Prix and all seven track files alone.
+  // Private brawl preview requires an explicit URL flag; the rest remain archived.
+  const BRAWL_PREVIEW = new URLSearchParams(location.search).get('brawl3d') === '1';
+  const isPublishedMode = id => id === 'grandprix' || (BRAWL_PREVIEW && id === 'brawl');
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
   let derbyTvHorse = 0;
@@ -1329,6 +1333,7 @@
       renderLobby();
     },
     beginCup() {
+      if (!isPublishedMode(selectedMode) || partyLength !== 0) return;
       if (players.size === 0 || !MODES[selectedMode]?.available || (!partyLength && players.size < MODES[selectedMode].minPlayers)) return;
       if (partyLength && !partyRun) {
         const ids = PartyNight.plan(partyLength, players.size, (Date.now() >>> 0));
@@ -1577,7 +1582,7 @@
         Audio_.play('crowd_cheer');
         return;
       }
-      if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
+      if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available && isPublishedMode(v)) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
       // Host may abandon any active game, including countdown/vote/Grand Prix.
@@ -1590,7 +1595,7 @@
 
 
 
-      if (a === 'party' && isVip && state === 'lobby' && [0,3,5,7].includes(v)) {
+      if (a === 'party' && isVip && state === 'lobby' && v === 0) {
         partyLength = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
       // Future modes receive only scoped, bounded actions from known players;
@@ -1980,7 +1985,7 @@
     if (!box) return;
     // Identical selection path for TV and VIP phone, gated against unfinished modes.
     box.replaceChildren();
-    for (const mode of Object.values(MODES)) {
+    for (const mode of Object.values(MODES).filter(m => isPublishedMode(m.id))) {
       const card = document.createElement('button');
       card.className = 'partyModeCard';
       card.dataset.mode = mode.id;
@@ -2004,9 +2009,11 @@
       box.appendChild(card);
     }
     applyPartyArt();
-    $('#partyModeStatus').textContent = partyLength ? 'Party Night preview: '+partyLength+' rounds · ready modes repeat' :
-      'UI REBUILD v2 · all five Party Pack modes rebuilt · final visual QA pending';
+    $('#partyModeStatus').textContent = BRAWL_PREVIEW ?
+      'Grand Prix protected · Bowl Brawl genuine-3D development preview' :
+      'Grand Prix · original seven-track championship';
     const opts = $('#partyNightOptions');
+    if (opts) opts.hidden = true; // Party Night cannot silently pick unfinished games.
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
     }
@@ -2136,7 +2143,7 @@
       const m = world ? world.get(p.id) : null;
       const msg = {
         t: 'hud', s: state === 'photo' ? 'results' : state, mode: selectedMode, phase: state,
-        availableModes: Object.values(MODES).filter(m => m.available).map(m => ({ id: m.id, name: m.name })), name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
+        availableModes: Object.values(MODES).filter(m => m.available && isPublishedMode(m.id)).map(m => ({ id: m.id, name: m.name })), partyNightEnabled: false, name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
         place: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 0 : m ? m.rank : 0,
         n: ['dropzone','brawl','derby','curling','golf'].includes(state) ? players.size : world ? world.marbles.length : 0,
         boost: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,
