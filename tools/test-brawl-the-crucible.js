@@ -30,8 +30,8 @@ assert.match(brawlHud,/function reset\(\)/,
   'Brawl HUD and standings must be reset between games');
 assert.match(tv,/id="ppBrawlRoundWinner"/,
   'broadcast winner cut-in must be present');
-assert.match(preview,/duckForAnnouncer\(2\.6\)/,
-  'announcer must duck the Brawl score only');
+assert.match(preview,/duckForAnnouncer\(1\.3\)/,
+  'a real announcer voice should briefly duck the score, but silent captions must not');
 assert.match(host,/fallbackBrawl\('gpu-context-lost'\)/,
   'context loss must fallback in the SAME TV frame');
 assert.match(host,/fallbackBrawl\('gpu-exception'\)/,
