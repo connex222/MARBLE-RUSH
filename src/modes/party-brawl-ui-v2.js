@@ -383,7 +383,7 @@ const MarbleBrawlUI=(()=>{
     updateHud(s);
     return true;
   }
-  return Object.freeze({draw,get framing(){
+  return Object.freeze({draw,updateHud,get framing(){
     return Object.freeze({zoom:broadcast.zoom,x:broadcast.x,y:broadcast.y});
   }});
 })();
