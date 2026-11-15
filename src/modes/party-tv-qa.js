@@ -170,7 +170,8 @@ const MarbleRushQA=(()=>{
    }
    return {
      title:'MARBLE RUSH local physical acceptance sample',
-     version:'tv-qa-v2-crucible',
+     version:'tv-qa-v1',
+     brawl3dSchemaVersion:2,
      collectedAtUtc:new Date().toISOString(),
      environment:'Real TV computer when run locally; CI browser only if executed there',
      device:{viewport:[innerWidth,innerHeight],pixelRatio:devicePixelRatio,

@@ -96,7 +96,8 @@ const sharp=require('sharp');
   }
   assert.equal(info.reported.renderFailures,0,'WebGL frame failure');
   const physicalQa=await tv.evaluate(()=>window.__MR?.qaDiagnostics?.report());
-  assert.equal(physicalQa?.version,'tv-qa-v2-crucible');
+  assert.equal(physicalQa?.version,'tv-qa-v1');
+  assert.equal(physicalQa?.brawl3dSchemaVersion,2);
   assert.equal(physicalQa?.brawl3d?.renderer,'brawl-the-crucible-native-webgl-v1');
   assert.equal(physicalQa?.brawl3d?.webglActive,true);
   assert.equal(physicalQa?.brawl3d?.exclusiveStage,true);
