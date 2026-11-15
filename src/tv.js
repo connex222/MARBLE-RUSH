@@ -1343,7 +1343,7 @@
   const BRAWL_PREVIEW = new URLSearchParams(location.search).get('brawl3d') === '1';
   // QA retains legacy six-mode coverage only on localhost with an explicit
   // non-production URL flag. Render/public builds cannot unlock all add-ons.
-  const PARTY_LOCAL_QA = /^(localhost|127\\.0\\.0\\.1)$/.test(location.hostname) &&
+  const PARTY_LOCAL_QA = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) &&
     new URLSearchParams(location.search).get('partyQa') === '1';
   const isPublishedMode = id => id === 'grandprix' ||
     (BRAWL_PREVIEW && id === 'brawl') || (PARTY_LOCAL_QA && !!MODES[id]);
