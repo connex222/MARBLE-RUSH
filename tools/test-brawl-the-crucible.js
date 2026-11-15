@@ -55,6 +55,11 @@ assert.match(preview,/\/assets\/audio\/music_brawl_crucible\.mp3/,
 assert.match(build,/crucible-stadium\.svg/,'build must bundle the new art-direction background');
 assert.match(arena,/alpha:true,antialias:true/,'GPU stage must show the independent stadium in empty areas');
 assert.match(arena,/attribute float a_kind/,'clearcoat glass and machined metal require distinct material channels');
+assert.match(arena,/s\.hazard==='crossfire'/,'final round must have true native 3D hammer meshes');
+assert.match(arena,/m\.vx\/speed/,'3D rolling speed must drive visible trails');
+assert.match(preview,/brawlActionCue\[k\]=key/,'CPU and human moves must produce audio from authoritative events');
+assert.match(preview,/Audio_\.hasClip\('vo_'\+key\)/,
+  'music must not duck for silent text-only callouts');
 const art=read('assets/crucible-stadium.svg');
 assert.match(art,/<svg[^>]+viewBox="0 0 1920 1080"/,'stadium art must be widescreen');
 assert.match(host,/MarbleBrawlWebGL\.mount\(canvas\)/);
@@ -90,7 +95,7 @@ vm.runInContext(read('src/modes/party-brawl-webgl.js')+';this.renderer=MarbleBra
 const renderer=context.renderer;
 assert.equal(renderer.mount(mounted),true);
 assert.equal(renderer.active,true);
-const hazards=['bumpers','ice','rotor','crumbling','clean'];
+const hazards=['bumpers','ice','rotor','crumbling','crossfire'];
 for(const [i,hazard] of hazards.entries()){
  const st={hazard,hazardAngle:i*.8,round:i+1,radius:380-i*50,
    elapsed:12,time:12+i*42,pulseAt:14,lastPulseAt:-99,
