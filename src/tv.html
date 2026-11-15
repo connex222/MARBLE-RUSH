@@ -844,6 +844,51 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
 #ppBrawlRoundWinner strong{display:block;font:900 calc(43*var(--u)) Nunito,system-ui,sans-serif;
  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f6ead9}
 @media (prefers-reduced-motion:reduce){#ppBrawlRoundWinner{transition:none!important}}
+
+/* The Crucible broadcast — 3D-only presentation, no cartoon panels.
+   The original Grand Prix announcer art and global nav style stay unchanged. */
+#clatter.brawlBroadcast{
+ left:calc(520*var(--u));bottom:calc(18*var(--u));
+ max-width:calc(750*var(--u));z-index:2147483645;
+ display:flex;align-items:center;pointer-events:none
+}
+#clatter.brawlBroadcast .clatterFace{display:none!important}
+#clatter.brawlBroadcast #clatterText{
+ max-width:calc(750*var(--u));width:100%;
+ border:calc(1*var(--u)) solid #a5a39b9c;
+ border-left:calc(5*var(--u)) solid #b69b68;
+ border-radius:calc(8*var(--u));
+ background:linear-gradient(95deg,rgba(14,28,41,.97),rgba(11,23,35,.94));
+ color:#eaece6;text-shadow:none;
+ font:800 calc(23*var(--u)) Nunito,system-ui,sans-serif;
+ line-height:1.24;letter-spacing:.005em;
+ padding:calc(11*var(--u)) calc(22*var(--u));
+ box-shadow:0 calc(10*var(--u)) calc(35*var(--u)) #0006
+}
+#clatter.brawlBroadcast #clatterText::before{
+ content:"ARENA ANNOUNCER";display:block;margin-bottom:calc(4*var(--u));
+ font:800 calc(13*var(--u)) Nunito,system-ui,sans-serif;
+ letter-spacing:.19em;color:#adbfca
+}
+#partyBackLobby[data-nav-state="brawl"]{
+ top:max(16px,env(safe-area-inset-top))!important;
+ right:max(18px,env(safe-area-inset-right))!important;
+ min-width:170px!important;min-height:47px!important;
+ padding:8px 17px!important;
+ border:1px solid #9b9f9a9c!important;
+ border-radius:9px!important;
+ background:linear-gradient(180deg,#203543,#11242f)!important;
+ color:#f0f1e9!important;
+ font:800 clamp(15px,1.3vw,18px) Nunito,system-ui,sans-serif!important;
+ text-shadow:none!important;
+ box-shadow:0 8px 25px rgba(0,0,0,.45)!important
+}
+#partyBackLobby[data-nav-state="brawl"]:hover{
+ background:linear-gradient(180deg,#305466,#173344)!important
+}
+#partyBackLobby[data-nav-state="brawl"]:focus-visible{
+ outline:3px solid #a5e4e3;outline-offset:3px
+}
 </style>
 </head>
 <body>

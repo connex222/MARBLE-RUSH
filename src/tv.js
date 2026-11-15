@@ -1326,11 +1326,21 @@
       if (recent[key] && now - recent[key] < 14 && prio < 3) return;
       recent[key] = now; lastAt = now; hideAt = now + 2.6;
       txt.textContent = text;
+      // The Crucible is presented as a prestige sporting event. The cartoon
+      // Captain Clatter remains untouched in Grand Prix and all other modes,
+      // but the Brawl announcer uses a restrained graphic lower-third.
+      const brawlSport = state === 'brawl';
+      el.classList.toggle('brawlBroadcast',brawlSport);
       const pose = IMG[poseFor(key)] || IMG.clatter_reference;
-      if (portrait && pose) {
-        portrait.src = pose.src;
-        portrait.hidden = false;
-        portrait.parentElement.classList.add('withArt');
+      if (portrait) {
+        if(brawlSport){
+          portrait.hidden=true;
+          portrait.parentElement.classList.remove('withArt');
+        }else if(pose){
+          portrait.src=pose.src;
+          portrait.hidden=false;
+          portrait.parentElement.classList.add('withArt');
+        }
       }
       el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
       if(state==='brawl')Audio_.duckForAnnouncer(2.6);
@@ -1338,7 +1348,7 @@
     }
     function tick() { if (performance.now() / 1000 > hideAt) el.classList.remove('show');
       if(state==='brawl')Audio_.refreshMusicMix(); }
-    function clear() {hideAt=0;el.classList.remove('show');}
+    function clear() {hideAt=0;el.classList.remove('show','brawlBroadcast');}
     return { say, tick, clear };
   })();
 
