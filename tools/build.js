@@ -117,6 +117,12 @@ function fontCss(names) {
 (async () => {
   fs.mkdirSync(PUB, { recursive: true });
   const images = await processImages();
+  // Crucible arena art is scoped to the private Brawl 3D preview.
+  // Store it outside assets/raw to protect all 200 approved Grand Prix assets
+  // and keep the strict original artwork manifest unchanged.
+  fs.mkdirSync(path.join(PUB, 'assets'), { recursive: true });
+  fs.copyFileSync(path.join(ROOT,'assets','crucible-stadium.svg'),
+    path.join(PUB,'assets','crucible-stadium.svg'));
   const audio = await processAudio();
   fs.writeFileSync(path.join(PUB, 'assets', 'manifest.json'), JSON.stringify({ images, audio }, null, 1));
   console.log(`• ${images.length} images, ${audio.length} sounds`);
