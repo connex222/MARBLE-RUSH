@@ -134,6 +134,7 @@ const MarblePartyScreen=(()=>{
     stage.dataset.owner='marble-party-screen-v3';
     stage.dataset.renderer=currentRenderer(name);
     stage.removeAttribute('data-brawl3d-fallback');
+    document.getElementById('ppBrawl3dFallback')?.remove();
     if(drop3dFallback)show3dFallback(drop3dFallback);
     canvas.setAttribute('aria-label',labels[name]);
     // Re-entering a game must not re-use a previous match's leaderboard.
@@ -176,6 +177,7 @@ const MarblePartyScreen=(()=>{
       stage.removeAttribute('data-owner');
       stage.removeAttribute('data-renderer');
       stage.removeAttribute('data-brawl3d-fallback');
+      document.getElementById('ppBrawl3dFallback')?.remove();
       stage.removeAttribute('data-dropzone3d-fallback');
       document.getElementById('ppDrop3dFallback')?.remove();
     }
@@ -194,6 +196,19 @@ const MarblePartyScreen=(()=>{
     stage.dataset.renderer='brawl-arena-v3';
     stage.dataset.brawl3dFallback=reason;
     if(report)report.renderer='brawl-arena-v3';
+    if(stage){
+      let notice=document.getElementById('ppBrawl3dFallback');
+      if(!notice){
+        notice=document.createElement('div');
+        notice.id='ppBrawl3dFallback';notice.setAttribute('role','status');
+        Object.assign(notice.style,{position:'absolute',left:'42%',bottom:'5%',
+          zIndex:'6',padding:'7px 12px',background:'rgba(8,19,31,.95)',
+          color:'#e8ddcb',border:'1px solid #ae9976',borderRadius:'7px',
+          font:'700 15px Nunito,sans-serif',pointerEvents:'none'});
+        stage.appendChild(notice);
+      }
+      notice.textContent='3D preview unavailable — playable 2D fallback active';
+    }
     console.warn('Bowl Brawl native 3D restored to 2D:',reason);
     return true;
   }
@@ -209,15 +224,21 @@ const MarblePartyScreen=(()=>{
           fallbackToCanvas2D('gpu-recovery-timeout');
       }else drop3dLostAt=null;
     }
-    if(name==='brawl'&&brawl3dActive){
-      const gpu=MarbleBrawlWebGL.debug();
-      if(gpu.contextLost){
-        if(brawl3dLostAt===null)brawl3dLostAt=performance.now();
-        if(performance.now()-brawl3dLostAt>8000)fallbackBrawl('context-timeout');
-      }else brawl3dLostAt=null;
-    }
+    // A lost WebGL context must never leave the TV black for eight seconds.
+    // Restore Canvas2D in this same frame while keeping the game live.
+    if(name==='brawl'&&brawl3dActive&&MarbleBrawlWebGL.debug().contextLost)
+      fallbackBrawl('gpu-context-lost');
     const start=performance.now();
-    let success=definitions[name].draw(sessionState,assets,options)===true;
+    let success=false;
+    try{success=definitions[name].draw(sessionState,assets,options)===true;}
+    catch(error){
+      if(name==='brawl'&&brawl3dActive){
+        console.error('Crucible GPU draw failed; restoring live Bowl Brawl:',error);
+        fallbackBrawl('gpu-exception');
+        try{success=definitions[name].draw(sessionState,assets,options)===true;}
+        catch(fallbackError){console.error('Brawl fallback draw failed:',fallbackError);}
+      }else throw error;
+    }
     if(name==='brawl'&&brawl3dActive){
       const lost=MarbleBrawlWebGL.debug().contextLost;
       if(success)brawl3dFailureFrames=0;
