@@ -280,7 +280,9 @@ const MarbleBrawlWebGL = (() => {
      if(!gl)throw Error('WebGL unavailable');
      const info=gl.getExtension('WEBGL_debug_renderer_info');
      gpuLabel=String(info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER));
-     quality=/swiftshader|llvmpipe|software/i.test(gpuLabel)?.55:.82;
+     // Native 1080p on a real GPU: blurry sub-native output is unacceptable
+     // for the AAA target. Software rendering retains its safety tier.
+     quality=/swiftshader|llvmpipe|software/i.test(gpuLabel)?.55:1;
      canvas.width=Math.floor(1920*quality);canvas.height=Math.floor(1080*quality);
      contextLostListener=e=>{e.preventDefault();lost=true;};
      contextRestoreListener=()=>{lost=false;try{setup();}catch(e){graphicsError=e.message;lost=true;}};
