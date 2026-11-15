@@ -44,6 +44,11 @@ assert.match(phone,/h\.partyNightEnabled \? \[0,3,5,7\] : \[\]/,
   'phone host must hide unavailable party options');
 assert.match(preview,/const PARTY_LOCAL_QA = \/\^\(localhost\|127/,'unapproved modes can be QA-enabled only on localhost');
 assert.match(build,/'party-brawl-webgl'/,'build must bundle the real GPU renderer');
+assert.match(build,/crucible-stadium\.svg/,'build must bundle the new art-direction background');
+assert.match(arena,/alpha:true,antialias:true/,'GPU stage must show the independent stadium in empty areas');
+assert.match(arena,/attribute float a_kind/,'clearcoat glass and machined metal require distinct material channels');
+const art=read('assets/crucible-stadium.svg');
+assert.match(art,/<svg[^>]+viewBox="0 0 1920 1080"/,'stadium art must be widescreen');
 assert.match(host,/MarbleBrawlWebGL\.mount\(canvas\)/);
 assert.match(host,/MarbleBrawlWebGL\.unmount\(\)/);
 assert.match(host,/fallbackBrawl\('render-failure'\)/);
@@ -98,4 +103,4 @@ assert.equal(mounted.id,'partyStageCanvas','one exclusive stage restored');
 
 console.log('PASS: public release gate, independent Grand Prix, five GPU hazard-state scenes, '+
   'single renderer mount/unmount and display HUD delegation.');
-console.log('Static triangles:',counts.static/27,'last dynamic triangles:',counts.dynamic/27);
+console.log('Static triangles:',counts.static/30,'last dynamic triangles:',counts.dynamic/30);
