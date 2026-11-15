@@ -15,7 +15,7 @@ const {chromium}=require('playwright');
  const [tv,a,b]=await Promise.all([tvCtx.newPage(),aCtx.newPage(),bCtx.newPage()]);
  const errors=[];for(const p of [tv,a,b])p.on('pageerror',e=>errors.push(e.message));
  try{
-  await tv.goto(base+'/tv',{waitUntil:'domcontentloaded'});
+  await tv.goto(base+'/tv?partyQa=1',{waitUntil:'domcontentloaded'});
   await tv.locator('#btnBoot').click();
   await tv.waitForFunction(()=>/^[A-Z]{4}$/.test(document.getElementById('roomCode')?.textContent||''));
   const code=(await tv.locator('#roomCode').textContent()).trim();

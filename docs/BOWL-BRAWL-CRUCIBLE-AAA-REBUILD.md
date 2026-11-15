@@ -74,9 +74,20 @@ Offline test command: `npm run test:brawl3d`.
 - Offline computational smoke was rerun after geometry changes: five hazard variations, ten mock draw calls, over 6,000 static triangles and real dynamic geometry. **A mock GPU is not an actual GPU visual check.**
 - More than 60 seeded CPU matches of the new sweeping-arm engine completed without nonfinite physics or stalled rounds.
 
+**Verified in real GitHub Actions checkout (15 November 2026):**
+- Ubuntu 24.04 node project build passes and the full seven-track Grand Prix regression matches `main`.
+- Browser canvas pixel test: native **WebGL really compiles and renders**, with no 2D fallback. Five engine hazard variants rendered and active stage ownership was exclusive.
+- The fixed shader precision mismatch was required for real Chrome; the earlier GPU mock never detected it.
+- WebGL face normals for metal boxes, rotor arms, pylons and ice were corrected after actual screenshot review.
+- Recovered screenshot: [actual Crucible arena screenshot in CI artefact](https://github.com/connex222/MARBLE-RUSH/actions/runs/43710949261/artifacts/14159888412).
+- Real browser + WebSocket test: two distinct simulated mobile clients performed RAM and ANCHOR successfully in Brawl, exit returned Grand Prix's original canvas; no uncaught page errors.
+- The more comprehensive legacy five-mode WebSocket test also passed Derby, Drop Zone, Brawl, Curling and Golf controls, with median 80 ms controller-to-host processing in CI. This is **not** a physical Wi-Fi latency measurement.
+- Software SwiftShader at a reduced **1056×594** internal resolution reported only 11 frames in the sample window. Treat as GPU capability/functional smoke ONLY, not a performance pass. The non-software 1080p 60-FPS release bar remains unmet/unverified.
+- Cartoon narrator overlays were replaced in the Brawl-specific broadcast UI without altering the Grand Prix mascot; the Brawl Back to Lobby button has a smaller restrained treatment. Human AAA quality approval is still outstanding.
+
 **Not performed or not approved:**
-- Full `npm install && npm run build` and Node test suite on a real Git checkout
-- Real WebGL shader compile/pixels in Chrome on target GPU
+- Physical-device GPU shader/pixel confirmation beyond Chromium SwiftShader; the GPU-based CI smoke did render actual WebGL pixels.
+- Physical hardware performance measurements (the CI software renderer is not representative of a TV GPU)
 - 1080p and 4K physical TV review, premium material appearance and accessibility
 - Actual 2–4 physical phone join and 20+ minute sessions
 - Physical latency, sustained FPS, audio mixing/decay, single-view continuity through several games
@@ -86,7 +97,7 @@ Offline test command: `npm run test:brawl3d`.
 
 ### 7. Next acceptance sequence
 
-1. Run the repository build and `test:brawl3d` plus established Grand Prix physics and gameplay regression suites locally.
+1. Confirm the new screenshot art direction and full scene aesthetics; browser-built GPU and offline test jobs are already passing. Do not claim the screenshot achieves final AAA quality.
 2. Compare real screenshots/video: original Grand Prix vs The Crucible on the same 1080p TV. The new level must be unmistakably premium without exaggerated glow.
 3. Measure real native GPU performance. Target a sustained 60 FPS at 1080p on the actual TV hardware; anything consistently below 45 FPS blocks release.
 4. Test 2–4 physical phones, RAM/ANCHOR/RECOVER, all five hazard rounds, disconnect/rejoin, results and return to Grand Prix; check no second canvas.
