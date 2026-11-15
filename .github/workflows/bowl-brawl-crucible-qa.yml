@@ -38,6 +38,7 @@ jobs:
           node --check tools/brawl-webgl-browser-smoke.js
           npm run test:brawl
           npm run test:brawl3d
+          npm run test:brawl-overdrive
           git fetch --depth=1 origin main
           git show FETCH_HEAD:src/engine.js > /tmp/crucible-main-engine.js
           node tools/test-grandprix-regression.js /tmp/crucible-main-engine.js

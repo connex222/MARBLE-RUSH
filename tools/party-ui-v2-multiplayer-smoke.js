@@ -150,11 +150,16 @@ const fs=require('node:fs');
   await tv.waitForFunction(id=>window.__MR.MODES.brawl.session().state.events
     .some(e=>e.kind==='recover'&&e.id===id),p1BrawlId,{timeout:8000});
   const mAfter=await tv.evaluate(id=>{
-    const m=window.__MR.MODES.brawl.session().current(id);
-    return {energy:m.energy,used:m.recoverUsed,vx:m.vx};
+    const game=window.__MR.MODES.brawl.session(),m=game.current(id);
+    const event=game.state.events.slice().reverse().find(e=>e.kind==='recover'&&e.id===id);
+    return {energy:m.energy,used:m.recoverUsed,vx:m.vx,
+      energySpent:event?.energySpent,energyAfter:event?.energyAfter};
   },p1BrawlId);
-  assert.ok(mAfter.used&&mAfter.energy<65,
-    'Recover must cost 35 energy and consume one life-saving action');
+  // Energy regenerates every game frame. Checking a later balance against
+  // a fixed threshold gives false failures on slower CI / real networks.
+  assert.ok(mAfter.used&&mAfter.energySpent===35&&
+    mAfter.energy>=mAfter.energyAfter,
+    'Recover must debit exactly 35 energy once and consume the lifeline');
   assert.ok(actions.get(p1).some(m=>m.t==='act'&&m.a==='recover'),
     'First phone did not transmit its authorised Brawl escape');
 

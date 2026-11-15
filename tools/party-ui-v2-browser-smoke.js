@@ -242,7 +242,7 @@ const fs=require('node:fs');
   // Real recovery must become available only when danger is genuine.
   await page.evaluate(id=>{
     const g=window.__MR.MODES.brawl.session(),m=g.current(id),s=g.state;
-    s.elapsed=.6;s.pulseIndex=0;s.pulseAt=4;
+    s.elapsed=.6;s.pulseIndex=0;s.pulseAt=window.__MR.BowlBrawl.SHOCK_TIMES[0];
     for(const opponent of s.marbles)if(opponent!==m){
       opponent.x=-150;opponent.y=0;opponent.vx=0;opponent.vy=0;
       opponent.cpuWait=100;
@@ -276,11 +276,11 @@ const fs=require('node:fs');
       m.x=i===0?175:-175;m.y=0;m.vx=0;m.vy=0;
       m.anchored=0;m.cooldown=0;m.heading=i===0?Math.PI:0;
     }
-    s.elapsed=2.4;s.time=2.4;
+    s.elapsed=1.4;s.time=1.4;
     // This test resets the physics clock. Clear shocks from the earlier
     // unmodified match so one new pulse is counted, not two lifetime pulses.
     s.events=s.events.filter(e=>e.kind!=='shockwave');
-    s.pulseIndex=0;s.pulseAt=4;
+    s.pulseIndex=0;s.pulseAt=window.__MR.BowlBrawl.SHOCK_TIMES[0];
   });
   await page.waitForFunction(()=>document.getElementById('ppBrawlShockBox').classList.contains('danger'));
   await page.screenshot({path:'qa-ui-v2-brawl-shockwave-warning.png'});
@@ -291,7 +291,7 @@ const fs=require('node:fs');
       next:g.state.pulseAt,warning:document.getElementById('ppBrawlShockLabel').textContent};
   });
   assert.equal(danger.pulses,1,'Scripted shockwave did not actually fire');
-  assert.equal(danger.next,12,'No upcoming escalation');
+  assert.equal(danger.next,8,'No upcoming escalation');
   await page.screenshot({path:'qa-ui-v2-brawl-shockwave.png'});
   await page.evaluate(()=>{
     const g=window.__MR.MODES.brawl.session();

@@ -122,7 +122,7 @@ const sharp=require('sharp');
       colors:colors.size,contrast:max-min}));
   // Exercise five genuinely different engine-defined arena variants; no
   // second hitbox/render pipeline may appear after changing its input state.
-  for(const mode of ['bumpers','ice','rotor','crumbling','clean']){
+  for(const mode of ['bumpers','ice','rotor','crumbling','crossfire']){
     const result=await tv.evaluate(hazard=>{
       const session=window.__MR.MODES.brawl.session();
       if(!session)throw Error('No Brawl session');

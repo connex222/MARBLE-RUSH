@@ -85,7 +85,9 @@
     sfx_brawl_ram:'/assets/audio/sfx_brawl_ram.mp3',
     sfx_brawl_shockwave:'/assets/audio/sfx_brawl_shockwave.mp3',
     sfx_brawl_charge:'/assets/audio/sfx_brawl_charge.mp3',
-    sfx_brawl_knockout:'/assets/audio/sfx_brawl_knockout.mp3'
+    sfx_brawl_knockout:'/assets/audio/sfx_brawl_knockout.mp3',
+    sfx_brawl_hammer:'/assets/audio/sfx_brawl_hammer.mp3',
+    sfx_brawl_duel:'/assets/audio/sfx_brawl_duel.mp3'
   });
   fetch('assets/manifest.json').then(r => r.ok ? r.json() : null).then(man => {
     if (!man) return;
@@ -259,6 +261,8 @@
       if(k==='sfx_brawl_charge')return play('sfx_brawl_ram',o);
       if(k==='sfx_brawl_shockwave')return play('sfx_bumper',o);
       if(k==='sfx_brawl_knockout')return play('crowd_cheer',o);
+      if(k==='sfx_brawl_hammer')return play('sfx_brawl_ram',o);
+      if(k==='sfx_brawl_duel')return play('sfx_count_go',o);
       switch (k) {
         case 'clack': tone(2600 * pr, 0.05, 'sine', 0.22 * v); noise(0.04, 3800, 3, 0.25 * v); break;
         case 'land_hard': tone(140, 0.18, 'sine', 0.4 * v, 60); noise(0.08, 1800, 1, 0.2 * v); break;
@@ -433,7 +437,8 @@
       };
     })();
 
-    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, duckForAnnouncer, refreshMusicMix, Music: { mode: m => { if(ac){Music.mode(m);refreshMusicMix();} }, intensity: v => ac && Music.intensity(v) }, get debug() { return { introPlaying: !!introSource, introDone, rollGain: rollGain?.gain.value||0, state }; }, get on() { return !!ac; } };
+    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, duckForAnnouncer, refreshMusicMix,
+      hasClip:k=>!!buffers[k]&&buffers[k]!=='loading', Music: { mode: m => { if(ac){Music.mode(m);refreshMusicMix();} }, intensity: v => ac && Music.intensity(v) }, get debug() { return { introPlaying: !!introSource, introDone, rollGain: rollGain?.gain.value||0, state }; }, get on() { return !!ac; } };
   })();
 
   /* ======================================================================
@@ -1343,7 +1348,7 @@
         }
       }
       el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-      if(state==='brawl')Audio_.duckForAnnouncer(2.6);
+      if(state==='brawl'&&Audio_.hasClip('vo_'+key))Audio_.duckForAnnouncer(1.3);
       Audio_.play('vo_' + key, { gap: 0.5 });
     }
     function tick() { if (performance.now() / 1000 > hideAt) el.classList.remove('show');
@@ -1386,6 +1391,7 @@
   let partyRun = null;
   let derbyTvHorse = 0;
   let brawlLastCue='',brawlWarningKey='',brawlHitCue='';
+  const brawlActionCue={ram:'',hazard:'',duel:''};
   let attractMode = null, attractUntil = 0, attractFrom = 0;
   const cheerTime = new Map();
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
@@ -1431,6 +1437,7 @@
       }
       if (selectedMode === 'brawl') {
         brawlLastCue='';brawlWarningKey='';brawlHitCue='';
+        brawlActionCue.ram='';brawlActionCue.hazard='';brawlActionCue.duel='';
         if(!partyRun)this.resetNight();
         MODES.brawl.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishBrawl(ranking)});
         state='brawl';stateT=0;showScreen('brawl');
@@ -1682,7 +1689,7 @@
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
       if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','recover','spectate'].includes(a)) {
         const accepted=MODES.brawl.onAction(pid,a,v);
-        if(accepted&&a==='ram')Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_charge':'sfx_brawl_ram',{gap:.16,vol:.70});
+        // CPU and human RAM effects now share one authoritative engine-event cue; no duplicate sound here.
         if(accepted&&a==='recover')Audio_.play('sfx_bumper',{gap:.14,vol:.95});
         sendHud(true);return;
       }
@@ -2280,11 +2287,26 @@
         const survivors=st.marbles.filter(m=>m.alive).length;
         Audio_.Music.intensity(Math.max(
           (380-st.radius)/270,survivors===2?.86:0,
-          pulseIn!=null&&pulseIn<=3?1:0));
+          pulseIn!=null&&pulseIn<=BowlBrawl.SHOCK_WARNING?1:0));
         const warningKey=st.round+':'+st.pulseIndex;
-        if(pulseIn!=null&&pulseIn<=3&&pulseIn>0&&brawlWarningKey!==warningKey){
+        if(pulseIn!=null&&pulseIn<=BowlBrawl.SHOCK_WARNING&&pulseIn>0&&brawlWarningKey!==warningKey){
           brawlWarningKey=warningKey;
-          Clatter.say('announce',"Shockwave incoming! Brace yourselves!",2);
+          // Short warning beep; don't bury a driving soundtrack under
+          // repeated speech or silently duck it when no voice file exists.
+          Audio_.play('sfx_count_beep',{gap:.2,vol:.65});
+          if(st.pulseIndex===0)Clatter.say('announce',"Shockwave incoming! Brace yourselves!",2);
+        }
+        for(const [kind,window] of [['ram',.27],['hazardImpact',.24],['lastTwo',.38],['duel',.38]]){
+          const e=(st.events||[]).slice(-45).reverse().find(e=>e.kind===kind&&
+            Number.isFinite(e.time)&&st.time-e.time>=0&&st.time-e.time<window);
+          if(!e)continue;
+          const k=kind==='hazardImpact'?'hazard':kind==='ram'?'ram':'duel';
+          const key=st.round+':'+kind+':'+e.time+':'+(e.id||'');
+          if(brawlActionCue[k]===key)continue;
+          brawlActionCue[k]=key;
+          if(k==='ram')Audio_.play('sfx_brawl_charge',{gap:.13,vol:.77});
+          else if(k==='hazard')Audio_.play('sfx_brawl_hammer',{gap:.20,vol:.86});
+          else Audio_.play('sfx_brawl_duel',{gap:.65,vol:.72});
         }
         // Only genuine engine impacts trigger the glass collision sample.
         const hit=(st.events||[]).slice(-30).reverse().find(e=>
@@ -2293,7 +2315,7 @@
           const key=st.round+':hit:'+hit.time+':'+hit.id+':'+hit.other;
           if(brawlHitCue!==key){
             brawlHitCue=key;
-            Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_ram':'clack',{gap:.16,vol:.64});
+            Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_ram':'clack',{gap:.13,vol:.92});
           }
         }
         const cue=(st.events||[]).slice(-30).reverse().find(e=>
@@ -2304,11 +2326,11 @@
           if(key!==brawlLastCue){
             brawlLastCue=key;
             if(cue.kind==='shockwave'){
-              Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_shockwave':'sfx_bumper',{gap:.2,vol:.70});
-              Clatter.say('gasp',"The shockwave's hit the bowl!",2);
+              Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_shockwave':'sfx_bumper',{gap:.2,vol:.95});
+              if(st.pulseIndex===1)Clatter.say('gasp',"The shockwave's hit the bowl!",2);
             }else if(cue.kind==='knockout'){
               const winner=st.roster.find(p=>p.id===cue.id)?.name||'Someone';
-              Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_knockout':'crowd_cheer',{gap:.35,vol:.78});
+              Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_knockout':'crowd_cheer',{gap:.2,vol:.98});
               Clatter.say('winner',winner+" earns a knockout bonus!",2);
             }else if(cue.kind==='recover'){
               Clatter.say('gasp',"What a save! Right off the edge!",2);

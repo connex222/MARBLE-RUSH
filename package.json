@@ -12,7 +12,8 @@
     "test:brawl": "node tools/test-brawl.js",
     "test:derby": "node tools/test-derby.js",
     "test:curling": "node tools/test-curling.js",
-    "test:brawl3d": "node tools/test-brawl-the-crucible.js"
+    "test:brawl3d": "node tools/test-brawl-the-crucible.js",
+    "test:brawl-overdrive": "node tools/test-brawl-overdrive.js"
   },
   "engines": {
     "node": ">=18"

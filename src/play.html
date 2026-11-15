@@ -487,6 +487,11 @@ body[data-mode="brawl"][data-s="brawl"] #brawlGuide:not([hidden]){
 }
 
 
+body[data-mode="brawl"][data-s="brawl"] #modeActions button.holding{
+ border-color:#fff5be;filter:brightness(1.18);
+ box-shadow:0 2px 0 #0d1732,inset 0 0 0 3px #f4b24b66
+}
+
 /* CURLING UI v2 — bespoke ice-house phone controller; no legacy boost pad. */
 body[data-mode="curling"][data-s="curling"]:not(.hc){
  --bg:#0b2840;--bg2:#15506a;--card:#1a5367;
@@ -939,10 +944,16 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
     audio();buzz(30);send({t:'act',a:'cheer'});
   };
   $('#hostExitGame').onclick=()=>{audio();buzz(25);send({t:'act',a:'lobby'});};
+  // One active held steering pointer per phone, safely stopped on navigation.
+  let stopBrawlSteer=()=>{};
+  addEventListener('blur',()=>stopBrawlSteer());
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)stopBrawlSteer();
+  });
   function renderModePanel(h) {
     const panel=$('#modePanel');
     if(!h.mode || h.mode==='grandprix' || !['race','countdown','results','lobby','dropzone','brawl','derby','curling','golf'].includes(h.s)){
-      panel.hidden=true;return;
+      stopBrawlSteer();panel.hidden=true;return;
     }
     panel.hidden=false;
     $('#modeTurn').textContent=String(h.turnLabel||'').slice(0,70);
@@ -957,6 +968,7 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
     const key=JSON.stringify(controls);
     const box=$('#modeActions');
     if(box.dataset.key!==key){
+      stopBrawlSteer();
       box.dataset.key=key;box.replaceChildren();
       for(const control of controls){
         if(!control || typeof control.a!=='string' || !/^[a-z]{1,16}$/.test(control.a))continue;
@@ -965,7 +977,46 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
         button.textContent=String(control.label||control.a).slice(0,30);
         button.setAttribute('aria-pressed',String(!!control.selected));
         button.dataset.action=control.a; // Mode-specific appearance; action messages unchanged
-        button.onclick=()=>{audio();buzz(14);send({t:'act',a:control.a,v:control.v});};
+        if(h.mode==='brawl'&&h.s==='brawl'&&['left','right'].includes(control.a)){
+          button.style.touchAction='none';
+          let pointer=null,timer=null;
+          const stop=()=>{
+            if(timer!==null){clearInterval(timer);timer=null;}
+            button.classList.remove('holding');
+            pointer=null;
+          };
+          button.addEventListener('pointerdown',e=>{
+            if(e.button!==0||pointer!==null)return;
+            e.preventDefault();audio();buzz(8);
+            stopBrawlSteer();
+            pointer=e.pointerId;
+            button.classList.add('holding');
+            try{button.setPointerCapture(e.pointerId);}catch(_){}
+            // An immediate full turn followed by smaller repeated steering.
+            send({t:'act',a:control.a,v:2});
+            timer=setInterval(()=>{
+              if(document.hidden||!button.isConnected||
+                 document.body.dataset.mode!=='brawl'||document.body.dataset.s!=='brawl'){
+                stop();return;
+              }
+              send({t:'act',a:control.a,v:1});
+            },115);
+            stopBrawlSteer=stop;
+          });
+          for(const event of ['pointerup','pointercancel','lostpointercapture']){
+            button.addEventListener(event,e=>{
+              if(pointer===e.pointerId)stop();
+            });
+          }
+          // The pointer has already steered at touch-down, no double action
+          // when the browser synthesizes click after release.
+          button.onclick=e=>{
+            if(e.detail!==0){e.preventDefault();return;}
+            audio();buzz(8);send({t:'act',a:control.a,v:2});
+          };
+        }else{
+          button.onclick=()=>{audio();buzz(14);send({t:'act',a:control.a,v:control.v});};
+        }
         box.appendChild(button);
       }
     }
@@ -988,7 +1039,7 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
     document.body.dataset.s = h.s;
     document.body.dataset.mode = h.mode || 'grandprix';
     if(h.mode==='brawl'&&h.s==='brawl'){
-      document.body.dataset.brawlWarning=String(h.pulseIn!=null&&h.pulseIn<=3);
+      document.body.dataset.brawlWarning=String(h.pulseIn!=null&&h.pulseIn<=2);
       document.body.dataset.brawlNear=String(!!h.recoverReady);
     }else{
       delete document.body.dataset.brawlWarning;
@@ -1095,7 +1146,7 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
         break;
       case 'brawl': {
         const urgent=!!h.recoverReady;
-        const incoming=h.pulseIn!=null&&h.pulseIn<=3;
+        const incoming=h.pulseIn!=null&&h.pulseIn<=2;
         setText('',urgent?'EDGE DANGER — SAVE NOW!':
           incoming?'SHOCKWAVE IN '+h.pulseIn.toFixed(1)+'s!':
           h.modePhase==='eliminated'?'KNOCKED OUT!':

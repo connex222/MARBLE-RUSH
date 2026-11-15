@@ -4,14 +4,18 @@
  */
 const BowlBrawl = (() => {
   'use strict';
-  const ROUNDS=5, ROUND_TIME=42, START_RADIUS=380, END_RADIUS=110;
+  const ROUNDS=5, ROUND_TIME=32, START_RADIUS=380, END_RADIUS=100;
   // Telegraph before each force pulse: players can anchor or retreat.
-  const SHOCK_TIMES=[4,12,24], SHOCK_WARNING=3;
+  const SHOCK_TIMES=[3,8,15,24], SHOCK_WARNING=2;
   const RECOVER_COST=35, RECOVER_MARGIN=85, KO_BONUS=3;
   const MARBLE_RADIUS=22, TAU=2*Math.PI;
   // The Crucible: an actual rotating radial striker, not a decorative prop.
   // Its physical capsule and speed are deterministic engine state.
-  const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=240;
+  const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=325;
+  // Brawl Overdrive: meaningful forward movement begins immediately, but
+  // steering and RAM are still the only player attack decisions.
+  const DRIVE_FORCE=235, DRIVE_DRAG=1.08, DRIVE_LIMIT=850;
+  const RAM_IMPULSE=625, RAM_COST=24;
   const COLORS=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d','#a7deed','#ffd4a2'];
   const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
   const randomFrom=seed=>{let s=seed>>>0;return()=>((s=(Math.imul(1664525,s)+1013904223)>>>0)/4294967296);};
@@ -30,7 +34,7 @@ const BowlBrawl = (() => {
       hazard:'clean',hazardAngle:0,rotorLength:SWEEPER_LENGTH,
       rotorHalfWidth:SWEEPER_HALF_WIDTH,spectators:new Set(),
       pulseIndex:0,pulseAt:SHOCK_TIMES[0],lastPulseAt:-99};
-    const HAZARDS=['bumpers','ice','rotor','crumbling','clean'];
+    const HAZARDS=['bumpers','ice','rotor','crumbling','crossfire'];
     function current(id){return state.marbles.find(m=>m.id===id);}
     function alive(){return state.marbles.filter(m=>m.alive);}
     function standings(){return roster.slice().sort((a,b)=>b.points-a.points||
@@ -40,10 +44,14 @@ const BowlBrawl = (() => {
       state.hazard=HAZARDS[state.round-1];state.hazardAngle=rng()*TAU;state.spectators=new Set();
       state.pulseIndex=0;state.pulseAt=SHOCK_TIMES[0];state.lastPulseAt=-99;
       state.events.push({kind:'hazardReveal',hazard:state.hazard,round:state.round,time:state.time});
-      const n=roster.length,phase=rng()*TAU;
+      const n=roster.length,phase=rng()*TAU,spawnRadius=n<=2?145:n<=4?165:190;
+      if(n===2&&(state.round===1||state.round===ROUNDS))
+        state.events.push({kind:'duel',round:state.round,time:state.time});
       state.marbles=roster.map((p,i)=>{
-        const ang=TAU*i/n+phase, x=190*Math.cos(ang),y=190*Math.sin(ang);
-        return {id:p.id,x,y,vx:0,vy:0,heading:ang+Math.PI,energy:75,
+        const ang=TAU*i/n+phase, x=spawnRadius*Math.cos(ang),y=spawnRadius*Math.sin(ang);
+        const heading=ang+Math.PI;
+        return {id:p.id,x,y,vx:Math.cos(heading)*145,vy:Math.sin(heading)*145,
+          heading,energy:75,
           anchored:0,cooldown:0,alive:true,eliminatedAt:null,ramHits:0,outs:0,
           cpuWait:.3+rng()*.5,ramWindow:0,
           recoverUsed:false,edgeHanging:false,edgeGrace:0,
@@ -86,7 +94,7 @@ const BowlBrawl = (() => {
         // A genuine inward escape, not an invulnerability or a teleport.
         m.vx=nx*470;m.vy=ny*470;m.x+=nx*6;m.y+=ny*6;
         state.events.push({kind:'recover',id:m.id,x:m.x,y:m.y,time:state.time,
-          margin,round:state.round});
+          margin,round:state.round,energySpent:RECOVER_COST,energyAfter:m.energy});
         return true;
       }
       if(type==='anchor'){
@@ -102,11 +110,11 @@ const BowlBrawl = (() => {
         state.events.push({kind:'anchor',id:m.id,time:state.time});return true;
       }
       if(type==='ram'){
-        if(m.energy<28||m.cooldown>0)return false;
-        m.energy-=28;m.cooldown=.72;m.anchored=0;m.ramWindow=.58;
+        if(m.energy<RAM_COST||m.cooldown>0)return false;
+        m.energy-=RAM_COST;m.cooldown=.58;m.anchored=0;m.ramWindow=.65;
         // A committed forward burst; automatic steering does not erase momentum.
-        m.vx+=Math.cos(m.heading)*480;
-        m.vy+=Math.sin(m.heading)*480;
+        m.vx+=Math.cos(m.heading)*RAM_IMPULSE;
+        m.vy+=Math.sin(m.heading)*RAM_IMPULSE;
         state.events.push({kind:'ram',id:m.id,time:state.time});return true;
       }
       return false;
@@ -117,7 +125,7 @@ const BowlBrawl = (() => {
         if(!p?.cpu||!m.alive)continue;
         m.cpuWait-=dt;
         if(m.cpuWait>0)continue;
-        m.cpuWait=(.33-.15*p.skill)+rng()*.23;
+        m.cpuWait=(.20-.07*p.skill)+rng()*.13;
         const margin=state.radius-MARBLE_RADIUS-Math.hypot(m.x,m.y);
         if((m.edgeHanging||(margin<=RECOVER_MARGIN&&margin>=0))&&
            !m.recoverUsed&&m.energy>=RECOVER_COST&&
@@ -138,7 +146,7 @@ const BowlBrawl = (() => {
         const retreat=radial>state.radius*(.72+.15*(1-p.skill));
         m.heading=(retreat?Math.atan2(-m.y,-m.x):ang)+spread;
         const distance=Math.hypot(enemy.x-m.x,enemy.y-m.y);
-        if(!retreat&&distance<340&&m.energy>=28&&m.cooldown<=0)action(m.id,'ram');
+        if(!retreat&&distance<390&&m.energy>=RAM_COST&&m.cooldown<=0)action(m.id,'ram');
         else if(Math.hypot(m.x,m.y)>state.radius*.8&&m.energy>=15&&m.cooldown<=0)
           action(m.id,'anchor');
       }
@@ -178,7 +186,7 @@ const BowlBrawl = (() => {
       }
     }
     function rimRadius(t){
-      return START_RADIUS-(START_RADIUS-END_RADIUS)*clamp((t-10)/(ROUND_TIME-10),0,1);
+      return START_RADIUS-(START_RADIUS-END_RADIUS)*clamp((t-5)/(ROUND_TIME-5),0,1);
     }
     function finishRound(){
       if(state.done)return;
@@ -224,26 +232,31 @@ const BowlBrawl = (() => {
           state.lastPulseAt=state.time;
           for(const m of state.marbles)if(m.alive){
             const distance=Math.hypot(m.x,m.y)||1;
-            const push=m.anchored>0?72:310;
+            const push=m.anchored>0?78:355;
             m.vx+=m.x/distance*push;m.vy+=m.y/distance*push;
           }
           state.events.push({kind:'shockwave',round:state.round,
             pulse:state.pulseIndex,time:state.time});
         }
         // Pre-announced hazard affects only this deterministic physics step.
-        state.hazardAngle+=dt*.9;
+        state.hazardAngle+=dt*1.55;
         for(const m of state.marbles){
           if(!m.alive)continue;
           m.cooldown=Math.max(0,m.cooldown-dt);
           m.anchored=Math.max(0,m.anchored-dt);
           m.ramWindow=Math.max(0,m.ramWindow-dt);
-          m.energy=clamp(m.energy+19*dt,0,100);
+          m.energy=clamp(m.energy+27*dt,0,100);
           const onIce=state.hazard==='ice'&&Math.hypot(m.x-75,m.y+35)<140;
-          const drag=Math.exp(-(m.anchored>0?7.2:onIce?.22:.8)*dt);
+          const drag=Math.exp(-(m.anchored>0?7.2:onIce?.22:DRIVE_DRAG)*dt);
           m.vx*=drag;m.vy*=drag;
           // Inherent low thrust keeps the bowl lively and provides
           // manual steering between RAMs.
-          if(m.anchored<=0){m.vx+=Math.cos(m.heading)*85*dt;m.vy+=Math.sin(m.heading)*85*dt;}
+          if(m.anchored<=0){
+            m.vx+=Math.cos(m.heading)*DRIVE_FORCE*dt;
+            m.vy+=Math.sin(m.heading)*DRIVE_FORCE*dt;
+            const speed=Math.hypot(m.vx,m.vy);
+            if(speed>DRIVE_LIMIT){m.vx*=DRIVE_LIMIT/speed;m.vy*=DRIVE_LIMIT/speed;}
+          }
           m.x+=m.vx*dt;m.y+=m.vy*dt;
           // The real Rotor Rumble striker is a capsule from the centre to the
           // moving metal end-cap. TV renderers read state.hazardAngle + length.
@@ -273,20 +286,31 @@ const BowlBrawl = (() => {
           // Substantial fixed impact pylons in the bumper round. The rotor tip
           // remains physical too: only its existing end-cap radius contacts
           // the rolling marbles. No invisible sweeping obstacles.
+          // Finale: two counter-rotating physical hammers in the centre.
+          // Their sphere contact radii and positions are identical on the TV.
+          const phase=state.hazardAngle*1.48;
+          const crossfire=state.hazard==='crossfire';
           const hazard=state.hazard==='bumpers'?[[125,60],[-110,-50]]:
             state.hazard==='rotor'?[[
               Math.cos(state.hazardAngle)*SWEEPER_LENGTH,
               Math.sin(state.hazardAngle)*SWEEPER_LENGTH
+            ]]:crossfire?[[
+              80*Math.cos(phase),80*Math.sin(phase)
+            ],[
+              80*Math.cos(Math.PI/2-phase),80*Math.sin(Math.PI/2-phase)
             ]]:[];
           for(const [hx,hy] of hazard){
             const dx=m.x-hx,dy=m.y-hy,d=Math.hypot(dx,dy)||1;
-            if(d<67){
-              const nx=dx/d,ny=dy/d; m.x=hx+nx*67;m.y=hy+ny*67;
-              m.vx+=nx*115;m.vy+=ny*115;
+            const contact=crossfire?62:67;
+            if(d<contact){
+              const nx=dx/d,ny=dy/d; m.x=hx+nx*contact;m.y=hy+ny*contact;
+              const thrust=crossfire?215:115;
+              m.vx+=nx*thrust;m.vy+=ny*thrust;
+              if(crossfire){m.vx-=ny*80;m.vy+=nx*80;}
               if(state.time-m.hazardCueAt>.32){
                 m.hazardCueAt=state.time;
                 state.events.push({kind:'hazardImpact',id:m.id,x:m.x,y:m.y,
-                  hazard:state.hazard,strength:1,time:state.time});
+                  hazard:state.hazard,strength:crossfire?1.5:1,time:state.time});
               }
             }
           }
@@ -362,7 +386,7 @@ const BowlBrawl = (() => {
           recoverReady?'EDGE DANGER! Use your one recovery NOW.':
           pulseIn!=null&&pulseIn<=SHOCK_WARNING?
             'SHOCKWAVE IN '+pulseIn.toFixed(1)+'s! ANCHOR braces against the blast.':
-          m.recoverUsed?'Lifeline used · RAM 28 · ANCHOR 15':
+          m.recoverUsed?'Lifeline used · RAM 24 · ANCHOR 15':
           'RAM for KO bonuses · RECOVER once near the rim'):
           'Out! Cheer the final duel and get ready for the next round',
         timeRemaining:Math.max(0,Math.ceil(ROUND_TIME-state.elapsed))
@@ -372,6 +396,7 @@ const BowlBrawl = (() => {
   }
   return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS,
     SHOCK_TIMES,SHOCK_WARNING,RECOVER_COST,RECOVER_MARGIN,KO_BONUS,
+    DRIVE_FORCE,DRIVE_DRAG,DRIVE_LIMIT,RAM_IMPULSE,RAM_COST,
     SWEEPER_LENGTH,SWEEPER_HALF_WIDTH,SWEEPER_PUSH});
 })();
 if(typeof module!=='undefined')module.exports=BowlBrawl;

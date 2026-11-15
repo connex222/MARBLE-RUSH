@@ -137,7 +137,7 @@ const MarbleBrawlWebGL = (() => {
    if(dangerous)ring(a,active+.16,active+.21,height(Math.min(R,active+.17))+.047,material.amber);
    // Shockwave telegraphing is state-driven; never invents a physical travelling hit.
    const inSec=s.pulseAt===null?Infinity:s.pulseAt-s.elapsed;
-   if(inSec>=0&&inSec<=3){
+   if(inSec>=0&&inSec<=2){
      ring(a,1.25,1.38,-.20,inSec<1?material.amber:material.brassLit);
      for(let k=0;k<8;k++){const ang=k*TAU/8,rr=2.2;
        box(a,rr*Math.cos(ang),height(rr)+.10,rr*Math.sin(ang),.24,.15,.24,material.amber);}
@@ -179,6 +179,19 @@ const MarbleBrawlWebGL = (() => {
      cylinder(a,X,y+.44,Z,36*SCALE,.22,material.amber,24);
      cylinder(a,X,y+.62,Z,28*SCALE,.10,material.steel,24);
    }
+   if(s.hazard==='crossfire'){
+     // A pair of physically simulated, counter-rotating metal hammers.
+     // Each disc is 40 units wide; engine collision radius is 40+22=62.
+     const phase=s.hazardAngle*1.48;
+     for(const a0 of [phase,Math.PI/2-phase]){
+       const x=80*SCALE*Math.cos(a0),z=80*SCALE*Math.sin(a0);
+       const y=height(80*SCALE);
+       cylinder(a,x,y,z,40*SCALE,.45,material.darkMetal,24);
+       cylinder(a,x,y+.43,z,36*SCALE,.17,material.brassLit,24);
+       sphere(a,x,y+.67,z,.43,material.steel,9,14);
+       ringAt(a,x,z,1.16,1.29,y+.08,material.amber);
+     }
+   }
    if(s.hazard==='crumbling'){
      for(let i=0;i<24;i++){const ang=i*TAU/24,rr=active+.05,
        col=i%3===0?material.amber:material.danger;
@@ -192,6 +205,20 @@ const MarbleBrawlWebGL = (() => {
      // Contact occlusion gives the heavy glass marble real ground presence.
      ringAt(a,x,z,.08,.91,height(r)+.037,material.black);
      sphere(a,x,y,z,.62,color,14,22);
+     // TV-visible speed without fake impact art: a short, physically aligned
+     // streak projects backward from the marble's actual velocity vector.
+     if(!reduce){
+       const speed=Math.hypot(m.vx,m.vy);
+       if(speed>145){
+         const nx=m.vx/speed,nz=m.vy/speed;
+         const length=clamp(.3+speed*.004,0,3.8);
+         const bx=x-nx*length,bz=z-nz*length;
+         beam(a,x-nx*.51,z-nz*.51,bx,bz,
+           height(r)+.12,height(clamp(Math.hypot(bx,bz),0,R))+.12,
+           m.ramWindow>0?.32:.19,.08,
+           m.ramWindow>0?material.amber:material.cyan);
+       }
+     }
      // Player-colour identification stays clear without neon screen clutter.
      ringAt(a,x,z,.66,.82,height(r)+.087,color);
      if(m.anchored>0)ringAt(a,x,z,.9,1.00,height(r)+.09,material.cyan);
@@ -337,11 +364,11 @@ const MarbleBrawlWebGL = (() => {
    // bowl stays on screen. Motion reduction keeps the camera wholly static.
    const alive=s.marbles.filter(m=>m.alive).length;
    const danger=clamp((380-s.radius)/270,0,1);
-   const target=options.reduce?0:clamp(danger*.33+(alive===2?.42:0),0,.77);
+   const target=options.reduce?0:clamp(danger*.32+(alive<=2?.83:0),0,1.08);
    const now=performance.now(),dt=broadcastTime?clamp((now-broadcastTime)/1000,0,.06):0;
    broadcastTime=now;
    broadcastFocus=options.reduce?0:broadcastFocus+(target-broadcastFocus)*(1-Math.exp(-1.8*dt));
-   const eye=[0,17.3-.65*broadcastFocus,25.5-1.40*broadcastFocus],len=Math.hypot(...eye);
+   const eye=[0,17.3-1.75*broadcastFocus,25.5-2.9*broadcastFocus],len=Math.hypot(...eye);
    const f=[-eye[0]/len,-eye[1]/len,-eye[2]/len],right=[1,0,0],
      up=[0,eye[2]/len,-eye[1]/len];
    gl.viewport(0,0,canvas.width,canvas.height);
@@ -350,7 +377,15 @@ const MarbleBrawlWebGL = (() => {
    gl.uniform3fv(loc.u_eye,eye);gl.uniform3fv(loc.u_forward,f);
    gl.uniform3fv(loc.u_right,right);gl.uniform3fv(loc.u_up,up);
    gl.uniform1f(loc.u_aspect,canvas.width/canvas.height);
-   gl.uniform1f(loc.u_focal,1.88+.12*broadcastFocus);gl.uniform1f(loc.u_shift,.15);
+   // A brief physical-hit camera recoil: small enough to preserve TV readability,
+   // fully disabled when Reduce Motion is selected.
+   const impact=(s.events||[]).slice(-14).reverse().find(e=>
+     e.kind==='hit'&&e.impact>160&&s.time-e.time>=0&&s.time-e.time<.22);
+   const age=impact?s.time-impact.time:1;
+   const recoil=options.reduce||!impact?0:
+     Math.sin(age*47)*(.22-age)*.20*clamp(impact.impact/380,.4,1.7);
+   gl.uniform1f(loc.u_focal,1.88+.33*broadcastFocus);
+   gl.uniform1f(loc.u_shift,.15+recoil);
    bind(staticBuffer);gl.drawArrays(gl.TRIANGLES,0,staticCount);
    const dynamic=buildDynamic(s,!!options.reduce);
    gl.bindBuffer(gl.ARRAY_BUFFER,dynamicBuffer);

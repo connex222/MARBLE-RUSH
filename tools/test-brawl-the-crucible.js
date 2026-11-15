@@ -20,7 +20,7 @@ assert.match(hardwareQa,/hardwareApproved:null/,'browser telemetry must not asse
 assert.match(hardwareQa,/brawl3d:lastCrucible/,'Crucible GPU snapshot missing from QA report');
 const arena=read('src/modes/party-brawl-webgl.js');
 const tv=read('src/tv.html');
-assert.match(brawlEngine,/const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=240/,
+assert.match(brawlEngine,/const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=325/,
   'the spinning arm must physically exist in the authoritative engine');
 assert.match(brawlEngine,/const along=clamp\(m\.x\*ax\+m\.y\*ay,0,SWEEPER_LENGTH\)/,
   'rotor collider must span the real swept segment');
@@ -30,8 +30,8 @@ assert.match(brawlHud,/function reset\(\)/,
   'Brawl HUD and standings must be reset between games');
 assert.match(tv,/id="ppBrawlRoundWinner"/,
   'broadcast winner cut-in must be present');
-assert.match(preview,/duckForAnnouncer\(2\.6\)/,
-  'announcer must duck the Brawl score only');
+assert.match(preview,/duckForAnnouncer\(1\.3\)/,
+  'a real announcer voice should briefly duck the score, but silent captions must not');
 assert.match(host,/fallbackBrawl\('gpu-context-lost'\)/,
   'context loss must fallback in the SAME TV frame');
 assert.match(host,/fallbackBrawl\('gpu-exception'\)/,
@@ -46,6 +46,16 @@ assert.match(preview,/if \(a === 'party' && isVip && state === 'lobby' && \(v ==
   'Party Night must not select hidden modes');
 assert.match(phone,/h\.partyNightEnabled \? \[0,3,5,7\] : \[\]/,
   'phone host must hide unavailable party options');
+assert.match(phone,/let stopBrawlSteer=\(\)=>\{\}/,
+  'hold steering must have a globally accessible release/cleanup callback');
+assert.match(phone,/timer=setInterval\(\(\)=>\{/,
+  'Brawl needs a sustained physical steering input while held');
+assert.match(phone,/\},115\);/,
+  'hold steering must have a bounded input send rate');
+assert.match(phone,/pointercancel','lostpointercapture/,
+  'cancelled touches must not create permanent steering loops');
+assert.match(phone,/h\.pulseIn<=2/,
+  'phone danger warning must agree with the two-second physics telegraph');
 assert.match(preview,/const PARTY_LOCAL_QA = \/\^\(localhost\|127/,'unapproved modes can be QA-enabled only on localhost');
 assert.match(build,/'party-brawl-webgl'/,'build must bundle the real GPU renderer');
 const approvedAudio=JSON.parse(read('tools/approved-audio-sources.json'));
@@ -55,6 +65,11 @@ assert.match(preview,/\/assets\/audio\/music_brawl_crucible\.mp3/,
 assert.match(build,/crucible-stadium\.svg/,'build must bundle the new art-direction background');
 assert.match(arena,/alpha:true,antialias:true/,'GPU stage must show the independent stadium in empty areas');
 assert.match(arena,/attribute float a_kind/,'clearcoat glass and machined metal require distinct material channels');
+assert.match(arena,/s\.hazard==='crossfire'/,'final round must have true native 3D hammer meshes');
+assert.match(arena,/m\.vx\/speed/,'3D rolling speed must drive visible trails');
+assert.match(preview,/brawlActionCue\[k\]=key/,'CPU and human moves must produce audio from authoritative events');
+assert.match(preview,/Audio_\.hasClip\('vo_'\+key\)/,
+  'music must not duck for silent text-only callouts');
 const art=read('assets/crucible-stadium.svg');
 assert.match(art,/<svg[^>]+viewBox="0 0 1920 1080"/,'stadium art must be widescreen');
 assert.match(host,/MarbleBrawlWebGL\.mount\(canvas\)/);
@@ -90,7 +105,7 @@ vm.runInContext(read('src/modes/party-brawl-webgl.js')+';this.renderer=MarbleBra
 const renderer=context.renderer;
 assert.equal(renderer.mount(mounted),true);
 assert.equal(renderer.active,true);
-const hazards=['bumpers','ice','rotor','crumbling','clean'];
+const hazards=['bumpers','ice','rotor','crumbling','crossfire'];
 for(const [i,hazard] of hazards.entries()){
  const st={hazard,hazardAngle:i*.8,round:i+1,radius:380-i*50,
    elapsed:12,time:12+i*42,pulseAt:14,lastPulseAt:-99,
