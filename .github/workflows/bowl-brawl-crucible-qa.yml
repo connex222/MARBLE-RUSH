@@ -1,0 +1,66 @@
+name: Bowl Brawl Crucible native GPU QA
+on:
+  pull_request:
+    paths:
+      - 'src/modes/brawl.js'
+      - 'src/modes/party-brawl-webgl.js'
+      - 'src/modes/party-brawl-ui-v2.js'
+      - 'src/modes/party-screen-host.js'
+      - 'src/tv.js'
+      - 'src/tv.html'
+      - 'src/play.html'
+      - 'tools/brawl-webgl-browser-smoke.js'
+      - 'tools/test-brawl-the-crucible.js'
+      - '.github/workflows/bowl-brawl-crucible-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  crucible-gpu:
+    name: Real Chromium GPU build, five hazards, and exclusive TV stage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install game dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate Bowl Brawl engine, WebGL and isolated Grand Prix
+        run: |
+          node --check src/modes/brawl.js
+          node --check src/modes/party-brawl-webgl.js
+          node --check src/modes/party-screen-host.js
+          node --check tools/brawl-webgl-browser-smoke.js
+          npm run test:brawl
+          npm run test:brawl3d
+          node tools/test-grandprix-regression.js
+      - name: Assemble original seven-track Grand Prix and Crucible preview
+        run: npm run build
+      - name: Install supported headless Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.57.0
+          npx playwright install --only-shell chromium
+      - name: Test actual 3D pixels in a real Chromium browser
+        run: |
+          set -e
+          PORT=35993 node server/server.js >/tmp/marble-brawl-webgl.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/brawl-webgl-browser-smoke.js
+      - name: Preserve actual 1080p GPU screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bowl-brawl-crucible-gpu-review
+          if-no-files-found: warn
+          path: |
+            qa-brawl-crucible-actual-webgl.png
+            qa-brawl-crucible-broadcast.png
+            qa-brawl-crucible-gpu.json
+          retention-days: 14
