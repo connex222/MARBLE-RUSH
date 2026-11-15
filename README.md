@@ -1,6 +1,6 @@
 # MARBLE RUSH — Grand Prix
 
-**One game. Seven original tracks.** Marble Rush is a multiplayer marble-racing game for television, PC and mobile controllers. The TV is the track; phones are the buttons. Tap to boost, hold to grip.
+**One game. Ten tracks: seven originals and three new courses.** Marble Rush is a multiplayer marble-racing game for television, PC and mobile controllers. The TV is the track; phones are the buttons. Tap to boost, hold to grip.
 
 **Play on TV / PC:** https://marble-rush.onrender.com/tv  
 **Phone controller:** https://marble-rush.onrender.com/play
@@ -9,11 +9,11 @@
 
 1. Open Marble Rush on the television or computer and select **Open the track**.
 2. Scan the QR code or enter the four-letter room code on players' phones. You can also add keyboard and CPU racers in the lobby.
-3. Choose the cup length (1, 4 or 7 races) and optional items, catch-up, music and sound effects.
+3. Choose the cup length (1, 2, 4, 7 or 10 races) and optional items, catch-up, music and sound effects.
 4. Select **Start the Cup**. Players vote for a track; tap on the phone to boost, or hold to grip.
 5. Compete for points across the cup, crown the champion, and start a new cup or return to the lobby.
 
-The seven original track themes are **Toybox, Candy, Ice, Space, Jungle, Seaside and Clockwork**. All seven remain available. The original racing physics, multiplayer relay, approved track art, fullscreen support and phone controls have been preserved.
+The original themes are **Toybox, Candy, Ice, Space, Jungle, Seaside and Clockwork**. All seven original tracks remain unchanged. Three new course layouts reuse approved existing theme art: **Jetty Dash** (short sprint), **Canopy Expedition** (long endurance race) and **Gearshift Gauntlet** (technical challenge). The optional **Full Tour (10)** cup races all ten tracks exactly once. Racing physics, multiplayer relay, artwork, fullscreen support and phone controls are preserved.
 
 ## Production scope — 15 November 2026
 
@@ -37,7 +37,7 @@ The build writes the standalone TV and phone pages to `public/`. For the origina
 
 | Location | Purpose |
 |---|---|
-| `src/engine.js` | Original seven-track Grand Prix racing engine |
+| `src/engine.js` | Ten Grand Prix courses, including the protected seven originals |
 | `src/tv.js`, `src/tv.html` | Television / PC lobby and race presentation |
 | `src/play.html` | Phone controller |
 | `server/server.js` | Room code and WebSocket relay |
