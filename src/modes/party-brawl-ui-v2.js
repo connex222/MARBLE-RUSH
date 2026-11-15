@@ -290,6 +290,21 @@ const MarbleBrawlUI=(()=>{
     if(!document.querySelector('#partyStage:not([hidden])')||s.done)return;
     const now=performance.now();if(now-lastHud<85)return;lastHud=now;
     const alive=s.marbles.filter(m=>m.alive),players=s.roster||[];
+    // Previous completed round is timestamped and is immediately available
+    // even though the authoritative engine has started the next heat.
+    const roundCut=document.getElementById('ppBrawlRoundWinner');
+    if(roundCut){
+      const winner=(s.events||[]).slice(-60).reverse().find(e=>
+        e.kind==='round_end'&&Number.isFinite(e.time)&&
+        s.time-e.time>=0&&s.time-e.time<1.25&&e.round<s.round);
+      roundCut.hidden=!winner;
+      if(winner){
+        const p=players.find(item=>item.id===winner.winner);
+        const winnerName=p?.name||'LAST MARBLE STANDING';
+        const node=document.getElementById('ppBrawlRoundWinnerName');
+        if(node&&node.textContent!==winnerName)node.textContent=winnerName;
+      }
+    }
     const get=id=>s.marbles.find(m=>m.id===id);
     $('ppBrawlRound').textContent='ROUND '+s.round+' / 5';
     $('ppBrawlPhase').textContent=hazardNames[s.hazard]||'THE BRAWL';
