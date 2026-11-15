@@ -770,6 +770,67 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
 
 @media(max-width:780px){#partyBackLobby{min-width:175px;min-height:52px;padding:7px 15px;font-size:19px}}
 
+
+/* THE CRUCIBLE — prestige-sport broadcast skin. Only the new native 3D preview;
+   the existing Grand Prix, backgrounds, lobby and legacy fallbacks stay intact. */
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"]{
+ background:radial-gradient(ellipse at 50% 55%,#172b37 0%,#0b1722 56%,#060e18 100%)
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"]:after{
+ background:linear-gradient(90deg,rgba(4,12,22,.62) 0%,rgba(4,12,22,.14) 29%,transparent 46%),
+ linear-gradient(270deg,rgba(4,12,22,.50),transparent 30%),
+ linear-gradient(0deg,rgba(3,10,18,.75),transparent 19%)
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlHeader h1{
+ font-family:Nunito,system-ui,sans-serif;font-weight:1000;
+ letter-spacing:-.04em;font-size:calc(76*var(--u));line-height:1.04;
+ color:#f1eadb;-webkit-text-stroke:0;text-shadow:0 calc(5*var(--u)) calc(24*var(--u)) #000b
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlHeader .ppKicker{
+ color:#9abac2;letter-spacing:.19em
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlRound,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPhase{
+ border:calc(1*var(--u)) solid #a6b6ae80;
+ border-radius:calc(7*var(--u));background:#101f2bea;
+ color:#e5e2d4
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPhase{
+ border-color:#63c5c680;color:#9be1df
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPanel,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStandings,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStats>div{
+ background:linear-gradient(145deg,rgba(13,26,39,.96),rgba(6,17,28,.96));
+ border:calc(1*var(--u)) solid #7c959f85;
+ border-radius:calc(13*var(--u));
+ box-shadow:0 calc(18*var(--u)) calc(50*var(--u)) #0007;
+ backdrop-filter:blur(calc(8*var(--u)))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPanel{
+ padding:calc(22*var(--u));border-top-color:#b88a56aa
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPanel>small,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStandings h2{
+ color:#9bb3be;letter-spacing:.08em
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStats strong,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPlayer{
+ color:#f6f0df;text-shadow:none
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] .ppBrawlActions button{
+ border-radius:calc(8*var(--u));border-color:#7797a285;
+ background:linear-gradient(160deg,#284051,#142a3a);color:#f5f3e9
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] .ppBrawlActions button:focus-visible{
+ outline:calc(3*var(--u)) solid #aee9ea;outline-offset:calc(3*var(--u))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlShockBox{
+ background:#0c1a29f2;border-color:#68cbd2a8;border-radius:calc(9*var(--u))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlShockBox.danger{
+ border-color:#f2a16f
+}
 </style>
 </head>
 <body>
