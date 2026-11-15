@@ -1116,7 +1116,10 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
           for (const n of (h.partyNightEnabled ? [0,3,5,7] : []))
             vip.push(['party', (h.partyLength === n ? '✓ ' : '') + (n ? n + '-game Party Night' : 'Party Night off'), false, n]);
           // Only ready modes are shown; the host's choice is relayed to TV.
-          for (const mode of (h.availableModes || [])) vip.push(['mode', (mode.id === h.mode ? '✓ ' : '') + mode.name, false, mode.id]);
+          // Grand Prix is the only public game. No pointless "choose mode"
+          // control on host phones; legacy alternatives are localhost QA only.
+          for (const mode of (h.availableModes || []))
+            if(mode.id!=='grandprix')vip.push(['mode', (mode.id === h.mode ? '✓ ' : '') + mode.name, false, mode.id]);
         }
         // Selection stays on the TV until the additional mode implementations pass QA.
         break;
