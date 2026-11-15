@@ -433,7 +433,7 @@
       };
     })();
 
-    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, duckForAnnouncer, refreshMusicMix, Music: { mode: m => ac && Music.mode(m), intensity: v => ac && Music.intensity(v) }, get debug() { return { introPlaying: !!introSource, introDone, rollGain: rollGain?.gain.value||0, state }; }, get on() { return !!ac; } };
+    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, duckForAnnouncer, refreshMusicMix, Music: { mode: m => { if(ac){Music.mode(m);refreshMusicMix();} }, intensity: v => ac && Music.intensity(v) }, get debug() { return { introPlaying: !!introSource, introDone, rollGain: rollGain?.gain.value||0, state }; }, get on() { return !!ac; } };
   })();
 
   /* ======================================================================
