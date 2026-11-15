@@ -16,7 +16,7 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
  page.on('pageerror',e=>errors.push(e.message));
  const proof={reviewOnly:true,physicalTv:false,mode:'dropzone',graphics:null,physics:null,otherMode:null};
  try{
-  await page.goto(BASE+'/tv?dropzone3d=1&probe3d=1',{waitUntil:'domcontentloaded'});
+  await page.goto(BASE+'/tv?dropzone3d=1&probe3d=1&partyQa=1',{waitUntil:'domcontentloaded'});
   await page.locator('#btnBoot').click();
   await page.locator('#btnKb').click();
   await page.locator('#btnCpu').click();
@@ -231,7 +231,7 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:35993';
       return original.call(this,kind,...options);
     };
   });
-  await fallbackPage.goto(BASE+'/tv?dropzone3d=1',{waitUntil:'domcontentloaded'});
+  await fallbackPage.goto(BASE+'/tv?dropzone3d=1&partyQa=1',{waitUntil:'domcontentloaded'});
   for(const sel of ['#btnBoot','#btnKb','#btnCpu',
    '#partyModeCards .partyModeCard[data-mode="dropzone"]','#btnStart'])
    await fallbackPage.locator(sel).click();
