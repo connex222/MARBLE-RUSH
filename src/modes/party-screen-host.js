@@ -120,6 +120,11 @@ const MarblePartyScreen=(()=>{
       canvas=document.getElementById('partyStageCanvas');
     }
     const def=definitions[name];
+    // Broadcast overlays and cached standings must never leak between modes
+    // or between two consecutive games with identical player rosters.
+    const winner=document.getElementById('ppBrawlRoundWinner');
+    if(winner)winner.hidden=true;
+    if(name==='brawl')MarbleBrawlUI.reset();
     MarbleSceneCache.keepOnly(name);
     MarblePartyClock.reset();
     for(const id of allPanels){
@@ -181,6 +186,8 @@ const MarblePartyScreen=(()=>{
       stage.removeAttribute('data-dropzone3d-fallback');
       document.getElementById('ppDrop3dFallback')?.remove();
     }
+    const winner=document.getElementById('ppBrawlRoundWinner');
+    if(winner)winner.hidden=true;
     for(const id of allPanels){
       const element=document.getElementById(id);if(element)element.hidden=true;
     }
