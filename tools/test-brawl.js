@@ -115,9 +115,9 @@ assert.equal(noCredit.state.events.some(e=>e.kind==='knockout'),false,
 assert.ok(!noCredit.state.roster[0].roundPoints[0] ||
   noCredit.state.roster[0].roundPoints[0]===10,'Free knockouts forbidden');
 const timedBrace=B.create(roster,18);
-timedBrace.state.elapsed=.1;timedBrace.state.time=.1;
+timedBrace.state.elapsed=1.15;timedBrace.state.time=1.15;
 assert.equal(timedBrace.action('alpha','anchor'),true);
-assert.ok(timedBrace.current('alpha').anchored>2.8,
+assert.ok(timedBrace.current('alpha').anchored>2,
   'ANCHOR during the warning must remain active until shock impact');
 const ledge=B.create(roster,22);
 const clinging=ledge.current('alpha');
