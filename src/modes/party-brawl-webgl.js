@@ -26,8 +26,8 @@ const MarbleBrawlWebGL = (() => {
  const height=r=>-.65+1.78*Math.pow(r/R,3.45);
  function ring(out,inner,outer,y,color,seg=SEG){
    for(let i=0;i<seg;i++){const a=i*TAU/seg,b=(i+1)*TAU/seg;
-     quad(out,[inner*Math.cos(a),y,inner*Math.sin(a)],[outer*Math.cos(a),y,outer*Math.sin(a)],
-       [outer*Math.cos(b),y,outer*Math.sin(b)],[inner*Math.cos(b),y,inner*Math.sin(b)],color);}
+     quad(out,[inner*Math.cos(b),y,inner*Math.sin(b)],[outer*Math.cos(b),y,outer*Math.sin(b)],
+       [outer*Math.cos(a),y,outer*Math.sin(a)],[inner*Math.cos(a),y,inner*Math.sin(a)],color);}
  }
  function wall(out,r0,r1,y0,y1,color,seg=SEG){
    for(let i=0;i<seg;i++){const a=i*TAU/seg,b=(i+1)*TAU/seg;
@@ -69,7 +69,7 @@ const MarbleBrawlWebGL = (() => {
     for(let i=0;i<SEG;i++){const th=TAU*i/SEG,ph=TAU*(i+1)/SEG;
       const p=(rad,ang)=>[rad*Math.cos(ang),height(rad),rad*Math.sin(ang)];
       const col=(j+i%2)%3===0?material.floor2:material.floor;
-      quad(a,p(ra,th),p(rb,th),p(rb,ph),p(ra,ph),col);
+      quad(a,p(ra,ph),p(rb,ph),p(rb,th),p(ra,th),col);
     }
    }
    // Understructure, chamfered brass rim, stadium protective steel collar.
@@ -161,10 +161,10 @@ const MarbleBrawlWebGL = (() => {
  }
  function ringAt(out,x,z,inner,outer,y,col){
    for(let i=0;i<20;i++){const p=i*TAU/20,q=(i+1)*TAU/20;
-     quad(out,[x+inner*Math.cos(p),y,z+inner*Math.sin(p)],
-       [x+outer*Math.cos(p),y,z+outer*Math.sin(p)],
+     quad(out,[x+inner*Math.cos(q),y,z+inner*Math.sin(q)],
        [x+outer*Math.cos(q),y,z+outer*Math.sin(q)],
-       [x+inner*Math.cos(q),y,z+inner*Math.sin(q)],col);}
+       [x+outer*Math.cos(p),y,z+outer*Math.sin(p)],
+       [x+inner*Math.cos(p),y,z+inner*Math.sin(p)],col);}
  }
  function compile(type,source){
    const sh=gl.createShader(type);gl.shaderSource(sh,source);gl.compileShader(sh);resources.push(['shader',sh]);
@@ -185,8 +185,10 @@ const MarbleBrawlWebGL = (() => {
      'precision mediump float;varying vec3 v_n,v_c,v_world;uniform vec3 u_eye;'+
      'void main(){vec3 n=normalize(v_n);vec3 l=normalize(vec3(-.45,.9,.57));'+
      'float nd=max(0.,dot(n,l));vec3 view=normalize(u_eye-v_world);'+
-     'vec3 h=normalize(l+view);float spec=pow(max(0.,dot(n,h)),32.)*.28;'+
-     'vec3 lit=v_c*(.38+nd*.78)+vec3(spec);'+
+     'vec3 h=normalize(l+view);float spec=pow(max(0.,dot(n,h)),42.)*.34;'+
+     'float rim=pow(1.-abs(dot(n,view)),3.);'+
+     'vec3 skylight=vec3(.18,.29,.37)*max(0.,dot(n,normalize(vec3(.54,.28,-.60))));'+
+     'vec3 lit=v_c*(.36+nd*.75)+skylight*.30+vec3(spec)+v_c*rim*.22;'+
      'gl_FragColor=vec4(min(vec3(1.),lit),1.);}');
    program=gl.createProgram();resources.push(['program',program]);
    gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);
@@ -267,7 +269,8 @@ const MarbleBrawlWebGL = (() => {
    bind(dynamicBuffer);gl.drawArrays(gl.TRIANGLES,0,dynamicCount);
    drawCalls=2;frameCount++;lastFrame=performance.now()-start;
    MarbleBrawlUI.updateHud(s);
-   return gl.getError()===gl.NO_ERROR;
+   // A synchronous GPU error readback every frame can stall a living-room TV.
+   return (frameCount%64)!==0 || gl.getError()===gl.NO_ERROR;
  }
  function debug(){return Object.freeze({realMeshes:!!program&&!lost,active:!!gl&&!lost,
    renderer:'brawl-the-crucible-native-webgl-v1',gpu:gpuLabel,
