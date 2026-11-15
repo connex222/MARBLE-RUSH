@@ -44,6 +44,19 @@ const MarbleBrawlWebGL = (() => {
    quad(out,a,b,c,d,col);quad(out,e,h,g,f,col);quad(out,d,c,g,h,col);
    quad(out,a,e,f,b,col);quad(out,b,f,g,c,col);quad(out,a,d,h,e,col);
  }
+ // Rotated physical beam with its long dimension EXACTLY aligned to the
+ // authoritative collision segment (centre to moving rotor end-cap).
+ function beam(out,x1,z1,x2,z2,y1,y2,width,thickness,col){
+   const dx=x2-x1,dz=z2-z1,dist=Math.hypot(dx,dz)||1;
+   const nx=-dz/dist*width/2,nz=dx/dist*width/2;
+   const A=[x1+nx,y1-thickness/2,z1+nz],B=[x2+nx,y2-thickness/2,z2+nz];
+   const C=[x2-nx,y2-thickness/2,z2-nz],D=[x1-nx,y1-thickness/2,z1-nz];
+   const E=[A[0],y1+thickness/2,A[2]],F=[B[0],y2+thickness/2,B[2]];
+   const G=[C[0],y2+thickness/2,C[2]],H=[D[0],y1+thickness/2,D[2]];
+   quad(out,E,H,G,F,col);quad(out,A,B,C,D,col);
+   quad(out,A,E,F,B,col);quad(out,D,C,G,H,col);
+   quad(out,A,D,H,E,col);quad(out,B,F,G,C,col);
+ }
  function cylinder(out,x,y,z,r,h,col,seg=20){
    for(let i=0;i<seg;i++){const a=i*TAU/seg,b=(i+1)*TAU/seg,
       p=[x+r*Math.cos(a),y,z+r*Math.sin(a)],
@@ -112,8 +125,10 @@ const MarbleBrawlWebGL = (() => {
    }
    if(s.hazard==='bumpers')for(const [x,z] of [[125,60],[-110,-50]]){
      const X=x*SCALE,Z=z*SCALE,y=height(Math.hypot(X,Z));
-     cylinder(a,X,y,Z,.90,.43,material.brass,24);
-     cylinder(a,X,y+.39,Z,.72,.18,material.amber,24);
+     // Visible diameter matches the engine's 45-unit obstacle + 22-unit
+     // marble collision radius. Styling must not falsify danger distance.
+     cylinder(a,X,y,Z,45*SCALE,.43,material.darkMetal,24);
+     cylinder(a,X,y+.39,Z,42*SCALE,.18,material.brassLit,24);
      sphere(a,X,y+.62,Z,.41,material.steel,9,14);
    }
    if(s.hazard==='ice'){
@@ -124,11 +139,21 @@ const MarbleBrawlWebGL = (() => {
          [x+Math.cos(q)*r,height(Math.hypot(x+Math.cos(q)*r,z+Math.sin(q)*r))+.05,z+Math.sin(q)*r],material.ice);}
    }
    if(s.hazard==='rotor'){
-     // The actual collision shape is a moving point/pylon, not a fake sweeping hitbox.
-     const X=Math.cos(s.hazardAngle)*95*SCALE,Z=Math.sin(s.hazardAngle)*95*SCALE,y=height(Math.hypot(X,Z));
-     cylinder(a,X,y,Z,.88,.40,material.amber,22);
-     cylinder(a,X,y+.39,Z,.70,.24,material.brassLit,22);
-     box(a,X,y+.72,Z,1.4,.22,.35,material.steel);
+     const length=(Number(s.rotorLength)||95)*SCALE;
+     const width=(Number(s.rotorHalfWidth)||18)*2*SCALE;
+     const X=Math.cos(s.hazardAngle)*length,Z=Math.sin(s.hazardAngle)*length;
+     const y=height(length);
+     // STRIKER ARM: real continuous swept capsule collider, not decorative.
+     // The black-metal spine and narrow amber centre-line make its danger
+     // obvious on a distant television, without over-saturated neon.
+     beam(a,0,0,X,Z,height(0)+.63,y+.63,width,.43,material.darkMetal);
+     beam(a,0,0,X,Z,height(0)+.91,y+.91,width*.20,.14,material.brassLit);
+     cylinder(a,0,height(0)+.35,0,.78,.58,material.steel,24);
+     // Engine end-cap uses physical 45/35 radius; the existing 67-unit
+     // collision threshold includes the 22-unit marble radius.
+     cylinder(a,X,y,Z,45*SCALE,.46,material.brass,24);
+     cylinder(a,X,y+.44,Z,36*SCALE,.22,material.amber,24);
+     cylinder(a,X,y+.62,Z,28*SCALE,.10,material.steel,24);
    }
    if(s.hazard==='crumbling'){
      for(let i=0;i<24;i++){const ang=i*TAU/24,rr=active+.05,
