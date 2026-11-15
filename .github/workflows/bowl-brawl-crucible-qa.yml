@@ -55,6 +55,17 @@ jobs:
             sleep 1
           done
           node tools/brawl-webgl-browser-smoke.js
+      - name: Verify live Bowl Brawl with two separate phone browsers
+        run: |
+          set -e
+          PORT=35993 node server/server.js >/tmp/marble-brawl-two-phones.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            sleep 1
+          done
+          node tools/brawl-webgl-multiplayer-smoke.js
       - name: Preserve actual 1080p GPU screenshots and diagnostics
         if: always()
         uses: actions/upload-artifact@v4

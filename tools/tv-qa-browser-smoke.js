@@ -11,7 +11,7 @@ const fs=require('node:fs');
  });
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  try{
-  await page.goto(base+'/tv?qa=1',{waitUntil:'domcontentloaded'});
+  await page.goto(base+'/tv?qa=1&partyQa=1',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.__MR?.qaDiagnostics?.enabled===true);
   await page.locator('#marbleRushQaDiagnostics').waitFor({state:'visible'});
   const diagTag=await page.evaluate(()=>document.getElementById('marbleRushQaDiagnostics')?.tagName);

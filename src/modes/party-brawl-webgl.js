@@ -19,7 +19,7 @@ const MarbleBrawlWebGL = (() => {
   floor:[.115,.175,.23], floor2:[.13,.205,.27], rim:[.42,.47,.50],
   brass:[.69,.45,.23], brassLit:[.92,.68,.34], black:[.055,.078,.108],
   cyan:[.15,.70,.76], amber:[1,.44,.16], danger:[.95,.18,.19],
-  darkMetal:[.20,.26,.31], steel:[.39,.48,.53], ice:[.16,.49,.55]
+  darkMetal:[.20,.26,.31], steel:[.39,.48,.53], ice:[.34,.61,.67]
  };
  const vtx=(out,p,n,c)=>out.push(p[0],p[1],p[2],n[0],n[1],n[2],c[0],c[1],c[2]);
  const tri=(out,a,b,c,col)=>{const n=normal(a,b,c);vtx(out,a,n,col);vtx(out,b,n,col);vtx(out,c,n,col);};
@@ -42,8 +42,10 @@ const MarbleBrawlWebGL = (() => {
     c=[x+wx/2,y+wy/2,z-wz/2],d=[x-wx/2,y+wy/2,z-wz/2],
     e=[x-wx/2,y-wy/2,z+wz/2],f=[x+wx/2,y-wy/2,z+wz/2],
     g=[x+wx/2,y+wy/2,z+wz/2],h=[x-wx/2,y+wy/2,z+wz/2];
-   quad(out,a,b,c,d,col);quad(out,e,h,g,f,col);quad(out,d,c,g,h,col);
-   quad(out,a,e,f,b,col);quad(out,b,f,g,c,col);quad(out,a,d,h,e,col);
+   // All six outward-facing normals. The initial mesh had its box face
+   // winding inverted, making brushed-metal props render unnaturally dark.
+   quad(out,a,d,c,b,col);quad(out,e,f,g,h,col);quad(out,d,h,g,c,col);
+   quad(out,a,b,f,e,col);quad(out,b,c,g,f,col);quad(out,a,e,h,d,col);
  }
  // Rotated physical beam with its long dimension EXACTLY aligned to the
  // authoritative collision segment (centre to moving rotor end-cap).
@@ -54,16 +56,16 @@ const MarbleBrawlWebGL = (() => {
    const C=[x2-nx,y2-thickness/2,z2-nz],D=[x1-nx,y1-thickness/2,z1-nz];
    const E=[A[0],y1+thickness/2,A[2]],F=[B[0],y2+thickness/2,B[2]];
    const G=[C[0],y2+thickness/2,C[2]],H=[D[0],y1+thickness/2,D[2]];
-   quad(out,E,H,G,F,col);quad(out,A,B,C,D,col);
-   quad(out,A,E,F,B,col);quad(out,D,C,G,H,col);
-   quad(out,A,D,H,E,col);quad(out,B,F,G,C,col);
+   quad(out,E,F,G,H,col);quad(out,A,D,C,B,col);
+   quad(out,A,B,F,E,col);quad(out,D,H,G,C,col);
+   quad(out,A,E,H,D,col);quad(out,B,C,G,F,col);
  }
  function cylinder(out,x,y,z,r,h,col,seg=20){
    for(let i=0;i<seg;i++){const a=i*TAU/seg,b=(i+1)*TAU/seg,
       p=[x+r*Math.cos(a),y,z+r*Math.sin(a)],
       q=[x+r*Math.cos(b),y,z+r*Math.sin(b)],
       u=[p[0],y+h,p[2]],v=[q[0],y+h,q[2]];
-      quad(out,p,q,v,u,col);tri(out,[x,y+h,z],u,v,col);}
+      quad(out,p,u,v,q,col);tri(out,[x,y+h,z],v,u,col);}
  }
  function sphere(out,x,y,z,r,col,steps=12,sectors=18){
    for(let j=0;j<steps;j++){const a=-Math.PI/2+Math.PI*j/steps,b=-Math.PI/2+Math.PI*(j+1)/steps;
@@ -150,8 +152,9 @@ const MarbleBrawlWebGL = (() => {
      const x=75*SCALE,z=-35*SCALE;
      for(let j=0;j<9;j++){const p=j*TAU/9,q=(j+1)*TAU/9,r=140*SCALE;
        const pc=[x,height(Math.hypot(x,z))+.065,z];
-       tri(a,pc,[x+Math.cos(p)*r,height(Math.hypot(x+Math.cos(p)*r,z+Math.sin(p)*r))+.05,z+Math.sin(p)*r],
-         [x+Math.cos(q)*r,height(Math.hypot(x+Math.cos(q)*r,z+Math.sin(q)*r))+.05,z+Math.sin(q)*r],material.ice);}
+       // Counter-clockwise top face: normal points towards arena lights.
+       tri(a,pc,[x+Math.cos(q)*r,height(Math.hypot(x+Math.cos(q)*r,z+Math.sin(q)*r))+.05,z+Math.sin(q)*r],
+         [x+Math.cos(p)*r,height(Math.hypot(x+Math.cos(p)*r,z+Math.sin(p)*r))+.05,z+Math.sin(p)*r],material.ice);}
    }
    if(s.hazard==='rotor'){
      const length=(Number(s.rotorLength)||95)*SCALE;
