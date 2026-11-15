@@ -2141,12 +2141,16 @@
       const k = b.dataset.set;
       b.setAttribute('aria-pressed', k === 'fx' || k === 'cup' ? 'true' : String(!!settings[k]));
       if (k === 'fx') b.querySelector('em').textContent = settings.fx === 'lite' ? 'Lite' : settings.fx === 'full' ? 'Full' : 'Auto';
-      if (k === 'cup') b.querySelector('em').textContent = settings.cup === 1 ? '1 race' : settings.cup === 7 ? 'Grand Prix (7)' : settings.cup + ' races';
+      if (k === 'cup') b.querySelector('em').textContent = settings.cup === 1 ? '1 race' : settings.cup === 10 ? 'Full Tour (10)' : settings.cup === 7 ? 'Grand Prix (7)' : settings.cup + ' races';
     }
   }
   function renderVote() {
     $('#voteSub').textContent = `Race ${cup.race + 1} of ${cup.n}`;
     const box = $('#voteCards'); box.innerHTML = '';
+    // Two and one remaining course need centred, readable TV vote cards.
+    box.style.gridTemplateColumns = 'repeat(' + vote.opts.length + ', minmax(0, 1fr))';
+    box.style.maxWidth = vote.opts.length === 1 ? 'calc(540*var(--u))' : vote.opts.length === 2 ? 'calc(1100*var(--u))' : '';
+    box.style.marginInline = vote.opts.length < 3 ? 'auto' : '';
     vote.opts.forEach((t, i) => {
       const th = THEMES[t.theme];
       const card = document.createElement('button');
@@ -2578,7 +2582,7 @@
     b.onclick = () => {
       const k = b.dataset.set;
       if (k === 'fx') settings.fx = settings.fx === 'auto' ? 'full' : settings.fx === 'full' ? 'lite' : 'auto';
-      else if (k === 'cup') settings.cup = { 1: 2, 2: 4, 4: 7, 7: 1 }[settings.cup] || 4;
+      else if (k === 'cup') settings.cup = { 1: 2, 2: 4, 4: 7, 7: 10, 10: 1 }[settings.cup] || 4;
       else settings[k] = !settings[k];
       if (k === 'music') Audio_.setMusic(settings.music);
       if (k === 'sfx') Audio_.setSfx(settings.sfx);
