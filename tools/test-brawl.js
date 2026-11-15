@@ -57,19 +57,23 @@ human.tick(.05);
 assert.equal(out.alive,false,'outside marble must be eliminated');
 assert.equal(human.action('a','ram'),false,'eliminated player cannot ram');
 // MAYHEM v3: every new moment of danger is authoritative and deterministic.
-assert.deepEqual(Array.from(B.SHOCK_TIMES),[4,12,24]);
+assert.deepEqual(Array.from(B.SHOCK_TIMES),[3,8,15,24]);
+assert.equal(B.ROUND_TIME,32);
+assert.equal(B.DRIVE_FORCE,235);
+assert.equal(B.RAM_IMPULSE,625);
+assert.equal(B.RAM_COST,24);
 assert.equal(B.RECOVER_COST,35);
 assert.equal(B.KO_BONUS,3);
 const roster=[{id:'alpha'},{id:'bravo'}];
 const pulse=B.create(roster,100);
-assert.equal(pulse.state.pulseAt,4);
+assert.equal(pulse.state.pulseAt,3);
 const aa=pulse.current('alpha'),bb=pulse.current('bravo');
 aa.x=200;aa.y=0;aa.vx=0;aa.vy=0;aa.anchored=.7;
 bb.x=-200;bb.y=0;bb.vx=0;bb.vy=0;bb.anchored=0;
-pulse.state.elapsed=3.99;pulse.state.time=3.99;
+pulse.state.elapsed=2.99;pulse.state.time=2.99;
 pulse.tick(.05);
 assert.equal(pulse.state.pulseIndex,1);
-assert.equal(pulse.state.pulseAt,12);
+assert.equal(pulse.state.pulseAt,8);
 assert.ok(pulse.state.events.some(e=>e.kind==='shockwave'&&e.pulse===1));
 assert.ok(Math.abs(bb.vx)>Math.abs(aa.vx)*2,
   'A pre-timed anchor must mitigate the pulse, not merely add a visual effect');
@@ -111,7 +115,7 @@ assert.equal(noCredit.state.events.some(e=>e.kind==='knockout'),false,
 assert.ok(!noCredit.state.roster[0].roundPoints[0] ||
   noCredit.state.roster[0].roundPoints[0]===10,'Free knockouts forbidden');
 const timedBrace=B.create(roster,18);
-timedBrace.state.elapsed=1.2;timedBrace.state.time=1.2;
+timedBrace.state.elapsed=.1;timedBrace.state.time=.1;
 assert.equal(timedBrace.action('alpha','anchor'),true);
 assert.ok(timedBrace.current('alpha').anchored>2.8,
   'ANCHOR during the warning must remain active until shock impact');
@@ -167,6 +171,36 @@ const ended=B.create(roster,89);
 ended.current('bravo').x=999;ended.tick(.05);
 assert.ok(ended.state.events.some(e=>e.kind==='round_end'&&Number.isFinite(e.time)),
   'Winner presentation needs an authoritative event timestamp');
+
+// COMBAT OVERDRIVE: fast starts, meaningful control and complete rounds.
+for(const n of [2,4,8]){
+  const lineup=Array.from({length:n},(_,i)=>({id:'rapid'+i,cpu:true}));
+  for(let seed=1;seed<=20;seed++){
+    let done=0;
+    const game=B.create(lineup,seed,()=>done++);
+    const start=game.state.marbles;
+    assert.ok(start.every(m=>Math.hypot(m.vx,m.vy)>=140),
+      'Opening must have immediate physical pace, not stationary marbles');
+    let elapsed=0;
+    while(!game.state.done&&elapsed<220){
+      game.tick(.05);elapsed+=.05;
+      assert.ok(game.state.marbles.every(m=>[m.x,m.y,m.vx,m.vy,m.energy].every(Number.isFinite)),
+        'High-energy combat may not create NaN or infinity');
+    }
+    assert.equal(done,1,'Combat should complete with exactly one finish');
+    assert.equal(game.state.roundHistory.length,5);
+    assert.ok(elapsed<220,'A live session must not stall');
+  }
+}
+const turboHuman=B.create([{id:'left'},{id:'right'}],713);
+const launch=turboHuman.current('left');
+assert.ok(Math.hypot(launch.vx,launch.vy)>140,'Human marbles need launch speed');
+assert.ok(turboHuman.action('left','ram'),'RAM must remain player-controlled');
+assert.ok(Math.hypot(launch.vx,launch.vy)>400,'RAM must dramatically accelerate');
+assert.equal(launch.energy,75-B.RAM_COST);
+assert.ok(turboHuman.hud('left').modeControls.some(c=>c.a==='anchor'),
+  'Players must retain responsive defence');
+console.log('PASS OVERDRIVE: 60 seeded CPU games across 2/4/8 players, fast physical starts and live RAM.');
 
 console.log('PASS MAYHEM: telegraphed deterministic shockwave, anchor counterplay, one energy-funded edge save, credited +3 knockout and no unearned points.');
 
