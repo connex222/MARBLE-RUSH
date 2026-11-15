@@ -12,6 +12,26 @@ const root=path.join(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const preview=read('src/tv.js'),phone=read('src/play.html'),build=read('tools/build.js');
 const host=read('src/modes/party-screen-host.js');
+const brawlEngine=read('src/modes/brawl.js');
+const brawlHud=read('src/modes/party-brawl-ui-v2.js');
+const arena=read('src/modes/party-brawl-webgl.js');
+const tv=read('src/tv.html');
+assert.match(brawlEngine,/const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=240/,
+  'the spinning arm must physically exist in the authoritative engine');
+assert.match(brawlEngine,/const along=clamp\(m\.x\*ax\+m\.y\*ay,0,SWEEPER_LENGTH\)/,
+  'rotor collider must span the real swept segment');
+assert.match(arena,/function beam\(out,x1,z1,x2,z2,y1,y2,width,thickness,col\)/,
+  'real GPU beam geometry must match the rotor physics');
+assert.match(brawlHud,/function reset\(\)/,
+  'Brawl HUD and standings must be reset between games');
+assert.match(tv,/id="ppBrawlRoundWinner"/,
+  'broadcast winner cut-in must be present');
+assert.match(preview,/duckForAnnouncer\(2\.6\)/,
+  'announcer must duck the Brawl score only');
+assert.match(host,/fallbackBrawl\('gpu-context-lost'\)/,
+  'context loss must fallback in the SAME TV frame');
+assert.match(host,/fallbackBrawl\('gpu-exception'\)/,
+  'draw exceptions must not crash the whole live game');
 assert.match(preview,/const isPublishedMode = id => id === 'grandprix' \|\|/,
   'unapproved add-ons must remain hidden from normal TV mode selection');
 assert.match(preview,/if \(!isPublishedMode\(selectedMode\) \|\| \(partyLength !== 0 && !PARTY_LOCAL_QA\)\) return;/,
