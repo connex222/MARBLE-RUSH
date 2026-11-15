@@ -46,6 +46,30 @@ const {chromium}=require('playwright');
       'brawl-the-crucible-native-webgl-v1',null,{timeout:16000});
   for(const p of [a,b])await p.waitForFunction(()=>
     document.body.dataset.mode==='brawl',null,{timeout:12000});
+  // A single touch and a sustained hold must be fundamentally different:
+  // continuous, authoritative steering without an unbounded input timer.
+  const beforeSteer=messages.get(a).filter(m=>m.t==='act'&&m.a==='left').length;
+  await a.locator('#modeActions button[data-action="left"]').evaluate(button=>{
+    button.dispatchEvent(new PointerEvent('pointerdown',{
+      bubbles:true,pointerId:91,isPrimary:true,button:0,pointerType:'touch'
+    }));
+  });
+  await a.waitForTimeout(440);
+  await a.locator('#modeActions button[data-action="left"]').evaluate(button=>{
+    button.dispatchEvent(new PointerEvent('pointerup',{
+      bubbles:true,pointerId:91,isPrimary:true,button:0,pointerType:'touch'
+    }));
+  });
+  const afterSteer=messages.get(a).filter(m=>m.t==='act'&&m.a==='left').length;
+  assert.ok(afterSteer-beforeSteer>=3,
+    'Holding the steering button failed to send continuous turns');
+  await a.waitForTimeout(320);
+  const afterRelease=messages.get(a).filter(m=>m.t==='act'&&m.a==='left').length;
+  assert.equal(afterRelease,afterSteer,
+    'Steering continues after the touch is released');
+  assert.ok(messages.get(a).filter(m=>m.t==='act'&&m.a==='left')
+    .every(m=>Number.isInteger(m.v)&&m.v>=1&&m.v<=2),
+    'Steering values must stay within authoritative engine validation');
   await a.locator('#modeActions button[data-action="ram"]').click();
   await tv.waitForFunction(()=>window.__MR.MODES.brawl.session().state.events.some(
     e=>e.kind==='ram'),null,{timeout:12000});
@@ -78,7 +102,7 @@ const {chromium}=require('playwright');
   }));
   assert.deepEqual(restored,{mainCanvasVisible:true,partyStageHidden:true,modeCount:2});
   assert.deepEqual(errors,[]);
-  console.log('PASS REAL BROWSER WEBSOCKET: 2 distinct phone clients, RAM, ANCHOR, '+
+  console.log('PASS REAL BROWSER WEBSOCKET: 2 distinct phone clients, held steering, RAM, ANCHOR, '+
     'native 3D canvas ownership, exit and protected Grand Prix canvas restoration');
  }finally{await browser.close();}
 })().catch(error=>{console.error('CRUCIBLE TWO-PHONE FAIL:',error);process.exitCode=1;});
