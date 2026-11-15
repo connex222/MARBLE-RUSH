@@ -83,7 +83,9 @@
   if(BRAWL_AUDIO_PREVIEW)Object.assign(SND,{
     music_brawl_crucible:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/7428c6c7-d474-4a51-8492-1d5c58f87243.mp3',
     sfx_brawl_ram:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/773c0591-886e-4586-866b-3b8c1843cd98.mp3',
-    sfx_brawl_shockwave:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/02c78a6c-99cd-432b-abc0-5cc9668a5ed9.mp3'
+    sfx_brawl_shockwave:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/02c78a6c-99cd-432b-abc0-5cc9668a5ed9.mp3',
+    sfx_brawl_charge:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/545d4416-70d3-4a1f-a90b-0917e4218715.mp3',
+    sfx_brawl_knockout:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/4ab4a4ee-6df1-483f-9d47-a0cc9d408e76.mp3'
   });
   fetch('assets/manifest.json').then(r => r.ok ? r.json() : null).then(man => {
     if (!man) return;
@@ -1338,7 +1340,7 @@
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
   let derbyTvHorse = 0;
-  let brawlLastCue='',brawlWarningKey='';
+  let brawlLastCue='',brawlWarningKey='',brawlHitCue='';
   let attractMode = null, attractUntil = 0, attractFrom = 0;
   const cheerTime = new Map();
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
@@ -1383,7 +1385,7 @@
         derbyTvHorse=0;state='derby';stateT=0;showScreen('derby');Audio_.Music.mode('derby');sendHud(true);return;
       }
       if (selectedMode === 'brawl') {
-        brawlLastCue='';brawlWarningKey='';
+        brawlLastCue='';brawlWarningKey='';brawlHitCue='';
         if(!partyRun)this.resetNight();
         MODES.brawl.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishBrawl(ranking)});
         state='brawl';stateT=0;showScreen('brawl');
@@ -1635,7 +1637,7 @@
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
       if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','recover','spectate'].includes(a)) {
         const accepted=MODES.brawl.onAction(pid,a,v);
-        if(accepted&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.16,vol:.85});
+        if(accepted&&a==='ram')Audio_.play(BRAWL_AUDIO_PREVIEW?'sfx_brawl_charge':'sfx_brawl_ram',{gap:.16,vol:.70});
         if(accepted&&a==='recover')Audio_.play('sfx_bumper',{gap:.14,vol:.95});
         sendHud(true);return;
       }
@@ -2239,6 +2241,16 @@
           brawlWarningKey=warningKey;
           Clatter.say('announce',"Shockwave incoming! Brace yourselves!",2);
         }
+        // Only genuine engine impacts trigger the glass collision sample.
+        const hit=(st.events||[]).slice(-30).reverse().find(e=>
+          e.kind==='hit'&&typeof e.time==='number'&&st.time-e.time<.22&&e.impact>140);
+        if(hit){
+          const key=st.round+':hit:'+hit.time+':'+hit.id+':'+hit.other;
+          if(brawlHitCue!==key){
+            brawlHitCue=key;
+            Audio_.play(BRAWL_AUDIO_PREVIEW?'sfx_brawl_ram':'clack',{gap:.16,vol:.64});
+          }
+        }
         const cue=(st.events||[]).slice(-30).reverse().find(e=>
           ['shockwave','knockout','recover'].includes(e.kind)&&
           typeof e.time==='number'&&st.time-e.time<.9);
@@ -2251,7 +2263,7 @@
               Clatter.say('gasp',"The shockwave's hit the bowl!",2);
             }else if(cue.kind==='knockout'){
               const winner=st.roster.find(p=>p.id===cue.id)?.name||'Someone';
-              Audio_.play('crowd_cheer',{gap:.15,vol:.9});
+              Audio_.play(BRAWL_AUDIO_PREVIEW?'sfx_brawl_knockout':'crowd_cheer',{gap:.35,vol:.78});
               Clatter.say('winner',winner+" earns a knockout bonus!",2);
             }else if(cue.kind==='recover'){
               Clatter.say('gasp',"What a save! Right off the edge!",2);
