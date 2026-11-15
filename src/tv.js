@@ -1341,7 +1341,12 @@
   // Release isolation: leave Grand Prix and all seven track files alone.
   // Private brawl preview requires an explicit URL flag; the rest remain archived.
   const BRAWL_PREVIEW = new URLSearchParams(location.search).get('brawl3d') === '1';
-  const isPublishedMode = id => id === 'grandprix' || (BRAWL_PREVIEW && id === 'brawl');
+  // QA retains legacy six-mode coverage only on localhost with an explicit
+  // non-production URL flag. Render/public builds cannot unlock all add-ons.
+  const PARTY_LOCAL_QA = /^(localhost|127\\.0\\.0\\.1)$/.test(location.hostname) &&
+    new URLSearchParams(location.search).get('partyQa') === '1';
+  const isPublishedMode = id => id === 'grandprix' ||
+    (BRAWL_PREVIEW && id === 'brawl') || (PARTY_LOCAL_QA && !!MODES[id]);
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
   let derbyTvHorse = 0;
@@ -1366,7 +1371,7 @@
       renderLobby();
     },
     beginCup() {
-      if (!isPublishedMode(selectedMode) || partyLength !== 0) return;
+      if (!isPublishedMode(selectedMode) || (partyLength !== 0 && !PARTY_LOCAL_QA)) return;
       if (players.size === 0 || !MODES[selectedMode]?.available || (!partyLength && players.size < MODES[selectedMode].minPlayers)) return;
       if (partyLength && !partyRun) {
         const ids = PartyNight.plan(partyLength, players.size, (Date.now() >>> 0));
@@ -1629,7 +1634,7 @@
 
 
 
-      if (a === 'party' && isVip && state === 'lobby' && v === 0) {
+      if (a === 'party' && isVip && state === 'lobby' && (v === 0 || (PARTY_LOCAL_QA && [3,5,7].includes(v)))) {
         partyLength = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
       // Future modes receive only scoped, bounded actions from known players;
@@ -2047,7 +2052,7 @@
       'Grand Prix protected · Bowl Brawl genuine-3D development preview' :
       'Grand Prix · original seven-track championship';
     const opts = $('#partyNightOptions');
-    if (opts) opts.hidden = true; // Party Night cannot silently pick unfinished games.
+    if (opts) opts.hidden = !PARTY_LOCAL_QA; // Only localhost QA can exercise legacy rotation.
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
     }
@@ -2177,7 +2182,7 @@
       const m = world ? world.get(p.id) : null;
       const msg = {
         t: 'hud', s: state === 'photo' ? 'results' : state, mode: selectedMode, phase: state,
-        availableModes: Object.values(MODES).filter(m => m.available && isPublishedMode(m.id)).map(m => ({ id: m.id, name: m.name })), partyNightEnabled: false, name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
+        availableModes: Object.values(MODES).filter(m => m.available && isPublishedMode(m.id)).map(m => ({ id: m.id, name: m.name })), partyNightEnabled: PARTY_LOCAL_QA, name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
         place: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 0 : m ? m.rank : 0,
         n: ['dropzone','brawl','derby','curling','golf'].includes(state) ? players.size : world ? world.marbles.length : 0,
         boost: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,
