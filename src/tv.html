@@ -774,7 +774,18 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
 /* THE CRUCIBLE — prestige-sport broadcast skin. Only the new native 3D preview;
    the existing Grand Prix, backgrounds, lobby and legacy fallbacks stay intact. */
 #partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"]{
- background:radial-gradient(ellipse at 50% 55%,#172b37 0%,#0b1722 56%,#060e18 100%)
+ /* Original ChatGPT-drawn arena geometry is a LOCAL bundled SVG, never a
+    short-lived remote asset. 3D marbles, hazards and bowl are still WebGL. */
+ background-image:linear-gradient(90deg,rgba(4,12,20,.22),rgba(6,13,22,.08) 30%,
+     rgba(5,13,21,.05) 68%,rgba(3,9,15,.24)),
+   url("/assets/crucible-stadium.svg");
+ background-color:#06111a;
+ background-position:center,center;
+ background-size:cover,cover;
+ background-repeat:no-repeat;
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #partyStageCanvas{
+ background:transparent;
 }
 #partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"]:after{
  background:linear-gradient(90deg,rgba(4,12,22,.62) 0%,rgba(4,12,22,.14) 29%,transparent 46%),
@@ -888,6 +899,36 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
 }
 #partyBackLobby[data-nav-state="brawl"]:focus-visible{
  outline:3px solid #a5e4e3;outline-offset:3px
+}
+
+/* The arena now owns the visual hierarchy, not the broadcast panels. */
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlHeader h1{
+ font-size:calc(67*var(--u));letter-spacing:-.045em
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPanel{
+ border-color:#7b909db3;
+ box-shadow:0 calc(10*var(--u)) calc(38*var(--u)) #0009;
+ background:linear-gradient(165deg,rgba(12,28,40,.95),rgba(8,19,31,.94))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStandings{
+ border-color:#758b97a3;
+ background:linear-gradient(165deg,rgba(11,28,39,.94),rgba(9,20,32,.94))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] .ppBrawlRank{
+ background:rgba(34,50,62,.80);
+ border-radius:calc(7*var(--u));
+ font-weight:850
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] .ppBrawlActions button{
+ box-shadow:inset 0 1px 0 rgba(205,224,232,.16),0 3px 8px #0005;
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlRam{
+ background:linear-gradient(170deg,#a58b60,#5c4836)!important;
+ color:#fff5e7;border-color:#d9bd82
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlRecover{
+ background:linear-gradient(170deg,#244c51,#153036)!important;
+ border-color:#66adb1
 }
 </style>
 </head>
