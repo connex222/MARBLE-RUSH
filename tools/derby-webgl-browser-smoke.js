@@ -16,7 +16,7 @@ const fs=require('node:fs');
  const evidence={browser:'Chromium headless with SwiftShader',physicalDeviceTested:false,
    mode:'derby',frames:0,renderer:null,graphics:null,otherModesUntouched:null};
  try{
-   await page.goto(base+'/tv?derby3d=1',{waitUntil:'domcontentloaded'});
+   await page.goto(base+'/tv?derby3d=1&partyQa=1',{waitUntil:'domcontentloaded'});
    await page.locator('#btnBoot').click();
    await page.locator('#btnKb').click();
    await page.locator('#btnCpu').click();
