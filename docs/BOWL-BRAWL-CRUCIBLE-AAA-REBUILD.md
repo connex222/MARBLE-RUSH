@@ -1,0 +1,119 @@
+# MARBLE RUSH — BOWL BRAWL / THE CRUCIBLE
+## Development acceptance record · 15 November 2026
+
+**Branch:** `improvement/marble-rush-bowl-brawl-aaa`  
+**Status:** native WebGL implementation and release isolation committed; **visual and physical acceptance NOT YET PASSED**.  
+**Production:** unchanged. Do **not** merge/deploy to Render until approved.
+
+### 1. Protected product and hidden add-ons
+
+- Original **Grand Prix** remains the default, playable mode. All **seven original tracks** and the Grand Prix physics, track definitions, camera and art files remain byte-for-byte untouched by this branch.
+- The five add-ons remain in the source tree, including their existing physics, art, scoring and session code. They have **not** been deleted.
+- The ordinary TV mode picker and phone-host picker expose Grand Prix alone.
+- Party Night is disabled for this development release: it must not silently fill a three-, five- or seven-mode sequence with unapproved games.
+- A **deliberate development-only opt-in URL** enables exactly Bowl Brawl in addition to Grand Prix, without publishing the other four modes.
+
+### 2. The Crucible — real 3D engine
+
+`src/modes/party-brawl-webgl.js` is a **native WebGL mesh renderer** (not an old canvas overlaid by another one). It has a tessellated bowl floor with calculated wall depth, stadium platform, machined metal rail, metal segments, inset lights, lit glass marbles and hazard-specific 3D geometry. Its baseline draw path is two GPU draws: a cached static arena mesh and an updated dynamic mesh.
+
+The renderer **only reads** the original deterministic `BowlBrawl` state and events. It does not invent a second set of impacts or scoring rules:
+- fixed bumper pylons at their authoritative collision radii; an actual **95-unit rotating striker arm** with a physical capsule collider and moving end-cap at the engine's exact coordinates (not decorative)
+- slippery ice region in the correct physical place
+- actual shrinking safe radius and warning/edge state
+- center-origin timed shockwaves, telegraphed before firing
+- live 3D marble positions, contact shadows and RAM/ANCHOR/RECOVER visual status; calm camera push-in for final duels, with reduced-motion support
+- real collisions, knockouts and award cues
+
+The existing single Party Pack screen host mounts/unmounts the active WebGL canvas exclusively and restores a new 2D canvas when leaving. It reverts to the existing 2D Bowl Brawl if WebGL creation fails, a draw raises an exception, repeated frame errors occur, or the graphics context is lost; the fallback is visible to the host. Its overlays and leaderboard state reset between matches. **Grand Prix's `#cv` renderer remains separate and untouched.**
+
+The modelled environment is a first playable 3D candidate, **not** proof that the final visual quality matches the ChatGPT-generated art-direction concept.
+
+### 3. Visual language
+
+Working name: **THE CRUCIBLE BOWL**. Premium engineered sport, not children's carnival. Graphite metal, satin brass, controlled cyan/amber hazard lighting, restrained typography, hairline card borders, discreet stadium visual cues and coloured glass player marbles. The new HUD CSS is scoped strictly to the 3D renderer; every other game and the 2D fallback retain their original styles.
+
+The ChatGPT concept render is an **art-direction reference**, not a claim that the same rendered image or meshes are present in the playable scene. No generated bitmap has been smuggled in as a fake gameplay environment.
+
+### 4. Creative Claw sound
+
+Five new generated sounds/music assets have **development-only** permanent Creative Claw CDN URLs, applied only with `?brawl3d=1`:
+- cinematic instrumental arena loop, quiet enough for the announcer and impacts
+- charged RAM propulsion
+- glass-on-metal impact, triggered by an **actual** engine `hit` event
+- telegraphed shockwave blast, triggered by an **actual** `shockwave` event; music ducks under spoken commentary and restores promptly, while respecting the user mute setting
+- knockout accent, triggered by a **real** knockout
+
+The existing game music and effects toggles govern playback. The preview uses the existing original/synth audio if the Creative Claw asset cannot load; do **not** make CDN availability a production dependency. For release, approve and ingest properly licensed/source-verified audio files into the repository's asset pipeline and verify CORS, volumes, transitions and no hiss on target hardware. Generated file URLs here are intentionally restricted to the opt-in branch.
+
+### 5. How to preview (development only)
+
+Check out this branch to a **new folder** (do not replace a working main checkout). Install dependencies using `npm install`, run `npm run build` then `npm start`. Open:
+
+- Grand Prix-only public selection: `http://localhost:PORT/tv`
+- Grand Prix **plus** Bowl Brawl WebGL preview: `http://localhost:PORT/tv?brawl3d=1`
+- Phone controller: same server `/play` path (or scan the TV QR)
+
+Use `PORT` from the local server's output. The actual Render production URL still serves `main`, so adding the query flag there **will not** display the unmerged native Bowl Brawl branch.
+
+Offline test command: `npm run test:brawl3d`.
+
+### 6. QA status
+
+**Performed using current tool access:**
+- GitHub source review of the existing six modes and five separate authoritative engines.
+- No files changed in `src/engine.js`, `src/modes/grandprix.js`, track data or approved raw assets, verified by GitHub commit comparison.
+- Syntax parsing of modified JavaScript files in a V8 sandbox: pass.
+- Computational mocked-WebGL five-hazard render cycle: pass; verified 2 draws per scene, nonempty geometry and unmount behavior with a fake GPU.
+
+**Additional branch changes after the first record:**
+- Deterministic rotor-arm collision physics now match both native 3D and the 2D fallback; its contact radius, hazard events and sample debounce are tested.
+- `round_end` events now carry the real engine time. An unobtrusive live-region winner cut-in appears for the next round and does not cover control buttons.
+- Floor grooves, rear structural stands, marble contact shadows and camera restraint improve scene depth. GPU rendering defaults to **native 1920 × 1080** on actual GPU hardware, with reduced resolution for software rendering.
+- Audio volume ducks during announcer callouts and immediately returns to the correct music level after leaving Bowl Brawl or toggling mute.
+- Offline computational smoke was rerun after geometry changes: five hazard variations, ten mock draw calls, over 6,000 static triangles and real dynamic geometry. **A mock GPU is not an actual GPU visual check.**
+- More than 60 seeded CPU matches of the new sweeping-arm engine completed without nonfinite physics or stalled rounds.
+
+**Verified in real GitHub Actions checkout (15 November 2026):**
+- Ubuntu 24.04 node project build passes and the full seven-track Grand Prix regression matches `main`.
+- Browser canvas pixel test: native **WebGL really compiles and renders**, with no 2D fallback. Five engine hazard variants rendered and active stage ownership was exclusive.
+- The fixed shader precision mismatch was required for real Chrome; the earlier GPU mock never detected it.
+- WebGL face normals for metal boxes, rotor arms, pylons and ice were corrected after actual screenshot review.
+- Recovered screenshot: [actual Crucible arena screenshot in CI artefact](https://github.com/connex222/MARBLE-RUSH/actions/runs/43710949261/artifacts/14159888412).
+- Real browser + WebSocket test: two distinct simulated mobile clients performed RAM and ANCHOR successfully in Brawl, exit returned Grand Prix's original canvas; no uncaught page errors.
+- The more comprehensive legacy five-mode WebSocket test also passed Derby, Drop Zone, Brawl, Curling and Golf controls, with median 80 ms controller-to-host processing in CI. This is **not** a physical Wi-Fi latency measurement.
+- Software SwiftShader at a reduced **1056×594** internal resolution reported only 11 frames in the sample window. Treat as GPU capability/functional smoke ONLY, not a performance pass. The non-software 1080p 60-FPS release bar remains unmet/unverified.
+- Cartoon narrator overlays were replaced in the Brawl-specific broadcast UI without altering the Grand Prix mascot; the Brawl Back to Lobby button has a smaller restrained treatment. Human AAA quality approval is still outstanding.
+
+**Not performed or not approved:**
+- Physical-device GPU shader/pixel confirmation beyond Chromium SwiftShader; the GPU-based CI smoke did render actual WebGL pixels.
+- Physical hardware performance measurements (the CI software renderer is not representative of a TV GPU)
+- 1080p and 4K physical TV review, premium material appearance and accessibility
+- Actual 2–4 physical phone join and 20+ minute sessions
+- Physical latency, sustained FPS, audio mixing/decay, single-view continuity through several games
+- Human excitement testing, audience clarity and final AAA visual sign-off
+
+**Stop conditions:** blank arena, wrong orientation, wrong hazard hitbox indication, unreadable marbles or labels, duplicated canvas, blocked controls, audio hiss, wrong result, broken Grand Prix, slow-frame overload, unavailable phone input, false fallback status. Do not merge when any of these is unresolved.
+
+### 7. Next acceptance sequence
+
+1. Confirm the new screenshot art direction and full scene aesthetics; browser-built GPU and offline test jobs are already passing. Do not claim the screenshot achieves final AAA quality.
+2. Compare real screenshots/video: original Grand Prix vs The Crucible on the same 1080p TV. The new level must be unmistakably premium without exaggerated glow.
+3. Measure real native GPU performance. Target a sustained 60 FPS at 1080p on the actual TV hardware; anything consistently below 45 FPS blocks release.
+4. Test 2–4 physical phones, RAM/ANCHOR/RECOVER, all five hazard rounds, disconnect/rejoin, results and return to Grand Prix; check no second canvas.
+5. Review sound at lounge TV volumes, including narrator ducking, mute/unmute and transition. Record a live visual/audio approval and only then discuss release/Render deployment.
+
+
+### 8. Release request (15 November 2026)
+
+The owner explicitly approved **merge and deploy** after the complete GitHub Chromium
+GPU and two-phone WebSocket acceptance suite passed. This release publishes
+**Grand Prix plus Bowl Brawl** in the ordinary TV/phone menu; the other four
+unfinished Party Pack games stay hidden. The native 3D Crucible renders by
+default, retaining automatic 2D fallback if WebGL cannot draw. Party Night
+remains disabled outside localhost QA.
+
+The \`/tv\` browser tests must verify the public selection and native renderer
+without requiring \`?brawl3d=1\`. Physical 1080p television performance,
+long-session Wi-Fi stability and final visual sign-off remain **unverified**;
+production deployment does not imply they passed.

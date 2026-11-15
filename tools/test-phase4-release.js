@@ -40,7 +40,14 @@ for(const mode of modes){
 for(const k of fx.shared)exists('pp_shared_fx_'+k);
 assert.equal(checked,68,'Phase 3 approved asset list unexpectedly changed');
 assert.equal(images.size,200,'Unexpected built image count: '+images.size);
-assert.equal(audio.size,5,'Unexpected bundled audio count: '+audio.size);
+assert.ok(audio.size>=5,'Missing original approved audio: '+audio.size);
+ // Optional new Crucible samples are fetched from Creative Claw at build time.
+ // Network failure must not break the protected Grand Prix bundle.
+ const newBrawl=['music_brawl_crucible','sfx_brawl_ram','sfx_brawl_shockwave',
+   'sfx_brawl_charge','sfx_brawl_knockout'];
+ if(newBrawl.some(k=>audio.has(k)))
+   assert.ok(newBrawl.every(k=>audio.has(k)),
+     'Bowl Brawl must ingest its approved sound pack atomically');
 for(const k of ['music_party','vo_party_intro','sfx_ui_tap','sfx_bumper','sfx_trophy'])
  assert.ok(audio.has(k),'Missing approved audio: '+k);
 const tv=get('public/tv.html');
@@ -63,4 +70,4 @@ assert.ok(tv.includes('PartyPresentation.applyFinale'),'Missing thematic podium 
 const stage=require('../src/modes/party-presentation.js');
 assert.equal(stage.theme('grandprix'),null,'Grand Prix must not receive Party Pack podium');
 for(const mode of modes)assert.ok(stage.theme(mode),'No themed podium for '+mode);
-console.log('PASS UI v2 asset gate: 68 approved art files, 200 total, 5 audio, all five new stages and preserved GP');
+console.log('PASS UI v2 asset gate: 68 approved art files, 200 total, original five audio plus optional full Crucible pack, all five new stages and preserved GP');

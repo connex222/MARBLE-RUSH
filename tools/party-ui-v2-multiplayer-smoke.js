@@ -18,7 +18,7 @@ const fs=require('node:fs');
   ws.on('framesent',f=>{try{actions.get(p).push(JSON.parse(f.payload));}catch(e){}});
  });
  try{
-  await tv.goto(base+'/tv',{waitUntil:'domcontentloaded'});
+  await tv.goto(base+'/tv?partyQa=1',{waitUntil:'domcontentloaded'});
   await tv.locator('#btnBoot').click();
   await tv.waitForFunction(()=>/^[A-Z]{4}$/.test(document.querySelector('#roomCode')?.textContent||''),{timeout:18000});
   const code=await tv.locator('#roomCode').textContent();

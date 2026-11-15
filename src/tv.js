@@ -77,6 +77,16 @@
   /* ---------- Assets (manifest written by the build; optional) ---------- */
   const IMG = {};
   const SND = {};
+  // The original Creative Claw cues ship locally with the built game.
+  // Missing assets still use the safe procedural audio fallback.
+  const BRAWL_AUDIO_ENABLED=true;
+  if(BRAWL_AUDIO_ENABLED)Object.assign(SND,{
+    music_brawl_crucible:'/assets/audio/music_brawl_crucible.mp3',
+    sfx_brawl_ram:'/assets/audio/sfx_brawl_ram.mp3',
+    sfx_brawl_shockwave:'/assets/audio/sfx_brawl_shockwave.mp3',
+    sfx_brawl_charge:'/assets/audio/sfx_brawl_charge.mp3',
+    sfx_brawl_knockout:'/assets/audio/sfx_brawl_knockout.mp3'
+  });
   fetch('assets/manifest.json').then(r => r.ok ? r.json() : null).then(man => {
     if (!man) return;
     (man.images || []).forEach(o => {
@@ -135,6 +145,7 @@
     const buffers = {};
     let introDone=false;
     let introSource=null, introEnvelope=null, introTimer=null;
+    let brawlVoiceDuckUntil=0,lastMusicTarget=-1;
     function init() {
       if (ac) return;
       ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -163,6 +174,7 @@
           .then(b => ac.decodeAudioData(b)).then(buf => {
             buffers[k] = buf;
             if(k==='music_party')Music.useTrack(buf);
+            if(k==='music_brawl_crucible')Music.useBrawlTrack(buf);
             if(k==='vo_party_intro' && state==='lobby' && !introDone) startIntro();
           })
           .catch(() => { delete buffers[k]; });
@@ -242,6 +254,11 @@
       last[k] = now;
       const v = o.vol ?? 1, pr = 1 + (Math.random() - 0.5) * 0.08;
       if (file(k, v, pr)) return;
+      // Creative Claw CDN media is review-only. Every cue retains an audible
+      // original synth/sample fallback when network loading or CORS fails.
+      if(k==='sfx_brawl_charge')return play('sfx_brawl_ram',o);
+      if(k==='sfx_brawl_shockwave')return play('sfx_bumper',o);
+      if(k==='sfx_brawl_knockout')return play('crowd_cheer',o);
       switch (k) {
         case 'clack': tone(2600 * pr, 0.05, 'sine', 0.22 * v); noise(0.04, 3800, 3, 0.25 * v); break;
         case 'land_hard': tone(140, 0.18, 'sine', 0.4 * v, 60); noise(0.08, 1800, 1, 0.2 * v); break;
@@ -296,12 +313,34 @@
       rollGain.gain.setTargetAtTime(settings.sfx ? Math.min(0.32, level) : 0, t, 0.08);
       rollFilter.frequency.setTargetAtTime(380 + pitch * 900, t, 0.1);
     }
-    function setMusic(on) { if (music && ac) music.gain.setTargetAtTime(on ? 0.34 : 0, ac.currentTime, 0.3); }
+    function refreshMusicMix() {
+      if(!music||!ac)return;
+      const duck=state==='brawl'&&performance.now()<brawlVoiceDuckUntil;
+      // Voice remains intelligible without increasing the overall TV volume.
+      const target=settings.music?(duck?.12:.34):0;
+      if(target!==lastMusicTarget){
+        music.gain.setTargetAtTime(target,ac.currentTime,duck?.12:.30);
+        lastMusicTarget=target;
+      }
+    }
+    function duckForAnnouncer(seconds=2.6) {
+      if(state!=='brawl')return;
+      brawlVoiceDuckUntil=Math.max(brawlVoiceDuckUntil,performance.now()+seconds*1000);
+      refreshMusicMix();
+    }
+    function setMusic(on) {
+      if(music&&ac){
+        const duck=state==='brawl'&&performance.now()<brawlVoiceDuckUntil;
+        lastMusicTarget=on?(duck?.12:.34):0;
+        music.gain.setTargetAtTime(lastMusicTarget,ac.currentTime,.30);
+      }
+    }
     function setSfx(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 0.8 : 0, ac.currentTime, 0.1); if(!on)stopIntro(); }
 
     /* Original adaptive Web Audio Party Pack score. No external samples required. */
     const Music = (() => {
       let next = 0, step = 0, timer = null, externalTrack = null, externalSource = null;
+      let brawlTrack=null,brawlSource=null;
       const BPM = 128, SPB = 60 / BPM / 4; // sixteenth notes
       const ROOTS = [146.83, 123.47, 98.0, 110.0]; // D3 B2 G2 A2
       const CH = [[293.66, 369.99, 440], [246.94, 293.66, 369.99], [196, 246.94, 293.66], [220, 277.18, 329.63]];
@@ -337,7 +376,7 @@
         o.connect(g); g.connect(music); o.start(t); o.stop(t + dur + 0.02);
       }
       function schedule() {
-        if(externalSource)return;
+        if(externalSource||brawlSource)return;
         while (next < ac.currentTime + 0.12) {
           const s = step % 16, bar = Math.floor(step / 16) % 4, t = next;
           const race = mode === 'race' || (mode === 'brawl' && intensity > 0.58);
@@ -370,15 +409,31 @@
           externalTrack=buffer;
           externalSource=ac.createBufferSource();
           externalSource.buffer=externalTrack;externalSource.loop=true;
-          externalSource.connect(music);
+          if(mode!=='brawl'||!BRAWL_AUDIO_ENABLED)externalSource.connect(music);
           externalSource.start();
         },
-        mode(m) { mode = m; },
+        useBrawlTrack(buffer){
+          brawlTrack=buffer;
+          if(mode==='brawl'&&BRAWL_AUDIO_ENABLED)this.mode('brawl');
+        },
+        mode(m) {
+          mode=m;
+          if(brawlSource){
+            try{brawlSource.stop();}catch(_){}
+            brawlSource.disconnect();brawlSource=null;
+          }
+          if(externalSource)externalSource.disconnect();
+          if(mode==='brawl'&&BRAWL_AUDIO_ENABLED&&brawlTrack){
+            brawlSource=ac.createBufferSource();
+            brawlSource.buffer=brawlTrack;brawlSource.loop=true;
+            brawlSource.connect(music);brawlSource.start();
+          }else if(externalSource)externalSource.connect(music);
+        },
         intensity(v) { intensity = v; },
       };
     })();
 
-    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, Music: { mode: m => ac && Music.mode(m), intensity: v => ac && Music.intensity(v) }, get debug() { return { introPlaying: !!introSource, introDone, rollGain: rollGain?.gain.value||0, state }; }, get on() { return !!ac; } };
+    return { init, play, setRoll, stopIntro, setMusic, setSfx, loadFiles, duckForAnnouncer, refreshMusicMix, Music: { mode: m => { if(ac){Music.mode(m);refreshMusicMix();} }, intensity: v => ac && Music.intensity(v) }, get debug() { return { introPlaying: !!introSource, introDone, rollGain: rollGain?.gain.value||0, state }; }, get on() { return !!ac; } };
   })();
 
   /* ======================================================================
@@ -1271,17 +1326,29 @@
       if (recent[key] && now - recent[key] < 14 && prio < 3) return;
       recent[key] = now; lastAt = now; hideAt = now + 2.6;
       txt.textContent = text;
+      // The Crucible is presented as a prestige sporting event. The cartoon
+      // Captain Clatter remains untouched in Grand Prix and all other modes,
+      // but the Brawl announcer uses a restrained graphic lower-third.
+      const brawlSport = state === 'brawl';
+      el.classList.toggle('brawlBroadcast',brawlSport);
       const pose = IMG[poseFor(key)] || IMG.clatter_reference;
-      if (portrait && pose) {
-        portrait.src = pose.src;
-        portrait.hidden = false;
-        portrait.parentElement.classList.add('withArt');
+      if (portrait) {
+        if(brawlSport){
+          portrait.hidden=true;
+          portrait.parentElement.classList.remove('withArt');
+        }else if(pose){
+          portrait.src=pose.src;
+          portrait.hidden=false;
+          portrait.parentElement.classList.add('withArt');
+        }
       }
       el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+      if(state==='brawl')Audio_.duckForAnnouncer(2.6);
       Audio_.play('vo_' + key, { gap: 0.5 });
     }
-    function tick() { if (performance.now() / 1000 > hideAt) el.classList.remove('show'); }
-    function clear() {hideAt=0;el.classList.remove('show');}
+    function tick() { if (performance.now() / 1000 > hideAt) el.classList.remove('show');
+      if(state==='brawl')Audio_.refreshMusicMix(); }
+    function clear() {hideAt=0;el.classList.remove('show','brawlBroadcast');}
     return { say, tick, clear };
   })();
 
@@ -1305,10 +1372,20 @@
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
   // Grand Prix remains isolated; five Party Pack games use the exclusive stage.
   let selectedMode = 'grandprix';
+  // Release isolation: leave Grand Prix and all seven track files alone.
+  // Bowl Brawl graduates into the public game picker. The other four
+  // unfinished add-ons stay gated; Grand Prix's original seven tracks remain untouched.
+  const BRAWL_PUBLISHED = true;
+  // QA retains legacy six-mode coverage only on localhost with an explicit
+  // non-production URL flag. Render/public builds cannot unlock all add-ons.
+  const PARTY_LOCAL_QA = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) &&
+    new URLSearchParams(location.search).get('partyQa') === '1';
+  const isPublishedMode = id => id === 'grandprix' ||
+    (BRAWL_PUBLISHED && id === 'brawl') || (PARTY_LOCAL_QA && !!MODES[id]);
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
   let derbyTvHorse = 0;
-  let brawlLastCue='',brawlWarningKey='';
+  let brawlLastCue='',brawlWarningKey='',brawlHitCue='';
   let attractMode = null, attractUntil = 0, attractFrom = 0;
   const cheerTime = new Map();
   const vote = { opts: [], votes: new Map(), endAt: 0, picked: -1, revealAt: 0 };
@@ -1329,6 +1406,7 @@
       renderLobby();
     },
     beginCup() {
+      if (!isPublishedMode(selectedMode) || (partyLength !== 0 && !PARTY_LOCAL_QA)) return;
       if (players.size === 0 || !MODES[selectedMode]?.available || (!partyLength && players.size < MODES[selectedMode].minPlayers)) return;
       if (partyLength && !partyRun) {
         const ids = PartyNight.plan(partyLength, players.size, (Date.now() >>> 0));
@@ -1352,7 +1430,7 @@
         derbyTvHorse=0;state='derby';stateT=0;showScreen('derby');Audio_.Music.mode('derby');sendHud(true);return;
       }
       if (selectedMode === 'brawl') {
-        brawlLastCue='';brawlWarningKey='';
+        brawlLastCue='';brawlWarningKey='';brawlHitCue='';
         if(!partyRun)this.resetNight();
         MODES.brawl.setup({players,seed:Date.now()>>>0,onFinish:ranking=>this.finishBrawl(ranking)});
         state='brawl';stateT=0;showScreen('brawl');
@@ -1519,6 +1597,7 @@
         for (const p of players.values()) p.points = outcome.totals.get(p.id) || 0;
       }
       state = 'finale'; stateT = 0;
+      if(BRAWL_AUDIO_ENABLED&&selectedMode==='brawl')Audio_.Music.mode('lobby');
       const list = [...players.values()];
       const aw = giveAwards(list);
       for (const p of list) p.award = aw.get(p.id);
@@ -1577,7 +1656,7 @@
         Audio_.play('crowd_cheer');
         return;
       }
-      if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available) {
+      if (a === 'mode' && isVip && state === 'lobby' && typeof v === 'string' && MODES[v]?.available && isPublishedMode(v)) {
         selectedMode = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
       // Host may abandon any active game, including countdown/vote/Grand Prix.
@@ -1590,7 +1669,7 @@
 
 
 
-      if (a === 'party' && isVip && state === 'lobby' && [0,3,5,7].includes(v)) {
+      if (a === 'party' && isVip && state === 'lobby' && (v === 0 || (PARTY_LOCAL_QA && [3,5,7].includes(v)))) {
         partyLength = v; Audio_.play('sfx_ui_tap'); renderLobby(); sendHud(true); return;
       }
       // Future modes receive only scoped, bounded actions from known players;
@@ -1603,7 +1682,7 @@
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
       if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','recover','spectate'].includes(a)) {
         const accepted=MODES.brawl.onAction(pid,a,v);
-        if(accepted&&a==='ram')Audio_.play('sfx_brawl_ram',{gap:.16,vol:.85});
+        if(accepted&&a==='ram')Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_charge':'sfx_brawl_ram',{gap:.16,vol:.70});
         if(accepted&&a==='recover')Audio_.play('sfx_bumper',{gap:.14,vol:.95});
         sendHud(true);return;
       }
@@ -1980,7 +2059,7 @@
     if (!box) return;
     // Identical selection path for TV and VIP phone, gated against unfinished modes.
     box.replaceChildren();
-    for (const mode of Object.values(MODES)) {
+    for (const mode of Object.values(MODES).filter(m => isPublishedMode(m.id))) {
       const card = document.createElement('button');
       card.className = 'partyModeCard';
       card.dataset.mode = mode.id;
@@ -2004,9 +2083,11 @@
       box.appendChild(card);
     }
     applyPartyArt();
-    $('#partyModeStatus').textContent = partyLength ? 'Party Night preview: '+partyLength+' rounds · ready modes repeat' :
-      'UI REBUILD v2 · all five Party Pack modes rebuilt · final visual QA pending';
+    $('#partyModeStatus').textContent = BRAWL_PUBLISHED ?
+      'Grand Prix · Seven tracks | Bowl Brawl · The Crucible 3D' :
+      'Grand Prix · Seven tracks';
     const opts = $('#partyNightOptions');
+    if (opts) opts.hidden = !PARTY_LOCAL_QA; // Only localhost QA can exercise legacy rotation.
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
       b.setAttribute('aria-pressed', String(Number(b.dataset.party) === partyLength));
     }
@@ -2136,7 +2217,7 @@
       const m = world ? world.get(p.id) : null;
       const msg = {
         t: 'hud', s: state === 'photo' ? 'results' : state, mode: selectedMode, phase: state,
-        availableModes: Object.values(MODES).filter(m => m.available).map(m => ({ id: m.id, name: m.name })), name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
+        availableModes: Object.values(MODES).filter(m => m.available && isPublishedMode(m.id)).map(m => ({ id: m.id, name: m.name })), partyNightEnabled: PARTY_LOCAL_QA, name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
         place: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 0 : m ? m.rank : 0,
         n: ['dropzone','brawl','derby','curling','golf'].includes(state) ? players.size : world ? world.marbles.length : 0,
         boost: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,
@@ -2205,6 +2286,16 @@
           brawlWarningKey=warningKey;
           Clatter.say('announce',"Shockwave incoming! Brace yourselves!",2);
         }
+        // Only genuine engine impacts trigger the glass collision sample.
+        const hit=(st.events||[]).slice(-30).reverse().find(e=>
+          e.kind==='hit'&&typeof e.time==='number'&&st.time-e.time<.22&&e.impact>140);
+        if(hit){
+          const key=st.round+':hit:'+hit.time+':'+hit.id+':'+hit.other;
+          if(brawlHitCue!==key){
+            brawlHitCue=key;
+            Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_ram':'clack',{gap:.16,vol:.64});
+          }
+        }
         const cue=(st.events||[]).slice(-30).reverse().find(e=>
           ['shockwave','knockout','recover'].includes(e.kind)&&
           typeof e.time==='number'&&st.time-e.time<.9);
@@ -2213,11 +2304,11 @@
           if(key!==brawlLastCue){
             brawlLastCue=key;
             if(cue.kind==='shockwave'){
-              Audio_.play('sfx_bumper',{gap:.2,vol:.95});
+              Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_shockwave':'sfx_bumper',{gap:.2,vol:.70});
               Clatter.say('gasp',"The shockwave's hit the bowl!",2);
             }else if(cue.kind==='knockout'){
               const winner=st.roster.find(p=>p.id===cue.id)?.name||'Someone';
-              Audio_.play('crowd_cheer',{gap:.15,vol:.9});
+              Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_knockout':'crowd_cheer',{gap:.35,vol:.78});
               Clatter.say('winner',winner+" earns a knockout bonus!",2);
             }else if(cue.kind==='recover'){
               Clatter.say('gasp',"What a save! Right off the edge!",2);

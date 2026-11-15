@@ -117,6 +117,12 @@ function fontCss(names) {
 (async () => {
   fs.mkdirSync(PUB, { recursive: true });
   const images = await processImages();
+  // Crucible arena art is scoped to the private Brawl 3D preview.
+  // Store it outside assets/raw to protect all 200 approved Grand Prix assets
+  // and keep the strict original artwork manifest unchanged.
+  fs.mkdirSync(path.join(PUB, 'assets'), { recursive: true });
+  fs.copyFileSync(path.join(ROOT,'assets','crucible-stadium.svg'),
+    path.join(PUB,'assets','crucible-stadium.svg'));
   const audio = await processAudio();
   fs.writeFileSync(path.join(PUB, 'assets', 'manifest.json'), JSON.stringify({ images, audio }, null, 1));
   console.log(`• ${images.length} images, ${audio.length} sounds`);
@@ -124,7 +130,7 @@ function fontCss(names) {
   const fonts = fontCss([['Fredoka', 'fredoka.woff2', '300 700'], ['Nunito', 'nunito.woff2', '200 1000']]);
   const engine = fs.readFileSync(path.join(SRC, 'engine.js'), 'utf8');
   const tv = fs.readFileSync(path.join(SRC, 'tv.js'), 'utf8');
-  const modes = ['registry','party-presentation','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf','party-scene-cache','party-tv-qa','party-ui-v2','party-brawl-ui-v2','party-curling-ui-v2','party-golf-ui-v2','party-derby-webgl','party-dropzone-webgl','party-frame-clock','party-screen-host'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
+  const modes = ['registry','party-presentation','session','geometry','attract','bots','grandprix','derby','dropzone','brawl','curling','golf','party-scene-cache','party-tv-qa','party-ui-v2','party-brawl-ui-v2','party-brawl-webgl','party-curling-ui-v2','party-golf-ui-v2','party-derby-webgl','party-dropzone-webgl','party-frame-clock','party-screen-host'].map(n => fs.readFileSync(path.join(SRC, 'modes', n + '.js'), 'utf8')).join('\n');
   const qr = fs.readFileSync(path.join(SRC, 'qr.js'), 'utf8');
   const safe = s => s.replace(/<\/script/gi, '<\\/script');
   let tvHtml = fs.readFileSync(path.join(SRC, 'tv.html'), 'utf8');

@@ -37,7 +37,7 @@ permissions:
 jobs:
   derby-ui-rebuild:
     name: Verify all five rebuilt game screens, phones and preserved Grand Prix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

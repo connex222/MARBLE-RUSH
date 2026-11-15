@@ -185,13 +185,22 @@ const MarbleBrawlUI=(()=>{
       art(c,assets?.pp_brawl_fx_warning,-153,-153,306,306,.46);
       c.restore();
     }else if(s.hazard==='rotor'){
-      const [x,y]=point(Math.cos(s.hazardAngle)*95,Math.sin(s.hazardAngle)*95);
-      c.save();c.translate(x,y);c.rotate(s.hazardAngle*1.7);
-      c.shadowColor='#ff9d62';c.shadowBlur=21;
-      rounded(c,-85,-14,170,28,13,'#e8a65d','#fff0b0',5);
-      rounded(c,-16,-81,32,162,12,'#bc6170','#fff3cb',3);
-      c.beginPath();c.arc(0,0,22,0,TAU);c.fillStyle='#fff7d0';c.fill();c.restore();
-      art(c,assets?.pp_brawl_fx_spin,x-98,y-98,196,196,.55);
+      // Fallback mirrors the authoritative centre-to-tip rotating striker.
+      const length=(Number(s.rotorLength)||95)*SCALE;
+      const halfWidth=(Number(s.rotorHalfWidth)||18)*SCALE;
+      const x=Math.cos(s.hazardAngle)*length,y=Math.sin(s.hazardAngle)*length;
+      c.save();c.rotate(s.hazardAngle);
+      rounded(c,0,-halfWidth,length,halfWidth*2,halfWidth*.7,
+        '#304756','#e7b985',4);
+      rounded(c,0,-4,length,8,3,'#e9b572',null,0);
+      c.restore();
+      c.save();c.translate(x,y);
+      c.shadowColor='#d39b58';c.shadowBlur=14;
+      const endRadius=45*SCALE;
+      c.beginPath();c.arc(0,0,endRadius,0,TAU);
+      c.fillStyle='#ac865b';c.fill();ring(c,0,0,endRadius-4,'#f6d29c',5);
+      c.beginPath();c.arc(0,0,endRadius*.43,0,TAU);
+      c.fillStyle='#344d61';c.fill();c.restore();
     }else if(s.hazard==='crumbling'){
       c.save();c.rotate(t*.18);
       for(let i=0;i<24;i++){
@@ -281,6 +290,21 @@ const MarbleBrawlUI=(()=>{
     if(!document.querySelector('#partyStage:not([hidden])')||s.done)return;
     const now=performance.now();if(now-lastHud<85)return;lastHud=now;
     const alive=s.marbles.filter(m=>m.alive),players=s.roster||[];
+    // Previous completed round is timestamped and is immediately available
+    // even though the authoritative engine has started the next heat.
+    const roundCut=document.getElementById('ppBrawlRoundWinner');
+    if(roundCut){
+      const winner=(s.events||[]).slice(-60).reverse().find(e=>
+        e.kind==='round_end'&&Number.isFinite(e.time)&&
+        s.time-e.time>=0&&s.time-e.time<1.25&&e.round<s.round);
+      roundCut.hidden=!winner;
+      if(winner){
+        const p=players.find(item=>item.id===winner.winner);
+        const winnerName=p?.name||'LAST MARBLE STANDING';
+        const node=document.getElementById('ppBrawlRoundWinnerName');
+        if(node&&node.textContent!==winnerName)node.textContent=winnerName;
+      }
+    }
     const get=id=>s.marbles.find(m=>m.id===id);
     $('ppBrawlRound').textContent='ROUND '+s.round+' / 5';
     $('ppBrawlPhase').textContent=hazardNames[s.hazard]||'THE BRAWL';
@@ -383,7 +407,14 @@ const MarbleBrawlUI=(()=>{
     updateHud(s);
     return true;
   }
-  return Object.freeze({draw,get framing(){
+  function reset(){
+    lastHud=0;rankSignature='';lastRound=0;
+    broadcast.zoom=1;broadcast.x=0;broadcast.y=0;
+    broadcast.lastAt=0;broadcast.lastGameTime=-1;
+    const banner=document.getElementById('ppBrawlRoundWinner');
+    if(banner)banner.hidden=true;
+  }
+  return Object.freeze({draw,updateHud,reset,get framing(){
     return Object.freeze({zoom:broadcast.zoom,x:broadcast.x,y:broadcast.y});
   }});
 })();

@@ -11,7 +11,8 @@
     "test:dropzone": "node tools/test-dropzone.js",
     "test:brawl": "node tools/test-brawl.js",
     "test:derby": "node tools/test-derby.js",
-    "test:curling": "node tools/test-curling.js"
+    "test:curling": "node tools/test-curling.js",
+    "test:brawl3d": "node tools/test-brawl-the-crucible.js"
   },
   "engines": {
     "node": ">=18"

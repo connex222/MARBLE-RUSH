@@ -9,6 +9,9 @@ const BowlBrawl = (() => {
   const SHOCK_TIMES=[4,12,24], SHOCK_WARNING=3;
   const RECOVER_COST=35, RECOVER_MARGIN=85, KO_BONUS=3;
   const MARBLE_RADIUS=22, TAU=2*Math.PI;
+  // The Crucible: an actual rotating radial striker, not a decorative prop.
+  // Its physical capsule and speed are deterministic engine state.
+  const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=240;
   const COLORS=['#ff3b5c','#ffd23f','#4cc9f0','#3ddc97','#df9cf1','#ff973d','#a7deed','#ffd4a2'];
   const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
   const randomFrom=seed=>{let s=seed>>>0;return()=>((s=(Math.imul(1664525,s)+1013904223)>>>0)/4294967296);};
@@ -24,7 +27,8 @@ const BowlBrawl = (() => {
     }));
     const state={roster,seed,round:0,elapsed:0,time:0,radius:START_RADIUS,marbles:[],
       active:[],done:false,finishedCalled:false,lastWinner:null,events:[],roundHistory:[],
-      hazard:'clean',hazardAngle:0,spectators:new Set(),
+      hazard:'clean',hazardAngle:0,rotorLength:SWEEPER_LENGTH,
+      rotorHalfWidth:SWEEPER_HALF_WIDTH,spectators:new Set(),
       pulseIndex:0,pulseAt:SHOCK_TIMES[0],lastPulseAt:-99};
     const HAZARDS=['bumpers','ice','rotor','crumbling','clean'];
     function current(id){return state.marbles.find(m=>m.id===id);}
@@ -43,7 +47,7 @@ const BowlBrawl = (() => {
           anchored:0,cooldown:0,alive:true,eliminatedAt:null,ramHits:0,outs:0,
           cpuWait:.3+rng()*.5,ramWindow:0,
           recoverUsed:false,edgeHanging:false,edgeGrace:0,
-          glory:0,kos:0,lastHitBy:null,lastHitTime:-999};
+          glory:0,kos:0,lastHitBy:null,lastHitTime:-999,hazardCueAt:-99};
       });
       state.active=state.marbles;
     }
@@ -194,7 +198,7 @@ const BowlBrawl = (() => {
       });
       state.lastWinner=order[0]?.id;
       state.roundHistory.push(rank);
-      state.events.push({kind:'round_end',winner:state.lastWinner,round:state.round});
+      state.events.push({kind:'round_end',winner:state.lastWinner,round:state.round,time:state.time});
       if(state.round>=ROUNDS){
         state.done=true;
         if(!state.finishedCalled){state.finishedCalled=true;onFinish(standings());}
@@ -241,14 +245,50 @@ const BowlBrawl = (() => {
           // manual steering between RAMs.
           if(m.anchored<=0){m.vx+=Math.cos(m.heading)*85*dt;m.vy+=Math.sin(m.heading)*85*dt;}
           m.x+=m.vx*dt;m.y+=m.vy*dt;
+          // The real Rotor Rumble striker is a capsule from the centre to the
+          // moving metal end-cap. TV renderers read state.hazardAngle + length.
+          // Players see and can avoid the exact same collision segment.
+          if(state.hazard==='rotor'){
+            const ax=Math.cos(state.hazardAngle),ay=Math.sin(state.hazardAngle);
+            const along=clamp(m.x*ax+m.y*ay,0,SWEEPER_LENGTH);
+            const nearX=ax*along,nearY=ay*along;
+            const dx=m.x-nearX,dy=m.y-nearY,d=Math.hypot(dx,dy);
+            const cap=SWEEPER_HALF_WIDTH+MARBLE_RADIUS;
+            if(d<cap){
+              // At zero separation use the arm normal, never NaN or a teleport.
+              const side=Math.sign(ax*m.y-ay*m.x)||1;
+              const nx=d>.001?dx/d:-ay*side,ny=d>.001?dy/d:ax*side;
+              const push=cap-d;
+              m.x+=nx*push;m.y+=ny*push;
+              const tangentX=-ay,tangentY=ax;
+              m.vx+=nx*SWEEPER_PUSH+tangentX*70;
+              m.vy+=ny*SWEEPER_PUSH+tangentY*70;
+              if(state.time-m.hazardCueAt>.32){
+                m.hazardCueAt=state.time;
+                state.events.push({kind:'hazardImpact',id:m.id,x:m.x,y:m.y,
+                  hazard:'rotor',strength:1.35,time:state.time});
+              }
+            }
+          }
+          // Substantial fixed impact pylons in the bumper round. The rotor tip
+          // remains physical too: only its existing end-cap radius contacts
+          // the rolling marbles. No invisible sweeping obstacles.
           const hazard=state.hazard==='bumpers'?[[125,60],[-110,-50]]:
-            state.hazard==='rotor'?[[Math.cos(state.hazardAngle)*95,Math.sin(state.hazardAngle)*95]]:[];
+            state.hazard==='rotor'?[[
+              Math.cos(state.hazardAngle)*SWEEPER_LENGTH,
+              Math.sin(state.hazardAngle)*SWEEPER_LENGTH
+            ]]:[];
           for(const [hx,hy] of hazard){
             const dx=m.x-hx,dy=m.y-hy,d=Math.hypot(dx,dy)||1;
-            if(d<67){const nx=dx/d,ny=dy/d; m.x=hx+nx*67;m.y=hy+ny*67;
+            if(d<67){
+              const nx=dx/d,ny=dy/d; m.x=hx+nx*67;m.y=hy+ny*67;
               m.vx+=nx*115;m.vy+=ny*115;
-              if(m.cooldown<.1)state.events.push({kind:'hazardImpact',id:m.id,x:m.x,y:m.y,
-                hazard:state.hazard,strength:1,time:state.time});}
+              if(state.time-m.hazardCueAt>.32){
+                m.hazardCueAt=state.time;
+                state.events.push({kind:'hazardImpact',id:m.id,x:m.x,y:m.y,
+                  hazard:state.hazard,strength:1,time:state.time});
+              }
+            }
           }
         }
         resolveHits();
@@ -331,7 +371,8 @@ const BowlBrawl = (() => {
     return {state,current,action,tick,hud,standings,alive,finishRound,rimRadius};
   }
   return Object.freeze({create,ROUNDS,ROUND_TIME,START_RADIUS,END_RADIUS,
-    SHOCK_TIMES,SHOCK_WARNING,RECOVER_COST,RECOVER_MARGIN,KO_BONUS});
+    SHOCK_TIMES,SHOCK_WARNING,RECOVER_COST,RECOVER_MARGIN,KO_BONUS,
+    SWEEPER_LENGTH,SWEEPER_HALF_WIDTH,SWEEPER_PUSH});
 })();
 if(typeof module!=='undefined')module.exports=BowlBrawl;
 let bowlBrawlGame=null;

@@ -770,6 +770,166 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
 
 @media(max-width:780px){#partyBackLobby{min-width:175px;min-height:52px;padding:7px 15px;font-size:19px}}
 
+
+/* THE CRUCIBLE — prestige-sport broadcast skin. Only the new native 3D preview;
+   the existing Grand Prix, backgrounds, lobby and legacy fallbacks stay intact. */
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"]{
+ /* Original ChatGPT-drawn arena geometry is a LOCAL bundled SVG, never a
+    short-lived remote asset. 3D marbles, hazards and bowl are still WebGL. */
+ background-image:linear-gradient(90deg,rgba(4,12,20,.22),rgba(6,13,22,.08) 30%,
+     rgba(5,13,21,.05) 68%,rgba(3,9,15,.24)),
+   url("/assets/crucible-stadium.svg");
+ background-color:#06111a;
+ background-position:center,center;
+ background-size:cover,cover;
+ background-repeat:no-repeat;
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #partyStageCanvas{
+ background:transparent;
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"]:after{
+ background:linear-gradient(90deg,rgba(4,12,22,.62) 0%,rgba(4,12,22,.14) 29%,transparent 46%),
+ linear-gradient(270deg,rgba(4,12,22,.50),transparent 30%),
+ linear-gradient(0deg,rgba(3,10,18,.75),transparent 19%)
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlHeader h1{
+ font-family:Nunito,system-ui,sans-serif;font-weight:1000;
+ letter-spacing:-.04em;font-size:calc(76*var(--u));line-height:1.04;
+ color:#f1eadb;-webkit-text-stroke:0;text-shadow:0 calc(5*var(--u)) calc(24*var(--u)) #000b
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlHeader .ppKicker{
+ color:#9abac2;letter-spacing:.19em
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlRound,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPhase{
+ border:calc(1*var(--u)) solid #a6b6ae80;
+ border-radius:calc(7*var(--u));background:#101f2bea;
+ color:#e5e2d4
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPhase{
+ border-color:#63c5c680;color:#9be1df
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPanel,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStandings,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStats>div{
+ background:linear-gradient(145deg,rgba(13,26,39,.96),rgba(6,17,28,.96));
+ border:calc(1*var(--u)) solid #7c959f85;
+ border-radius:calc(13*var(--u));
+ box-shadow:0 calc(18*var(--u)) calc(50*var(--u)) #0007;
+ backdrop-filter:blur(calc(8*var(--u)))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPanel{
+ padding:calc(22*var(--u));border-top-color:#b88a56aa
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPanel>small,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStandings h2{
+ color:#9bb3be;letter-spacing:.08em
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStats strong,
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPlayer{
+ color:#f6f0df;text-shadow:none
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] .ppBrawlActions button{
+ border-radius:calc(8*var(--u));border-color:#7797a285;
+ background:linear-gradient(160deg,#284051,#142a3a);color:#f5f3e9
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] .ppBrawlActions button:focus-visible{
+ outline:calc(3*var(--u)) solid #aee9ea;outline-offset:calc(3*var(--u))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlShockBox{
+ background:#0c1a29f2;border-color:#68cbd2a8;border-radius:calc(9*var(--u))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlShockBox.danger{
+ border-color:#f2a16f
+}
+
+/* A compact physical-sport broadcast winner cut-in; does not obscure controls. */
+#ppBrawlRoundWinner{position:absolute;z-index:4;top:calc(134*var(--u));
+ left:50%;transform:translateX(-50%);min-width:calc(390*var(--u));
+ max-width:calc(590*var(--u));padding:calc(14*var(--u)) calc(24*var(--u));
+ border:calc(1*var(--u)) solid #b99c73;border-radius:calc(10*var(--u));
+ text-align:center;background:rgba(10,21,33,.94);pointer-events:none;
+ box-shadow:0 calc(18*var(--u)) calc(50*var(--u)) #0009}
+#ppBrawlRoundWinner span{display:block;font:800 calc(18*var(--u)) Nunito,system-ui,sans-serif;
+ letter-spacing:.16em;color:#b7bec7}
+#ppBrawlRoundWinner strong{display:block;font:900 calc(43*var(--u)) Nunito,system-ui,sans-serif;
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f6ead9}
+@media (prefers-reduced-motion:reduce){#ppBrawlRoundWinner{transition:none!important}}
+
+/* The Crucible broadcast — 3D-only presentation, no cartoon panels.
+   The original Grand Prix announcer art and global nav style stay unchanged. */
+#clatter.brawlBroadcast{
+ left:calc(520*var(--u));bottom:calc(18*var(--u));
+ max-width:calc(750*var(--u));z-index:2147483645;
+ display:flex;align-items:center;pointer-events:none
+}
+#clatter.brawlBroadcast .clatterFace{display:none!important}
+#clatter.brawlBroadcast #clatterText{
+ max-width:calc(750*var(--u));width:100%;
+ border:calc(1*var(--u)) solid #a5a39b9c;
+ border-left:calc(5*var(--u)) solid #b69b68;
+ border-radius:calc(8*var(--u));
+ background:linear-gradient(95deg,rgba(14,28,41,.97),rgba(11,23,35,.94));
+ color:#eaece6;text-shadow:none;
+ font:800 calc(23*var(--u)) Nunito,system-ui,sans-serif;
+ line-height:1.24;letter-spacing:.005em;
+ padding:calc(11*var(--u)) calc(22*var(--u));
+ box-shadow:0 calc(10*var(--u)) calc(35*var(--u)) #0006
+}
+#clatter.brawlBroadcast #clatterText::before{
+ content:"ARENA ANNOUNCER";display:block;margin-bottom:calc(4*var(--u));
+ font:800 calc(13*var(--u)) Nunito,system-ui,sans-serif;
+ letter-spacing:.19em;color:#adbfca
+}
+#partyBackLobby[data-nav-state="brawl"]{
+ top:max(16px,env(safe-area-inset-top))!important;
+ right:max(18px,env(safe-area-inset-right))!important;
+ min-width:170px!important;min-height:47px!important;
+ padding:8px 17px!important;
+ border:1px solid #9b9f9a9c!important;
+ border-radius:9px!important;
+ background:linear-gradient(180deg,#203543,#11242f)!important;
+ color:#f0f1e9!important;
+ font:800 clamp(15px,1.3vw,18px) Nunito,system-ui,sans-serif!important;
+ text-shadow:none!important;
+ box-shadow:0 8px 25px rgba(0,0,0,.45)!important
+}
+#partyBackLobby[data-nav-state="brawl"]:hover{
+ background:linear-gradient(180deg,#305466,#173344)!important
+}
+#partyBackLobby[data-nav-state="brawl"]:focus-visible{
+ outline:3px solid #a5e4e3;outline-offset:3px
+}
+
+/* The arena now owns the visual hierarchy, not the broadcast panels. */
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlHeader h1{
+ font-size:calc(67*var(--u));letter-spacing:-.045em
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlPanel{
+ border-color:#7b909db3;
+ box-shadow:0 calc(10*var(--u)) calc(38*var(--u)) #0009;
+ background:linear-gradient(165deg,rgba(12,28,40,.95),rgba(8,19,31,.94))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlStandings{
+ border-color:#758b97a3;
+ background:linear-gradient(165deg,rgba(11,28,39,.94),rgba(9,20,32,.94))
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] .ppBrawlRank{
+ background:rgba(34,50,62,.80);
+ border-radius:calc(7*var(--u));
+ font-weight:850
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] .ppBrawlActions button{
+ box-shadow:inset 0 1px 0 rgba(205,224,232,.16),0 3px 8px #0005;
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlRam{
+ background:linear-gradient(170deg,#a58b60,#5c4836)!important;
+ color:#fff5e7;border-color:#d9bd82
+}
+#partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlRecover{
+ background:linear-gradient(170deg,#244c51,#153036)!important;
+ border-color:#66adb1
+}
 </style>
 </head>
 <body>
@@ -926,6 +1086,10 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
           <div class="ppBrawlShockMeter"><span id="ppBrawlShockBar"></span></div>
         </div>
       </header>
+      <div id="ppBrawlRoundWinner" role="status" aria-live="polite" hidden>
+        <span>ROUND WINNER</span>
+        <strong id="ppBrawlRoundWinnerName">—</strong>
+      </div>
       <div id="ppBrawlStats" hidden>
         <div><span>ROUND CLOCK</span><strong id="ppBrawlTime">42.0s</strong></div>
         <div><span>STILL IN</span><strong id="ppBrawlAlive">2 / 2</strong></div>
