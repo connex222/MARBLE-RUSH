@@ -94,7 +94,7 @@ const BowlBrawl = (() => {
         // A genuine inward escape, not an invulnerability or a teleport.
         m.vx=nx*470;m.vy=ny*470;m.x+=nx*6;m.y+=ny*6;
         state.events.push({kind:'recover',id:m.id,x:m.x,y:m.y,time:state.time,
-          margin,round:state.round});
+          margin,round:state.round,energySpent:RECOVER_COST,energyAfter:m.energy});
         return true;
       }
       if(type==='anchor'){

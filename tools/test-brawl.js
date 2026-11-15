@@ -91,7 +91,8 @@ assert.equal(target.energy,75-B.RECOVER_COST);
 assert.ok(target.vx<0,'Recovery must provide real inward momentum');
 assert.equal(target.recoverUsed,true);
 assert.equal(safe.action('alpha','recover'),false,'Only one recovery per round');
-assert.ok(safe.state.events.some(e=>e.kind==='recover'&&e.id==='alpha'));
+assert.ok(safe.state.events.some(e=>e.kind==='recover'&&e.id==='alpha'&&
+  e.energySpent===B.RECOVER_COST&&e.energyAfter===75-B.RECOVER_COST));
 assert.equal(safe.hud('alpha').recoveryUsed,true);
 const hit=B.create(roster,14);
 const attacker=hit.current('alpha'),victim=hit.current('bravo');
