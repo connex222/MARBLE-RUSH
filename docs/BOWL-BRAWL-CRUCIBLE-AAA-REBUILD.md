@@ -18,14 +18,14 @@
 `src/modes/party-brawl-webgl.js` is a **native WebGL mesh renderer** (not an old canvas overlaid by another one). It has a tessellated bowl floor with calculated wall depth, stadium platform, machined metal rail, metal segments, inset lights, lit glass marbles and hazard-specific 3D geometry. Its baseline draw path is two GPU draws: a cached static arena mesh and an updated dynamic mesh.
 
 The renderer **only reads** the original deterministic `BowlBrawl` state and events. It does not invent a second set of impacts or scoring rules:
-- bumpers at the real engine locations; rotating collider at the engine's actual moving position
+- fixed bumper pylons at their authoritative collision radii; an actual **95-unit rotating striker arm** with a physical capsule collider and moving end-cap at the engine's exact coordinates (not decorative)
 - slippery ice region in the correct physical place
 - actual shrinking safe radius and warning/edge state
 - center-origin timed shockwaves, telegraphed before firing
-- live 3D marble positions, RAM/ANCHOR/RECOVER visual status
+- live 3D marble positions, contact shadows and RAM/ANCHOR/RECOVER visual status; calm camera push-in for final duels, with reduced-motion support
 - real collisions, knockouts and award cues
 
-The existing single Party Pack screen host mounts/unmounts the active WebGL canvas exclusively and restores a new 2D canvas when leaving. It reverts to the existing 2D Bowl Brawl in the event of WebGL creation failure, repeated rendering failures or unrecovered context loss. **Grand Prix's `#cv` renderer remains separate and untouched.**
+The existing single Party Pack screen host mounts/unmounts the active WebGL canvas exclusively and restores a new 2D canvas when leaving. It reverts to the existing 2D Bowl Brawl if WebGL creation fails, a draw raises an exception, repeated frame errors occur, or the graphics context is lost; the fallback is visible to the host. Its overlays and leaderboard state reset between matches. **Grand Prix's `#cv` renderer remains separate and untouched.**
 
 The modelled environment is a first playable 3D candidate, **not** proof that the final visual quality matches the ChatGPT-generated art-direction concept.
 
@@ -41,7 +41,7 @@ Five new generated sounds/music assets have **development-only** permanent Creat
 - cinematic instrumental arena loop, quiet enough for the announcer and impacts
 - charged RAM propulsion
 - glass-on-metal impact, triggered by an **actual** engine `hit` event
-- telegraphed shockwave blast, triggered by an **actual** `shockwave` event
+- telegraphed shockwave blast, triggered by an **actual** `shockwave` event; music ducks under spoken commentary and restores promptly, while respecting the user mute setting
 - knockout accent, triggered by a **real** knockout
 
 The existing game music and effects toggles govern playback. The preview uses the existing original/synth audio if the Creative Claw asset cannot load; do **not** make CDN availability a production dependency. For release, approve and ingest properly licensed/source-verified audio files into the repository's asset pipeline and verify CORS, volumes, transitions and no hiss on target hardware. Generated file URLs here are intentionally restricted to the opt-in branch.
@@ -65,6 +65,14 @@ Offline test command: `npm run test:brawl3d`.
 - No files changed in `src/engine.js`, `src/modes/grandprix.js`, track data or approved raw assets, verified by GitHub commit comparison.
 - Syntax parsing of modified JavaScript files in a V8 sandbox: pass.
 - Computational mocked-WebGL five-hazard render cycle: pass; verified 2 draws per scene, nonempty geometry and unmount behavior with a fake GPU.
+
+**Additional branch changes after the first record:**
+- Deterministic rotor-arm collision physics now match both native 3D and the 2D fallback; its contact radius, hazard events and sample debounce are tested.
+- `round_end` events now carry the real engine time. An unobtrusive live-region winner cut-in appears for the next round and does not cover control buttons.
+- Floor grooves, rear structural stands, marble contact shadows and camera restraint improve scene depth. GPU rendering defaults to **native 1920 × 1080** on actual GPU hardware, with reduced resolution for software rendering.
+- Audio volume ducks during announcer callouts and immediately returns to the correct music level after leaving Bowl Brawl or toggling mute.
+- Offline computational smoke was rerun after geometry changes: five hazard variations, ten mock draw calls, over 6,000 static triangles and real dynamic geometry. **A mock GPU is not an actual GPU visual check.**
+- More than 60 seeded CPU matches of the new sweeping-arm engine completed without nonfinite physics or stalled rounds.
 
 **Not performed or not approved:**
 - Full `npm install && npm run build` and Node test suite on a real Git checkout
