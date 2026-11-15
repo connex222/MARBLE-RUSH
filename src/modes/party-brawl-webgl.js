@@ -215,7 +215,7 @@ const MarbleBrawlWebGL = (() => {
  }
  function setup(){
    resources=[];const vs=compile(gl.VERTEX_SHADER,
-     'attribute vec3 a_pos;attribute vec3 a_normal;attribute vec3 a_color;'+
+     'precision mediump float;attribute vec3 a_pos;attribute vec3 a_normal;attribute vec3 a_color;'+
      'uniform vec3 u_eye,u_forward,u_right,u_up;uniform float u_aspect,u_focal,u_shift;'+
      'varying vec3 v_n,v_c,v_world;void main(){'+
      'vec3 d=a_pos-u_eye;float z=max(.05,dot(d,u_forward));'+
