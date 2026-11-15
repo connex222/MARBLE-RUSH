@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/modes/brawl.js'
       - 'src/modes/party-brawl-webgl.js'
+      - 'src/modes/party-tv-qa.js'
       - 'assets/crucible-stadium.svg'
       - 'tools/build.js'
       - 'src/modes/party-brawl-ui-v2.js'
