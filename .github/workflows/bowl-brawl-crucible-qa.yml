@@ -63,6 +63,7 @@ jobs:
           if-no-files-found: warn
           path: |
             qa-brawl-crucible-actual-webgl.png
+            qa-brawl-crucible-browser-diagnostic.png
             qa-brawl-crucible-broadcast.png
             qa-brawl-crucible-gpu.json
           retention-days: 14
