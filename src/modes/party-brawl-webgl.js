@@ -16,7 +16,7 @@ const MarbleBrawlWebGL = (() => {
  const rgb=s=>{if(!/^#[\da-f]{6}$/i.test(String(s)))return [.94,.70,.40];
    return [1,3,5].map(i=>parseInt(s.slice(i,i+2),16)/255);};
  const material={
-  floor:[.115,.175,.23], floor2:[.13,.205,.27], rim:[.42,.47,.50],
+  floor:[.115,.175,.23], floor2:[.122,.184,.235], rim:[.42,.47,.50],
   brass:[.69,.45,.23], brassLit:[.92,.68,.34], black:[.055,.078,.108],
   cyan:[.15,.70,.76], amber:[1,.44,.16], danger:[.95,.18,.19],
   darkMetal:[.20,.26,.31], steel:[.39,.48,.53], ice:[.34,.61,.67]
@@ -89,7 +89,8 @@ const MarbleBrawlWebGL = (() => {
    for(let j=0;j<18;j++){const ra=R*j/18,rb=R*(j+1)/18;
     for(let i=0;i<SEG;i++){const th=TAU*i/SEG,ph=TAU*(i+1)/SEG;
       const p=(rad,ang)=>[rad*Math.cos(ang),height(rad),rad*Math.sin(ang)];
-      const col=(j+i%2)%3===0?material.floor2:material.floor;
+      // Continuous machined metal, not a toy checkerboard pattern.
+      const col=j%6===0?material.floor2:material.floor;
       quad(a,p(ra,ph),p(rb,ph),p(rb,th),p(ra,th),col);
     }
    }
@@ -243,24 +244,25 @@ const MarbleBrawlWebGL = (() => {
    const fs=compile(gl.FRAGMENT_SHADER,
      'precision mediump float;varying vec3 v_n,v_c,v_world;varying float v_kind;uniform vec3 u_eye;'+
      'void main(){'+
-     'vec3 n=normalize(v_n);vec3 eyeDir=normalize(u_eye-v_world);'+
-     'vec3 key=normalize(vec3(-.48,.88,.44));vec3 rimLight=normalize(vec3(.61,.43,-.64));'+
-     'float mainLight=max(0.,dot(n,key));float fillLight=max(0.,dot(n,rimLight));'+
-     'float glass=step(.5,v_kind)*step(v_kind,1.5);'+
-     'float emissive=step(1.5,v_kind);'+
-     'vec3 halfKey=normalize(key+eyeDir);vec3 halfFill=normalize(rimLight+eyeDir);'+
-     'float sheen=pow(max(0.,dot(n,halfKey)),mix(40.,100.,glass));'+
-     'float secondary=pow(max(0.,dot(n,halfFill)),mix(18.,70.,glass));'+
-     'float fresnel=pow(1.-max(0.,dot(n,eyeDir)),3.);'+
-     'float striae=.96+.04*sin(v_world.x*12.+v_world.y*4.)*cos(v_world.z*13.);'+
-     'vec3 base=v_c*(.30+mainLight*.65+fillLight*.18);'+
-     'vec3 metallic=base+vec3(.96,.76,.53)*sheen*.34+vec3(.40,.64,.71)*secondary*.18;'+
-     'vec3 glassBase=v_c*(.40+mainLight*.69+fillLight*.35)*striae;'+
-     'vec3 glassLit=glassBase+vec3(1.,.96,.83)*sheen*1.14+vec3(.61,.91,1.)*secondary*.76;'+
-     'glassLit+=vec3(.37,.64,.75)*fresnel*.32;'+
-     'vec3 result=mix(metallic,glassLit,glass);'+
-     'result+=v_c*emissive*.43;'+
-     'gl_FragColor=vec4(clamp(result,0.,1.),1.);}');
+     'vec3 n=normalize(v_n);vec3 view=normalize(u_eye-v_world);'+
+     'vec3 key=normalize(vec3(-.48,.88,.44));'+
+     'vec3 fill=normalize(vec3(.61,.43,-.64));'+
+     'float mainLight=max(0.,dot(n,key));float fillLight=max(0.,dot(n,fill));'+
+     'vec3 h=normalize(key+view);float spec=max(0.,dot(n,h));'+
+     // Metal uses an inexpensive 16th-power specular lobed highlight.
+     'spec*=spec;spec*=spec;spec*=spec;spec*=spec;'+
+     'vec3 lit=v_c*(.32+mainLight*.69+fillLight*.16)+vec3(.93,.78,.59)*spec*.23;'+
+     // Only genuinely glass player marbles incur additional shading. The bowl
+     // occupies most pixels, so never shade its surface as glass every frame.
+     'if(v_kind>.5&&v_kind<1.5){'+
+       'float glint=spec*spec;glint*=glint;'+
+       'float fr=1.-max(0.,dot(n,view));fr*=fr;fr*=fr;'+
+       'lit=v_c*(.43+mainLight*.76+fillLight*.27);'+
+       'lit+=vec3(1.,.96,.85)*glint*1.3+vec3(.33,.76,.94)*spec*.52;'+
+       'lit+=vec3(.37,.64,.75)*fr*.30;'+
+     '}'+
+     'if(v_kind>1.5)lit+=v_c*.43;'+
+     'gl_FragColor=vec4(clamp(lit,0.,1.),1.);}');
    program=gl.createProgram();resources.push(['program',program]);
    gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);
    if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Brawl link: '+gl.getProgramInfoLog(program));
