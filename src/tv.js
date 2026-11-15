@@ -2245,7 +2245,7 @@
         off: m ? m.respawnT > 0 : false, prog: m && world.t.finishDist < Infinity ? Math.min(1, m.prog / world.t.finishDist) : 0,
         pts: p.lastPts, total: p.points, lastPlace: p.lastPlace || 0, award: p.award || '', inRace: !!m,
         players: players.size, cd: state === 'countdown' ? Math.max(0, Math.ceil(world.goTime - world.time)) : 0,
-        opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
+        opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, blurb: t.blurb, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
         myVote: state === 'vote' && vote.votes.has(p.id) ? vote.votes.get(p.id) : -1, picked: state === 'vote' ? vote.picked : -1,
         cupRace: cup.race, cupN: cup.n, cupDone: cup.race >= cup.n,
         modeControls: state==='golf' ? MODES.golf.hud(p).modeControls : state==='curling' ? MODES.curling.hud(p).modeControls : state==='derby' ? MODES.derby.hud(p).modeControls : state==='brawl' ? MODES.brawl.hud(p).modeControls : state==='dropzone' ? MODES.dropzone.hud(p).modeControls : null,
