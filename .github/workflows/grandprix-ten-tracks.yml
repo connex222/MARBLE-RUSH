@@ -1,0 +1,39 @@
+name: Grand Prix ten-track release QA
+on:
+  pull_request:
+    paths:
+      - 'src/engine.js'
+      - 'src/modes/grandprix.js'
+      - 'src/tv.js'
+      - 'tools/test-grandprix-ten-tracks.js'
+      - 'tools/test-single-game-release.js'
+      - '.github/workflows/grandprix-ten-tracks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/engine.js'
+      - 'src/modes/grandprix.js'
+      - 'src/tv.js'
+      - 'tools/test-grandprix-ten-tracks.js'
+      - '.github/workflows/grandprix-ten-tracks.yml'
+permissions:
+  contents: read
+jobs:
+  tracks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check source syntax
+        run: |
+          node --check src/engine.js
+          node --check src/modes/grandprix.js
+          node --check src/tv.js
+          node --check tools/test-grandprix-ten-tracks.js
+      - name: Validate original one-game release gate
+        run: node tools/test-single-game-release.js
+      - name: Simulate ten-track multiplayer and vote flow
+        run: node tools/test-grandprix-ten-tracks.js

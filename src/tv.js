@@ -1377,8 +1377,8 @@
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
   // Grand Prix remains isolated; five Party Pack games use the exclusive stage.
   let selectedMode = 'grandprix';
-  // Single-game release: the original Grand Prix and all seven tracks are the
-  // entire published product. Keep experimental modes archived in this repo,
+  // Single-game release: Grand Prix has seven protected original tracks plus
+  // three new courses. Keep experimental modes archived in this repo,
   // available only behind the explicit localhost-only test flag below.
   // Never expose add-ons or Party Night on the live TV or phone.
   const BRAWL_PUBLISHED = false;
@@ -2141,12 +2141,16 @@
       const k = b.dataset.set;
       b.setAttribute('aria-pressed', k === 'fx' || k === 'cup' ? 'true' : String(!!settings[k]));
       if (k === 'fx') b.querySelector('em').textContent = settings.fx === 'lite' ? 'Lite' : settings.fx === 'full' ? 'Full' : 'Auto';
-      if (k === 'cup') b.querySelector('em').textContent = settings.cup === 1 ? '1 race' : settings.cup === 7 ? 'Grand Prix (7)' : settings.cup + ' races';
+      if (k === 'cup') b.querySelector('em').textContent = settings.cup === 1 ? '1 race' : settings.cup === 10 ? 'Full Tour (10)' : settings.cup === 7 ? 'Grand Prix (7)' : settings.cup + ' races';
     }
   }
   function renderVote() {
     $('#voteSub').textContent = `Race ${cup.race + 1} of ${cup.n}`;
     const box = $('#voteCards'); box.innerHTML = '';
+    // Two and one remaining course need centred, readable TV vote cards.
+    box.style.gridTemplateColumns = 'repeat(' + vote.opts.length + ', minmax(0, 1fr))';
+    box.style.maxWidth = vote.opts.length === 1 ? 'calc(540*var(--u))' : vote.opts.length === 2 ? 'calc(1100*var(--u))' : '';
+    box.style.marginInline = vote.opts.length < 3 ? 'auto' : '';
     vote.opts.forEach((t, i) => {
       const th = THEMES[t.theme];
       const card = document.createElement('button');
@@ -2241,7 +2245,7 @@
         off: m ? m.respawnT > 0 : false, prog: m && world.t.finishDist < Infinity ? Math.min(1, m.prog / world.t.finishDist) : 0,
         pts: p.lastPts, total: p.points, lastPlace: p.lastPlace || 0, award: p.award || '', inRace: !!m,
         players: players.size, cd: state === 'countdown' ? Math.max(0, Math.ceil(world.goTime - world.time)) : 0,
-        opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
+        opts: state === 'vote' ? vote.opts.map(t => ({ name: t.name, blurb: t.blurb, icon: THEMES[t.theme].icon, c: THEMES[t.theme].card })) : null,
         myVote: state === 'vote' && vote.votes.has(p.id) ? vote.votes.get(p.id) : -1, picked: state === 'vote' ? vote.picked : -1,
         cupRace: cup.race, cupN: cup.n, cupDone: cup.race >= cup.n,
         modeControls: state==='golf' ? MODES.golf.hud(p).modeControls : state==='curling' ? MODES.curling.hud(p).modeControls : state==='derby' ? MODES.derby.hud(p).modeControls : state==='brawl' ? MODES.brawl.hud(p).modeControls : state==='dropzone' ? MODES.dropzone.hud(p).modeControls : null,
@@ -2578,7 +2582,7 @@
     b.onclick = () => {
       const k = b.dataset.set;
       if (k === 'fx') settings.fx = settings.fx === 'auto' ? 'full' : settings.fx === 'full' ? 'lite' : 'auto';
-      else if (k === 'cup') settings.cup = { 1: 2, 2: 4, 4: 7, 7: 1 }[settings.cup] || 4;
+      else if (k === 'cup') settings.cup = { 1: 2, 2: 4, 4: 7, 7: 10, 10: 1 }[settings.cup] || 4;
       else settings[k] = !settings[k];
       if (k === 'music') Audio_.setMusic(settings.music);
       if (k === 'sfx') Audio_.setSfx(settings.sfx);

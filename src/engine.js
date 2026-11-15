@@ -696,6 +696,72 @@ const MR = (() => {
     return B.done();
   };
 
+
+  /** Jetty Dash — genuinely short: a rapid pier sprint with two bursts and one air gap. */
+  TRACKS.jettydash = () => {
+    const B = Builder({ id: 'jettydash', name: 'Jetty Dash', theme: 'seaside' });
+    B.start(8);
+    B.aim(12); B.line(240); B.pad(180); B.gems(3, 80, 70); B.line(340);
+    B.uturn(165, 150, 10);
+    B.line(220); B.aim(17); B.bumpers(310, 2); B.aim(9); B.line(260);
+    B.uturn(165, 150, 24);
+    B.line(420); B.jump(175, 65, 14, 16); B.line(310); B.pad(150); B.line(220);
+    B.uturn(160, 150, 12);
+    B.line(210); B.bend(220, -12); B.bend(220, 20); B.line(220); B.pad(180); B.line(220);
+    B.uturn(165, 150, 9);
+    B.line(320); B.stairs(6, 95, 36); B.aim(10); B.line(340);
+    B.uturn(165, 150, 9);
+    B.line(300); B.pad(180); B.line(360); B.gems(3); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
+  /** Canopy Expedition — the longest Grand Prix course, with relief between technical set-pieces. */
+  TRACKS.canopyexpedition = () => {
+    const B = Builder({ id: 'canopyexpedition', name: 'Canopy Expedition', theme: 'jungle' });
+    B.start(8);
+    B.aim(8); B.line(360); B.gems(4); B.line(520); B.bend(300, -14); B.bend(300, 22); B.line(360); B.uturn(170, 150, 9);
+    B.line(420); B.aim(5); B.slow(300); B.aim(10); B.line(520); B.uturn(160, 150, 9);
+    B.line(440); B.pad(200); B.line(300); B.jump(225, 70, 16, 18); B.line(420); B.uturn(170, 150, 9);
+    B.line(320); B.stairs(8, 100, 42); B.aim(9); B.line(440); B.gems(4); B.line(200); B.uturn(170, 150, 25);
+    B.line(740); B.bend(260, -27); B.line(60); B.loop(116); B.aim(4); B.line(480); B.uturn(170, 150, 9);
+    B.line(80); B.fork('gems'); B.line(360); B.pad(180); B.line(340); B.uturn(170, 150, 9);
+    B.line(340); B.bowl(220, 76); B.line(540); B.uturn(170, 150, 9);
+    B.line(280); B.aim(23); B.bumpers(560, 4); B.aim(8); B.line(430); B.gems(4); B.line(220); B.uturn(170, 150, 25);
+    B.line(640); B.jump(240, 80, 17, 19); B.line(540); B.uturn(170, 150, 9);
+    B.line(320); B.slow(260); B.line(300); B.bend(240, -17); B.bend(240, 25); B.line(440); B.uturn(170, 150, 9);
+    B.line(320); B.pad(200); B.line(520); B.gems(4); B.line(400); B.uturn(170, 150, 9);
+    B.line(360); B.seesaw(300); B.line(540); B.uturn(170, 150, 25);
+    B.line(660); B.bend(260, -27); B.line(60); B.loop(114); B.aim(4); B.line(440); B.uturn(170, 150, 9);
+    B.line(80); B.fork('shortcut', { long: 760 }); B.line(460); B.gems(4); B.line(320); B.uturn(170, 150, 9);
+    B.line(320); B.bowl(210, 76); B.line(500); B.uturn(170, 150, 9);
+    B.line(300); B.stairs(8, 100, 42); B.aim(9); B.line(400); B.uturn(170, 150, 9);
+    B.line(360); B.pad(200); B.line(380); B.gems(4); B.line(420); B.uturn(170, 150, 9);
+    B.line(340); B.aim(18); B.bumpers(480, 3); B.aim(8); B.line(400); B.uturn(170, 150, 9);
+    B.line(300); B.pad(220); B.line(560); B.aim(4); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
+  /** Gearshift Gauntlet — technical precision: grippy turns, forks, jumping and moving rails. */
+  TRACKS.gearshift = () => {
+    const B = Builder({ id: 'gearshift', name: 'Gearshift Gauntlet', theme: 'clockwork' });
+    B.start(8); B.setMat('metal');
+    B.aim(8); B.line(300); B.conveyor(300, 850); B.gems(4); B.line(420); B.dangerTurn(175, 9);
+    B.line(300); B.seesaw(300); B.line(380); B.uturn(170, 150, 9);
+    B.line(340); B.aim(16); B.line(260); B.jump(260, 85, 19, 18); B.line(380); B.uturn(170, 150, 9);
+    B.line(240); B.aim(24); B.bumpers(560, 4); B.aim(9); B.line(360); B.dangerTurn(170, 9);
+    B.line(80); B.fork('shortcut', { long: 820 }); B.line(300); B.pad(160); B.line(350); B.uturn(170, 150, 26);
+    B.line(690); B.bend(250, -29); B.line(60); B.loop(118); B.aim(4); B.line(380); B.uturn(170, 150, 9);
+    B.line(300); B.bowl(220, 76); B.line(420); B.uturn(170, 150, 9);
+    B.line(280); B.stairs(8, 95, 42); B.aim(9); B.line(320); B.dangerTurn(175, 9);
+    B.line(80); B.fork('gems', { long: 780 }); B.line(370); B.seesaw(280); B.line(280); B.uturn(170, 150, 26);
+    B.line(320); B.conveyor(300, 920); B.line(320); B.aim(19); B.bumpers(480, 3); B.aim(8); B.line(240); B.uturn(170, 150, 9);
+    B.line(340); B.pad(180); B.line(360); B.aim(5); B.line(180);
+    B.finish(); B.runoff(520);
+    return B.done();
+  };
+
   const TRACK_INFO = [
     { id: 'toybox', name: 'Toy Box Tumble', blurb: 'Xylophone stairs, two loops, whirlpools', theme: 'toybox' },
     { id: 'candy', name: 'Candy Cascade', blurb: 'Conveyor belts, chocolate river, gumball whirlpool', theme: 'candy' },
@@ -704,6 +770,9 @@ const MR = (() => {
     { id: 'jungle', name: 'Jungle Jumble', blurb: 'Boost to jump the shortcuts, mud pits, rope-bridge jumps', theme: 'jungle' },
     { id: 'seaside', name: 'Seaside Sprint', blurb: 'Shortcut or gem alley? Sand traps and beach-ball bumpers', theme: 'seaside' },
     { id: 'clockwork', name: 'Clockwork Chaos', blurb: 'Three forks, cog conveyors and see-saw levers', theme: 'clockwork' },
+    { id: 'jettydash', name: 'Jetty Dash', blurb: 'SHORT · Speed pads, jump and fast finish', theme: 'seaside' },
+    { id: 'canopyexpedition', name: 'Canopy Expedition', blurb: 'LONG · Shortcut choices, loops and stamina', theme: 'jungle' },
+    { id: 'gearshift', name: 'Gearshift Gauntlet', blurb: 'EXPERT · Trick turns, seesaws and dangerous jumps', theme: 'clockwork' },
   ];
 
   /** Lobby playground bowl — practise boost & grip while players join. */

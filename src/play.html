@@ -95,6 +95,9 @@ input{width:100%;font-family:var(--display);font-weight:600;font-size:30px;color
 #votes button{display:flex;align-items:center;gap:12px;font-weight:600;font-size:24px;color:#fff;border:3px solid transparent;border-radius:20px;padding:14px 16px;
   background:var(--vc);box-shadow:0 5px 0 rgba(0,0,0,.3);text-align:left;text-shadow:0 2px 0 rgba(0,0,0,.3)}
 #votes button span{font-size:30px}
+#votes button .voteDetail{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:20px;line-height:1.15}
+#votes button .voteDetail strong{font:800 20px Nunito,sans-serif}
+#votes button .voteDetail small{font:700 13px Nunito,sans-serif;opacity:.88;line-height:1.2}
 #votes button[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 4px rgba(255,200,61,.4),0 5px 0 rgba(0,0,0,.3)}
 #votes button.lost{opacity:.35}
 body[data-s="vote"] #padZone{flex-basis:30%}
@@ -1218,7 +1221,11 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
     h.opts.forEach((o, i) => {
       const b = document.createElement('button');
       b.style.setProperty('--vc', `linear-gradient(135deg, ${o.c}, color-mix(in srgb, ${o.c} 45%, #14163A))`);
-      b.innerHTML = `<span>${o.icon}</span>`; b.appendChild(document.createTextNode(o.name));
+      b.innerHTML = `<span>${o.icon}</span>`;
+      const detail = document.createElement('span'); detail.className = 'voteDetail';
+      const title = document.createElement('strong'); title.textContent = o.name;
+      const summary = document.createElement('small'); summary.textContent = o.blurb || '';
+      detail.append(title, summary); b.appendChild(detail);
       b.setAttribute('aria-pressed', String(h.myVote === i));
       if (h.picked >= 0 && h.picked !== i) b.className = 'lost';
       b.onclick = () => { audio(); tone(900, 0.06, 'sine', 0.15); buzz(10); send({ t:'act', a:'vote', v:i }); };

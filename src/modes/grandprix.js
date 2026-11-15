@@ -15,7 +15,9 @@ registerMode({
   // Race-state rules live here. The TV still owns drawing, audio and DOM.
   startRound({cup,trackInfo,vote,players,random=Math.random,now}) {
     const fresh=trackInfo.filter(t=>!cup.played.includes(t.id));
-    const pool=(fresh.length>=3?fresh:fresh.concat(trackInfo.filter(t=>cup.played.includes(t.id)))).slice();
+    // Full Tour runs all ten different tracks; shorter cups preserve three-way voting.
+    const pool=(cup.n===10 ? (fresh.length?fresh:trackInfo) :
+      (fresh.length>=3?fresh:fresh.concat(trackInfo.filter(t=>cup.played.includes(t.id))))).slice();
     for(let i=pool.length-1;i>0;i--){
       const j=Math.floor(random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];
     }
