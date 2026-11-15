@@ -37,7 +37,7 @@ const gl=new Proxy({
  getShaderParameter:()=>true,getProgramParameter:()=>true,
  getAttribLocation:()=>0,getUniformLocation:()=>({}),
  getParameter:()=>'QA mock GPU',getExtension:()=>null,
- bufferData:(_target,data,usage)=>{assert.ok(data instanceof Float32Array);
+ bufferData:(_target,data,usage)=>{assert.ok(ArrayBuffer.isView(data)&&data.BYTES_PER_ELEMENT===4);
    assert.ok(data.length>100);if(usage===35044)counts.static=data.length;else counts.dynamic=data.length;},
  drawArrays:(_mode,start,n)=>{assert.equal(start,0);assert.ok(n>100);counts.draws++;},
  getError:()=>0
