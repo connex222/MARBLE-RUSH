@@ -1377,10 +1377,11 @@
   const cup = { n: 4, race: 0, played: [], trackId: 'toybox' };
   // Grand Prix remains isolated; five Party Pack games use the exclusive stage.
   let selectedMode = 'grandprix';
-  // Release isolation: leave Grand Prix and all seven track files alone.
-  // Bowl Brawl graduates into the public game picker. The other four
-  // unfinished add-ons stay gated; Grand Prix's original seven tracks remain untouched.
-  const BRAWL_PUBLISHED = true;
+  // Single-game release: the original Grand Prix and all seven tracks are the
+  // entire published product. Keep experimental modes archived in this repo,
+  // available only behind the explicit localhost-only test flag below.
+  // Never expose add-ons or Party Night on the live TV or phone.
+  const BRAWL_PUBLISHED = false;
   // QA retains legacy six-mode coverage only on localhost with an explicit
   // non-production URL flag. Render/public builds cannot unlock all add-ons.
   const PARTY_LOCAL_QA = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) &&
@@ -1402,6 +1403,9 @@
     toLobby() {
       state = 'lobby'; stateT = 0;
       partyRun = null;
+      // A return to the public lobby must always restore the original
+      // Marble Rush race even after an experimental local QA session.
+      if(!PARTY_LOCAL_QA){selectedMode='grandprix';partyLength=0;}
       attractMode = null; $('#partyAttractPanel').hidden = true;
       world = new World(TRACKS.lobby(), { free: true, seed: 1 });
       art = buildArt(world.t);
@@ -2052,7 +2056,7 @@
   }
 
   function showAttract(id) {
-    if (state !== 'lobby' || !MODES[id]) return;
+    if (!PARTY_LOCAL_QA || state !== 'lobby' || !MODES[id]) return;
     if (attractMode === id && performance.now() < attractUntil) return;
     attractMode = id;
     attractFrom = performance.now();
@@ -2062,8 +2066,13 @@
     if(canvas)canvas.dataset.previewMode=id;
   }
   function renderModePicker() {
+    const picker=$('#partyPicker');
+    if(picker)picker.hidden=!PARTY_LOCAL_QA;
     const box = $('#partyModeCards');
     if (!box) return;
+    // Public presentation is now one uninterrupted join-and-race lobby.
+    // The selector exists solely for internal localhost test coverage.
+    if(!PARTY_LOCAL_QA){box.replaceChildren();return;}
     // Identical selection path for TV and VIP phone, gated against unfinished modes.
     box.replaceChildren();
     for (const mode of Object.values(MODES).filter(m => isPublishedMode(m.id))) {
@@ -2090,9 +2099,7 @@
       box.appendChild(card);
     }
     applyPartyArt();
-    $('#partyModeStatus').textContent = BRAWL_PUBLISHED ?
-      'Grand Prix · Seven tracks | Bowl Brawl · The Crucible 3D' :
-      'Grand Prix · Seven tracks';
+    $('#partyModeStatus').textContent='Developer QA · experimental games not published';
     const opts = $('#partyNightOptions');
     if (opts) opts.hidden = !PARTY_LOCAL_QA; // Only localhost QA can exercise legacy rotation.
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
@@ -2224,7 +2231,9 @@
       const m = world ? world.get(p.id) : null;
       const msg = {
         t: 'hud', s: state === 'photo' ? 'results' : state, mode: selectedMode, phase: state,
-        availableModes: Object.values(MODES).filter(m => m.available && isPublishedMode(m.id)).map(m => ({ id: m.id, name: m.name })), partyNightEnabled: PARTY_LOCAL_QA, name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
+        availableModes: PARTY_LOCAL_QA?
+          Object.values(MODES).filter(m=>m.available).map(m=>({id:m.id,name:m.name})):[],
+        partyNightEnabled: PARTY_LOCAL_QA, name: p.name, color: p.color, shape: p.shape, swirl: p.swirl, vip: p.id === vip,
         place: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 0 : m ? m.rank : 0,
         n: ['dropzone','brawl','derby','curling','golf'].includes(state) ? players.size : world ? world.marbles.length : 0,
         boost: ['dropzone','brawl','derby','curling','golf'].includes(state) ? 100 : m ? Math.round(m.boost) : 100,

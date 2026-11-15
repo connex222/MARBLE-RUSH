@@ -1,176 +1,50 @@
-# MARBLE RUSH — Party Pack (Alpha)
+# MARBLE RUSH — Grand Prix
 
-The TV is the track, phones are the buttons. Tap to boost, hold to grip.
+**One game. Seven original tracks.** Marble Rush is a multiplayer marble-racing game for television, PC and mobile controllers. The TV is the track; phones are the buttons. Tap to boost, hold to grip.
 
-Grand Prix v0.4 gameplay and approved base artwork remain intact. The Party Pack adds five more games and shared Party Night scoring.
-The Party Pack contains six games, all now merged into `main`: Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. The premium Phase 2–4 production assets and code are integrated. Physical TV visual/audio acceptance and real-device multiplayer QA are still pending.
+**Play on TV / PC:** https://marble-rush.onrender.com/tv  
+**Phone controller:** https://marble-rush.onrender.com/play
 
-### Party Night (production)
-In the TV lobby choose 3, 5 or 7 games under **PARTY NIGHT**, add racers and
-start. The eligible modes rotate across the selected Party Night length. Bowl Brawl and Curling require two or more players. After each Grand Prix cup, select **Next Party Game**;
-Party Points 10/8/6/5/4/3/2/1 carry forward across cups.
-The host can also choose Party Night length on their phone.
-Hover or focus a game card to see its 15-second concept preview. All six registered modes are available in this release.
+## How to play
 
+1. Open Marble Rush on the television or computer and select **Open the track**.
+2. Scan the QR code or enter the four-letter room code on players' phones. You can also add keyboard and CPU racers in the lobby.
+3. Choose the cup length (1, 4 or 7 races) and optional items, catch-up, music and sound effects.
+4. Select **Start the Cup**. Players vote for a track; tap on the phone to boost, or hold to grip.
+5. Compete for points across the cup, crown the champion, and start a new cup or return to the lobby.
 
-## Try it right now (no internet, no server)
+The seven original track themes are **Toybox, Candy, Ice, Space, Jungle, Seaside and Clockwork**. All seven remain available. The original racing physics, multiplayer relay, approved track art, fullscreen support and phone controls have been preserved.
 
-1. Open `public/tv.html` in Chrome on your laptop (double-click it).
-2. Click **Open the track**.
-3. Click **Add keyboard racer** (you race with **Space**; **X** uses an item) and **Add CPU racer** a few times.
-4. Click **Start the Cup**, then click a track card to vote (or **Decide now**).
+## Production scope — 15 November 2026
 
-Phones don't work in this mode — that needs the server below.
+**Grand Prix is the only published game.** The previous Party Pack additions — Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf — and Party Night are no longer selectable in the public television or phone interface. The public lobby goes directly from joining racers to starting the cup.
 
-## Play it online
+This is a non-destructive rollback. The older experiments and assets remain in GitHub for reference, but they are not supported or promoted as part of the live game. No existing original racing data, track definition or artwork was deleted.
 
-**Live game:** https://marble-rush.onrender.com
+Internal legacy regression tests may access the experimental mode picker using `/tv?partyQa=1` **on localhost / 127.0.0.1 only**. This cannot unlock those games on the deployed Render website.
 
-1. Open the live address on the TV or laptop.
-2. Phones go to the same address with `/play` on the end (https://marble-rush.onrender.com/play) and type the code shown on the TV.
+## Run locally
 
-Hosting: Render web service, Free plan, Frankfurt. Build command `npm install && npm run build`, start command `npm start`. It redeploys automatically whenever `main` changes on GitHub, so **do not push changes during a game night** (live races would be lost).
-
-The free plan sleeps when unused. The TV shows "Polishing the marbles..." for up to a minute while it wakes up; that's normal.
-
-## Adding ChatGPT art and sound
-
-1. Save each image as PNG with the **exact filename** from `MARBLE_RUSH_MASTER.md` Section 9 into `assets/raw/`.
-2. Save sounds (MP3 is easiest) with the exact filename from Section 11 into `assets/raw/audio/`.
-3. Upload them to GitHub. Render rebuilds automatically and the art appears in the game.
-
-Anything you haven't made yet stays code-drawn, so the game always works.
-
-## What's new in v0.4
-
-- **Skill pays now.** Faster marbles can overtake, holding grip never stops you dead, and tapping with a full meter gives a **SUPER boost**. A marble nobody touches now finishes near the back instead of winning.
-- **Chunky track.** Rails are thick textured beams on scaffolding, and the camera sits closer so marbles are readable from the sofa.
-- **Smarter CPU racers** that read the track (grip before kickers, boost into loops and shortcuts).
-
-## Balance check (optional)
-
-`npm run balance` races every track with test racers (do-nothing, button-masher, CPU levels and an "expert" that looks ahead) and prints who wins. Use it after changing any physics number in `src/engine.js`.
-
-## Folder map
-
-| Folder | What's in it |
-|---|---|
-| `src/` | The game source (engine, TV, phone) |
-| `public/` | The built, ready-to-run pages (made by the build) |
-| `server/` | The small relay server Render runs |
-| `assets/raw/` | Where you drop ChatGPT images and sounds |
-| `fonts/` | Fredoka and Nunito (free OFL fonts), baked into the pages |
-| `tools/build.js` | Resizes art and bakes everything into single files |
-| `tools/balance-lab.js` | Screen-free race tester (`npm run balance`) |
-
-## Phase 2 developer checks (development branch)
-
-```
+```bash
 npm install
 npm run build
-npm run test:party
-npm run test:dropzone
-npm run test:brawl
-npm run test:derby
-npm run test:curling
-npm run balance -- grandprix 1
+npm start
 ```
 
-GitHub Actions additionally compares Grand Prix physics against main over
-all seven tracks and tests a simulated TV plus two phones in Chromium.
-The physical 2–4 phone acceptance test remains outstanding.
+The build writes the standalone TV and phone pages to `public/`. For the original racing-game balance tests, run `npm run balance`. The single-game release regression is `node tools/test-single-game-release.js`.
 
-Party Pack shared systems: `src/modes/registry.js`, `session.js`,
-`bots.js`, `attract.js`, `geometry.js`, and the six individual mode files.
-Future mode files remain disabled until each game passes its own acceptance.
+## Structure
 
-## Drop Zone — Phase 3
+| Location | Purpose |
+|---|---|
+| `src/engine.js` | Original seven-track Grand Prix racing engine |
+| `src/tv.js`, `src/tv.html` | Television / PC lobby and race presentation |
+| `src/play.html` | Phone controller |
+| `server/server.js` | Room code and WebSocket relay |
+| `assets/raw/` | Approved original and archived game artwork |
+| `tools/build.js` | Asset integration and browser-page build |
+| `docs/GRAND-PRIX-ONLY-RELEASE.md` | Reversible release change and QA guardrails |
 
-Drop Zone is a five-round pegboard contest for 1–8 racers: aim using **LEFT**
-or **RIGHT** on the phone, then press **DROP** (or the big phone pad).
-One marble falls through 85 pegs and moving obstacles into an eight-bucket
-scoring tray (50/100/200/500/1000/500/200/100). The highest cumulative
-score wins. CPU players take automatic turns, and Drop Zone can appear in
-Party Night. The TV also has local Left/Drop/Right controls.
+Older Party Pack design and test notes in `docs/` are historical engineering records, not documentation of currently published games.
 
-Development acceptance details: [Phase 3](docs/PARTY-PHASE3-DROPZONE.md).
-
-## Bowl Brawl — Phase 4
-
-A **five-round**, simultaneous marble arena for **2–8 players**. Steer your
-marble with **TURN LEFT** and **TURN RIGHT**, launch a charged **RAM** into
-opponents or **ANCHOR** yourself to resist knockback. RAM uses 28 energy and
-ANCHOR uses 15; energy regenerates automatically. As the round progresses,
-the safe circle shrinks. The last marble standing earns the most points.
-Results are scored 10/8/6/5/4/3/2/1 each round; the highest combined
-five-round total is the winner. CPU racers compete automatically.
-
-The mode can also feature inside **Party Night**, awarding the standard
-Party Points based on the final Bowl Brawl standings. The separate
-[Phase 4 acceptance record](docs/PARTY-PHASE4-BRAWL.md) details the tests
-and limitations. Visuals are functional code-drawn art pending AAA polish.
-
-## Marble Derby — Phase 5
-
-A **five-heat**, six-runner marble racing game for **1–8 players**.
-Each participant receives **600 entirely virtual gems** to back
-one runner per heat at odds shown on the TV and their phone. Choose
-25/50/100/200 virtual gems, select a runner and watch the race. Winning
-bets return stake × locked odds, while losing stakes are spent.
-Players can CHEER once per heat for a small temporary burst of speed.
-After five heats, the highest gem balance is champion.
-There is no real money, payout or purchasable currency. An automatic
-virtual stipend prevents players from being eliminated for running out
-of gems. CPU runners and disconnected players are handled automatically.
-
-The game is available in Party Night and uses the usual final ranking
-Party Points. [Phase 5 QA and rules](docs/PARTY-PHASE5-DERBY.md).
-The track is functional code-rendered artwork pending later visual polish.
-
-## Marble Curling — Phase 6
-
-Curling is a **five-end** ice-rink contest for **2–8 players**.
-Each racer throws **two stones per end**. Aim left/right, choose power,
-THROW and SWEEP during the slide to preserve momentum.
-Stones collide and can knock rivals away from the scoring house.
-Closest stones earn the most points; stones near the central button
-earn a small bonus. The highest total after five ends wins.
-CPU racers take their turns automatically and Curling can appear
-within a 3/5/7-game Party Night.
-
-See [Phase 6 rules and QA](docs/PARTY-PHASE6-CURLING.md).
-The Phase 3 premium diorama presentation has since been integrated; the original Grand Prix visuals and physics are preserved.
-
-## Phase 8 — integration and release gates
-
-Marble Golf is now connected to the TV/phone UI, with gamepad and on-screen aim, power and SHOOT controls, per-player HUD, five-hole results and Party Night scoring. CI checks the integration and all earlier modes. See [Phase 8 integration record](docs/PARTY-PHASE8.md) for the **remaining AAA assets/audio and physical-device acceptance blockers**. The code is prepared for Alpha release. The approved card art was uploaded, and the Phase 3 environment, surface, prop and cinematic-effect art is included in the production build.
-
-## Consolidated Alpha release notes (10 November 2026)
-
-Six modes: Grand Prix, Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf. Party Night: 3/5/7 games, 1–8 players where mode minimums allow, phones and local CPU/keyboard controllers. The approved original graphics and avatars remain unchanged. The 13 approved Party Pack cards and banners are included in `assets/raw`. Audio is generated with Creative Claw only and recorded in `tools/approved-audio-sources.json`; the build bundles it when available with a playable procedural fallback when the audio provider cannot be reached. See `docs/PARTY-PHASE8.md` for the acceptance plan and outstanding physical multiplayer test. Never claim new graphics are live until the production manifest lists them.
-
-
-## Consolidated premium Party Pack release (11 November 2026)
-
-Merged via [PR #49](https://github.com/connex222/MARBLE-RUSH/pull/49) to `main`.
-
-- **Grand Prix protected:** its seven tracks, existing art, camera and deterministic physics were not redesigned.
-- **Five premium modes:** Marble Derby, Drop Zone, Bowl Brawl, Marble Curling and Marble Golf include Phase 2 gameplay enhancements, existing Party Night scoring and phone controller improvements.
-- **Phase 3 graphics:** 5 approved game backgrounds, 5 materials, 10 props and 48 cinematic effect sprites (68 additions, 200 images in the full build), all generated with ChatGPT rather than Creative Claw. Art falls back to canvas-rendered effects when a new asset is unavailable.
-- **Results and presentation:** five themed winner podiums, reduced-motion stage transitions and winner/score text drawn in code.
-- **Audio:** approved Creative Claw tracks are audio-only. Existing narrator and rolling-noise gating fixes retained.
-- **QA:** GitHub Party Pack foundation, Phase 8 integration and approved-art browser / two-phone simulated multiplayer suites all passed on the release candidate. This is *not* a claim of real TV or physical 2–4-phone acceptance.
-- **Release documents:** [Phase 3 acceptance](docs/PARTY-PHASE3-FINAL-ACCEPTANCE.md) and [Phase 4 readiness and rollback](docs/PARTY-PHASE4-RELEASE-READINESS.md).
-- **Hosting:** production <https://marble-rush.onrender.com>, deployed from `main` by Render automatic deployment.
-- **Remaining checks:** real TV premium-quality review, physical phone multiplayer, narration/hiss listening and dependency vulnerability review before wider distribution.
-
-
-## Native 3D pilot integration — 12 November 2026 (PRs #54 and #55)
-
-Both genuine-WebGL pilots are merged into `main`, **off by default**. Normal players still use the approved Canvas2D presentation; Grand Prix, original rules, all five Party Pack families, avatars and audio have not been redesigned.
-
-- **Marble Derby:** `/tv?derby3d=1` enables the optional 3D race preview (PR #54).
-- **Drop Zone:** `/tv?dropzone3d=1` enables the optional 3D physical Plinko cabinet (PR #55). All 85 real engine pegs, eight score bins, original physics and phone controls remain authoritative. If WebGL fails, it automatically restores the original 2D cabinet without discarding the active game.
-- **Diagnostics:** `/tv?dropzone3d=1&debug3d=1` shows actual observed browser FPS, GPU, display-buffer size and active quality; `&dropzoneMaterial=premium`, `&dropzoneAdaptive=0`, `&dropzoneScale=0.60` control manual review. The source-of-truth release and QA details are in [Drop Zone WebGL Pilot](docs/DROPZONE-NATIVE-WEBGL-PILOT.md).
-- **Test record:** five pre-merge GitHub Actions workflows passed, including genuine GPU context-loss/restoration, native rendered-pixel proof, scoring and exclusive renderer handoff. Headless SwiftShader frame rates were still well below a usable TV target and cannot certify target GPU performance.
-- **Release gate:** This integration is an engineering pilot **not an approved visual replacement**. Do not turn either 3D flag on by default until a physical 1080p TV and 2–4 phone session proves sustained frame rate, readable visuals, session stability and reconnection. Current original approved 2D screens remain the product standard.
+Production uses Render and automatically deploys merges to `main`. Avoid merging during a live game night, as restarting the server may interrupt active races.

@@ -40,8 +40,10 @@ assert.match(preview,/const isPublishedMode = id => id === 'grandprix' \|\|/,
   'unapproved add-ons must remain hidden from normal TV mode selection');
 assert.match(preview,/if \(!isPublishedMode\(selectedMode\) \|\| \(partyLength !== 0 && !PARTY_LOCAL_QA\)\) return;/,
   'direct game start must not bypass the public release gate');
-assert.match(preview,/availableModes: Object\.values\(MODES\)\.filter\(m => m\.available && isPublishedMode\(m\.id\)\)/,
-  'normal phone picker must match TV release status');
+assert.match(preview,/const BRAWL_PUBLISHED = false/,
+  'Bowl Brawl must remain unpublished in Grand Prix-only release');
+assert.match(preview,/availableModes: PARTY_LOCAL_QA\?/,
+  'public phone HUD must offer no alternate game modes');
 assert.match(preview,/if \(a === 'party' && isVip && state === 'lobby' && \(v === 0 \|\| \(PARTY_LOCAL_QA/,
   'Party Night must not select hidden modes');
 assert.match(phone,/h\.partyNightEnabled \? \[0,3,5,7\] : \[\]/,

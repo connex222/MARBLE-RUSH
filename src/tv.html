@@ -972,8 +972,10 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
     <div id="partyAttractPanel" hidden aria-label="Game preview">
       <canvas id="partyAttractCanvas" width="620" height="360"></canvas>
     </div>
-    <section id="partyPicker" aria-label="Choose your Marble Rush game">
-      <h2>CHOOSE YOUR GAME <span id="partyModeStatus">Grand Prix ready · more games in development</span></h2>
+    <!-- Experimental selectors remain mounted for localhost-only QA; public
+         players see the original one-game Grand Prix lobby instead. -->
+    <section id="partyPicker" aria-label="Internal game-mode QA only" hidden>
+      <h2>INTERNAL QA <span id="partyModeStatus">Experimental modes unavailable publicly</span></h2>
       <div id="partyModeCards" role="group" aria-label="Game modes"></div>
       <div id="partyNightOptions" role="group" aria-label="Party Night length">
         <span>PARTY NIGHT</span>

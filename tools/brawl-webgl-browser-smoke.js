@@ -21,7 +21,7 @@ const sharp=require('sharp');
  tv.on('console',m=>{if(['warning','error'].includes(m.type()))browserLog.push(m.type()+': '+m.text());});
  const measurements=[];
  try{
-  await tv.goto(base+'/tv?qa=1',{waitUntil:'domcontentloaded',timeout:30000});
+  await tv.goto(base+'/tv?qa=1&partyQa=1',{waitUntil:'domcontentloaded',timeout:30000});
   const webglProbe=await tv.evaluate(()=>{
      const canvas=document.createElement('canvas');
      const ctx=canvas.getContext('webgl');
@@ -32,7 +32,7 @@ const sharp=require('sharp');
   await tv.waitForFunction(()=>window.__MR?.state==='lobby');
   const selectable=await tv.locator('#partyModeCards .partyModeCard').evaluateAll(
     cards=>cards.map(c=>({name:c.dataset.mode,disabled:c.disabled})));
-  assert.deepEqual(selectable.map(c=>c.name),['grandprix','brawl'],
+  assert.deepEqual(selectable.map(c=>c.name),['grandprix','derby','dropzone','brawl','curling','golf'],
     'Preview must expose only protected Grand Prix and active Brawl work');
   assert.ok(selectable.every(c=>!c.disabled));
   await tv.locator('#btnKb').click();
