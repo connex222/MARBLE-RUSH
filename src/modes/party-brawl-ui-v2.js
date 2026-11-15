@@ -38,7 +38,7 @@ const MarbleBrawlUI=(()=>{
     return broadcast;
   }
   const hazardNames={bumpers:'BUMPER BLITZ',ice:'BLACK ICE',rotor:'ROTOR RUMBLE',
-    crumbling:'CRUMBLING EDGE',clean:'FINAL SHOWDOWN'};
+    crumbling:'CRUMBLING EDGE',crossfire:'CROSSFIRE FINALE'};
   function rounded(c,x,y,w,h,r,fill,stroke,sw=1){
     c.beginPath();c.roundRect(x,y,w,h,r);
     if(fill){c.fillStyle=fill;c.fill();}
@@ -201,6 +201,19 @@ const MarbleBrawlUI=(()=>{
       c.fillStyle='#ac865b';c.fill();ring(c,0,0,endRadius-4,'#f6d29c',5);
       c.beginPath();c.arc(0,0,endRadius*.43,0,TAU);
       c.fillStyle='#344d61';c.fill();c.restore();
+    }else if(s.hazard==='crossfire'){
+      // Two live counter-rotating 80-unit hammer heads; both are physical.
+      const phase=s.hazardAngle*1.48;
+      for(const a of [phase,Math.PI/2-phase]){
+        const x=Math.cos(a)*80*SCALE,y=Math.sin(a)*80*SCALE;
+        c.save();c.translate(x,y);
+        c.shadowColor='#eead69';c.shadowBlur=22;
+        const r=40*SCALE;
+        c.beginPath();c.arc(0,0,r,0,TAU);c.fillStyle='#334956';c.fill();
+        ring(c,0,0,r-3,'#f4bd79',7,true);
+        c.beginPath();c.arc(0,0,r*.46,0,TAU);c.fillStyle='#f3c18a';c.fill();
+        c.restore();
+      }
     }else if(s.hazard==='crumbling'){
       c.save();c.rotate(t*.18);
       for(let i=0;i<24;i++){
@@ -308,27 +321,29 @@ const MarbleBrawlUI=(()=>{
     const get=id=>s.marbles.find(m=>m.id===id);
     $('ppBrawlRound').textContent='ROUND '+s.round+' / 5';
     $('ppBrawlPhase').textContent=hazardNames[s.hazard]||'THE BRAWL';
-    $('ppBrawlTime').textContent=Math.max(0,42-(Number(s.elapsed)||0)).toFixed(1)+'s';
+    $('ppBrawlTime').textContent=Math.max(0,BowlBrawl.ROUND_TIME-(Number(s.elapsed)||0)).toFixed(1)+'s';
     $('ppBrawlAlive').textContent=alive.length+' / '+players.length;
     $('ppBrawlRadius').textContent=Math.round(s.radius)+'';
     const pulseIn=s.pulseAt==null?null:Math.max(0,s.pulseAt-s.elapsed);
     const justPulsed=s.time-s.lastPulseAt<.8;
     const shockBox=$('ppBrawlShockBox');
-    shockBox.classList.toggle('danger',pulseIn!=null&&pulseIn<=3);
+    shockBox.classList.toggle('danger',pulseIn!=null&&pulseIn<=BowlBrawl.SHOCK_WARNING);
     shockBox.classList.toggle('blast',justPulsed);
     $('ppBrawlShockLabel').textContent=justPulsed?'SHOCKWAVE! BRACE FOR IMPACT':
       pulseIn==null?'NO MORE WARNINGS · LAST MARBLE WINS':
-      pulseIn<=3?'DANGER! SHOCKWAVE IN '+pulseIn.toFixed(1)+'s':
+      pulseIn<=BowlBrawl.SHOCK_WARNING?'DANGER! SHOCKWAVE IN '+pulseIn.toFixed(1)+'s':
       'SHOCKWAVE IN '+pulseIn.toFixed(1)+'s · ANCHOR TO BRACE';
-    const pulseWindow=s.pulseIndex===0?4:s.pulseIndex===1?8:12;
+    const pulseCycleStart=s.pulseIndex>0?
+      BowlBrawl.SHOCK_TIMES[s.pulseIndex-1]:0;
+    const pulseWindow=Math.max(.1,(s.pulseAt??BowlBrawl.ROUND_TIME)-pulseCycleStart);
     $('ppBrawlShockBar').style.width=(pulseIn==null?'100':
-      (100*clamp((pulseWindow-pulseIn)/pulseWindow,0,1)).toFixed(1))+'%';
+      (100*clamp((s.elapsed-pulseCycleStart)/pulseWindow,0,1)).toFixed(1))+'%';
     const human=players.find(p=>!p.cpu&&get(p.id)?.alive);
     const m=human?get(human.id):null;
     $('ppBrawlPlayer').textContent=human?.name||'WATCH THE ACTION';
     $('ppBrawlEnergy').textContent=Math.round(m?.energy||0)+'%';
     $('ppBrawlEnergyFill').style.width=clamp(m?.energy||0,0,100)+'%';
-    $('ppBrawlRam').disabled=!m||m.cooldown>0||m.energy<28;
+    $('ppBrawlRam').disabled=!m||m.cooldown>0||m.energy<BowlBrawl.RAM_COST;
     $('ppBrawlAnchor').disabled=!m||m.cooldown>0||m.energy<15;
     const gap=m?s.radius-22-Math.hypot(m.x,m.y):Infinity;
     const canRecover=!!m&&!m.recoverUsed&&
@@ -341,7 +356,7 @@ const MarbleBrawlUI=(()=>{
     $('ppBrawlHelp').textContent=m?
       m.edgeHanging?'HANGING ON! '+m.edgeGrace.toFixed(1)+'s TO RECOVER OR FALL!':
       canRecover?'CRITICAL EDGE! Hit RECOVER before you fall!':
-      pulseIn!=null&&pulseIn<=3?'SHOCKWAVE! Use ANCHOR to brace, or risk being thrown out.':
+      pulseIn!=null&&pulseIn<=BowlBrawl.SHOCK_WARNING?'SHOCKWAVE! Use ANCHOR to brace, or risk being thrown out.':
       m.recoverUsed?'No recovery remaining · RAM opponents for KO points.':
       'RAM for +3 knockout points (+5 final) · RECOVER once near the rim.':
       'You are out. Watch the final duel and prepare for your next round.';
