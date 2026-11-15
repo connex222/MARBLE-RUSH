@@ -831,6 +831,19 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
 #partyStage[data-renderer="brawl-the-crucible-native-webgl-v1"] #ppBrawlShockBox.danger{
  border-color:#f2a16f
 }
+
+/* A compact physical-sport broadcast winner cut-in; does not obscure controls. */
+#ppBrawlRoundWinner{position:absolute;z-index:4;top:calc(134*var(--u));
+ left:50%;transform:translateX(-50%);min-width:calc(390*var(--u));
+ max-width:calc(590*var(--u));padding:calc(14*var(--u)) calc(24*var(--u));
+ border:calc(1*var(--u)) solid #b99c73;border-radius:calc(10*var(--u));
+ text-align:center;background:rgba(10,21,33,.94);pointer-events:none;
+ box-shadow:0 calc(18*var(--u)) calc(50*var(--u)) #0009}
+#ppBrawlRoundWinner span{display:block;font:800 calc(18*var(--u)) Nunito,system-ui,sans-serif;
+ letter-spacing:.16em;color:#b7bec7}
+#ppBrawlRoundWinner strong{display:block;font:900 calc(43*var(--u)) Nunito,system-ui,sans-serif;
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f6ead9}
+@media (prefers-reduced-motion:reduce){#ppBrawlRoundWinner{transition:none!important}}
 </style>
 </head>
 <body>
@@ -987,6 +1000,10 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
           <div class="ppBrawlShockMeter"><span id="ppBrawlShockBar"></span></div>
         </div>
       </header>
+      <div id="ppBrawlRoundWinner" role="status" aria-live="polite" hidden>
+        <span>ROUND WINNER</span>
+        <strong id="ppBrawlRoundWinnerName">—</strong>
+      </div>
       <div id="ppBrawlStats" hidden>
         <div><span>ROUND CLOCK</span><strong id="ppBrawlTime">42.0s</strong></div>
         <div><span>STILL IN</span><strong id="ppBrawlAlive">2 / 2</strong></div>
