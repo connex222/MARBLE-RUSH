@@ -16,11 +16,19 @@ const sharp=require('sharp');
   '--use-angle=swiftshader','--enable-unsafe-swiftshader'
  ]});
  const tv=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1});
- const exceptions=[];tv.on('pageerror',e=>exceptions.push(String(e.message)));
+ const exceptions=[],browserLog=[];
+ tv.on('pageerror',e=>exceptions.push(String(e.message)));
+ tv.on('console',m=>{if(['warning','error'].includes(m.type()))browserLog.push(m.type()+': '+m.text());});
  const measurements=[];
  try{
   await tv.goto(base+'/tv?brawl3d=1',{waitUntil:'domcontentloaded',timeout:30000});
-  await tv.locator('#btnBoot').click();
+  const webglProbe=await tv.evaluate(()=>{
+     const canvas=document.createElement('canvas');
+     const ctx=canvas.getContext('webgl');
+     return {available:!!ctx,renderer:ctx?.getParameter(ctx.RENDERER)||null};
+   });
+   console.log('BRAWL-WEBGL-BROWSER-PROBE',JSON.stringify(webglProbe));
+   await tv.locator('#btnBoot').click();
   await tv.waitForFunction(()=>window.__MR?.state==='lobby');
   const selectable=await tv.locator('#partyModeCards .partyModeCard').evaluateAll(
     cards=>cards.map(c=>({name:c.dataset.mode,disabled:c.disabled})));
@@ -43,9 +51,13 @@ const sharp=require('sharp');
       fallback:st.dataset.brawl3dFallback||null,exclusive:diag?.assertExclusive(),
       stageCanvas:st.querySelectorAll('canvas').length,
       grandPrixCanvasHidden:document.getElementById('cv').hidden,
-      reported:diag?.telemetry()};
+      reported:diag?.telemetry(),gpu:MarbleBrawlWebGL.debug()};
   });
-  assert.equal(info.renderer,'brawl-the-crucible-native-webgl-v1',
+  console.log('BRAWL-WEBGL-DIAGNOSTICS',JSON.stringify({
+    renderer:info.renderer,fallback:info.fallback,
+    gpu:info.gpu,browserLog:browserLog.slice(-12),pageErrors:exceptions}));
+   await tv.screenshot({path:'qa-brawl-crucible-browser-diagnostic.png'});
+   assert.equal(info.renderer,'brawl-the-crucible-native-webgl-v1',
     'Brawl silently reverted to Canvas2D — native WebGL not verified');
   assert.equal(info.fallback,null);
   assert.equal(info.exclusive,true,'Multiple canvases or stale screen ownership');
