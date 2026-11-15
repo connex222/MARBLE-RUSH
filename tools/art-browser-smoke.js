@@ -33,7 +33,7 @@ async function main(){
     };
   });
   try{
-    await page.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:20000});
+    await page.goto(base+'/tv?partyQa=1',{waitUntil:'domcontentloaded',timeout:20000});
     await page.locator('#btnBoot').click();
     // Party Pack picker must fit within the TV-safe lobby without covering
     // joining instructions, settings or the start controls.
