@@ -21,7 +21,7 @@ const sharp=require('sharp');
  tv.on('console',m=>{if(['warning','error'].includes(m.type()))browserLog.push(m.type()+': '+m.text());});
  const measurements=[];
  try{
-  await tv.goto(base+'/tv?brawl3d=1',{waitUntil:'domcontentloaded',timeout:30000});
+  await tv.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:30000});
   const webglProbe=await tv.evaluate(()=>{
      const canvas=document.createElement('canvas');
      const ctx=canvas.getContext('webgl');

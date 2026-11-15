@@ -13,9 +13,9 @@ const MarblePartyScreen=(()=>{
   const drop3dReview=typeof location!=='undefined'&&
     new URLSearchParams(location.search).get('dropzone3d')==='1';
   let drop3dActive=false,drop3dFallback=null,drop3dLostAt=null,drop3dFailureFrames=0;
-  // The Crucible is intentionally opt-in until real TV/phone acceptance.
-  const brawl3dReview=typeof location!=='undefined'&&
-    new URLSearchParams(location.search).get('brawl3d')==='1';
+  // The Crucible is now the default Bowl Brawl renderer; devices without
+  // functioning WebGL still fall back immediately to playable Canvas2D.
+  const brawl3dEnabled=true;
   let brawl3dActive=false,brawl3dFailureFrames=0,brawl3dLostAt=null;
   const definitions=Object.freeze({
     derby:   {renderer:derby3dReview?'derby-webgl-mesh-pilot-v1':'derby-track-v3', panels:['ppTitleArea','ppBoardLabel','ppTicker','ppBetPanel','ppLeaderPanel'],
@@ -24,7 +24,7 @@ const MarblePartyScreen=(()=>{
       panels:['ppDropHeader','ppDropPanel','ppDropStandings','ppDropStats'],
       draw:(s,assets,options)=>drop3dActive?
         MarbleDropZoneWebGL.draw(s,assets,options):MarblePartyUI.drawDropZone(s,assets,options)},
-    brawl:   {renderer:brawl3dReview?'brawl-the-crucible-native-webgl-v1':'brawl-arena-v3',
+    brawl:   {renderer:brawl3dEnabled?'brawl-the-crucible-native-webgl-v1':'brawl-arena-v3',
       panels:['ppBrawlHeader','ppBrawlStats','ppBrawlPanel','ppBrawlStandings'],
       draw:(s,assets,options)=>brawl3dActive?
         MarbleBrawlWebGL.draw(s,assets,options):MarbleBrawlUI.draw(s,assets,options)},
@@ -101,7 +101,7 @@ const MarblePartyScreen=(()=>{
       MarbleDerbyWebGL.mount(canvas);
       canvas=document.getElementById('partyStageCanvas');
     }
-    if(name==='brawl'&&brawl3dReview){
+    if(name==='brawl'&&brawl3dEnabled){
       brawl3dActive=false;brawl3dFailureFrames=0;brawl3dLostAt=null;
       try{MarbleBrawlWebGL.mount(canvas);brawl3dActive=true;}
       catch(error){console.warn('Bowl Brawl 3D fallback:',error.message);}

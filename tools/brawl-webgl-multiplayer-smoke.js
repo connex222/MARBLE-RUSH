@@ -24,7 +24,7 @@ const {chromium}=require('playwright');
   ws.on('framesent',f=>{try{messages.get(p).push(JSON.parse(f.payload));}catch(_){}});
  });
  try{
-  await tv.goto(base+'/tv?brawl3d=1',{waitUntil:'domcontentloaded',timeout:30000});
+  await tv.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:30000});
   await tv.locator('#btnBoot').click();
   await tv.waitForFunction(()=>/^[A-Z]{4}$/.test(
     document.querySelector('#roomCode')?.textContent||''),null,{timeout:20000});

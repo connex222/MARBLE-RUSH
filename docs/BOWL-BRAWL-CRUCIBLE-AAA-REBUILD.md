@@ -102,3 +102,18 @@ Offline test command: `npm run test:brawl3d`.
 3. Measure real native GPU performance. Target a sustained 60 FPS at 1080p on the actual TV hardware; anything consistently below 45 FPS blocks release.
 4. Test 2–4 physical phones, RAM/ANCHOR/RECOVER, all five hazard rounds, disconnect/rejoin, results and return to Grand Prix; check no second canvas.
 5. Review sound at lounge TV volumes, including narrator ducking, mute/unmute and transition. Record a live visual/audio approval and only then discuss release/Render deployment.
+
+
+### 8. Release request (15 November 2026)
+
+The owner explicitly approved **merge and deploy** after the complete GitHub Chromium
+GPU and two-phone WebSocket acceptance suite passed. This release publishes
+**Grand Prix plus Bowl Brawl** in the ordinary TV/phone menu; the other four
+unfinished Party Pack games stay hidden. The native 3D Crucible renders by
+default, retaining automatic 2D fallback if WebGL cannot draw. Party Night
+remains disabled outside localhost QA.
+
+The \`/tv\` browser tests must verify the public selection and native renderer
+without requiring \`?brawl3d=1\`. Physical 1080p television performance,
+long-session Wi-Fi stability and final visual sign-off remain **unverified**;
+production deployment does not imply they passed.

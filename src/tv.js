@@ -77,10 +77,10 @@
   /* ---------- Assets (manifest written by the build; optional) ---------- */
   const IMG = {};
   const SND = {};
-  // Creative Claw original cues are development-review only. Missing or CORS-
-  // blocked media uses the existing procedural fallback without blocking play.
-  const BRAWL_AUDIO_PREVIEW=new URLSearchParams(location.search).get('brawl3d')==='1';
-  if(BRAWL_AUDIO_PREVIEW)Object.assign(SND,{
+  // The original Creative Claw cues ship locally with the built game.
+  // Missing assets still use the safe procedural audio fallback.
+  const BRAWL_AUDIO_ENABLED=true;
+  if(BRAWL_AUDIO_ENABLED)Object.assign(SND,{
     music_brawl_crucible:'/assets/audio/music_brawl_crucible.mp3',
     sfx_brawl_ram:'/assets/audio/sfx_brawl_ram.mp3',
     sfx_brawl_shockwave:'/assets/audio/sfx_brawl_shockwave.mp3',
@@ -409,12 +409,12 @@
           externalTrack=buffer;
           externalSource=ac.createBufferSource();
           externalSource.buffer=externalTrack;externalSource.loop=true;
-          if(mode!=='brawl'||!BRAWL_AUDIO_PREVIEW)externalSource.connect(music);
+          if(mode!=='brawl'||!BRAWL_AUDIO_ENABLED)externalSource.connect(music);
           externalSource.start();
         },
         useBrawlTrack(buffer){
           brawlTrack=buffer;
-          if(mode==='brawl'&&BRAWL_AUDIO_PREVIEW)this.mode('brawl');
+          if(mode==='brawl'&&BRAWL_AUDIO_ENABLED)this.mode('brawl');
         },
         mode(m) {
           mode=m;
@@ -423,7 +423,7 @@
             brawlSource.disconnect();brawlSource=null;
           }
           if(externalSource)externalSource.disconnect();
-          if(mode==='brawl'&&BRAWL_AUDIO_PREVIEW&&brawlTrack){
+          if(mode==='brawl'&&BRAWL_AUDIO_ENABLED&&brawlTrack){
             brawlSource=ac.createBufferSource();
             brawlSource.buffer=brawlTrack;brawlSource.loop=true;
             brawlSource.connect(music);brawlSource.start();
@@ -1373,14 +1373,15 @@
   // Grand Prix remains isolated; five Party Pack games use the exclusive stage.
   let selectedMode = 'grandprix';
   // Release isolation: leave Grand Prix and all seven track files alone.
-  // Private brawl preview requires an explicit URL flag; the rest remain archived.
-  const BRAWL_PREVIEW = new URLSearchParams(location.search).get('brawl3d') === '1';
+  // Bowl Brawl graduates into the public game picker. The other four
+  // unfinished add-ons stay gated; Grand Prix's original seven tracks remain untouched.
+  const BRAWL_PUBLISHED = true;
   // QA retains legacy six-mode coverage only on localhost with an explicit
   // non-production URL flag. Render/public builds cannot unlock all add-ons.
   const PARTY_LOCAL_QA = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) &&
     new URLSearchParams(location.search).get('partyQa') === '1';
   const isPublishedMode = id => id === 'grandprix' ||
-    (BRAWL_PREVIEW && id === 'brawl') || (PARTY_LOCAL_QA && !!MODES[id]);
+    (BRAWL_PUBLISHED && id === 'brawl') || (PARTY_LOCAL_QA && !!MODES[id]);
   let partyLength = 0; // 0 = ordinary Grand Prix; otherwise 3/5/7-game Party Night
   let partyRun = null;
   let derbyTvHorse = 0;
@@ -1596,7 +1597,7 @@
         for (const p of players.values()) p.points = outcome.totals.get(p.id) || 0;
       }
       state = 'finale'; stateT = 0;
-      if(BRAWL_AUDIO_PREVIEW&&selectedMode==='brawl')Audio_.Music.mode('lobby');
+      if(BRAWL_AUDIO_ENABLED&&selectedMode==='brawl')Audio_.Music.mode('lobby');
       const list = [...players.values()];
       const aw = giveAwards(list);
       for (const p of list) p.award = aw.get(p.id);
@@ -1681,7 +1682,7 @@
       if (state === 'derby' && players.has(pid) && ['stake','bet','cheer'].includes(a)) {if(MODES.derby.onAction(pid,a,v)&&a==='cheer')Audio_.play('sfx_derby_cheer',{gap:.35,vol:.6});sendHud(true);return;}
       if (state === 'brawl' && players.has(pid) && ['left','right','aim','ram','anchor','recover','spectate'].includes(a)) {
         const accepted=MODES.brawl.onAction(pid,a,v);
-        if(accepted&&a==='ram')Audio_.play(BRAWL_AUDIO_PREVIEW?'sfx_brawl_charge':'sfx_brawl_ram',{gap:.16,vol:.70});
+        if(accepted&&a==='ram')Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_charge':'sfx_brawl_ram',{gap:.16,vol:.70});
         if(accepted&&a==='recover')Audio_.play('sfx_bumper',{gap:.14,vol:.95});
         sendHud(true);return;
       }
@@ -2082,9 +2083,9 @@
       box.appendChild(card);
     }
     applyPartyArt();
-    $('#partyModeStatus').textContent = BRAWL_PREVIEW ?
-      'Grand Prix protected · Bowl Brawl genuine-3D development preview' :
-      'Grand Prix · original seven-track championship';
+    $('#partyModeStatus').textContent = BRAWL_PUBLISHED ?
+      'Grand Prix · Seven tracks | Bowl Brawl · The Crucible 3D' :
+      'Grand Prix · Seven tracks';
     const opts = $('#partyNightOptions');
     if (opts) opts.hidden = !PARTY_LOCAL_QA; // Only localhost QA can exercise legacy rotation.
     if (opts) for (const b of opts.querySelectorAll('[data-party]')) {
@@ -2292,7 +2293,7 @@
           const key=st.round+':hit:'+hit.time+':'+hit.id+':'+hit.other;
           if(brawlHitCue!==key){
             brawlHitCue=key;
-            Audio_.play(BRAWL_AUDIO_PREVIEW?'sfx_brawl_ram':'clack',{gap:.16,vol:.64});
+            Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_ram':'clack',{gap:.16,vol:.64});
           }
         }
         const cue=(st.events||[]).slice(-30).reverse().find(e=>
@@ -2303,11 +2304,11 @@
           if(key!==brawlLastCue){
             brawlLastCue=key;
             if(cue.kind==='shockwave'){
-              Audio_.play(BRAWL_AUDIO_PREVIEW?'sfx_brawl_shockwave':'sfx_bumper',{gap:.2,vol:.70});
+              Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_shockwave':'sfx_bumper',{gap:.2,vol:.70});
               Clatter.say('gasp',"The shockwave's hit the bowl!",2);
             }else if(cue.kind==='knockout'){
               const winner=st.roster.find(p=>p.id===cue.id)?.name||'Someone';
-              Audio_.play(BRAWL_AUDIO_PREVIEW?'sfx_brawl_knockout':'crowd_cheer',{gap:.35,vol:.78});
+              Audio_.play(BRAWL_AUDIO_ENABLED?'sfx_brawl_knockout':'crowd_cheer',{gap:.35,vol:.78});
               Clatter.say('winner',winner+" earns a knockout bonus!",2);
             }else if(cue.kind==='recover'){
               Clatter.say('gasp',"What a save! Right off the edge!",2);
