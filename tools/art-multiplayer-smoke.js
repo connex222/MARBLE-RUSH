@@ -25,7 +25,7 @@ async function main(){
     });
   }
   try{
-    await tv.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:25000});
+    await tv.goto(base+'/tv?partyQa=1',{waitUntil:'domcontentloaded',timeout:25000});
     await tv.locator('#btnBoot').click();
     await tv.waitForFunction(()=>/^[A-Z]{4}$/.test(document.querySelector('#roomCode')?.textContent||''),{timeout:20000});
     const room=await tv.locator('#roomCode').textContent();
