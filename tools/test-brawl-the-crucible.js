@@ -46,6 +46,16 @@ assert.match(preview,/if \(a === 'party' && isVip && state === 'lobby' && \(v ==
   'Party Night must not select hidden modes');
 assert.match(phone,/h\.partyNightEnabled \? \[0,3,5,7\] : \[\]/,
   'phone host must hide unavailable party options');
+assert.match(phone,/let stopBrawlSteer=\(\)=>\{\}/,
+  'hold steering must have a globally accessible release/cleanup callback');
+assert.match(phone,/timer=setInterval\(\(\)=>\{/,
+  'Brawl needs a sustained physical steering input while held');
+assert.match(phone,/\},115\);/,
+  'hold steering must have a bounded input send rate');
+assert.match(phone,/pointercancel','lostpointercapture/,
+  'cancelled touches must not create permanent steering loops');
+assert.match(phone,/h\.pulseIn<=2/,
+  'phone danger warning must agree with the two-second physics telegraph');
 assert.match(preview,/const PARTY_LOCAL_QA = \/\^\(localhost\|127/,'unapproved modes can be QA-enabled only on localhost');
 assert.match(build,/'party-brawl-webgl'/,'build must bundle the real GPU renderer');
 const approvedAudio=JSON.parse(read('tools/approved-audio-sources.json'));
