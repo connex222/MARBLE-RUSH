@@ -81,11 +81,11 @@
   // blocked media uses the existing procedural fallback without blocking play.
   const BRAWL_AUDIO_PREVIEW=new URLSearchParams(location.search).get('brawl3d')==='1';
   if(BRAWL_AUDIO_PREVIEW)Object.assign(SND,{
-    music_brawl_crucible:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/7428c6c7-d474-4a51-8492-1d5c58f87243.mp3',
-    sfx_brawl_ram:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/773c0591-886e-4586-866b-3b8c1843cd98.mp3',
-    sfx_brawl_shockwave:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/02c78a6c-99cd-432b-abc0-5cc9668a5ed9.mp3',
-    sfx_brawl_charge:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/545d4416-70d3-4a1f-a90b-0917e4218715.mp3',
-    sfx_brawl_knockout:'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/4ab4a4ee-6df1-483f-9d47-a0cc9d408e76.mp3'
+    music_brawl_crucible:'/assets/audio/music_brawl_crucible.mp3',
+    sfx_brawl_ram:'/assets/audio/sfx_brawl_ram.mp3',
+    sfx_brawl_shockwave:'/assets/audio/sfx_brawl_shockwave.mp3',
+    sfx_brawl_charge:'/assets/audio/sfx_brawl_charge.mp3',
+    sfx_brawl_knockout:'/assets/audio/sfx_brawl_knockout.mp3'
   });
   fetch('assets/manifest.json').then(r => r.ok ? r.json() : null).then(man => {
     if (!man) return;

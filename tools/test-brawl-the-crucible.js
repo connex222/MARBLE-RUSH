@@ -44,6 +44,10 @@ assert.match(phone,/h\.partyNightEnabled \? \[0,3,5,7\] : \[\]/,
   'phone host must hide unavailable party options');
 assert.match(preview,/const PARTY_LOCAL_QA = \/\^\(localhost\|127/,'unapproved modes can be QA-enabled only on localhost');
 assert.match(build,/'party-brawl-webgl'/,'build must bundle the real GPU renderer');
+const approvedAudio=JSON.parse(read('tools/approved-audio-sources.json'));
+assert.ok(Object.keys(approvedAudio).length>=10,'Crucible original media must be packaged at build time');
+assert.match(preview,/\/assets\/audio\/music_brawl_crucible\.mp3/,
+  'Preview sound must use a LOCAL audio file, not a live Creative Claw CDN request');
 assert.match(build,/crucible-stadium\.svg/,'build must bundle the new art-direction background');
 assert.match(arena,/alpha:true,antialias:true/,'GPU stage must show the independent stadium in empty areas');
 assert.match(arena,/attribute float a_kind/,'clearcoat glass and machined metal require distinct material channels');
