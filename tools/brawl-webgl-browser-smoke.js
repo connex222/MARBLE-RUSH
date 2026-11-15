@@ -44,6 +44,10 @@ const sharp=require('sharp');
     document.querySelector('#partyStage:not([hidden])')?.dataset.mode==='brawl',
     {timeout:15000});
   await tv.waitForTimeout(2500);
+  const stadium=await tv.request.get(base+'/assets/crucible-stadium.svg');
+  assert.equal(stadium.status(),200,'ChatGPT-designed stadium art was not packaged');
+  assert.match(stadium.headers()['content-type']||'',/image\/svg\+xml/);
+  assert.ok((await stadium.body()).length>4000,'Backdrop SVG is missing or empty');
   const info=await tv.evaluate(()=>{
     const st=document.getElementById('partyStage');
     const diag=window.__MR?.partyScreen;
@@ -51,7 +55,9 @@ const sharp=require('sharp');
       fallback:st.dataset.brawl3dFallback||null,exclusive:diag?.assertExclusive(),
       stageCanvas:st.querySelectorAll('canvas').length,
       grandPrixCanvasHidden:document.getElementById('cv').hidden,
-      reported:diag?.telemetry(),gpu:MarbleBrawlWebGL.debug()};
+      reported:diag?.telemetry(),gpu:MarbleBrawlWebGL.debug(),
+      stadiumImage:getComputedStyle(st).backgroundImage,
+      webglAlpha:document.getElementById('partyStageCanvas').getContext('webgl').getContextAttributes()?.alpha};
   });
   console.log('BRAWL-WEBGL-DIAGNOSTICS',JSON.stringify({
     renderer:info.renderer,fallback:info.fallback,
@@ -60,6 +66,10 @@ const sharp=require('sharp');
    assert.equal(info.renderer,'brawl-the-crucible-native-webgl-v1',
     'Brawl silently reverted to Canvas2D — native WebGL not verified');
   assert.equal(info.fallback,null);
+  assert.match(info.stadiumImage,/crucible-stadium\.svg/,
+    'The premium architecture backdrop must be visible behind the real 3D arena');
+  assert.equal(info.webglAlpha,true,
+    'Opaque WebGL canvas obscures the new venue architecture');
   assert.equal(info.exclusive,true,'Multiple canvases or stale screen ownership');
   assert.equal(info.stageCanvas,1);
   assert.equal(info.grandPrixCanvasHidden,true);
