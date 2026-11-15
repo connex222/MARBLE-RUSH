@@ -11,6 +11,35 @@ const MarbleRushQA=(()=>{
  const MAX_SAMPLES=1800;
  const all=new Map(),actions=[];
  let panel=null,lines=null,lastFrame=null,lastUI=0,pending=[];
+ let lastCrucible=null,lastCrucibleAt=0;
+ // The QA recorder is opt-in and only collects technical renderer statistics.
+ // It never stores room codes, names, contacts, or phone identifiers.
+ function snapshotCrucible(){
+   const stats=MarblePartyScreen.telemetry();
+   if(!stats||stats.mode!=='brawl')return null;
+   const gpu=stats.graphics||null;
+   const deviceLabel=String(gpu?.gpu||'');
+   const isSoftware=/swiftshader|llvmpipe|software|softpipe/i.test(deviceLabel);
+   return {
+     renderer:stats.renderer||null,
+     webglActive:!!gpu?.active,
+     webglRealMeshes:!!gpu?.realMeshes,
+     gpuLabel:deviceLabel||null,
+     gpuCategory:isSoftware?'software':deviceLabel?'unverified-gpu':'unavailable',
+     internalResolution:gpu?[gpu.width||0,gpu.height||0]:null,
+     qualityScale:Number.isFinite(gpu?.quality)?gpu.quality:null,
+     triangles:gpu?{static:gpu.staticTriangles,dynamic:gpu.dynamicTriangles}:null,
+     fallbackReason:stats.brawl3dFallback||null,
+     contextLost:gpu?.contextLost??null,
+     renderFailures:stats.renderFailures??null,
+     framesObserved:stats.frames??null,
+     p95FrameMs:stats.p95FrameIntervalMs??null,
+     observedFpsProxy:stats.fpsEstimateReliable?asNumber(stats.observedFps):null,
+     exclusiveStage:MarblePartyScreen.assertExclusive(),
+     hardwareApproved:null,
+     note:'Metrics cannot certify physical TV FPS or true phone-to-TV latency.'
+   };
+ }
  const percentile=(numbers,fraction)=>{
    if(!numbers.length)return null;
    const sorted=numbers.slice().sort((a,b)=>a-b);
@@ -96,6 +125,11 @@ const MarbleRushQA=(()=>{
      // than a handler which ran in the same visual frame. Keep until next.
      return elapsed<2500;
    });
+   if(key==='brawl'&&now-lastCrucibleAt>=600){
+     const capture=snapshotCrucible();
+     if(capture)lastCrucible=capture;
+     lastCrucibleAt=now;
+   }
    if(now-lastUI<600||!lines)return;lastUI=now;
    const r=key?recordFor(key):null;
    const median=r?percentile(r.times,.5):null;
@@ -109,6 +143,11 @@ const MarbleRushQA=(()=>{
     'p95 frame: '+(p95??'—')+' ms',
     'Latest draw avg: '+(draw?.averageDrawMs?.toFixed(2)||'—')+' ms',
     'Current renderer: '+(MarblePartyScreen.renderer||'Grand Prix/lobby'),
+    ...(key==='brawl'&&lastCrucible?[
+      'GPU class: '+lastCrucible.gpuCategory,
+      '3D canvas: '+(lastCrucible.internalResolution?.join('×')||'2D fallback'),
+      'Brawl fallback: '+(lastCrucible.fallbackReason||'none')
+    ]:[]),
     'Exclusive stage: '+(MarblePartyScreen.isMode(mode)?
        (MarblePartyScreen.assertExclusive()?'PASS':'FAIL'):'n/a'),
     'Captured actions: '+actions.length
@@ -131,7 +170,7 @@ const MarbleRushQA=(()=>{
    }
    return {
      title:'MARBLE RUSH local physical acceptance sample',
-     version:'tv-qa-v1',
+     version:'tv-qa-v2-crucible',
      collectedAtUtc:new Date().toISOString(),
      environment:'Real TV computer when run locally; CI browser only if executed there',
      device:{viewport:[innerWidth,innerHeight],pixelRatio:devicePixelRatio,
@@ -143,11 +182,14 @@ const MarbleRushQA=(()=>{
      awaitingNextFrame:pending.length,
      rendererIsolationPassed:MarblePartyScreen.active?
        MarblePartyScreen.assertExclusive():null,
+     brawl3d:lastCrucible,
      limitations:[
        'Frame intervals are requestAnimationFrame cadence, not a monitor refresh measurement.',
        'Handler-to-frame is not physical phone-tap-to-screen latency.',
        'Do not call these physical phone results without actual connected devices.',
-       'An unchanged scene or dropped packet cannot be proven solely by this recorder.'
+       'An unchanged scene or dropped packet cannot be proven solely by this recorder.',
+       'GPU labels and frame timing cannot establish physical television quality.',
+       'Bowl Brawl 2D fallback and all seven Grand Prix tracks must be tested separately.'
      ],
      manual:{tv1080p:null,tv4k:null,physicalPhonesConnected:null,
        wifiRejoin:null,touchLatency:null,motionComfort:null,

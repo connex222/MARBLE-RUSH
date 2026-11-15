@@ -21,7 +21,7 @@ const sharp=require('sharp');
  tv.on('console',m=>{if(['warning','error'].includes(m.type()))browserLog.push(m.type()+': '+m.text());});
  const measurements=[];
  try{
-  await tv.goto(base+'/tv',{waitUntil:'domcontentloaded',timeout:30000});
+  await tv.goto(base+'/tv?qa=1',{waitUntil:'domcontentloaded',timeout:30000});
   const webglProbe=await tv.evaluate(()=>{
      const canvas=document.createElement('canvas');
      const ctx=canvas.getContext('webgl');
@@ -95,6 +95,16 @@ const sharp=require('sharp');
     assert.ok(info.reported.frames>20,'Hardware GPU stopped advancing frames');
   }
   assert.equal(info.reported.renderFailures,0,'WebGL frame failure');
+  const physicalQa=await tv.evaluate(()=>window.__MR?.qaDiagnostics?.report());
+  assert.equal(physicalQa?.version,'tv-qa-v2-crucible');
+  assert.equal(physicalQa?.brawl3d?.renderer,'brawl-the-crucible-native-webgl-v1');
+  assert.equal(physicalQa?.brawl3d?.webglActive,true);
+  assert.equal(physicalQa?.brawl3d?.exclusiveStage,true);
+  assert.deepEqual(physicalQa?.brawl3d?.internalResolution,
+    [graphics.width,graphics.height]);
+  assert.equal(physicalQa?.brawl3d?.hardwareApproved,null,
+    'Headless WebGL tests must not claim physical hardware acceptance');
+  assert.ok(physicalQa?.brawl3d?.gpuLabel,'QA must capture GPU information');
   const full=await tv.screenshot({path:'qa-brawl-crucible-actual-webgl.png'});
   // Central gameplay zone excludes HUD. A black/flat 3D arena is a hard fail.
   const {data,info:im}=await sharp(full)

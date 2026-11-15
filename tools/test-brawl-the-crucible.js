@@ -14,6 +14,10 @@ const preview=read('src/tv.js'),phone=read('src/play.html'),build=read('tools/bu
 const host=read('src/modes/party-screen-host.js');
 const brawlEngine=read('src/modes/brawl.js');
 const brawlHud=read('src/modes/party-brawl-ui-v2.js');
+const hardwareQa=read('src/modes/party-tv-qa.js');
+assert.match(hardwareQa,/function snapshotCrucible\(\)/,'opt-in GPU diagnostic snapshot missing');
+assert.match(hardwareQa,/hardwareApproved:null/,'browser telemetry must not assert physical TV approval');
+assert.match(hardwareQa,/brawl3d:lastCrucible/,'Crucible GPU snapshot missing from QA report');
 const arena=read('src/modes/party-brawl-webgl.js');
 const tv=read('src/tv.html');
 assert.match(brawlEngine,/const SWEEPER_LENGTH=95, SWEEPER_HALF_WIDTH=18, SWEEPER_PUSH=240/,
