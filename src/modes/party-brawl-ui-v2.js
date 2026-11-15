@@ -407,7 +407,14 @@ const MarbleBrawlUI=(()=>{
     updateHud(s);
     return true;
   }
-  return Object.freeze({draw,updateHud,get framing(){
+  function reset(){
+    lastHud=0;rankSignature='';lastRound=0;
+    broadcast.zoom=1;broadcast.x=0;broadcast.y=0;
+    broadcast.lastAt=0;broadcast.lastGameTime=-1;
+    const banner=document.getElementById('ppBrawlRoundWinner');
+    if(banner)banner.hidden=true;
+  }
+  return Object.freeze({draw,updateHud,reset,get framing(){
     return Object.freeze({zoom:broadcast.zoom,x:broadcast.x,y:broadcast.y});
   }});
 })();
