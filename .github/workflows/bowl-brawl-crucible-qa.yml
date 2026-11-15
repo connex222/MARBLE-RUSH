@@ -35,7 +35,9 @@ jobs:
           node --check tools/brawl-webgl-browser-smoke.js
           npm run test:brawl
           npm run test:brawl3d
-          node tools/test-grandprix-regression.js
+          git fetch --depth=1 origin main
+          git show FETCH_HEAD:src/engine.js > /tmp/crucible-main-engine.js
+          node tools/test-grandprix-regression.js /tmp/crucible-main-engine.js
       - name: Assemble original seven-track Grand Prix and Crucible preview
         run: npm run build
       - name: Install supported headless Chromium
