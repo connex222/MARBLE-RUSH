@@ -9,6 +9,7 @@ const MarbleBrawlWebGL = (() => {
  let canvas=null,gl=null,program=null,staticBuffer=null,dynamicBuffer=null,loc=null;
  let lost=false,graphicsError=null,resources=[],staticCount=0,dynamicCount=0,drawCalls=0;
  let frameCount=0,gpuLabel='',quality=1,lastRound=0,lastFrame=0,contextLostListener=null,contextRestoreListener=null;
+ let broadcastFocus=0,broadcastTime=0;
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  const normal=(a,b,c)=>{const x=b[0]-a[0],y=b[1]-a[1],z=b[2]-a[2],
    u=c[0]-a[0],v=c[1]-a[1],w=c[2]-a[2],nx=y*w-z*v,ny=z*u-x*w,nz=x*v-y*u,d=Math.hypot(nx,ny,nz)||1;return [nx/d,ny/d,nz/d];};
@@ -85,6 +86,10 @@ const MarbleBrawlWebGL = (() => {
       quad(a,p(ra,ph),p(rb,ph),p(rb,th),p(ra,th),col);
     }
    }
+   // Restrained precision-machined guide grooves follow the actual concave
+   // surface. These are small physical triangles, not a printed background.
+   for(const radius of [2.55,4.95,7.40,9.55,10.65])
+     ring(a,radius,radius+.045,height(radius)+.044,material.darkMetal);
    // Understructure, chamfered brass rim, stadium protective steel collar.
    ring(a,R,R+1.30,.34,material.darkMetal);
    ring(a,R+.24,R+.39,1.08,material.brassLit);
@@ -97,6 +102,16 @@ const MarbleBrawlWebGL = (() => {
      box(a,x,.79,z,.68,.21,.78,i%3===0?material.brass:material.darkMetal);
      // Controlled inset LED segments, not blinking carnival decoration.
      if(i%2===0)cylinder(a,x,.965,z,.105,.055,material.cyan,10);
+   }
+   // Backside structural superstructure adds scale without placing false
+   // collision props inside the game. Keep the front open for spectator sightlines.
+   for(let i=0;i<=12;i++){
+     const ang=Math.PI+i*Math.PI/12,rad=R+2.35;
+     const x=rad*Math.cos(ang),z=rad*Math.sin(ang);
+     cylinder(a,x,-.55,z,.32,3.65,material.darkMetal,12);
+     cylinder(a,x,3.02,z,.44,.22,material.brass,12);
+     box(a,x,3.24,z,.88,.22,.68,material.steel);
+     if(i%2===0)box(a,x,3.38,z,.56,.10,.30,material.amber);
    }
    // Engineered raised core is below all marble contact surfaces; decorative only.
    cylinder(a,0,-.45,0,1.13,.24,material.darkMetal,36);
@@ -165,9 +180,11 @@ const MarbleBrawlWebGL = (() => {
      if(!m.alive)continue;
      const x=m.x*SCALE,z=m.y*SCALE,r=Math.hypot(x,z);
      const y=height(r)+.66,color=rgb(roster.get(m.id)?.color||'#FFD23F');
+     // Contact occlusion gives the heavy glass marble real ground presence.
+     ringAt(a,x,z,.08,.91,height(r)+.037,material.black);
      sphere(a,x,y,z,.62,color,14,22);
-     // Halo is under the marble and follows the same actual position.
-     ringAt(a,x,z,.64,.86,height(r)+.075,color);
+     // Player-colour identification stays clear without neon screen clutter.
+     ringAt(a,x,z,.66,.82,height(r)+.087,color);
      if(m.anchored>0)ringAt(a,x,z,.9,1.00,height(r)+.09,material.cyan);
      if(m.edgeHanging)ringAt(a,x,z,1.05,1.2,height(r)+.09,material.danger);
      if(m.ramWindow>0)ringAt(a,x,z,.94,1.08,height(r)+.10,material.amber);
@@ -270,14 +287,23 @@ const MarbleBrawlWebGL = (() => {
      canvas.addEventListener('webglcontextlost',contextLostListener);
      canvas.addEventListener('webglcontextrestored',contextRestoreListener);
      setup();lastFrame=0;lastRound=0;frameCount=0;graphicsError=null;
+     broadcastFocus=0;broadcastTime=0;
      canvas.dataset.graphics='brawl-webgl-real-3d';return true;
    }catch(error){graphicsError=String(error.message||error);unmount();throw error;}
  }
  function draw(s,assets,options={}){
    if(!gl||lost||!s||!Array.isArray(s.marbles)||!s.roster)return false;
    const start=performance.now();
-   if(s.round!==lastRound){lastRound=s.round;lastFrame=0;}
-   const eye=[0,17.3,25.5],len=Math.hypot(...eye);
+   if(s.round!==lastRound){lastRound=s.round;lastFrame=0;broadcastFocus=0;}
+   // Controlled broadcast push-in for the final duel; the complete engineered
+   // bowl stays on screen. Motion reduction keeps the camera wholly static.
+   const alive=s.marbles.filter(m=>m.alive).length;
+   const danger=clamp((380-s.radius)/270,0,1);
+   const target=options.reduce?0:clamp(danger*.33+(alive===2?.42:0),0,.77);
+   const now=performance.now(),dt=broadcastTime?clamp((now-broadcastTime)/1000,0,.06):0;
+   broadcastTime=now;
+   broadcastFocus=options.reduce?0:broadcastFocus+(target-broadcastFocus)*(1-Math.exp(-1.8*dt));
+   const eye=[0,17.3-.65*broadcastFocus,25.5-1.40*broadcastFocus],len=Math.hypot(...eye);
    const f=[-eye[0]/len,-eye[1]/len,-eye[2]/len],right=[1,0,0],
      up=[0,eye[2]/len,-eye[1]/len];
    gl.viewport(0,0,canvas.width,canvas.height);
@@ -286,7 +312,7 @@ const MarbleBrawlWebGL = (() => {
    gl.uniform3fv(loc.u_eye,eye);gl.uniform3fv(loc.u_forward,f);
    gl.uniform3fv(loc.u_right,right);gl.uniform3fv(loc.u_up,up);
    gl.uniform1f(loc.u_aspect,canvas.width/canvas.height);
-   gl.uniform1f(loc.u_focal,1.88);gl.uniform1f(loc.u_shift,.15);
+   gl.uniform1f(loc.u_focal,1.88+.12*broadcastFocus);gl.uniform1f(loc.u_shift,.15);
    bind(staticBuffer);gl.drawArrays(gl.TRIANGLES,0,staticCount);
    const dynamic=buildDynamic(s,!!options.reduce);
    gl.bindBuffer(gl.ARRAY_BUFFER,dynamicBuffer);
@@ -301,7 +327,8 @@ const MarbleBrawlWebGL = (() => {
    renderer:'brawl-the-crucible-native-webgl-v1',gpu:gpuLabel,
    width:canvas?.width||0,height:canvas?.height||0,quality,
    drawCalls,staticTriangles:staticCount/3,dynamicTriangles:dynamicCount/3,
-   frames:frameCount,lastDrawMs:lastFrame,contextLost:lost,error:graphicsError});}
+   frames:frameCount,lastDrawMs:lastFrame,cameraPush:broadcastFocus,
+   contextLost:lost,error:graphicsError});}
  return Object.freeze({mount,unmount,draw,debug,
    get active(){return !!gl&&!lost;},get canvas(){return canvas;}});
 })();
