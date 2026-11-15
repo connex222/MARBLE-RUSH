@@ -21,7 +21,12 @@ const MarbleBrawlWebGL = (() => {
   cyan:[.15,.70,.76], amber:[1,.44,.16], danger:[.95,.18,.19],
   darkMetal:[.20,.26,.31], steel:[.39,.48,.53], ice:[.34,.61,.67]
  };
- const vtx=(out,p,n,c)=>out.push(p[0],p[1],p[2],n[0],n[1],n[2],c[0],c[1],c[2]);
+ // The tenth vertex field is a real per-surface material channel:
+ // 0 = machined metal, 1 = clearcoat glass marble, 2 = luminous safety inset.
+ // This avoids treating the game marbles as painted concrete.
+ const vtx=(out,p,n,c,kind)=>out.push(p[0],p[1],p[2],n[0],n[1],n[2],
+   c[0],c[1],c[2],kind===undefined?
+    ((c===material.cyan||c===material.amber||c===material.danger)?2:0):kind);
  const tri=(out,a,b,c,col)=>{const n=normal(a,b,c);vtx(out,a,n,col);vtx(out,b,n,col);vtx(out,c,n,col);};
  const quad=(out,a,b,c,d,col)=>{tri(out,a,b,c,col);tri(out,a,c,d,col);};
  const height=r=>-.65+1.78*Math.pow(r/R,3.45);
@@ -73,7 +78,7 @@ const MarbleBrawlWebGL = (() => {
      const p=(lat,lon)=>[x+r*Math.cos(lat)*Math.cos(lon),y+r*Math.sin(lat),z+r*Math.cos(lat)*Math.sin(lon)];
      const p0=p(a,t),p1=p(a,u),p2=p(b,u),p3=p(b,t);
      for(const part of [[p0,p1,p2],[p0,p2,p3]])for(const point of part){
-       const n=[(point[0]-x)/r,(point[1]-y)/r,(point[2]-z)/r];vtx(out,point,n,col);
+       const n=[(point[0]-x)/r,(point[1]-y)/r,(point[2]-z)/r];vtx(out,point,n,col,1);
      }
     }
    }
@@ -119,7 +124,7 @@ const MarbleBrawlWebGL = (() => {
    cylinder(a,0,-.45,0,1.13,.24,material.darkMetal,36);
    cylinder(a,0,-.18,0,.72,.08,material.brass,36);
    ring(a,1.1,1.28,-.19,material.cyan);
-   staticCount=a.length/9;
+   staticCount=a.length/10;
    return new Float32Array(a);
  }
  function buildDynamic(s,reduce){
@@ -197,11 +202,20 @@ const MarbleBrawlWebGL = (() => {
      if(!['hit','hazardImpact','out','recover','knockout'].includes(e.kind))continue;
      const x=Number(e.x)*SCALE,z=Number(e.y)*SCALE;
      if(!Number.isFinite(x)||!Number.isFinite(z))continue;
-     const rr=.3+age*1.6;
-     ringAt(a,x,z,rr,rr+.11,height(Math.hypot(x,z))+.13,
-       e.kind==='out'||e.kind==='knockout'?material.danger:material.brassLit);
+     const rr=.3+age*2.5;
+     const knockout=e.kind==='out'||e.kind==='knockout';
+     const col=knockout?material.danger:material.brassLit;
+     ringAt(a,x,z,rr,rr+.15,height(Math.hypot(x,z))+.16,col);
+     // Brief 3D radial fragments from actual engine contact positions.
+     // No invented hit or decoupled effects loop.
+     for(let j=0;j<(knockout?12:6);j++){
+       const ang=(j+(e.time||0))*TAU/(knockout?12:6),rShard=rr+.23;
+       const X=x+Math.cos(ang)*rShard,Z=z+Math.sin(ang)*rShard;
+       const Y=height(clamp(Math.hypot(X,Z),0,R))+.22+Math.sin(age*6+j)*.25;
+       box(a,X,Y,Z,.14+.14*(.4-age),.15,.14,col);
+     }
    }
-   dynamicCount=a.length/9;
+   dynamicCount=a.length/10;
    return new Float32Array(a);
  }
  function ringAt(out,x,z,inner,outer,y,col){
@@ -218,28 +232,40 @@ const MarbleBrawlWebGL = (() => {
  }
  function setup(){
    resources=[];const vs=compile(gl.VERTEX_SHADER,
-     'precision mediump float;attribute vec3 a_pos;attribute vec3 a_normal;attribute vec3 a_color;'+
+     'precision mediump float;attribute vec3 a_pos;attribute vec3 a_normal;attribute vec3 a_color;attribute float a_kind;'+
      'uniform vec3 u_eye,u_forward,u_right,u_up;uniform float u_aspect,u_focal,u_shift;'+
-     'varying vec3 v_n,v_c,v_world;void main(){'+
+     'varying vec3 v_n,v_c,v_world;varying float v_kind;void main(){'+
      'vec3 d=a_pos-u_eye;float z=max(.05,dot(d,u_forward));'+
      'vec2 xy=vec2(dot(d,u_right),dot(d,u_up));'+
      'float clipz=1.0126*z-1.0063;'+
      'gl_Position=vec4(xy.x*u_focal/u_aspect,xy.y*u_focal-u_shift*z,clipz,z);'+
-     'v_n=a_normal;v_c=a_color;v_world=a_pos;}');
+     'v_n=a_normal;v_c=a_color;v_world=a_pos;v_kind=a_kind;}');
    const fs=compile(gl.FRAGMENT_SHADER,
-     'precision mediump float;varying vec3 v_n,v_c,v_world;uniform vec3 u_eye;'+
-     'void main(){vec3 n=normalize(v_n);vec3 l=normalize(vec3(-.45,.9,.57));'+
-     'float nd=max(0.,dot(n,l));vec3 view=normalize(u_eye-v_world);'+
-     'vec3 h=normalize(l+view);float spec=pow(max(0.,dot(n,h)),42.)*.34;'+
-     'float rim=pow(1.-abs(dot(n,view)),3.);'+
-     'vec3 skylight=vec3(.18,.29,.37)*max(0.,dot(n,normalize(vec3(.54,.28,-.60))));'+
-     'vec3 lit=v_c*(.36+nd*.75)+skylight*.30+vec3(spec)+v_c*rim*.22;'+
-     'gl_FragColor=vec4(min(vec3(1.),lit),1.);}');
+     'precision mediump float;varying vec3 v_n,v_c,v_world;varying float v_kind;uniform vec3 u_eye;'+
+     'void main(){'+
+     'vec3 n=normalize(v_n);vec3 eyeDir=normalize(u_eye-v_world);'+
+     'vec3 key=normalize(vec3(-.48,.88,.44));vec3 rimLight=normalize(vec3(.61,.43,-.64));'+
+     'float mainLight=max(0.,dot(n,key));float fillLight=max(0.,dot(n,rimLight));'+
+     'float glass=step(.5,v_kind)*step(v_kind,1.5);'+
+     'float emissive=step(1.5,v_kind);'+
+     'vec3 halfKey=normalize(key+eyeDir);vec3 halfFill=normalize(rimLight+eyeDir);'+
+     'float sheen=pow(max(0.,dot(n,halfKey)),mix(40.,100.,glass));'+
+     'float secondary=pow(max(0.,dot(n,halfFill)),mix(18.,70.,glass));'+
+     'float fresnel=pow(1.-max(0.,dot(n,eyeDir)),3.);'+
+     'float striae=.96+.04*sin(v_world.x*12.+v_world.y*4.)*cos(v_world.z*13.);'+
+     'vec3 base=v_c*(.30+mainLight*.65+fillLight*.18);'+
+     'vec3 metallic=base+vec3(.96,.76,.53)*sheen*.34+vec3(.40,.64,.71)*secondary*.18;'+
+     'vec3 glassBase=v_c*(.40+mainLight*.69+fillLight*.35)*striae;'+
+     'vec3 glassLit=glassBase+vec3(1.,.96,.83)*sheen*1.14+vec3(.61,.91,1.)*secondary*.76;'+
+     'glassLit+=vec3(.37,.64,.75)*fresnel*.32;'+
+     'vec3 result=mix(metallic,glassLit,glass);'+
+     'result+=v_c*emissive*.43;'+
+     'gl_FragColor=vec4(clamp(result,0.,1.),1.);}');
    program=gl.createProgram();resources.push(['program',program]);
    gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);
    if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Brawl link: '+gl.getProgramInfoLog(program));
    loc={};
-   for(const x of ['a_pos','a_normal','a_color'])loc[x]=gl.getAttribLocation(program,x);
+   for(const x of ['a_pos','a_normal','a_color','a_kind'])loc[x]=gl.getAttribLocation(program,x);
    for(const x of ['u_eye','u_forward','u_right','u_up','u_aspect','u_focal','u_shift'])
      loc[x]=gl.getUniformLocation(program,x);
    staticBuffer=gl.createBuffer();dynamicBuffer=gl.createBuffer();
@@ -247,12 +273,17 @@ const MarbleBrawlWebGL = (() => {
    gl.bindBuffer(gl.ARRAY_BUFFER,staticBuffer);
    gl.bufferData(gl.ARRAY_BUFFER,buildStatic(),gl.STATIC_DRAW);
    gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
-   gl.clearColor(.034,.054,.080,1);
+   // True alpha-backed WebGL allows the bespoke ChatGPT-designed stadium
+   // architecture to remain visible THROUGH empty screen space. All 3D
+   // arena meshes retain their own opaque depth and geometry.
+   gl.clearColor(0,0,0,0);
  }
  function bind(buffer){gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
-    const stride=9*4;
+    const stride=10*4;
     for(const [key,offset] of [['a_pos',0],['a_normal',3],['a_color',6]]){
       gl.enableVertexAttribArray(loc[key]);gl.vertexAttribPointer(loc[key],3,gl.FLOAT,false,stride,offset*4);}
+    gl.enableVertexAttribArray(loc.a_kind);
+    gl.vertexAttribPointer(loc.a_kind,1,gl.FLOAT,false,stride,9*4);
  }
  function resetCanvas(){
    if(!canvas)return;
@@ -279,7 +310,7 @@ const MarbleBrawlWebGL = (() => {
    if(canvas)unmount();
    canvas=old.cloneNode(false);old.replaceWith(canvas);
    try{
-     gl=canvas.getContext('webgl',{alpha:false,antialias:true,preserveDrawingBuffer:false});
+     gl=canvas.getContext('webgl',{alpha:true,antialias:true,preserveDrawingBuffer:false});
      if(!gl)throw Error('WebGL unavailable');
      const info=gl.getExtension('WEBGL_debug_renderer_info');
      gpuLabel=String(info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER));
