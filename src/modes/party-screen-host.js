@@ -13,6 +13,10 @@ const MarblePartyScreen=(()=>{
   const drop3dReview=typeof location!=='undefined'&&
     new URLSearchParams(location.search).get('dropzone3d')==='1';
   let drop3dActive=false,drop3dFallback=null,drop3dLostAt=null,drop3dFailureFrames=0;
+  // The Crucible is intentionally opt-in until real TV/phone acceptance.
+  const brawl3dReview=typeof location!=='undefined'&&
+    new URLSearchParams(location.search).get('brawl3d')==='1';
+  let brawl3dActive=false,brawl3dFailureFrames=0,brawl3dLostAt=null;
   const definitions=Object.freeze({
     derby:   {renderer:derby3dReview?'derby-webgl-mesh-pilot-v1':'derby-track-v3', panels:['ppTitleArea','ppBoardLabel','ppTicker','ppBetPanel','ppLeaderPanel'],
       draw:(s,assets,options)=>derby3dReview?MarbleDerbyWebGL.draw(s,assets,options):MarblePartyUI.drawDerby(s,assets,options)},
@@ -20,8 +24,10 @@ const MarblePartyScreen=(()=>{
       panels:['ppDropHeader','ppDropPanel','ppDropStandings','ppDropStats'],
       draw:(s,assets,options)=>drop3dActive?
         MarbleDropZoneWebGL.draw(s,assets,options):MarblePartyUI.drawDropZone(s,assets,options)},
-    brawl:   {renderer:'brawl-arena-v3', panels:['ppBrawlHeader','ppBrawlStats','ppBrawlPanel','ppBrawlStandings'],
-      draw:(s,assets,options)=>MarbleBrawlUI.draw(s,assets,options)},
+    brawl:   {renderer:brawl3dReview?'brawl-the-crucible-native-webgl-v1':'brawl-arena-v3',
+      panels:['ppBrawlHeader','ppBrawlStats','ppBrawlPanel','ppBrawlStandings'],
+      draw:(s,assets,options)=>brawl3dActive?
+        MarbleBrawlWebGL.draw(s,assets,options):MarbleBrawlUI.draw(s,assets,options)},
     curling: {renderer:'curling-rink-v3', panels:['ppCurlHud'],
       draw:(s,assets,options)=>MarbleCurlingUI.draw(s,assets,options)},
     golf:    {renderer:'golf-course-v3', panels:['ppGolfHud'],
@@ -40,6 +46,7 @@ const MarblePartyScreen=(()=>{
   function isMode(name){return Object.prototype.hasOwnProperty.call(definitions,name);}
   function currentRenderer(name){
     if(name==='dropzone'&&!drop3dActive)return 'dropzone-cabinet-v3';
+    if(name==='brawl'&&!brawl3dActive)return 'brawl-arena-v3';
     return definitions[name]?.renderer||null;
   }
   function show3dFallback(reason){
@@ -94,6 +101,12 @@ const MarblePartyScreen=(()=>{
       MarbleDerbyWebGL.mount(canvas);
       canvas=document.getElementById('partyStageCanvas');
     }
+    if(name==='brawl'&&brawl3dReview){
+      brawl3dActive=false;brawl3dFailureFrames=0;brawl3dLostAt=null;
+      try{MarbleBrawlWebGL.mount(canvas);brawl3dActive=true;}
+      catch(error){console.warn('Bowl Brawl 3D fallback:',error.message);}
+      canvas=document.getElementById('partyStageCanvas');
+    }
     if(name==='dropzone'&&drop3dReview){
       // Preview-only: a device without WebGL must get the entire original
       // Canvas2D game, never a broken lobby or a blank 3D canvas.
@@ -120,6 +133,7 @@ const MarblePartyScreen=(()=>{
     stage.dataset.mode=name;
     stage.dataset.owner='marble-party-screen-v3';
     stage.dataset.renderer=currentRenderer(name);
+    stage.removeAttribute('data-brawl3d-fallback');
     if(drop3dFallback)show3dFallback(drop3dFallback);
     canvas.setAttribute('aria-label',labels[name]);
     // Re-entering a game must not re-use a previous match's leaderboard.
@@ -149,16 +163,19 @@ const MarblePartyScreen=(()=>{
     if(report)history.push({...report,unmountAt:performance.now()});
     const wasDerby3d=active==='derby'&&derby3dReview;
     const wasDrop3d=active==='dropzone'&&drop3dActive;
+    const wasBrawl3d=active==='brawl'&&brawl3dActive;
     active=null;report=null;drop3dActive=false;drop3dLostAt=null;drop3dFailureFrames=0;
-    drop3dFallback=null;
+    drop3dFallback=null;brawl3dActive=false;brawl3dLostAt=null;brawl3dFailureFrames=0;
+    if(wasBrawl3d)MarbleBrawlWebGL.unmount();
     if(wasDerby3d)MarbleDerbyWebGL.unmount();
     if(wasDrop3d)MarbleDropZoneWebGL.unmount();
-    if(wasDerby3d||wasDrop3d)
+    if(wasDerby3d||wasDrop3d||wasBrawl3d)
       canvas=document.getElementById('partyStageCanvas');
     if(stage){
       stage.removeAttribute('data-mode');
       stage.removeAttribute('data-owner');
       stage.removeAttribute('data-renderer');
+      stage.removeAttribute('data-brawl3d-fallback');
       stage.removeAttribute('data-dropzone3d-fallback');
       document.getElementById('ppDrop3dFallback')?.remove();
     }
@@ -168,6 +185,17 @@ const MarblePartyScreen=(()=>{
     if(canvas)canvas.hidden=true;
     MarbleSceneCache.clear();
     if(raceCanvas)raceCanvas.hidden=false;
+  }
+  function fallbackBrawl(reason){
+    if(active!=='brawl'||!brawl3dActive)return false;
+    MarbleBrawlWebGL.unmount();
+    canvas=document.getElementById('partyStageCanvas');
+    canvas.hidden=false;brawl3dActive=false;brawl3dFailureFrames=0;brawl3dLostAt=null;
+    stage.dataset.renderer='brawl-arena-v3';
+    stage.dataset.brawl3dFallback=reason;
+    if(report)report.renderer='brawl-arena-v3';
+    console.warn('Bowl Brawl native 3D restored to 2D:',reason);
+    return true;
   }
   function render(name,sessionState,assets,options={}){
     if(!isMode(name)||active!==name||!sessionState||!report||
@@ -181,8 +209,23 @@ const MarblePartyScreen=(()=>{
           fallbackToCanvas2D('gpu-recovery-timeout');
       }else drop3dLostAt=null;
     }
+    if(name==='brawl'&&brawl3dActive){
+      const gpu=MarbleBrawlWebGL.debug();
+      if(gpu.contextLost){
+        if(brawl3dLostAt===null)brawl3dLostAt=performance.now();
+        if(performance.now()-brawl3dLostAt>8000)fallbackBrawl('context-timeout');
+      }else brawl3dLostAt=null;
+    }
     const start=performance.now();
     let success=definitions[name].draw(sessionState,assets,options)===true;
+    if(name==='brawl'&&brawl3dActive){
+      const lost=MarbleBrawlWebGL.debug().contextLost;
+      if(success)brawl3dFailureFrames=0;
+      else if(!lost&&++brawl3dFailureFrames>=3){
+        fallbackBrawl('render-failure');
+        success=definitions[name].draw(sessionState,assets,options)===true;
+      }
+    }
     if(name==='dropzone'&&drop3dActive){
       const gpuLost=MarbleDropZoneWebGL.debug().contextLost;
       if(success)drop3dFailureFrames=0;
@@ -232,9 +275,10 @@ const MarblePartyScreen=(()=>{
         r.slowIntervals/r.intervals:0,
       renderFailures:r.renderFailures,atmosphereCache:MarbleSceneCache.stats(),active:active===r.mode,
       raceCanvasHidden:!!raceCanvas?.hidden,
-      dropzone3dFallback:drop3dFallback,
+      dropzone3dFallback:drop3dFallback,brawl3dFallback:stage?.dataset.brawl3dFallback||null,
       authoritativeClock:MarblePartyClock.stats(),
-      graphics:active==='derby'&&derby3dReview?MarbleDerbyWebGL.debug():
+      graphics:active==='brawl'&&brawl3dActive?MarbleBrawlWebGL.debug():
+        active==='derby'&&derby3dReview?MarbleDerbyWebGL.debug():
         active==='dropzone'&&drop3dActive?MarbleDropZoneWebGL.debug():null
     });
   }
@@ -248,6 +292,9 @@ const MarblePartyScreen=(()=>{
         const element=document.getElementById(id);
         return !!element&&element.hidden===!def.panels.includes(id);
       })&&
+      (active!=='brawl'||!brawl3dActive||
+       (MarbleBrawlWebGL.active&&MarbleBrawlWebGL.canvas===canvas&&
+        MarbleBrawlWebGL.debug().realMeshes))&&
       (active!=='derby'||!derby3dReview||
        (MarbleDerbyWebGL.active&&MarbleDerbyWebGL.canvas===canvas&&
         MarbleDerbyWebGL.debug().realMeshes))&&
