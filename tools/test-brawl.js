@@ -146,6 +146,28 @@ assert.ok(finale.state.events.some(e=>e.kind==='knockout'&&e.bonus===5),
   'Final-round comeback knockout must award +5');
 assert.equal(finale.state.roster[0].roundPoints[0],15,
   'Final-round winner must receive 10 placement plus 5 KO bonus');
+// Crucible rotor: the visible striker must also collide physically.
+assert.equal(B.SWEEPER_LENGTH,95);
+assert.equal(B.SWEEPER_HALF_WIDTH,18);
+const striker=B.create(roster,55);
+striker.state.hazard='rotor';striker.state.hazardAngle=0;
+const stricken=striker.current('alpha'),safeRival=striker.current('bravo');
+stricken.x=46;stricken.y=0;stricken.vx=0;stricken.vy=0;
+safeRival.x=-200;safeRival.y=0;safeRival.vx=0;safeRival.vy=0;
+striker.tick(.05);
+assert.ok(striker.state.events.some(e=>e.kind==='hazardImpact'&&e.hazard==='rotor'&&e.id==='alpha'),
+  'The rendered rotor arm must have a real physical collision segment');
+assert.ok(stricken.y!==0,'Rotating striker must physically push the marble');
+assert.ok(striker.state.marbles.every(m=>Number.isFinite(m.x)&&Number.isFinite(m.y)&&
+  Number.isFinite(m.vx)&&Number.isFinite(m.vy)),'Hazard must not generate invalid physics');
+striker.tick(.05);
+assert.ok(striker.state.events.filter(e=>e.kind==='hazardImpact'&&e.id==='alpha').length<=1,
+  'Impact cue throttle must prevent per-step spam');
+const ended=B.create(roster,89);
+ended.current('bravo').x=999;ended.tick(.05);
+assert.ok(ended.state.events.some(e=>e.kind==='round_end'&&Number.isFinite(e.time)),
+  'Winner presentation needs an authoritative event timestamp');
+
 console.log('PASS MAYHEM: telegraphed deterministic shockwave, anchor counterplay, one energy-funded edge save, credited +3 knockout and no unearned points.');
 
 console.log('PASS: Bowl Brawl 30 seeded 3-CPU full games × 2 deterministic replays, five rounds, eight-player capacity, rim, ownership and energy.');
