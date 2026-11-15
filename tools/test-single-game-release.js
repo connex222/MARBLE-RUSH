@@ -1,4 +1,4 @@
-/* MARBLE RUSH public product gate: only Grand Prix with seven tracks.
+/* MARBLE RUSH public product gate: only Grand Prix with ten tracks.
  * Run: node tools/test-single-game-release.js
  * For public UI + two real browser phone sessions, run the browser smoke.
  */
@@ -40,8 +40,10 @@ assert.ok(phone.includes("if(mode.id!=='grandprix')vip.push"),
   'host phone has an unnecessary game mode choice');
 assert.ok(phone.includes("send({ t:'in', k:'p' })")&&phone.includes("send({ t:'in', k:'r' })"),
   'original tap / hold race control has been broken');
-for(const track of ['toybox','candy','ice','space','jungle','seaside','clockwork']){
+for(const track of ['toybox','candy','ice','space','jungle','seaside','clockwork','jettydash','canopyexpedition','gearshift']){
  assert.ok(new RegExp('\\b'+track+'\\b').test(engine),
    'missing Grand Prix track '+track);
 }
-console.log('PASS: single publicly available Marble Rush Grand Prix, hidden Party Pack, protected phone boost and all seven tracks.');
+const MR=require('../src/engine.js');
+assert.equal(MR.TRACK_INFO.length,10,'Grand Prix must offer ten tracks');
+console.log('PASS: one published Grand Prix, hidden Party Pack, protected phone boost and all ten tracks.');
