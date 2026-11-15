@@ -59,7 +59,7 @@ const fs=require('node:fs');
 
  page.on('pageerror',e=>errors.push(e.message));
  try{
-  await page.goto(base+'/tv?partyQa=1',{waitUntil:'domcontentloaded',timeout:30000});
+  await page.goto(base+'/tv?partyQa=1&brawl2d=1',{waitUntil:'domcontentloaded',timeout:30000});
   await page.locator('#btnBoot').click();
   await page.locator('#partyModeCards .partyModeCard').first().waitFor({state:'visible'});
   await page.waitForFunction(()=>window.__MR?.state==='lobby');

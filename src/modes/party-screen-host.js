@@ -15,7 +15,10 @@ const MarblePartyScreen=(()=>{
   let drop3dActive=false,drop3dFallback=null,drop3dLostAt=null,drop3dFailureFrames=0;
   // The Crucible is now the default Bowl Brawl renderer; devices without
   // functioning WebGL still fall back immediately to playable Canvas2D.
-  const brawl3dEnabled=true;
+  // A diagnostic-only 2D override preserves regression coverage without
+  // changing the production default or its automatic WebGL-failure fallback.
+  const brawl3dEnabled=typeof location==='undefined'||
+    new URLSearchParams(location.search).get('brawl2d')!=='1';
   let brawl3dActive=false,brawl3dFailureFrames=0,brawl3dLostAt=null;
   const definitions=Object.freeze({
     derby:   {renderer:derby3dReview?'derby-webgl-mesh-pilot-v1':'derby-track-v3', panels:['ppTitleArea','ppBoardLabel','ppTicker','ppBetPanel','ppLeaderPanel'],
