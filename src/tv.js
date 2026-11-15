@@ -253,6 +253,11 @@
       last[k] = now;
       const v = o.vol ?? 1, pr = 1 + (Math.random() - 0.5) * 0.08;
       if (file(k, v, pr)) return;
+      // Creative Claw CDN media is review-only. Every cue retains an audible
+      // original synth/sample fallback when network loading or CORS fails.
+      if(k==='sfx_brawl_charge')return play('sfx_brawl_ram',o);
+      if(k==='sfx_brawl_shockwave')return play('sfx_bumper',o);
+      if(k==='sfx_brawl_knockout')return play('crowd_cheer',o);
       switch (k) {
         case 'clack': tone(2600 * pr, 0.05, 'sine', 0.22 * v); noise(0.04, 3800, 3, 0.25 * v); break;
         case 'land_hard': tone(140, 0.18, 'sine', 0.4 * v, 60); noise(0.08, 1800, 1, 0.2 * v); break;
