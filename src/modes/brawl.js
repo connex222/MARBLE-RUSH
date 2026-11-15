@@ -34,7 +34,7 @@ const BowlBrawl = (() => {
       hazard:'clean',hazardAngle:0,rotorLength:SWEEPER_LENGTH,
       rotorHalfWidth:SWEEPER_HALF_WIDTH,spectators:new Set(),
       pulseIndex:0,pulseAt:SHOCK_TIMES[0],lastPulseAt:-99};
-    const HAZARDS=['bumpers','ice','rotor','crumbling','clean'];
+    const HAZARDS=['bumpers','ice','rotor','crumbling','crossfire'];
     function current(id){return state.marbles.find(m=>m.id===id);}
     function alive(){return state.marbles.filter(m=>m.alive);}
     function standings(){return roster.slice().sort((a,b)=>b.points-a.points||
@@ -284,20 +284,31 @@ const BowlBrawl = (() => {
           // Substantial fixed impact pylons in the bumper round. The rotor tip
           // remains physical too: only its existing end-cap radius contacts
           // the rolling marbles. No invisible sweeping obstacles.
+          // Finale: two counter-rotating physical hammers in the centre.
+          // Their sphere contact radii and positions are identical on the TV.
+          const phase=state.hazardAngle*1.48;
+          const crossfire=state.hazard==='crossfire';
           const hazard=state.hazard==='bumpers'?[[125,60],[-110,-50]]:
             state.hazard==='rotor'?[[
               Math.cos(state.hazardAngle)*SWEEPER_LENGTH,
               Math.sin(state.hazardAngle)*SWEEPER_LENGTH
+            ]]:crossfire?[[
+              80*Math.cos(phase),80*Math.sin(phase)
+            ],[
+              80*Math.cos(Math.PI/2-phase),80*Math.sin(Math.PI/2-phase)
             ]]:[];
           for(const [hx,hy] of hazard){
             const dx=m.x-hx,dy=m.y-hy,d=Math.hypot(dx,dy)||1;
-            if(d<67){
-              const nx=dx/d,ny=dy/d; m.x=hx+nx*67;m.y=hy+ny*67;
-              m.vx+=nx*115;m.vy+=ny*115;
+            const contact=crossfire?62:67;
+            if(d<contact){
+              const nx=dx/d,ny=dy/d; m.x=hx+nx*contact;m.y=hy+ny*contact;
+              const thrust=crossfire?215:115;
+              m.vx+=nx*thrust;m.vy+=ny*thrust;
+              if(crossfire){m.vx-=ny*80;m.vy+=nx*80;}
               if(state.time-m.hazardCueAt>.32){
                 m.hazardCueAt=state.time;
                 state.events.push({kind:'hazardImpact',id:m.id,x:m.x,y:m.y,
-                  hazard:state.hazard,strength:1,time:state.time});
+                  hazard:state.hazard,strength:crossfire?1.5:1,time:state.time});
               }
             }
           }
