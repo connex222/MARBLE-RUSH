@@ -12,16 +12,17 @@ const root=path.join(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const preview=read('src/tv.js'),phone=read('src/play.html'),build=read('tools/build.js');
 const host=read('src/modes/party-screen-host.js');
-assert.match(preview,/const isPublishedMode = id => id === 'grandprix' \|\| \(BRAWL_PREVIEW && id === 'brawl'\)/,
+assert.match(preview,/const isPublishedMode = id => id === 'grandprix' \|\|/,
   'unapproved add-ons must remain hidden from normal TV mode selection');
-assert.match(preview,/if \(!isPublishedMode\(selectedMode\) \|\| partyLength !== 0\) return;/,
+assert.match(preview,/if \(!isPublishedMode\(selectedMode\) \|\| \(partyLength !== 0 && !PARTY_LOCAL_QA\)\) return;/,
   'direct game start must not bypass the public release gate');
 assert.match(preview,/availableModes: Object\.values\(MODES\)\.filter\(m => m\.available && isPublishedMode\(m\.id\)\)/,
   'normal phone picker must match TV release status');
-assert.match(preview,/if \(a === 'party' && isVip && state === 'lobby' && v === 0\)/,
+assert.match(preview,/if \(a === 'party' && isVip && state === 'lobby' && \(v === 0 \|\| \(PARTY_LOCAL_QA/,
   'Party Night must not select hidden modes');
 assert.match(phone,/h\.partyNightEnabled \? \[0,3,5,7\] : \[\]/,
   'phone host must hide unavailable party options');
+assert.match(preview,/const PARTY_LOCAL_QA = \/\^\(localhost\|127/,'unapproved modes can be QA-enabled only on localhost');
 assert.match(build,/'party-brawl-webgl'/,'build must bundle the real GPU renderer');
 assert.match(host,/MarbleBrawlWebGL\.mount\(canvas\)/);
 assert.match(host,/MarbleBrawlWebGL\.unmount\(\)/);
