@@ -79,6 +79,24 @@ const {chromium}=require('playwright');
   assert.equal(await tv.locator('#partyStage').isVisible(),false,
     'Grand Prix was replaced by a Party Pack game stage');
   assert.equal(await tv.evaluate(()=>window.__MR.selectedMode),'grandprix');
+  // Navigation controls remain available on both the TV and handset after
+  // layout changes and must never overlap game buttons.
+  for(const [page,name] of [[tv,'TV'],[a,'Phone A'],[b,'Phone B']]){
+    const fullscreen=page.locator('#collection-fullscreen-control');
+    await fullscreen.waitFor({state:'visible',timeout:10000});
+    const audit=await page.evaluate(()=>{
+      const btn=document.querySelector('#collection-fullscreen-control');
+      const r=btn.getBoundingClientRect(),w=innerWidth,h=innerHeight;
+      const overlap=[...document.querySelectorAll('button,a[href],input,select,textarea,[role="button"]')]
+        .filter(x=>x!==btn&&!btn.contains(x)&&!x.contains(btn))
+        .filter(x=>{const c=getComputedStyle(x);return c.display!=='none'&&c.visibility!=='hidden'})
+        .map(x=>x.getBoundingClientRect())
+        .filter(o=>o.width>0&&o.height>0&&r.left<o.right-2&&r.right>o.left+2&&r.top<o.bottom-2&&r.bottom>o.top+2);
+      return {within:r.left>=-1&&r.top>=-1&&r.right<=w+1&&r.bottom<=h+1,overlaps:overlap.length};
+    });
+    assert.ok(audit.within,name+': fullscreen button is clipped by viewport');
+    assert.equal(audit.overlaps,0,name+': fullscreen button covers another interactive control');
+  }
   assert.deepEqual(errors,[],errors.join(' | '));
   await tv.screenshot({path:'qa-single-marble-rush-tv.png'});
   await a.screenshot({path:'qa-single-marble-rush-phone.png'});
