@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: marble-rush
+    name: MARBLE-RUSH
     runtime: node
     region: frankfurt
     plan: free
