@@ -1954,6 +1954,36 @@ if (typeof module !== 'undefined') module.exports = QR;
      ====================================================================== */
   const Audio_ = (() => {
     let ac = null, master, music, sfx, rollGain, rollFilter, noiseBuf;
+    // A real original Grand Prix theme replaces the placeholder groove when
+    // available. Keep the existing procedural soundtrack as offline fallback.
+    const GRAND_PRIX_THEME = 'https://cdn.creativeclaw.co/u/f3e7a3b1/audio/dc19fd77-7bff-404c-b810-59045b40c302.mp3';
+    let signatureTrack = null, signaturePlaying = false, signatureMode = 'lobby';
+    function signatureVolume() {
+      if (!settings.music || document.hidden) return 0;
+      return signatureMode === 'quiet' ? .075 : signatureMode === 'race' ? .17 : .135;
+    }
+    function beginSignatureMusic() {
+      if (signatureTrack) return;
+      const track = new Audio(GRAND_PRIX_THEME);
+      signatureTrack = track;
+      track.loop = true;
+      track.preload = 'none';
+      track.volume = signatureVolume();
+      track.addEventListener('playing', () => {
+        signaturePlaying = true;
+        if (music && ac) music.gain.setTargetAtTime(0, ac.currentTime, .25);
+      });
+      const revert = () => {
+        signaturePlaying = false;
+        if (music && ac) music.gain.setTargetAtTime(settings.music ? .34 : 0, ac.currentTime, .2);
+      };
+      track.addEventListener('error', revert);
+      track.play().catch(revert);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) track.pause();
+        else if (settings.music) track.play().catch(revert);
+      });
+    }
     const buffers = {};
     function init() {
       if (ac) return;
@@ -1973,6 +2003,7 @@ if (typeof module !== 'undefined') module.exports = QR;
       src.connect(rollFilter); rollFilter.connect(rollGain); rollGain.connect(sfx); src.start();
       loadFiles();
       Music.start();
+      beginSignatureMusic();
     }
     function loadFiles() {
       if (!ac) return;
@@ -2065,7 +2096,14 @@ if (typeof module !== 'undefined') module.exports = QR;
       rollGain.gain.setTargetAtTime(settings.sfx ? Math.min(0.32, level) : 0, t, 0.08);
       rollFilter.frequency.setTargetAtTime(380 + pitch * 900, t, 0.1);
     }
-    function setMusic(on) { if (music) music.gain.setTargetAtTime(on ? 0.34 : 0, ac.currentTime, 0.3); }
+    function setMusic(on) {
+      if (music && ac) music.gain.setTargetAtTime(on && !signaturePlaying ? .34 : 0, ac.currentTime, .3);
+      if (signatureTrack) {
+        signatureTrack.volume = signatureVolume();
+        if (on && signatureTrack.paused && !document.hidden)
+          signatureTrack.play().catch(() => { signaturePlaying = false; });
+      }
+    }
     function setSfx(on) { if (sfx) sfx.gain.setTargetAtTime(on ? 0.8 : 0, ac.currentTime, 0.1); }
 
     /* Procedural groove: 128 BPM, D major (Section 11.3) — placeholder music */
@@ -2101,6 +2139,8 @@ if (typeof module !== 'undefined') module.exports = QR;
         o.connect(g); g.connect(music); o.start(t); o.stop(t + dur + 0.02);
       }
       function schedule() {
+        // Do not schedule additional synth notes under the original recording.
+        if (signaturePlaying) { next = ac.currentTime + .1; return; }
         while (next < ac.currentTime + 0.12) {
           const s = step % 16, bar = Math.floor(step / 16) % 4, t = next;
           const race = mode === 'race';
@@ -2122,7 +2162,15 @@ if (typeof module !== 'undefined') module.exports = QR;
       };
     })();
 
-    return { init, play, setRoll, setMusic, setSfx, loadFiles, Music: { mode: m => ac && Music.mode(m), intensity: v => ac && Music.intensity(v) }, get on() { return !!ac; } };
+    return { init, play, setRoll, setMusic, setSfx, loadFiles, Music: {
+      mode: m => {
+        if (!ac) return;
+        Music.mode(m);
+        signatureMode = m;
+        if (signatureTrack) signatureTrack.volume = signatureVolume();
+      },
+      intensity: v => ac && Music.intensity(v)
+    }, get on() { return !!ac; } };
   })();
 
   /* ======================================================================
