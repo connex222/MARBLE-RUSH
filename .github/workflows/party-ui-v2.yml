@@ -101,7 +101,7 @@ jobs:
           game_pid=$!
           trap 'kill "$game_pid" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            if curl -fsS http://127.0.0.1:35993/health | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'; then break; fi
             sleep 1
           done
           node tools/single-game-browser-smoke.js
@@ -114,7 +114,7 @@ jobs:
           game_pid=$!
           trap 'kill "$game_pid" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:35993/health | grep -qx ok; then break; fi
+            if curl -fsS http://127.0.0.1:35993/health | grep -Eq '"ok"[[:space:]]*:[[:space:]]*true'; then break; fi
             sleep 1
           done
           node tools/party-ui-v2-multiplayer-smoke.js
