@@ -1,0 +1,33 @@
+name: Render Node 22 readiness
+on:
+  pull_request:
+    paths:
+      - 'render.yaml'
+      - '.node-version'
+      - '.gitignore'
+      - 'package*.json'
+      - 'server/**'
+      - 'src/tv.js'
+      - 'src/tv.html'
+      - 'src/play.html'
+      - 'tools/test-all.js'
+      - 'tests/**'
+      - '.github/workflows/render-node-readiness.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Clean install from committed lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Game suites and health / shutdown integration
+        run: npm test
+      - name: Produce deployable public assets
+        run: npm run build
