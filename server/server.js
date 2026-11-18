@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 const PUB = path.join(__dirname, '..', 'public');
 const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I or O
 const ROOM_IDLE_MS = 30 * 60 * 1000;
+let shuttingDown = false;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json',
@@ -37,7 +38,11 @@ const server = http.createServer((req, res) => {
   const p = decodeURIComponent(url.pathname);
   if (p === '/' || p === '/tv' || p === '/tv.html') return sendFile(res, path.join(PUB, 'tv.html'));
   if (p === '/play' || p === '/play.html' || p === '/join') return sendFile(res, path.join(PUB, 'play.html'));
-  if (p === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok'); return; }
+  if (p === '/health') {
+    res.writeHead(shuttingDown ? 503 : 200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ ok: !shuttingDown, rooms: rooms.size, uptime: Math.floor(process.uptime()) }));
+    return;
+  }
   if (p.startsWith('/assets/')) {
     const file = path.normalize(path.join(PUB, p));
     if (!file.startsWith(path.join(PUB, 'assets'))) { res.writeHead(403); res.end(); return; }
@@ -60,6 +65,7 @@ function out(ws, m) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m));
 
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 4096 });
 wss.on('connection', ws => {
+  if (shuttingDown) { ws.close(1012, 'Service restart'); return; }
   ws.alive = true;
   ws.role = null; ws.room = null; ws.pid = null;
   ws.rate = 0; ws.rateT = Date.now();
@@ -75,10 +81,15 @@ wss.on('connection', ws => {
 
     /* ----- TV ----- */
     if (m.t === 'host') {
-      let code = typeof m.code === 'string' ? m.code.toUpperCase() : null;
+      // Preserve the advertised QR room code after a process restart. Phones
+      // may reconnect before the TV, but should not need to rescan the QR.
+      const requested = typeof m.code === 'string' ? m.code.toUpperCase() : '';
+      let code = /^[ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/.test(requested) ? requested : null;
       let room = code && rooms.get(code);
       if (!room || (room.host && room.host.readyState === 1 && room.host !== ws)) {
-        code = newCode(); room = { host: null, players: new Map(), last: now };
+        if (room) code = newCode(); // never hijack an active TV's room
+        else code = code || newCode();
+        room = { host: null, players: new Map(), last: now };
         rooms.set(code, room);
       }
       room.host = ws; room.last = now;
@@ -134,7 +145,7 @@ wss.on('connection', ws => {
 });
 
 // heartbeat + cleanup
-setInterval(() => {
+const heartbeat = setInterval(() => {
   for (const ws of wss.clients) {
     if (!ws.alive) { ws.terminate(); continue; }
     ws.alive = false; try { ws.ping(); } catch (e) { /* closed */ }
@@ -146,4 +157,42 @@ setInterval(() => {
   }
 }, 25000);
 
-server.listen(PORT, () => console.log(`Marble Rush running on port ${PORT}`));
+server.on('close', () => clearInterval(heartbeat));
+
+function gracefulShutdown(signal) {
+  if (shuttingDown) return; // Render may send more than one signal.
+  shuttingDown = true;
+  clearInterval(heartbeat);
+  console.log(`Marble Rush received ${signal}; closing connections for service restart`);
+
+  // Hard deadline: never block a Render deployment on a stale upgraded socket.
+  const deadline = setTimeout(() => {
+    for (const socket of wss.clients) socket.terminate();
+    process.exit(0);
+  }, 9500);
+
+  let httpClosed = false;
+  let wsClosed = false;
+  function finish() {
+    if (!httpClosed || !wsClosed) return;
+    clearTimeout(deadline);
+    process.exit(0);
+  }
+
+  // Stop accepting new HTTP and WebSocket upgrades before notifying clients.
+  server.close(() => { httpClosed = true; finish(); });
+  for (const socket of wss.clients) {
+    if (socket.readyState !== 1) { socket.terminate(); continue; }
+    try {
+      socket.send(JSON.stringify({ t: 'restart', message: 'Server restarting, reconnecting…' }), () => {
+        if (socket.readyState === 1) socket.close(1012, 'Service restart');
+      });
+    } catch (e) { socket.terminate(); }
+  }
+  wss.close(() => { wsClosed = true; finish(); });
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+server.listen(PORT, () => console.log(`Marble Rush running on port ${server.address().port}`));
