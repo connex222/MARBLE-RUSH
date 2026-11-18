@@ -38,6 +38,7 @@ const server = http.createServer((req, res) => {
   const p = decodeURIComponent(url.pathname);
   if (p === '/' || p === '/tv' || p === '/tv.html') return sendFile(res, path.join(PUB, 'tv.html'));
   if (p === '/play' || p === '/play.html' || p === '/join') return sendFile(res, path.join(PUB, 'play.html'));
+  if (p === '/collection-fullscreen.js') return sendFile(res, path.join(PUB, 'collection-fullscreen.js'));
   if (p === '/health') {
     res.writeHead(shuttingDown ? 503 : 200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ ok: !shuttingDown, rooms: rooms.size, uptime: Math.floor(process.uptime()) }));
