@@ -13,10 +13,11 @@
     "test:derby": "node tools/test-derby.js",
     "test:curling": "node tools/test-curling.js",
     "test:brawl3d": "node tools/test-brawl-the-crucible.js",
-    "test:brawl-overdrive": "node tools/test-brawl-overdrive.js"
+    "test:brawl-overdrive": "node tools/test-brawl-overdrive.js",
+    "test": "node tools/test-all.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   },
   "dependencies": {
     "ws": "^8.18.0",
