@@ -447,6 +447,11 @@
   const Net = (() => {
     let ws = null, code = null, open = false, retry = 0;
     const local = location.protocol === 'file:';
+    function reconnectOverlay(message) {
+      const el = $('#reconnectOverlay');
+      $('#reconnectText').textContent = message || 'Reconnecting…';
+      el.hidden = !message;
+    }
     function connect() {
       if (local) {
         setStatus('Local mode — add keyboard or CPU racers to test');
@@ -454,19 +459,34 @@
         $('.joinRow').innerHTML = '<div class="joinStep">Phones can join once the game is hosted on Render. For now, add keyboard or CPU racers below.</div>';
         return;
       }
-      setStatus('Polishing the marbles… (waking the server)');
-      ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
-      ws.onopen = () => { open = true; retry = 0; send({ t: 'host', code: sessionStorage.getItem('mr_code') || null }); };
-      ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } onMsg(m); };
-      ws.onclose = () => {
-        open = false; setStatus('Connection lost — reconnecting…');
-        setTimeout(connect, Math.min(8000, 800 * ++retry));
+      if (!retry) setStatus('Polishing the marbles… (waking the server)');
+      const socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+      ws = socket;
+      socket.onopen = () => {
+        if (ws !== socket) return;
+        open = true; retry = 0;
+        send({ t: 'host', code: sessionStorage.getItem('mr_code') || null });
+      };
+      socket.onmessage = e => {
+        if (ws !== socket) return;
+        let m; try { m = JSON.parse(e.data); } catch (x) { return; }
+        if (m.t === 'restart') { reconnectOverlay('Server restarting, reconnecting…'); return; }
+        onMsg(m);
+      };
+      socket.onclose = e => {
+        if (ws !== socket) return;
+        open = false;
+        reconnectOverlay(e.code === 1012 ? 'Server restarting, reconnecting…' : 'Reconnecting…');
+        setStatus('Connection lost — reconnecting…');
+        const wait = Math.min(10000, 1000 * 2 ** Math.min(retry++, 4));
+        setTimeout(connect, wait);
       };
     }
     function send(m) { if (open) ws.send(JSON.stringify(m)); }
     function onMsg(m) {
       switch (m.t) {
         case 'room':
+          reconnectOverlay(null);
           code = m.code; sessionStorage.setItem('mr_code', code);
           $('#roomCode').textContent = code;
           $('#joinUrl').textContent = `${location.host}/play`;
