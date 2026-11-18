@@ -33,6 +33,47 @@ npm start
 
 The build writes the standalone TV and phone pages to `public/`. For the original racing-game balance tests, run `npm run balance`. The single-game release regression is `node tools/test-single-game-release.js`.
 
+## Deploying on Render
+
+**Use a Node Web Service, not the Python runtime.** The previous Render service was
+configured as Python even though the server is a Node application. Committing
+`render.yaml` does **not** convert the runtime of an existing service. Recreate
+the service as a Node Web Service from this repository (or explicitly switch
+its runtime to Node if the Render dashboard permits that), then move the
+desired domain to the new service. Verify TV/phone QR links after cutover.
+
+The blueprint in `render.yaml` declares:
+
+- Node 22 (`package.json` engines and `.node-version`)
+- Region `frankfurt`, free plan
+- Build command: `npm ci && npm run build`
+- Start command: `npm start`
+- Health check path: `/health`
+
+The committed `package-lock.json` is necessary for the clean `npm ci`
+build. `GET /health` returns HTTP 200 JSON with `ok`, `rooms` and
+`uptime` (seconds). On SIGTERM the server stops accepting connections,
+notifies clients, closes WebSockets with 1012, and exits within ten seconds.
+TV and phone reconnect automatically with exponential backoff; the TV
+reclaims its previous room code so the existing QR remains valid. Any race
+in progress may be interrupted when the server process restarts; do not
+redeploy during an active game.
+
+For validation on Node 22:
+
+```bash
+npm ci
+npm test
+npm run build
+npm start
+# In a separate terminal:
+curl http://localhost:3000/health
+```
+
+`npm test` runs all five named mode checks and every `tests/*.test.js`,
+including the health/shutdown integration test. An asset inventory and
+recommendations are in [SIZE-REPORT.md](SIZE-REPORT.md); no art was deleted.
+
 ## Structure
 
 | Location | Purpose |
