@@ -103,6 +103,11 @@ html,body{height:100%;background:var(--night);color:var(--cream);font-family:var
 #lobbySettings{position:absolute;left:0;right:0;bottom:calc(150*var(--u));display:flex;justify-content:center;gap:calc(10*var(--u))}
 #status{position:absolute;left:50%;top:calc(30*var(--u));transform:translateX(-50%);background:rgba(15,17,48,.9);border-radius:999px;
   padding:calc(10*var(--u)) calc(24*var(--u));font-size:calc(20*var(--u));border:calc(2*var(--u)) solid rgba(255,200,61,.4)}
+/* Out of the scaled game UI, so this covers the whole TV without obscuring permanently. */
+#reconnectOverlay{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;
+  background:rgba(9,12,36,.9);backdrop-filter:blur(8px);padding:24px;text-align:center;
+  color:#FFF4E0;font:700 clamp(26px,4vw,58px) Fredoka,system-ui,sans-serif}
+#reconnectOverlay span{display:block;margin-top:12px;color:#FFC83D;font:600 clamp(15px,2vw,24px) Nunito,system-ui,sans-serif}
 
 
 /* Party Pack visual treatment — distinctive miniature-diorama-inspired cards.
@@ -1257,6 +1262,9 @@ body:has(#partyStage[data-mode="brawl"]:not([hidden])) #clatter{
 </div>
 <!-- Independent top-level control: never clipped by a game screen or scaled canvas -->
 <button type="button" id="partyBackLobby" aria-label="Return to lobby and end current game" hidden>⌂ Back to Lobby</button>
+<div id="reconnectOverlay" role="status" aria-live="polite" hidden>
+  <div><strong id="reconnectText">Reconnecting…</strong><span>Please keep this screen open.</span></div>
+</div>
 <script>/*ENGINE*/</script>
 <script>/*MODES*/</script>
 <script>/*QR*/</script>
