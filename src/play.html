@@ -920,7 +920,7 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
   $('#inCode').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ''); });
 
   function onMsg(m) {
-    if (m.t === 'err' && m.e === 'noroom' && (joined || (autoResume && reconnecting))) {
+    if (m.t === 'err' && m.e === 'noroom' && (joined || autoResume)) {
       // On deploy the phone may come back before the host has re-created its
       // room. Keep the same seat/identity and retry the join on this socket.
       banner('Reconnecting… waiting for the TV');
