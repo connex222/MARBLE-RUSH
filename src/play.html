@@ -131,7 +131,9 @@ body:not([data-s="race"]):not([data-s="countdown"]) #padZone{flex-basis:44%}
 #item:disabled{display:none}
 #item.ready{animation:itemPulse .9s ease-in-out infinite}
 @keyframes itemPulse{50%{transform:scale(1.08)}}
-#banner{position:fixed;left:0;right:0;top:0;padding:10px;text-align:center;font-weight:800;background:#e02447;color:#fff;font-size:17px;z-index:9}
+#banner{position:fixed;inset:0;padding:24px;text-align:center;font-weight:800;display:grid;place-items:center;
+  background:rgba(9,12,36,.93);backdrop-filter:blur(8px);color:#fff4e0;font-family:var(--display);
+  font-size:clamp(24px,6vw,38px);line-height:1.3;z-index:9999}
 #flash{position:fixed;inset:0;pointer-events:none;background:var(--pc);opacity:0}
 #flash.on{animation:fl .4s ease-out}
 @keyframes fl{0%{opacity:.35}100%{opacity:0}}
@@ -744,7 +746,7 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
 </style>
 </head>
 <body>
-<div id="banner" hidden>Reconnecting…</div>
+<div id="banner" role="status" aria-live="polite" hidden>Reconnecting…</div>
 
 <section id="join">
   <div class="logo"><span>MARBLE</span><span>RUSH</span></div>
@@ -865,26 +867,42 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
   const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} };
 
   /* ---------- network ---------- */
-  let ws = null, open = false, joined = false, retry = 0, hud = null;
+  let ws = null, open = false, joined = false, retry = 0, hud = null, reconnecting = false, rejoinTimer = null;
+  function banner(message) {
+    $('#banner').textContent = message || 'Reconnecting…';
+    $('#banner').hidden = !message;
+  }
   function connect() {
-    ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
-    ws.onopen = () => { open = true; retry = 0; $('#banner').hidden = true;
-      // Refreshing the SAME explicitly joined room may silently resume.
+    const socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+    ws = socket;
+    socket.onopen = () => {
+      if (ws !== socket) return;
+      open = true; retry = 0;
+      // Only dismiss the overlay once the room has acknowledged the rejoin.
       if (joined || autoResume) doJoin(true);
+      else { reconnecting = false; banner(null); }
     };
-    ws.onclose = e => {
-      open = false;
+    socket.onclose = e => {
+      if (ws !== socket) return;
+      open = false; clearTimeout(rejoinTimer);
       if(e.code===4009){
         // Avoid infinite WebSocket takeover ping-pong between two open tabs.
         joined=false;$('#ctl').hidden=true;$('#join').hidden=false;
-        $('#btnJoin').disabled=false;
+        $('#btnJoin').disabled=false;reconnecting=false;banner(null);
         $('#joinErr').textContent='This marble was reopened in another tab. Close the other tab before reconnecting.';
         return;
       }
-      if (joined) $('#banner').hidden = false;
-      setTimeout(connect, Math.min(6000, 600 * ++retry));
+      reconnecting = true;
+      banner(e.code===1012 ? 'Server restarting, reconnecting…' : 'Reconnecting…');
+      const wait = Math.min(10000, 1000 * 2 ** Math.min(retry++, 4));
+      setTimeout(connect, wait);
     };
-    ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch(x){ return; } onMsg(m); };
+    socket.onmessage = e => {
+      if (ws !== socket) return;
+      let m; try { m = JSON.parse(e.data); } catch(x){ return; }
+      if (m.t === 'restart') { reconnecting = true; banner('Server restarting, reconnecting…'); return; }
+      onMsg(m);
+    };
   }
   function send(m) { if (open) ws.send(JSON.stringify(m)); }
   connect();
@@ -902,6 +920,14 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
   $('#inCode').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, ''); });
 
   function onMsg(m) {
+    if (m.t === 'err' && m.e === 'noroom' && (joined || (autoResume && reconnecting))) {
+      // On deploy the phone may come back before the host has re-created its
+      // room. Keep the same seat/identity and retry the join on this socket.
+      banner('Reconnecting… waiting for the TV');
+      clearTimeout(rejoinTimer);
+      rejoinTimer = setTimeout(() => { if (open) doJoin(true); }, 2000);
+      return;
+    }
     if (m.t === 'err') {
       $('#btnJoin').disabled = false;
       $('#joinErr').textContent = m.e === 'noroom' ? 'No race with that code. Check the code on the TV.' : 'Could not join.';
@@ -909,8 +935,14 @@ body[data-mode="brawl"][data-s="brawl"] #modeReadout{
       return;
     }
     if (m.t === 'full') { $('#btnJoin').disabled = false; $('#joinErr').textContent = 'This race is full (8 racers). Wait for the next one.'; return; }
-    if (m.t === 'wait') { showCtl(); setText('', 'Waiting for the TV…', 'Keep this page open.'); return; }
-    if (m.t === 'hud') { showCtl(); hud = m; render(); }
+    if (m.t === 'wait') {
+      clearTimeout(rejoinTimer); reconnecting = false; banner(null);
+      showCtl(); setText('', 'Waiting for the TV…', 'Keep this page open.'); return;
+    }
+    if (m.t === 'hud') {
+      clearTimeout(rejoinTimer); reconnecting = false; banner(null);
+      showCtl(); hud = m; render();
+    }
   }
   function showCtl() {
     if (joined) return;
